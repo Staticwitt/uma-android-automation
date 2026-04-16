@@ -1263,7 +1263,9 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Reset Whistle Check: Use if recommendations are poor.
         // We define "poor" as no training being selected or certain other conditions.
         // Block whistling during irregular training evaluations.
-        if (date.day >= 13 && !bUsedWhistleToday && trainingSelected == null && !bIsIrregularTraining && !training.needsEnergyRecovery) {
+
+        // Limit automated whistle usage to during summer or near end of senior (Turns 37-40, >60)
+        if ((date.day in 37..40 || date.day > 60) && !bUsedWhistleToday && trainingSelected == null && !bIsIrregularTraining && !training.needsEnergyRecovery) {
             val hasWhistle = (currentInventory["Reset Whistle"] ?: 0) > 0
             if (hasWhistle) {
                 MessageLog.i(TAG, "[TRACKBLAZER] No suitable training found. Using Reset Whistle.")
@@ -1304,7 +1306,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             if (trainee.mood <= Mood.NORMAL || trainee.energy <= 50) {
                 MessageLog.i(TAG, "[TRACKBLAZER] Still no suitable training found. Backing out for recovery.")
 
-                // firstTrainingCheck set to false since to avoid possible rest/recreation looping for next turn.
+                // firstTrainingCheck is false since there is no suitable training (breaks looping on recovery/energy)
                 training.firstTrainingCheck = false
                 ButtonBack.click(game.imageUtils)
                 game.wait(1.0)
@@ -1327,6 +1329,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                 training.firstTrainingCheck = false
             }
         }
+
         bIsIrregularTraining = false
     }
 
@@ -1343,7 +1346,7 @@ class Trackblazer(game: Game) : Campaign(game) {
         if (date.bIsFinaleSeason && (date.day == 73 || date.day == 74 || date.day == 75)) {
             grade = RaceGrade.G1
             racing.lastRaceGrade = RaceGrade.FINALE
-            fans = if (date.day == 75) 30000 else 10000
+            fans = if (date.day == 75) 30000 else 20000
         }
 
         if (grade != null && (grade == RaceGrade.G1 || grade == RaceGrade.G2 || grade == RaceGrade.G3)) {
@@ -1370,50 +1373,61 @@ class Trackblazer(game: Game) : Campaign(game) {
         val artisanHammerCount = currentInventory["Artisan Cleat Hammer"] ?: 0
         val glowSticksCount = currentInventory["Glow Sticks"] ?: 0
 
-        val hasMasterHammer =
-            if (date.day == 73) {
-                // Save the last Master Cleat Hammer for the Semi-Final and Final (turns 74-75).
-                masterHammerCount >= 2
-            } else {
-                masterHammerCount > 0
-            }
-        val hasArtisanHammer =
-            if (date.day == 73) {
-                // Save the last Artisan Cleat Hammer for the Semi-Final and Final (turns 74-75).
-                artisanHammerCount >= 2
-            } else {
-                artisanHammerCount > 0
-            }
-        val hasGlowSticks =
-            if (date.day in 73..74) {
-                // Save the last Glow Stick for the Finals (turn 75).
-                glowSticksCount >= 2
-            } else {
-                glowSticksCount > 0
-            }
+        // Always reserve 2 master hammers for the finale (days 73-75)
+        val spareMasterHammers = (masterHammerCount - 2).coerceAtLeast(0)
 
-        val hammerToUse =
-            if (grade == RaceGrade.G1) {
-                if (hasMasterHammer) {
-                    "Master Cleat Hammer"
-                } else if (hasArtisanHammer) {
-                    "Artisan Cleat Hammer"
-                } else {
-                    null
-                }
-            } else if (grade == RaceGrade.G2 || grade == RaceGrade.G3) {
-                if (hasArtisanHammer) "Artisan Cleat Hammer" else null
-            } else {
-                null
-            }
+        // Master Hammer Logic
+        val canUseMasterHammer = if (date.day < 73) {
+            // Only use spare masters beyond the 2 reserved for the finale
+            spareMasterHammers > 0 && (grade == RaceGrade.G1 || grade == RaceGrade.G2)
+        } else {
+            // Ensure we still have enough for remaining finale days.
+            val remainingFinaleDays = listOf(73, 74, 75).count { it >= date.day }
+            val hasEnough = masterHammerCount > remainingFinaleDays.coerceAtMost(masterHammerCount - 1).coerceAtLeast(0)
+            hasEnough && grade == RaceGrade.G1
+        }
 
-        val useGlowSticks =
-            if (date.day >= 73) {
-                // During Finale races (turns 73-75), ignore the standard 20k fan requirement.
-                grade == RaceGrade.G1 && hasGlowSticks
-            } else {
-                grade == RaceGrade.G1 && fans >= 20000 && hasGlowSticks
+        // Artisan Hammer Logic
+        // Grade priority: G1 > G2 > G3, with G3 only allowed if 3+ artisan hammers.
+        val canUseArtisanHammer = if (artisanHammerCount >= 3) {
+            true
+        } else if (artisanHammerCount >= 2) {
+            grade == RaceGrade.G1 || grade == RaceGrade.G2
+        } else if (artisanHammerCount == 1) {
+            grade == RaceGrade.G1
+        } else {
+            false
+        }
+
+        // Artisan takes priority before day 73 to burn through them before the finale.
+        val hammerToUse = if (date.day < 73) {
+            when {
+                canUseArtisanHammer -> "Artisan Cleat Hammer"
+                canUseMasterHammer -> "Master Cleat Hammer"
+                else -> null
             }
+        } else {
+            when {
+                canUseMasterHammer -> "Master Cleat Hammer"
+                canUseArtisanHammer -> "Artisan Cleat Hammer"
+                else -> null
+            }
+        }
+
+        // Glow Sticks Logic
+        val finaleRaces = listOf(
+            Pair(73, fansOnDay73),
+            Pair(74, fansOnDay74),
+            Pair(75, fansOnDay75)
+        )
+        val highFanFinaleDays = finaleRaces.count { (_, f) -> f >= 20000 }
+        val useGlowSticks = if (date.day >= 73) {
+            val remainingHighFanDays = finaleRaces.count { (day, f) -> day >= date.day && f >= 20000 }
+            fans >= 20000 && glowSticksCount >= remainingHighFanDays
+        } else {
+            // Only use if we have spare sticks beyond what the finale needs
+            fans >= 20000 && glowSticksCount > highFanFinaleDays
+        }
 
         if (hammerToUse != null || useGlowSticks) {
             MessageLog.i(TAG, "[TRACKBLAZER] Suitable race items found in inventory (Hammer: $hammerToUse, Glow Sticks: $useGlowSticks). Opening Training Items dialog.")
