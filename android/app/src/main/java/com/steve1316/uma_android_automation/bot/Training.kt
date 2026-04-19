@@ -354,6 +354,81 @@ class Training(private val game: Game, private val campaign: Campaign) {
         }
 
         /**
+         * Calculate the expected failure chance based on the character's current energy.
+         *
+         * @param currentEnergy The character's current energy (0-100).
+         * @param statName The training stat name.
+         * @return The mathematically expected failure chance percentage.
+         */
+        fun estimateFailureChanceFromEnergy(currentEnergy: Int, statName: StatName? = null): Int {
+            val energy = currentEnergy.coerceIn(0, 100)
+
+            val estimated =
+                if (statName == StatName.WIT) {
+                    // Exponential decay: f(e) = 161.4 * 0.9793^e - 81.4
+                    val raw = 161.4 * (0.9793.pow(energy.toDouble())) - 81.4
+                    raw.toInt()
+                } else {
+                    if (energy >= 50) 0 else (50 - energy) * 2
+                }
+
+            val clamped = estimated.coerceIn(0, 100)
+            return clamped
+        }
+
+        /**
+         * Cross-validate failure chances and return corrected values.
+         *
+         * Failure chances are monotonically non-decreasing in training order:
+         * Speed <= Stamina <= Power <= Guts. Wit is excluded because it naturally
+         * has a lower failure chance than the other trainings.
+         *
+         * If an earlier training's failure chance is significantly lower than
+         * the next, it is validated against the mathematically expected energy curve.
+         * If it deviates heavily, it is an OCR misread and is corrected.
+         *
+         * @param failureChances List of ([StatName], failureChance) pairs with valid (>= 0) values.
+         * @param currentEnergy The character's current energy level.
+         * @param suspiciousJumpThreshold Minimum difference to consider suspicious.
+         * @param outlierTolerance Maximum allowable deviation from the expected math before an OCR correction is applied.
+         * @return Map of [StatName] to corrected failure chance.
+         */
+        fun crossValidateFailureChances(
+            failureChances: List<Pair<StatName, Int>>,
+            currentEnergy: Int,
+            suspiciousJumpThreshold: Int = 20,
+            outlierTolerance: Int = 30
+        ): Map<StatName, Int> {
+            // Wit is excluded from cross-validation as it naturally has a lower failure chance.
+            val witEntry = failureChances.filter { it.first == StatName.WIT }
+            val withoutWit = failureChances.filter { it.first != StatName.WIT }
+
+            if (withoutWit.size < 2) return failureChances.toMap()
+
+            val sorted = withoutWit.sortedBy { it.first.ordinal }.toMutableList()
+
+            // Walk backwards: correct any value that is suspiciously lower than its successor.
+            for (i in sorted.size - 2 downTo 0) {
+                val (currentName, currentChance) = sorted[i]
+                val (_, nextChance) = sorted[i + 1]
+
+                // Trigger: Is the current chance suspiciously lower than the next?
+                if (nextChance - currentChance > suspiciousJumpThreshold) {
+                    // Validation: Check expected math based on character energy
+                    val expectedChance = estimateFailureChanceFromEnergy(currentEnergy, currentName)
+
+                    // If the read chance is wildly different from the expected math, it's an OCR error
+                    if (kotlin.math.abs(currentChance - expectedChance) > outlierTolerance) {
+                        sorted[i] = currentName to expectedChance
+                    }
+                    // Otherwise, it's a valid in-game Support Card buff and we leave it alone.
+                }
+            }
+
+            return (sorted + witEntry).toMap()
+        }
+
+        /**
          * Score the training option based on friendship bar progress.
          *
          * This method prefers training options with the least relationship progress, specifically focusing on blue bars.
@@ -974,7 +1049,13 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
             // Perform full validation.
 
-            val activeStat: StatName? = getActiveStat(timeoutMs)
+            // Give getActiveStat a dedicated sub-budget so it cannot consume the entire
+            // timeout before the click and header poll have a chance to run.
+            // Reserve at least POST_CLICK_BUDGET_MS for the header detection loop after clicking.
+            val postClickBudgetMs = 3000
+            val activeStatBudgetMs = (timeoutMs - postClickBudgetMs).coerceAtLeast(1000)
+
+            val activeStat: StatName? = getActiveStat(activeStatBudgetMs)
             if (activeStat == null) {
                 MessageLog.w(TAG, "[WARN] goToStat:: getActiveStat returned null.")
                 return false
@@ -989,15 +1070,18 @@ class Training(private val game: Game, private val campaign: Campaign) {
             // Now click on the desired stat button.
             button.click(game.imageUtils)
 
-            // Now wait for the header to be detected.
-            // In case the previous operations took too long, we still want to do
-            // at least one check for the header before we time out since it doesn't
-            // take hardly any time to check just once.
+            // Small delay to allow the stats to appear before checking to avoid accidental skips
+            game.wait(0.1, skipWaitingForLoading = true)
+
+            // Poll for the header using whatever budget remains, with a guaranteed
+            // minimum of postClickBudgetMs regardless of how long getActiveStat took.
+
+            val postClickDeadline = System.currentTimeMillis() + postClickBudgetMs
             do {
                 if (header.check(game.imageUtils)) {
                     return true
                 }
-            } while (System.currentTimeMillis() - startTime < timeoutMs)
+            } while (System.currentTimeMillis() < postClickDeadline)
 
             MessageLog.w(TAG, "[WARN] goToStat:: Timed out while waiting for $statName training header.")
             return false
@@ -1354,6 +1438,9 @@ class Training(private val game: Game, private val campaign: Campaign) {
                     }
                 }
 
+                // Cross-validate failure chances across trainings to correct OCR misreads.
+                normalizeFailureChances(analysisResults)
+
                 // Process results and populate training maps.
                 processAnalysisResults(analysisResults, ignoreFailureChance, isIrregularEvaluation, test)
 
@@ -1505,6 +1592,35 @@ class Training(private val game: Game, private val campaign: Campaign) {
         trainingMap.clear()
         skippedTrainingMap.clear()
         restrictedTrainingNames.clear()
+    }
+
+    /**
+     * Cross-validate and normalize failure chances across all training results.
+     *
+     * Failure chances are monotonically non-decreasing in training order
+     * (Speed <= Stamina <= Power <= Guts <= Wit). If an earlier training's
+     * failure chance is significantly lower than the next, it is likely an
+     * OCR misread and should be corrected upward.
+     *
+     * @param results The list of [TrainingAnalysisResult] to normalize.
+     */
+    private fun normalizeFailureChances(results: List<TrainingAnalysisResult>) {
+        val validResults = results.filter { it.failureChance >= 0 }
+        if (validResults.size < 2) return
+
+        val input = validResults.map { it.name to it.failureChance }
+        val corrected = crossValidateFailureChances(input, campaign.trainee.energy)
+
+        for (result in validResults) {
+            val newValue = corrected[result.name] ?: continue
+            if (newValue != result.failureChance) {
+                MessageLog.w(
+                    TAG,
+                    "[WARN] normalizeFailureChances:: ${result.name} failure chance corrected from ${result.failureChance}% to $newValue% based on cross-validation with neighboring trainings.",
+                )
+                result.failureChance = newValue
+            }
+        }
     }
 
     /**
@@ -1730,7 +1846,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
             TrainingConfig(
                 currentStats = campaign.trainee.stats.asMap(),
                 statPrioritization = statPrioritization,
-                statTargets = campaign.trainee.getStatTargetsByDistance(),
+                statTargets = campaign.trainee.getPhaseStatTargets(campaign.date.year),
                 currentDate = campaign.date,
                 scenario = game.scenario,
                 enableRainbowTrainingBonus = enableRainbowTrainingBonus,
@@ -1801,16 +1917,28 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
         // Show current stats.
         val currentStats = config.currentStats
-        sb.appendLine(
-            "Current Stats: Speed=${currentStats[StatName.SPEED]}, Stam=${currentStats[StatName.STAMINA]}, Pow=${currentStats[StatName.POWER]}, Guts=${currentStats[StatName.GUTS]}, Wit=${currentStats[StatName.WIT]}",
-        )
+        val statNames = StatName.entries
+        val currentStatsFormatted =
+            statNames.joinToString(", ") {
+                "${it.name.lowercase().replaceFirstChar { char -> char.titlecase() }}=${currentStats[it]}"
+            }
+        sb.appendLine("Current Stats: $currentStatsFormatted")
 
         // Show stat targets for context.
         val targets = config.statTargets
         val preferredDistance = campaign.trainee.trackDistance
-        sb.appendLine(
-            "Stat Targets ($preferredDistance): Speed=${targets[StatName.SPEED]}, Stam=${targets[StatName.STAMINA]}, Pow=${targets[StatName.POWER]}, Guts=${targets[StatName.GUTS]}, Wit=${targets[StatName.WIT]}",
-        )
+        val phaseLabel =
+            when (config.currentDate.year) {
+                DateYear.JUNIOR -> "Junior → Classic milestone ~$trackblazerClassicMilestonePct%"
+                DateYear.CLASSIC -> "Classic → Senior milestone ~$trackblazerSeniorMilestonePct%"
+                DateYear.SENIOR -> "Senior → Stat targets (100%)"
+            }
+
+        val targetsFormatted =
+            statNames.joinToString(", ") {
+                "${it.name.lowercase().replaceFirstChar { char -> char.titlecase() }}=${targets[it]}"
+            }
+        sb.appendLine("Stat Targets ($preferredDistance) [$phaseLabel]: $targetsFormatted")
 
         // Compute completion percentages for each stat.
         val completionPercentages =
