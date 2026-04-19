@@ -2478,6 +2478,7 @@
                 handleActionCounters(parsed, stateTarget)
                 handleTraineeUpdates(parsed, stateTarget)
                 handleDateUpdates(parsed, stateTarget)
+                handleEnergyInfo(parsed, stateTarget)
             }
 
             /**
@@ -2595,6 +2596,22 @@
                 } else {
                     if (info.turn) document.getElementById("dashboardTurn").textContent = info.turn
                     if (info.date) document.getElementById("dashboardDate").textContent = idToTitleCase(info.date)
+                }
+            }
+
+            /**
+             * Handles immediate energy and mood dashboard updates from energyInfo.
+             */
+            function handleEnergyInfo(parsed, stateTarget) {
+                const info = parsed.energyInfo
+                if (!info) return
+
+                if (stateTarget) {
+                    stateTarget.energy = info.to + "%"
+                    if (info.moodTo) stateTarget.mood = info.moodTo
+                } else {
+                    document.getElementById("dashboardEnergy").textContent = info.to + "%"
+                    if (info.moodTo) updateMoodBadge(info.moodTo)
                 }
             }
 
