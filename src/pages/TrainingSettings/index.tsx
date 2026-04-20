@@ -979,9 +979,9 @@ const TrainingSettings = () => {
                                 searchId="training-year-milestone-targets"
                             />
                             <SearchableItem
-                                searchId="classic-milestone-percent"
-                                searchTitle="Junior Year Milestone (Classic Year Start)"
-                                searchDescription="Percentage of the primary stat targets to aim for by the end of Junior Year (start of Classic)."
+                                id="classic-milestone-percent"
+                                title="Junior Year Milestone (Classic Year Start)"
+                                description="Percentage of the primary stat targets to aim for by the end of Junior Year (start of Classic)."
                             >
                                 <CustomSlider
                                     value={trainingSettings.classicMilestonePercent}
@@ -1003,9 +1003,9 @@ const TrainingSettings = () => {
 
                         <View style={styles.section}>
                             <SearchableItem
-                                searchId="senior-milestone-percent"
-                                searchTitle="Classic Year Milestone (Senior Year Start)"
-                                searchDescription="Percentage of the primary stat targets to aim for by the end of Classic Year (start of Senior)."
+                                id="senior-milestone-percent"
+                                title="Classic Year Milestone (Senior Year Start)"
+                                description="Percentage of the primary stat targets to aim for by the end of Classic Year (start of Senior)."
                             >
                                 <CustomSlider
                                     value={trainingSettings.seniorMilestonePercent}
