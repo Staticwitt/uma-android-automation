@@ -1837,7 +1837,8 @@ class Training(private val game: Game, private val campaign: Campaign) {
      * @param forceSelection If true, the best training option will be selected even if it exceeds the failure chance threshold.
      * @return The name of the recommended training option, or null if no suitable option is found.
      */
-    fun recommendTraining(forceSelection: Boolean = false, isIrregularEvaluation: Boolean = false): StatName? {
+    fun recommendTraining(forceSelection: Boolean = false, args: Map<String, Any?> = emptyMap()): StatName? {
+        val isIrregularEvaluation = args["isIrregularEvaluation"] as? Boolean ?: false
         // Build skillHintsPerLocation from the training map.
         val skillHintsPerLocation: Map<StatName, Int> = StatName.entries.associateWith { trainingMap[it]?.numSkillHints ?: 0 }
 
@@ -1887,7 +1888,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
         // Build and log training analysis results and selection reasoning.
         val finalScoringMode = if (isIrregularEvaluation) "Trackblazer (Irregular Training)" else scoringMode
-        logSelectionReasoning(trainingConfig, finalScoringMode, trainingScores, skippedScores, best)
+        logSelectionReasoning(trainingConfig, finalScoringMode, trainingScores, skippedScores, best, args)
 
         return best?.name ?: if (forceSelection) {
             skippedScores.maxByOrNull { it.value }?.key?.name ?: trainingMap.keys.firstOrNull { it !in blacklist }
@@ -1907,7 +1908,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
      * @param skippedScores Map of skipped training options to their calculated scores.
      * @param selected The training option that was selected, or null if none.
      */
-    private fun logSelectionReasoning(config: TrainingConfig, scoringMode: String, scores: Map<TrainingOption, Double>, skippedScores: Map<TrainingOption, Double>, selected: TrainingOption?) {
+    private fun logSelectionReasoning(config: TrainingConfig, scoringMode: String, scores: Map<TrainingOption, Double>, skippedScores: Map<TrainingOption, Double>, selected: TrainingOption?, args: Map<String, Any?> = emptyMap()) {
         val sb = StringBuilder()
         sb.appendLine("\n========== Training Analysis Results ==========")
 
@@ -1991,7 +1992,7 @@ class Training(private val game: Game, private val campaign: Campaign) {
 
                 "Trackblazer (Irregular Training)" -> {
                     val mainGain = selected.statGains[selected.name] ?: 0
-                    val minIrregularGain = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerIrregularTrainingMinStatGain", 30)
+                    val minIrregularGain = args["irregularTrainingMinStatGain"] as? Int ?: 30
                     if (mainGain >= minIrregularGain) {
                         keyFactors.add("Met irregular training main stat gain threshold ($mainGain >= $minIrregularGain).")
                     }

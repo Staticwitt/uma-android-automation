@@ -809,7 +809,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                     val hasCharm = !bUsedCharmToday && (currentInventory["Good-Luck Charm"] ?: 0) > 0
                     training.analyzeTrainings(mapOf("ignoreFailureChance" to hasCharm, "isIrregularEvaluation" to isIrregularEvaluation, "minStatGainForCharm" to minCharmGain, "irregularTrainingMinStatGain" to minIrregularGain))
 
-                    val bestTraining = training.recommendTraining(isIrregularEvaluation = isIrregularEvaluation)
+                    val bestTraining = training.recommendTraining(args = mapOf("isIrregularEvaluation" to true, "irregularTrainingMinStatGain" to minIrregularGain))
 
                     if (bestTraining != null) {
                         // Stay on the training screen in order to perform the training.
@@ -1237,7 +1237,7 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Fast path: Already on the training screen from irregular training evaluation.
         if (bIsIrregularTraining) {
             MessageLog.i(TAG, "[TRACKBLAZER] Using existing irregular training analysis (already on Training screen).")
-            val trainingSelected: StatName? = training.recommendTraining(isIrregularEvaluation = true)
+            val trainingSelected: StatName? = training.recommendTraining(args = mapOf("isIrregularEvaluation" to true, "irregularTrainingMinStatGain" to minIrregularGain))
 
             // Still use training items (megaphones, ankle weights, charms, energy, stat items, etc.)
             if (date.day >= 13) {
