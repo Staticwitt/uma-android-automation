@@ -59,10 +59,10 @@ import com.steve1316.uma_android_automation.types.BoundingBox
 import com.steve1316.uma_android_automation.types.DateMonth
 import com.steve1316.uma_android_automation.types.DatePhase
 import com.steve1316.uma_android_automation.types.DateYear
-import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.FanCountClass
 import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.uma_android_automation.types.Mood
+import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.Trainee

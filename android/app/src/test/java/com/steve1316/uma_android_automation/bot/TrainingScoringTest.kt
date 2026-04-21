@@ -901,7 +901,15 @@ class TrainingScoringTest {
                     trainings =
                         listOf(
                             TrainingDef(StatName.SPEED, intArrayOf(22, 0, 10, 0, 0), listOf(BarDef(color = "green")), extras = mapOf("spiritGaugesCanFill" to 1)),
-                            TrainingDef(StatName.STAMINA, intArrayOf(0, 25, 0, 13, 0), listOf(BarDef(color = "orange"), BarDef(color = "green"), BarDef(color = "green")), extras = mapOf("spiritGaugesCanFill" to 1)),
+                            TrainingDef(
+                                StatName.STAMINA,
+                                intArrayOf(0, 25, 0, 13, 0),
+                                listOf(BarDef(color = "orange"), BarDef(color = "green"), BarDef(color = "green")),
+                                extras =
+                                    mapOf(
+                                        "spiritGaugesCanFill" to 1,
+                                    ),
+                            ),
                             TrainingDef(StatName.POWER, intArrayOf(0, 15, 23, 0, 0), listOf(BarDef(color = "orange")), extras = mapOf("spiritGaugesCanFill" to 1), numRainbow = 1),
                             TrainingDef(StatName.GUTS, intArrayOf(5, 0, 5, 15, 0)),
                             TrainingDef(StatName.WIT, intArrayOf(5, 0, 0, 0, 12)),

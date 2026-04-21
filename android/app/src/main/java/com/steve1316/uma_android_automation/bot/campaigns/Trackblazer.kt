@@ -824,7 +824,14 @@ class Trackblazer(game: Game) : Campaign(game) {
 
                     val isIrregularEvaluation = true
                     val hasCharm = !bUsedCharmToday && (currentInventory["Good-Luck Charm"] ?: 0) > 0
-                    training.analyzeTrainings(mapOf("ignoreFailureChance" to hasCharm, "isIrregularEvaluation" to isIrregularEvaluation, "minStatGainForCharm" to minCharmGain, "irregularTrainingMinStatGain" to minIrregularGain))
+                    training.analyzeTrainings(
+                        mapOf(
+                            "ignoreFailureChance" to hasCharm,
+                            "isIrregularEvaluation" to isIrregularEvaluation,
+                            "minStatGainForCharm" to minCharmGain,
+                            "irregularTrainingMinStatGain" to minIrregularGain,
+                        ),
+                    )
 
                     val bestTraining = training.recommendTraining(args = mapOf("isIrregularEvaluation" to true, "irregularTrainingMinStatGain" to minIrregularGain))
 

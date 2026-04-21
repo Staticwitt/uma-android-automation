@@ -478,7 +478,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 // We give a significant bonus for bursting, but not so much that it always overrides huge stat gains elsewhere.
                 val burstBonus = 800.0 + (numSpiritGaugesReadyToBurst * 400.0)
                 score += burstBonus
-                MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding burst bonus for ${numSpiritGaugesReadyToBurst} gauge(s): $burstBonus")
+                MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding burst bonus for $numSpiritGaugesReadyToBurst gauge(s): $burstBonus")
 
                 // Facility preference bonuses for bursting.
                 when (training.name) {
@@ -518,7 +518,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 // Each gauge fills by 25% per training execution.
                 val fillBonus = 300.0 + (numSpiritGaugesCanFill * 100.0)
                 score += fillBonus
-                MessageLog.i(TAG, "[TRAINING] [${training.name}] Training can fill ${numSpiritGaugesCanFill} Spirit Explosion Gauge(s). Adding fill bonus: $fillBonus")
+                MessageLog.i(TAG, "[TRAINING] [${training.name}] Training can fill $numSpiritGaugesCanFill Spirit Explosion Gauge(s). Adding fill bonus: $fillBonus")
 
                 // Early game: If gauges can be filled for deprioritized stat trainings, ignore stat prioritization.
                 if (config.currentDate.year == DateYear.JUNIOR) {
@@ -1783,7 +1783,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
         }
     }
 
-        /**
+    /**
      * Returns a human-readable label for the current training scoring mode. Used for logging.
      * Override in Training subclasses to provide scenario-specific scoring mode labels.
      *
@@ -1905,7 +1905,14 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
      * @param skippedScores Map of skipped training options to their calculated scores.
      * @param selected The training option that was selected, or null if none.
      */
-    private fun logSelectionReasoning(config: TrainingConfig, scoringMode: String, scores: Map<TrainingOption, Double>, skippedScores: Map<TrainingOption, Double>, selected: TrainingOption?, args: Map<String, Any?> = emptyMap()) {
+    private fun logSelectionReasoning(
+        config: TrainingConfig,
+        scoringMode: String,
+        scores: Map<TrainingOption, Double>,
+        skippedScores: Map<TrainingOption, Double>,
+        selected: TrainingOption?,
+        args: Map<String, Any?> = emptyMap(),
+    ) {
         val sb = StringBuilder()
         sb.appendLine("\n========== Training Analysis Results ==========")
 
