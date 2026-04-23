@@ -26,6 +26,7 @@ import ImportSettingsPreview from "./pages/ImportSettingsPreview"
 import ScenarioOverridesSettings from "./pages/ScenarioOverridesSettings"
 import DebugSettings from "./pages/DebugSettings"
 import DiscordSettings from "./pages/DiscordSettings"
+import Chat from "./pages/Chat"
 import DrawerContent from "./components/DrawerContent"
 import { NAV_THEME } from "./lib/theme"
 
@@ -84,6 +85,7 @@ function MainDrawer() {
         >
             <Drawer.Screen name="Home" component={Home} />
             <Drawer.Screen name="Settings" component={SettingsStack} />
+            <Drawer.Screen name="Chat" component={Chat} />
         </Drawer.Navigator>
     )
 }

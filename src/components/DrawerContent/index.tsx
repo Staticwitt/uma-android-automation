@@ -200,6 +200,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             icon: (focused: boolean) => (focused ? "home" : "home-outline"),
         },
         {
+            name: "Chat",
+            label: "Ask the Docs",
+            icon: (focused: boolean) => (focused ? "chatbubble" : "chatbubble-outline"),
+        },
+        {
             name: "Settings",
             label: "Settings",
             icon: (focused: boolean) => (focused ? "settings" : "settings-outline"),
