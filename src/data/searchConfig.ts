@@ -829,6 +829,33 @@ const searchConfig: SearchOption[] = [
             "Disables normal bot operations and starts the Trackblazer buy items test. Opens the Shop if on the Main Screen and logs shop contents and purchase intentions without actually buying anything.",
         page: "DebugSettings",
     },
+    {
+        id: "llm-ask-the-docs",
+        title: "Ask the Docs",
+        description:
+            "On-device documentation chatbot. Answers are grounded in README.md, HOW_IT_WORKS.md, and the in-app option descriptions, retrieved via MiniLM embeddings and cosine similarity. Fully offline.",
+        page: "Chat",
+    },
+    {
+        id: "llm-prefer-nano",
+        title: "Prefer Gemini Nano when available",
+        description:
+            "When enabled, the chatbot routes generation through Gemini Nano on supported flagships (Pixel 8+, Galaxy S24+, Fold/Flip 6+). Falls back to the MediaPipe model on other devices.",
+        page: "LLMSettings",
+    },
+    {
+        id: "llm-download-chat-model",
+        title: "Download Chat Model",
+        description:
+            "Downloads the ~530 MB Gemma 3 1B MediaPipe model file used for natural-language answers when Gemini Nano is unavailable. Stored in app-private storage; can be deleted later.",
+        page: "LLMSettings",
+    },
+    {
+        id: "llm-delete-chat-model",
+        title: "Delete Chat Model",
+        description: "Removes the downloaded chat model from disk to free ~530 MB. Retrieve-only search continues to work without the model.",
+        page: "LLMSettings",
+    },
 ]
 
 export default searchConfig
