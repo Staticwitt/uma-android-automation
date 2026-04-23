@@ -1,2 +1,3 @@
 android/app/src/main/assets/llm/*.onnx binary
+android/app/src/main/assets/llm/*.bin  binary
 android/app/src/main/assets/llm/*.txt  -text
