@@ -12,18 +12,26 @@ interface DocResult {
     score: number
 }
 
+interface ChatResult {
+    answer: string
+    mode: "generated" | "retrieveOnly" | "verifierFallback"
+    service?: string
+    overlap?: number
+    rejectedAnswer?: string
+    citations: DocResult[]
+}
+
 /**
  * Ask-the-docs chat page.
  *
- * v1 is retrieve-only: the user types a question, the native [LLMChatModule.searchDocs] runs MiniLM embedding
- * and cosine-searches the bundled doc index, and the top chunks are shown verbatim with their source file and
- * heading. No generation yet — zero hallucination risk. Generation will layer on once the MediaPipe/Nano services
- * and grounding verifier are wired through [ChatOrchestrator].
+ * Calls [LLMChatModule.chat] which runs the full RAG pipeline: retrieve → (optionally) generate → verify. The UI
+ * badges each answer with its provenance so users can tell at a glance whether the text is verbatim from the docs,
+ * paraphrased by an on-device model, or a fallback after the verifier rejected a suspect answer.
  */
 const Chat = () => {
     const { colors } = useTheme()
     const [query, setQuery] = useState("")
-    const [results, setResults] = useState<DocResult[]>([])
+    const [result, setResult] = useState<ChatResult | null>(null)
     const [isSearching, setIsSearching] = useState(false)
     const [searched, setSearched] = useState(false)
 
@@ -33,28 +41,32 @@ const Chat = () => {
         setIsSearching(true)
         setSearched(true)
         try {
-            const raw = await NativeModules.LLMChatModule.searchDocs(q, 4)
-            setResults(raw as DocResult[])
+            const raw = (await NativeModules.LLMChatModule.chat(q, 4)) as ChatResult
+            setResult(raw)
         } catch {
-            setResults([])
+            setResult(null)
         } finally {
             setIsSearching(false)
         }
     }, [query])
 
+    const modeLabel = useMemo(() => {
+        if (!result) return null
+        switch (result.mode) {
+            case "generated":
+                return `Generated via ${result.service ?? "model"} · grounding ${Math.round((result.overlap ?? 0) * 100)}%`
+            case "retrieveOnly":
+                return "Verbatim from docs (no model)"
+            case "verifierFallback":
+                return `Verifier rejected generated answer (${Math.round((result.overlap ?? 0) * 100)}% grounding). Showing source instead.`
+        }
+    }, [result])
+
     const styles = useMemo(
         () =>
             StyleSheet.create({
-                root: {
-                    flex: 1,
-                    margin: 10,
-                    backgroundColor: colors.background,
-                },
-                inputRow: {
-                    flexDirection: "row",
-                    gap: 8,
-                    marginVertical: 10,
-                },
+                root: { flex: 1, margin: 10, backgroundColor: colors.background },
+                inputRow: { flexDirection: "row", gap: 8, marginVertical: 10 },
                 input: {
                     flex: 1,
                     borderWidth: 1,
@@ -65,40 +77,30 @@ const Chat = () => {
                     color: colors.foreground,
                     backgroundColor: colors.card,
                 },
+                answerCard: {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 6,
+                    padding: 12,
+                    marginBottom: 12,
+                    backgroundColor: colors.card,
+                },
+                answerText: { color: colors.foreground, fontSize: 15, lineHeight: 22 },
+                modeLabel: { fontSize: 11, color: colors.mutedForeground, marginTop: 8, fontStyle: "italic" },
+                sectionLabel: { fontSize: 13, fontWeight: "600", color: colors.foreground, marginTop: 10, marginBottom: 6 },
                 resultCard: {
                     borderWidth: 1,
                     borderColor: colors.border,
                     borderRadius: 6,
                     padding: 10,
-                    marginBottom: 10,
+                    marginBottom: 8,
                     backgroundColor: colors.card,
                 },
-                resultHeading: {
-                    fontWeight: "600",
-                    color: colors.foreground,
-                    marginBottom: 4,
-                },
-                resultMeta: {
-                    fontSize: 11,
-                    color: colors.mutedForeground,
-                    marginBottom: 6,
-                },
-                resultText: {
-                    color: colors.foreground,
-                },
-                emptyText: {
-                    color: colors.mutedForeground,
-                    textAlign: "center",
-                    marginTop: 20,
-                    paddingHorizontal: 20,
-                },
-                disclaimer: {
-                    fontSize: 11,
-                    color: colors.mutedForeground,
-                    marginTop: 4,
-                    marginBottom: 8,
-                    fontStyle: "italic",
-                },
+                resultHeading: { fontWeight: "600", color: colors.foreground, marginBottom: 4 },
+                resultMeta: { fontSize: 11, color: colors.mutedForeground, marginBottom: 6 },
+                resultText: { color: colors.foreground },
+                emptyText: { color: colors.mutedForeground, textAlign: "center", marginTop: 20, paddingHorizontal: 20 },
+                disclaimer: { fontSize: 11, color: colors.mutedForeground, marginTop: 4, marginBottom: 8, fontStyle: "italic" },
             }),
         [colors]
     )
@@ -106,9 +108,7 @@ const Chat = () => {
     return (
         <View style={styles.root}>
             <PageHeader title="Ask the Docs" />
-            <Text style={styles.disclaimer}>
-                Answers are matched verbatim from README.md, HOW_IT_WORKS.md, and in-app option descriptions. Fully offline.
-            </Text>
+            <Text style={styles.disclaimer}>Answers are grounded in README.md, HOW_IT_WORKS.md, and in-app option descriptions. Fully offline.</Text>
 
             <View style={styles.inputRow}>
                 <TextInput
@@ -122,21 +122,30 @@ const Chat = () => {
                     editable={!isSearching}
                 />
                 <CustomButton variant="primary" onPress={handleSearch} isLoading={isSearching} disabled={isSearching || query.trim().length === 0}>
-                    Search
+                    Ask
                 </CustomButton>
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled">
-                {results.map((r) => (
-                    <View key={r.id} style={styles.resultCard}>
-                        <Text style={styles.resultHeading}>{r.heading}</Text>
-                        <Text style={styles.resultMeta}>
-                            {r.source} · similarity {(r.score * 100).toFixed(0)}%
-                        </Text>
-                        <Text style={styles.resultText}>{r.text}</Text>
-                    </View>
-                ))}
-                {searched && !isSearching && results.length === 0 && <Text style={styles.emptyText}>No matching documentation found.</Text>}
+                {result && (
+                    <>
+                        <View style={styles.answerCard}>
+                            <Text style={styles.answerText}>{result.answer}</Text>
+                            {modeLabel && <Text style={styles.modeLabel}>{modeLabel}</Text>}
+                        </View>
+                        {result.citations.length > 0 && <Text style={styles.sectionLabel}>Sources</Text>}
+                        {result.citations.map((r) => (
+                            <View key={r.id} style={styles.resultCard}>
+                                <Text style={styles.resultHeading}>{r.heading}</Text>
+                                <Text style={styles.resultMeta}>
+                                    {r.source} · similarity {(r.score * 100).toFixed(0)}%
+                                </Text>
+                                <Text style={styles.resultText}>{r.text}</Text>
+                            </View>
+                        ))}
+                    </>
+                )}
+                {searched && !isSearching && !result && <Text style={styles.emptyText}>No matching documentation found.</Text>}
             </ScrollView>
         </View>
     )

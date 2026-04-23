@@ -261,6 +261,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     label: "Debug Settings",
                     icon: () => "bug-outline",
                 },
+                {
+                    name: "LLMSettings",
+                    label: "LLM Settings",
+                    icon: () => "sparkles-outline",
+                },
             ],
         },
     ]
