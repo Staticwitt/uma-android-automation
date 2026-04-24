@@ -136,9 +136,10 @@ class LLMChatModule(private val reactContext: ReactApplicationContext) : ReactCo
             return
         }
         val token = authToken
+        val filename = filenameFromUrl(url)
         downloadJob = scope.launch {
             try {
-                orchestrator.modelDownloader().download(url, token).collect { state ->
+                orchestrator.modelDownloader().download(url, filename, token).collect { state ->
                     emitDownloadState(state)
                 }
             } catch (e: Exception) {
@@ -171,6 +172,14 @@ class LLMChatModule(private val reactContext: ReactApplicationContext) : ReactCo
     }
 
     // --------------------------------------------------------------------------------------------------
+
+    /** Derive a local filename from the model URL's last path segment, stripping query strings and falling back
+     *  to a generic name when the URL is unparseable. */
+    private fun filenameFromUrl(url: String): String {
+        val noQuery = url.substringBefore('?').substringBefore('#')
+        val last = noQuery.substringAfterLast('/', missingDelimiterValue = "").trim()
+        return if (last.isNotEmpty() && last.endsWith(".task")) last else "chat-model.task"
+    }
 
     private fun resultsToArray(results: List<DocIndex.Result>) = Arguments.createArray().also { array ->
         for (r in results) {

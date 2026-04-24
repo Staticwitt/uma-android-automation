@@ -27,24 +27,34 @@ class ModelDownloader(private val context: Context) {
     companion object {
         private const val TAG = "${SharedData.loggerTag}ModelDownloader"
         private const val LLM_DIR = "llm"
-        const val DEFAULT_MODEL_FILENAME = "gemma-3-1b-it.task"
         private const val POLL_INTERVAL_MS = 500L
     }
 
     /**
-     * Absolute on-device path where [DEFAULT_MODEL_FILENAME] will land after a successful download.
+     * Base directory for `.task` model files.
      *
-     * Uses app-private external storage (`getExternalFilesDir`) rather than `filesDir` because DownloadManager
-     * cannot write to app-private internal storage ("Unsupported path" error). External-files dir is still
-     * app-scoped — no permission required and auto-deleted on uninstall — just a different filesystem.
+     * Uses app-private external storage (`getExternalFilesDir`) rather than `filesDir` because DownloadManager runs
+     * in a separate system process and cannot write into `/data/data/<pkg>/` ("Unsupported path" error). Still
+     * app-scoped — no storage permission and auto-deleted on uninstall — just a different filesystem.
      */
-    val modelFile: File by lazy {
-        val base = context.getExternalFilesDir(LLM_DIR) ?: File(context.filesDir, LLM_DIR).also { it.mkdirs() }
-        File(base, DEFAULT_MODEL_FILENAME)
+    private val baseDir: File by lazy {
+        context.getExternalFilesDir(LLM_DIR) ?: File(context.filesDir, LLM_DIR).also { it.mkdirs() }
     }
 
-    /** @return true if a model file is already present on-device and non-empty. */
-    fun isDownloaded(): Boolean = modelFile.isFile && modelFile.length() > 0
+    /** Resolve the destination [File] for [filename] inside the model directory. */
+    fun fileFor(filename: String): File = File(baseDir, filename)
+
+    /**
+     * Return the most recently modified `.task` file currently on disk — the one the orchestrator should hand to
+     * MediaPipe. Decouples runtime model choice from any specific hardcoded filename so the user can swap variants
+     * from LLM Settings without a native rebuild.
+     */
+    fun currentModelFile(): File? =
+        baseDir.listFiles { f -> f.isFile && f.name.endsWith(".task") && f.length() > 0 }
+            ?.maxByOrNull { it.lastModified() }
+
+    /** @return true if at least one non-empty `.task` model file is present on-device. */
+    fun isDownloaded(): Boolean = currentModelFile() != null
 
     /**
      * One state emission from [download]. Consumers switch UI between indeterminate / progress / error / complete.
@@ -70,12 +80,14 @@ class ModelDownloader(private val context: Context) {
      * @param url HTTPS URL of the model file.
      * @return Cold [Flow] that begins the download when collected.
      */
-    fun download(url: String, authToken: String? = null): Flow<State> = flow {
-        if (modelFile.exists()) modelFile.delete()
+    fun download(url: String, filename: String, authToken: String? = null): Flow<State> = flow {
+        // Remove any previously-downloaded model to reclaim space before starting the new fetch.
+        delete()
+        val dest = fileFor(filename)
         val request = DownloadManager.Request(Uri.parse(url))
             .setTitle("Uma Chat Model")
-            .setDescription("Downloading the on-device chatbot model (~530 MB).")
-            .setDestinationUri(Uri.fromFile(modelFile))
+            .setDescription("Downloading the on-device chatbot model.")
+            .setDestinationUri(Uri.fromFile(dest))
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedOverMetered(false)
         if (!authToken.isNullOrBlank()) request.addRequestHeader("Authorization", "Bearer ${authToken.trim()}")
@@ -102,11 +114,16 @@ class ModelDownloader(private val context: Context) {
         }
     }
 
-    /** Remove the downloaded model from disk. @return true if a file was deleted. */
-    fun delete(): Boolean = if (modelFile.isFile) modelFile.delete() else false
+    /** Remove every `.task` model file from disk. @return true if at least one file was deleted. */
+    fun delete(): Boolean {
+        val files = baseDir.listFiles { f -> f.isFile && f.name.endsWith(".task") } ?: return false
+        var any = false
+        for (f in files) if (f.delete()) any = true
+        return any
+    }
 
-    /** @return Current size in bytes of the downloaded model, or 0 if not present. */
-    fun size(): Long = if (modelFile.isFile) modelFile.length() else 0
+    /** @return Current size in bytes of the active model file, or 0 if none is present. */
+    fun size(): Long = currentModelFile()?.length() ?: 0
 
     private fun query(id: Long): State? {
         val q = DownloadManager.Query().setFilterById(id)

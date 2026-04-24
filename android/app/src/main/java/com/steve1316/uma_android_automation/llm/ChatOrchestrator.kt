@@ -211,11 +211,13 @@ class ChatOrchestrator(private val context: Context) {
     }
 
     private fun ensureMediaPipe(): MediaPipeLLMService? {
-        if (!downloader.isDownloaded()) return null
-        mediapipe?.let { return it }
+        val file = downloader.currentModelFile() ?: return null
+        mediapipe?.let { if (it.modelPath == file.absolutePath) return it else it.close() }
         synchronized(this) {
-            mediapipe?.let { return it }
-            val created = MediaPipeLLMService(context, downloader.modelFile.absolutePath)
+            val existing = mediapipe
+            if (existing != null && existing.modelPath == file.absolutePath) return existing
+            existing?.close()
+            val created = MediaPipeLLMService(context, file.absolutePath)
             mediapipe = created
             return created
         }

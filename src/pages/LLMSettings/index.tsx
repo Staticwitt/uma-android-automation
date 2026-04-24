@@ -1,11 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking } from "react-native"
+import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking, Pressable } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import PageHeader from "../../components/PageHeader"
 import WarningContainer from "../../components/WarningContainer"
 import InfoContainer from "../../components/InfoContainer"
+import { databaseManager } from "../../lib/database"
+
+const MODEL_URL_SETTING = { category: "chat", key: "modelUrl" } as const
+
+/** Known LiteRT community `.task` models sorted by ascending size. All are HF-gated; requires a Read token. */
+const MODEL_PRESETS: Array<{ label: string; detail: string; url: string }> = [
+    {
+        label: "Gemma 3 1B (~530 MB, fast, weak summaries)",
+        detail: "Smallest option. Runs on almost any phone, but paraphrasing quality is limited.",
+        url: "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task",
+    },
+    {
+        label: "Gemma 3n E2B (~1.5 GB, balanced)",
+        detail: "Purpose-built for on-device, much better summarization than 1B. Needs ~4 GB free RAM.",
+        url: "https://huggingface.co/google/gemma-3n-E2B-it-litert-preview/resolve/main/gemma-3n-E2B-it-int4.task",
+    },
+    {
+        label: "Gemma 3 4B (~2.8 GB, best quality, slow)",
+        detail: "Full summary-quality answers. Needs ~6 GB total RAM. Slow on non-flagship phones.",
+        url: "https://huggingface.co/litert-community/Gemma3-4B-IT/resolve/main/Gemma3-4B-IT_multi-prefill-seq_q4_ekv2048.task",
+    },
+]
 
 // ML Kit FeatureStatus codes (mirrors com.google.mlkit.genai.common.FeatureStatus).
 const NANO_STATUS_UNAVAILABLE = 0
@@ -13,8 +35,7 @@ const NANO_STATUS_DOWNLOADABLE = 1
 const NANO_STATUS_DOWNLOADING = 2
 const NANO_STATUS_AVAILABLE = 3
 
-/** Default URL of the Gemma 3 1B .task model — user-overridable via a future settings field. */
-const DEFAULT_MODEL_URL = "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/Gemma3-1B-IT_multi-prefill-seq_q4_ekv2048.task"
+const DEFAULT_MODEL_URL = MODEL_PRESETS[0].url
 
 interface ServiceStatus {
     nanoStatus: number
@@ -43,6 +64,28 @@ const LLMSettings = () => {
     const [downloadState, setDownloadState] = useState<DownloadState | null>(null)
     const [preferNano, setPreferNano] = useState(true)
     const [hfToken, setHfToken] = useState("")
+    const [modelUrl, setModelUrl] = useState(DEFAULT_MODEL_URL)
+
+    // Load persisted model URL on mount.
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const stored = await databaseManager.loadSetting(MODEL_URL_SETTING.category, MODEL_URL_SETTING.key)
+                if (!cancelled && typeof stored === "string" && stored.length > 0) setModelUrl(stored)
+            } catch {
+                // First run or DB not initialized — keep default.
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    const persistModelUrl = useCallback((url: string) => {
+        setModelUrl(url)
+        databaseManager.saveSetting(MODEL_URL_SETTING.category, MODEL_URL_SETTING.key, url, true).catch(() => undefined)
+    }, [])
 
     const refreshStatus = useCallback(async () => {
         try {
@@ -76,7 +119,7 @@ const LLMSettings = () => {
                     onPress: async () => {
                         try {
                             NativeModules.LLMChatModule.setAuthToken(hfToken.trim())
-                            await NativeModules.LLMChatModule.downloadModel(DEFAULT_MODEL_URL)
+                            await NativeModules.LLMChatModule.downloadModel(modelUrl.trim() || DEFAULT_MODEL_URL)
                         } catch (e: any) {
                             Alert.alert("Download failed to start", e?.message ?? "Unknown error")
                         }
@@ -162,6 +205,18 @@ const LLMSettings = () => {
                     backgroundColor: colors.card,
                     marginTop: 6,
                 },
+                presetCard: {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    marginTop: 6,
+                    backgroundColor: colors.card,
+                },
+                presetCardSelected: { borderColor: colors.primary, borderWidth: 2 },
+                presetLabel: { color: colors.foreground, fontSize: 13, fontWeight: "600" },
+                presetDetail: { color: colors.mutedForeground, fontSize: 11, marginTop: 2 },
                 buttonRow: { flexDirection: "row", gap: 8, marginTop: 8 },
             }),
         [colors]
@@ -187,10 +242,20 @@ const LLMSettings = () => {
                     {!status?.mediaPipeDownloaded && (
                         <>
                             <Text style={styles.hint}>
-                                Gemma 3 1B is gated. Accept the license on the Hugging Face model page, then create a read-access token and paste it below.
+                                All models are gated on Hugging Face. Accept the license on the model's page, then create a read-access token and paste it below. Bigger models summarize better
+                                but need more RAM and download time.
                             </Text>
-                            <Text style={styles.link} onPress={() => Linking.openURL("https://huggingface.co/litert-community/Gemma3-1B-IT")}>
-                                Open model page
+                            {MODEL_PRESETS.map((p) => {
+                                const selected = modelUrl === p.url
+                                return (
+                                    <Pressable key={p.url} style={[styles.presetCard, selected && styles.presetCardSelected]} onPress={() => persistModelUrl(p.url)}>
+                                        <Text style={styles.presetLabel}>{p.label}</Text>
+                                        <Text style={styles.presetDetail}>{p.detail}</Text>
+                                    </Pressable>
+                                )
+                            })}
+                            <Text style={styles.link} onPress={() => Linking.openURL(modelUrl.replace(/\/resolve\/main\/.*$/, ""))}>
+                                Open selected model page
                             </Text>
                             <Text style={styles.link} onPress={() => Linking.openURL("https://huggingface.co/settings/tokens")}>
                                 Create token
@@ -204,6 +269,15 @@ const LLMSettings = () => {
                                 autoCapitalize="none"
                                 autoCorrect={false}
                                 secureTextEntry
+                            />
+                            <TextInput
+                                style={styles.tokenInput}
+                                value={modelUrl}
+                                onChangeText={persistModelUrl}
+                                placeholder="Model .task URL"
+                                placeholderTextColor={colors.mutedForeground}
+                                autoCapitalize="none"
+                                autoCorrect={false}
                             />
                         </>
                     )}
