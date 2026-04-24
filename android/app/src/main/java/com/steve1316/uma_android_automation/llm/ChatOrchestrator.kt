@@ -33,8 +33,11 @@ class ChatOrchestrator(private val context: Context) {
         private const val TAG = "${SharedData.loggerTag}ChatOrchestrator"
         private const val INDEX_PATH = "llm/doc_index.bin"
         private const val MAX_CONTEXT_CHUNKS = 4
-        private const val MAX_OUTPUT_TOKENS = 256
-        private const val TEMPERATURE = 0.2f
+        private const val MAX_OUTPUT_TOKENS = 384
+        private const val TEMPERATURE = 0.35f
+
+        /** Lowered from the verifier's default 0.4 because summary-style answers paraphrase and naturally have less exact token overlap with the source chunks. */
+        private const val GROUNDING_THRESHOLD = 0.3f
     }
 
     /**
@@ -101,7 +104,7 @@ class ChatOrchestrator(private val context: Context) {
 
         val contextTexts = citations.map { it.chunk.text }
         val overlap = GroundingVerifier.overlap(answer, contextTexts)
-        return if (overlap >= GroundingVerifier.DEFAULT_THRESHOLD) {
+        return if (overlap >= GROUNDING_THRESHOLD) {
             ChatResult(answer, citations, ChatMode.Generated(service.first, overlap))
         } else {
             Log.w(TAG, "chat:: verifier rejected answer (overlap=$overlap); falling back to retrieve-only")
@@ -151,9 +154,12 @@ class ChatOrchestrator(private val context: Context) {
     private fun buildPrompt(query: String, citations: List<DocIndex.Result>): String {
         val contextBlock = citations.mapIndexed { i, r -> "[${i + 1}] ${r.chunk.heading}: ${r.chunk.text}" }.joinToString("\n\n")
         return """
-            You are a documentation assistant for an Android automation app. Answer the user's question using ONLY the CONTEXT below.
-            If the answer is not in CONTEXT, reply with exactly: NOT_IN_DOCS
-            Do not use outside knowledge. Keep answers under 3 sentences.
+            You are a friendly documentation guide for an Android automation app. Using the CONTEXT below, write a natural, conversational summary that answers the user's QUESTION. Paraphrase freely, reorganize points for clarity, and focus on what is relevant to the question — skip unrelated parts of the context. Keep it to 2–5 sentences.
+
+            Rules:
+            - Use only information grounded in CONTEXT. Do not invent features, numbers, thresholds, button names, or behavior that the CONTEXT does not mention.
+            - If the CONTEXT genuinely does not address the QUESTION, reply with exactly: NOT_IN_DOCS
+            - Write in plain prose, not a bulleted list or "[1] / [2]" references.
 
             CONTEXT:
             $contextBlock
