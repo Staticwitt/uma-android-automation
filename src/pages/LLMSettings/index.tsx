@@ -269,7 +269,8 @@ const LLMSettings = () => {
                 sectionLabel: { fontSize: 13, fontWeight: "600", color: colors.foreground, marginBottom: 6 },
                 statusRow: { color: colors.foreground, marginBottom: 4 },
                 hint: { fontSize: 11, color: colors.mutedForeground, marginTop: 4 },
-                linkRow: { paddingVertical: 10, marginTop: 4 },
+                linkRowContainer: { flexDirection: "row" as const, gap: 16, marginTop: 4 },
+                linkRow: { paddingVertical: 10 },
                 link: { fontSize: 14, color: colors.primary, textDecorationLine: "underline" as const },
                 tokenInput: {
                     borderWidth: 1,
@@ -357,12 +358,14 @@ const LLMSettings = () => {
                                     </Pressable>
                                 )
                             })}
-                            <Pressable style={styles.linkRow} onPress={() => Linking.openURL(modelUrl.replace(/\/resolve\/main\/.*$/, ""))}>
-                                <Text style={styles.link}>Open selected model page</Text>
-                            </Pressable>
-                            <Pressable style={styles.linkRow} onPress={() => Linking.openURL("https://huggingface.co/settings/tokens")}>
-                                <Text style={styles.link}>Create token</Text>
-                            </Pressable>
+                            <View style={styles.linkRowContainer}>
+                                <Pressable style={styles.linkRow} onPress={() => Linking.openURL(modelUrl.replace(/\/resolve\/main\/.*$/, ""))}>
+                                    <Text style={styles.link}>Open selected model page</Text>
+                                </Pressable>
+                                <Pressable style={styles.linkRow} onPress={() => Linking.openURL("https://huggingface.co/settings/tokens")}>
+                                    <Text style={styles.link}>Create token</Text>
+                                </Pressable>
+                            </View>
                             <TextInput
                                 style={styles.tokenInput}
                                 value={hfToken}
