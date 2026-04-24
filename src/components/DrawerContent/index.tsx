@@ -372,6 +372,9 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             if (routeName === "Home") {
                 // Navigate to Home drawer screen.
                 navigation.dispatch(CommonActions.navigate({ name: "Home" }))
+            } else if (routeName === "Chat") {
+                // Navigate to the top-level Chat drawer screen.
+                navigation.dispatch(CommonActions.navigate({ name: "Chat" }))
             } else if (routeName === "Settings") {
                 // Navigate to Settings main page.
                 navigation.dispatch(
@@ -429,6 +432,9 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         // Settings menu item is active when on SettingsMain.
         if (routeName === "Settings") {
             return currentScreen === "SettingsMain"
+        }
+        if (routeName === "Chat") {
+            return currentScreen === "Chat"
         }
         return currentScreen === routeName
     }
