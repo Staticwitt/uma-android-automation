@@ -1,8 +1,13 @@
-import { useCallback, useMemo, useState } from "react"
-import { View, ScrollView, StyleSheet, TextInput, Text, NativeModules } from "react-native"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { View, ScrollView, StyleSheet, TextInput, Text, NativeModules, Pressable } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import PageHeader from "../../components/PageHeader"
+import { databaseManager } from "../../lib/database"
+
+const HISTORY_CATEGORY = "chat"
+const HISTORY_KEY = "questionHistory"
+const HISTORY_MAX = 20
 
 interface DocResult {
     id: string
@@ -34,12 +39,35 @@ const Chat = () => {
     const [result, setResult] = useState<ChatResult | null>(null)
     const [isSearching, setIsSearching] = useState(false)
     const [searched, setSearched] = useState(false)
+    const [history, setHistory] = useState<string[]>([])
+
+    // Load persisted question history on mount.
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            try {
+                const stored = await databaseManager.loadSetting(HISTORY_CATEGORY, HISTORY_KEY)
+                if (!cancelled && Array.isArray(stored)) setHistory(stored.filter((x): x is string => typeof x === "string"))
+            } catch {
+                // Fresh install or DB not ready yet — start with an empty history.
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [])
 
     const handleSearch = useCallback(async () => {
         const q = query.trim()
         if (!q) return
         setIsSearching(true)
         setSearched(true)
+        // Prepend to history, dedupe, cap.
+        setHistory((prev) => {
+            const next = [q, ...prev.filter((x) => x !== q)].slice(0, HISTORY_MAX)
+            databaseManager.saveSetting(HISTORY_CATEGORY, HISTORY_KEY, next, true).catch(() => undefined)
+            return next
+        })
         try {
             const raw = (await NativeModules.LLMChatModule.chat(q, 4)) as ChatResult
             setResult(raw)
@@ -49,6 +77,15 @@ const Chat = () => {
             setIsSearching(false)
         }
     }, [query])
+
+    const handleHistoryTap = useCallback((q: string) => {
+        setQuery(q)
+    }, [])
+
+    const handleClearHistory = useCallback(() => {
+        setHistory([])
+        databaseManager.saveSetting(HISTORY_CATEGORY, HISTORY_KEY, [], true).catch(() => undefined)
+    }, [])
 
     const modeLabel = useMemo(() => {
         if (!result) return null
@@ -103,6 +140,21 @@ const Chat = () => {
                 resultText: { color: colors.foreground },
                 emptyText: { color: colors.mutedForeground, textAlign: "center", marginTop: 20, paddingHorizontal: 20 },
                 disclaimer: { fontSize: 11, color: colors.mutedForeground, marginTop: 4, marginBottom: 8, fontStyle: "italic" },
+                historyHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, marginBottom: 6 },
+                historyTitle: { fontSize: 12, fontWeight: "600", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 },
+                historyClear: { fontSize: 11, color: colors.mutedForeground, textDecorationLine: "underline" },
+                historyChip: {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    borderRadius: 14,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    marginRight: 6,
+                    marginBottom: 6,
+                    backgroundColor: colors.card,
+                },
+                historyChipText: { color: colors.foreground, fontSize: 12 },
+                historyChipRow: { flexDirection: "row", flexWrap: "wrap" },
             }),
         [colors]
     )
@@ -129,6 +181,26 @@ const Chat = () => {
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled">
+                {history.length > 0 && (
+                    <>
+                        <View style={styles.historyHeaderRow}>
+                            <Text style={styles.historyTitle}>Recent questions</Text>
+                            <Pressable onPress={handleClearHistory}>
+                                <Text style={styles.historyClear}>Clear</Text>
+                            </Pressable>
+                        </View>
+                        <View style={styles.historyChipRow}>
+                            {history.map((q) => (
+                                <Pressable key={q} style={styles.historyChip} onPress={() => handleHistoryTap(q)}>
+                                    <Text style={styles.historyChipText} numberOfLines={1}>
+                                        {q}
+                                    </Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    </>
+                )}
+
                 {result && (
                     <>
                         <View style={styles.answerCard}>
