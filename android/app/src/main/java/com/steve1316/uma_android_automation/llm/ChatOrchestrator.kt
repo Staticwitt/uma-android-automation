@@ -44,6 +44,10 @@ class ChatOrchestrator(private val context: Context) {
 
         /** Cap on the expanded section text handed to the user in retrieve-only mode. Prevents a "full How It Works chapter" from flooding the UI. */
         private const val SECTION_EXPANSION_CHAR_CAP = 6000
+
+        /** Per-citation cap when expanding sections for the LLM prompt. Keeps four expanded citations within
+         *  Gemma 3's 2048-token context when combined with the system scaffolding and reserved output budget. */
+        private const val LLM_CITATION_CHAR_CAP = 1500
     }
 
     /**
@@ -170,7 +174,7 @@ class ChatOrchestrator(private val context: Context) {
      * @return The reconstructed section text, capped at [SECTION_EXPANSION_CHAR_CAP] characters. Falls back to
      *   [top]'s own text when the index isn't loaded or no sibling chunks share its heading.
      */
-    private fun expandSection(top: DocIndex.Chunk): String {
+    private fun expandSection(top: DocIndex.Chunk, maxChars: Int = SECTION_EXPANSION_CHAR_CAP): String {
         val idx = index ?: return top.text
         val prefix = top.heading
         val matches = idx.chunks.filter { c ->
@@ -192,8 +196,8 @@ class ChatOrchestrator(private val context: Context) {
         }.filter { it.isNotEmpty() }
 
         val combined = parts.joinToString("\n\n")
-        return if (combined.length <= SECTION_EXPANSION_CHAR_CAP) combined
-        else combined.take(SECTION_EXPANSION_CHAR_CAP).substringBeforeLast(' ') + "…"
+        return if (combined.length <= maxChars) combined
+        else combined.take(maxChars).substringBeforeLast(' ') + "…"
     }
 
     /**
@@ -217,7 +221,9 @@ class ChatOrchestrator(private val context: Context) {
     private fun buildPrompt(query: String, citations: List<DocIndex.Result>): String {
         // Separator-delimited excerpts rather than a "[i] heading: text" layout — small models (Gemma 3 1B) tend to
         // echo structured prompt templates back as output. Plain prose between separators gives them less to imitate.
-        val contextBlock = citations.joinToString("\n\n---\n\n") { r -> r.chunk.text }
+        // Each citation is expanded to its enclosing section so the LLM sees full context, not just a 200-word
+        // sliding-window slice. Per-citation cap keeps four expanded sections within Gemma's 2048-token window.
+        val contextBlock = citations.joinToString("\n\n---\n\n") { r -> expandSection(r.chunk, LLM_CITATION_CHAR_CAP) }
         return """
             You are a friendly documentation guide for an Android automation app.
 
