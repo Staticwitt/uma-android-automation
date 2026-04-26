@@ -39,6 +39,7 @@ interface ChatResult {
     overlap?: number
     rejectedAnswer?: string
     citations: DocResult[]
+    stats?: llamaRunner.ChatStats | null
 }
 
 const SYSTEM_INSTRUCTIONS =
@@ -55,6 +56,8 @@ const Chat = () => {
     const [query, setQuery] = useState("")
     const [result, setResult] = useState<ChatResult | null>(null)
     const [partialAnswer, setPartialAnswer] = useState("")
+    const [streamingTokens, setStreamingTokens] = useState(0)
+    const [streamingTokensPerSec, setStreamingTokensPerSec] = useState(0)
     const [isSearching, setIsSearching] = useState(false)
     const [searched, setSearched] = useState(false)
     const [history, setHistory] = useState<string[]>([])
@@ -83,6 +86,8 @@ const Chat = () => {
         setIsSearching(true)
         setSearched(true)
         setPartialAnswer("")
+        setStreamingTokens(0)
+        setStreamingTokensPerSec(0)
         setResult(null)
         // Prepend to history, dedupe, cap.
         setHistory((prev) => {
@@ -117,16 +122,31 @@ const Chat = () => {
                 { role: "user" as const, content: q },
             ]
 
-            const generated = (
-                await llamaRunner.chat(
-                    {
-                        messages,
-                        maxTokens: tuning.maxOutputTokens,
-                        temperature: 0.35,
-                    },
-                    (tok) => setPartialAnswer((prev) => prev + tok)
+            let tokenCount = 0
+            let firstTokenMs = 0
+            const completion = await llamaRunner.chat(
+                {
+                    messages,
+                    maxTokens: tuning.maxOutputTokens,
+                    temperature: 0.35,
+                },
+                (tok) => {
+                    setPartialAnswer((prev) => prev + tok)
+                    tokenCount += 1
+                    if (firstTokenMs === 0) firstTokenMs = Date.now()
+                    const elapsedSec = (Date.now() - firstTokenMs) / 1000
+                    setStreamingTokens(tokenCount)
+                    if (elapsedSec > 0.25) setStreamingTokensPerSec(tokenCount / elapsedSec)
+                }
+            )
+            const generated = completion.text.trim()
+            const stats = completion.stats
+            if (stats) {
+                console.log(
+                    `[Chat] generation: ${stats.tokensPredicted} tok in ${(stats.predictedMs / 1000).toFixed(2)}s ` +
+                        `= ${stats.predictedPerSecond.toFixed(2)} tok/s (prefill ${stats.tokensEvaluated} tok @ ${stats.promptPerSecond.toFixed(2)} tok/s)`
                 )
-            ).trim()
+            }
 
             if (!generated || generated.toUpperCase() === "NOT_IN_DOCS") {
                 setResult({ answer: citations[0].expandedText, mode: "retrieveOnly", citations })
@@ -136,7 +156,7 @@ const Chat = () => {
             const overlap = verifier.overlap(generated, trimmed)
             console.log("[Chat] verifier overlap:", overlap.toFixed(3))
             if (overlap >= verifier.SUMMARY_THRESHOLD) {
-                setResult({ answer: generated, mode: "generated", overlap, citations })
+                setResult({ answer: generated, mode: "generated", overlap, citations, stats })
             } else {
                 setResult({
                     answer: citations[0].expandedText,
@@ -144,6 +164,7 @@ const Chat = () => {
                     overlap,
                     rejectedAnswer: generated,
                     citations,
+                    stats,
                 })
             }
         } catch (err) {
@@ -349,7 +370,9 @@ const Chat = () => {
 
                 {isSearching && partialAnswer.length > 0 && (
                     <View style={styles.answerCard}>
-                        <Text style={styles.streamingNotice}>Generating…</Text>
+                        <Text style={styles.streamingNotice}>
+                            Generating… {streamingTokens} tok{streamingTokensPerSec > 0 ? ` · ${streamingTokensPerSec.toFixed(1)} tok/s` : ""}
+                        </Text>
                         <Markdown style={markdownStyles as any} rules={markdownRules}>
                             {partialAnswer}
                         </Markdown>
@@ -363,6 +386,12 @@ const Chat = () => {
                                 {result.answer}
                             </Markdown>
                             {modeLabel && <Text style={styles.modeLabel}>{modeLabel}</Text>}
+                            {result.stats && (
+                                <Text style={styles.modeLabel}>
+                                    {result.stats.tokensPredicted} tok in {(result.stats.predictedMs / 1000).toFixed(2)}s · {result.stats.predictedPerSecond.toFixed(2)} tok/s · prefill{" "}
+                                    {result.stats.tokensEvaluated} tok @ {result.stats.promptPerSecond.toFixed(2)} tok/s
+                                </Text>
+                            )}
                         </View>
                         {result.citations.length > 0 && <Text style={styles.sectionLabel}>Sources</Text>}
                         {result.citations.map((r) => (

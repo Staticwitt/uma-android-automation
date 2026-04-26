@@ -40,6 +40,27 @@ export interface ChatOptions {
     stop?: string[]
 }
 
+/** Generation timing + token counters reported by llama.rn alongside the final text. */
+export interface ChatStats {
+    /** Tokens produced during the generation phase. */
+    tokensPredicted: number
+    /** Tokens consumed from the prompt during prefill. */
+    tokensEvaluated: number
+    /** Generation throughput in tokens per second (the "tok/s" figure users care about). */
+    predictedPerSecond: number
+    /** Prefill throughput in tokens per second (typically much higher than [predictedPerSecond]). */
+    promptPerSecond: number
+    /** Wall-clock generation time in milliseconds. */
+    predictedMs: number
+    /** Wall-clock prefill time in milliseconds. */
+    promptMs: number
+}
+
+export interface ChatResult {
+    text: string
+    stats: ChatStats | null
+}
+
 let currentContext: LlamaContext | null = null
 let currentModelPath: string | null = null
 let currentLoadOpts: LoadOptions = {}
@@ -93,17 +114,17 @@ export async function ensureContext(modelPath: string, opts: LoadOptions = {}): 
 }
 
 /**
- * Run [opts.messages] through the loaded context and return the final answer text.
+ * Run [opts.messages] through the loaded context and return the final answer text plus generation stats.
  *
  * Streams individual tokens to [onToken] as they arrive (so the UI can render a live partial answer); the resolved
- * promise carries the full concatenated text after generation finishes.
+ * promise carries the full concatenated text and llama.rn's `timings` block after generation finishes.
  *
  * @throws If [ensureContext] hasn't been called or the load failed.
  */
-export async function chat(opts: ChatOptions, onToken?: (token: string) => void): Promise<string> {
+export async function chat(opts: ChatOptions, onToken?: (token: string) => void): Promise<ChatResult> {
     const ctx = currentContext
     if (!ctx) throw new Error("llamaRunner.chat called before ensureContext")
-    const result = await ctx.completion(
+    const result: any = await ctx.completion(
         {
             messages: opts.messages,
             n_predict: opts.maxTokens ?? 768,
@@ -116,8 +137,28 @@ export async function chat(opts: ChatOptions, onToken?: (token: string) => void)
             if (onToken && data.token) onToken(data.token)
         }
     )
-    // llama.rn returns { text, ... }; fall through to empty string if unexpected shape.
-    return typeof result?.text === "string" ? result.text : ""
+    return {
+        text: typeof result?.text === "string" ? result.text : "",
+        stats: extractStats(result),
+    }
+}
+
+/** Pull the timing block out of llama.rn's completion result. Returns null if it's missing or malformed. */
+function extractStats(result: any): ChatStats | null {
+    const t = result?.timings
+    if (!t) return null
+    return {
+        tokensPredicted: numberOr(result?.tokens_predicted, t.predicted_n ?? 0),
+        tokensEvaluated: numberOr(result?.tokens_evaluated, t.prompt_n ?? 0),
+        predictedPerSecond: numberOr(t.predicted_per_second, 0),
+        promptPerSecond: numberOr(t.prompt_per_second, 0),
+        predictedMs: numberOr(t.predicted_ms, 0),
+        promptMs: numberOr(t.prompt_ms, 0),
+    }
+}
+
+function numberOr(value: any, fallback: number): number {
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback
 }
 
 /** Release the currently-loaded context, freeing RAM. Safe to call when nothing is loaded. */
