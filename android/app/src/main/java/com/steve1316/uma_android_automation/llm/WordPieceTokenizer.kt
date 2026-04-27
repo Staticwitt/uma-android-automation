@@ -88,6 +88,9 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         }
         ids.add(SEP_ID.toLong())
 
+        // Right-pad all three tensors out to [cappedMax] so the ONNX model gets fixed-shape inputs.
+        // The mask marks which positions hold real tokens (1) vs PAD (0); pooling later uses this to ignore PAD rows.
+        // token_type_ids stays all zeros because MiniLM only ever sees single-segment input.
         val real = ids.size
         val padded = LongArray(cappedMax) { if (it < real) ids[it] else PAD_ID.toLong() }
         val mask = LongArray(cappedMax) { if (it < real) 1L else 0L }
@@ -110,7 +113,16 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         return out
     }
 
-    /** Lowercase, strip accents, split on whitespace and punctuation. */
+    /**
+     * BERT's basic tokenization pass: lowercase, strip accents, then split on whitespace and punctuation.
+     *
+     * Punctuation characters are emitted as standalone tokens (so `"don't"` becomes `["don", "'", "t"]`),
+     * matching the reference implementation. The output is the input to [wordPieceTokenize], which then
+     * subword-splits each whitespace/punct-bounded token against the vocab.
+     *
+     * @param text The raw input string.
+     * @return Whitespace- and punctuation-separated tokens in source order; never contains whitespace tokens.
+     */
     private fun basicTokenize(text: String): List<String> {
         val normalized = stripAccents(text.lowercase())
         val tokens = ArrayList<String>()
@@ -137,15 +149,38 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         return tokens
     }
 
-    /** Greedy longest-match-first WordPiece over [word]. */
+    /**
+     * Greedy longest-match-first WordPiece subword split over a single [word].
+     *
+     * Walks a `start` cursor across the word; on each iteration shrinks an `end` cursor from the right until
+     * the substring `word[start, end)` is a vocab entry, then advances `start` to `end`. Continuation pieces
+     * (anything past the first) are looked up with the BERT `##` prefix. If no prefix of the remaining suffix
+     * matches the vocab, the entire word collapses to a single `[UNK]` rather than emitting partial pieces -
+     * this mirrors the BERT reference and keeps embedding behavior consistent with the indexer.
+     *
+     * Words longer than [MAX_INPUT_CHARS_PER_WORD] short-circuit straight to `[UNK]` so we don't waste time
+     * scanning a giant span that almost certainly isn't a real word.
+     *
+     * @param word A single whitespace- and punctuation-bounded token from [basicTokenize].
+     * @return Ordered wordpiece strings (with `##` continuations), or `["[UNK]"]` if [word] is unrepresentable.
+     */
     private fun wordPieceTokenize(word: String): List<String> {
+        // Per BERT's reference impl, words past this length aren't worth attempting to subword-split: emit a
+        // single [UNK] for the whole word rather than wasting time scanning a giant span.
         if (word.length > MAX_INPUT_CHARS_PER_WORD) return listOf("[UNK]")
+
         val chars = word.toCharArray()
         val pieces = ArrayList<String>()
         var start = 0
+
+        // Outer loop walks the start cursor across the word. Each iteration consumes one wordpiece by finding
+        // the longest [start, end) substring that exists in [vocab]; the next iteration begins at that [end].
         while (start < chars.size) {
             var end = chars.size
             var matched: String? = null
+
+            // Inner loop shrinks [end] from the right until a vocab match is found - this is what makes the algorithm "longest-match-first".
+            // Continuation pieces (start > 0) get the BERT "##" prefix.
             while (start < end) {
                 val substr =
                     buildString {
@@ -158,6 +193,9 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
                 }
                 end -= 1
             }
+
+            // If no prefix of the remaining suffix matched, the whole word is unrepresentable.
+            // Per the BERT reference, fall back to a single [UNK] for the entire word rather than emitting partial pieces.
             if (matched == null) return listOf("[UNK]")
             pieces.add(matched)
             start = end
@@ -165,7 +203,16 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         return pieces
     }
 
-    /** NFD-normalize and drop combining marks; equivalent to BERT's strip-accents pass. */
+    /**
+     * Drop combining marks via NFD normalization; equivalent to BERT's strip-accents pass.
+     *
+     * Decomposes each character into its base letter plus combining marks (NFD), then keeps only non-combining
+     * codepoints. The net effect: `"café"` becomes `"cafe"`, `"naïve"` becomes `"naive"`. This matches the
+     * uncased MiniLM vocab, which contains only un-accented Latin tokens.
+     *
+     * @param text Already-lowercased input.
+     * @return [text] with all combining accent marks removed.
+     */
     private fun stripAccents(text: String): String {
         val nfd = Normalizer.normalize(text, Normalizer.Form.NFD)
         val sb = StringBuilder(nfd.length)
@@ -173,7 +220,17 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         return sb.toString()
     }
 
-    /** Match BERT's `_is_punctuation`: ASCII punct ranges plus any Unicode P* category. */
+    /**
+     * Mirror BERT's `_is_punctuation`: any ASCII punct codepoint plus any character in a Unicode P* category.
+     *
+     * The four ASCII ranges (`!`-`/`, `:`-`@`, `[`-`` ` ``, `{`-`~`) cover characters Java's
+     * [Character.getType] does not classify as punctuation (e.g. `$`, `+`, `<`); explicitly listing them keeps
+     * tokenization byte-identical to the Python reference. The Unicode fallback catches non-ASCII punctuation
+     * that may appear in copy-pasted query text.
+     *
+     * @param ch The character to classify.
+     * @return true if [ch] should split a token in [basicTokenize].
+     */
     private fun isPunctuation(ch: Char): Boolean {
         val cp = ch.code
         if (cp in 33..47 || cp in 58..64 || cp in 91..96 || cp in 123..126) return true
