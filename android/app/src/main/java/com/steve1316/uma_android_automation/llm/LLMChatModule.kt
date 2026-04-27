@@ -43,6 +43,14 @@ class LLMChatModule(private val reactContext: ReactApplicationContext) : ReactCo
 
     override fun getName(): String = MODULE_NAME
 
+    // Required for NativeEventEmitter; events are dispatched via RCTDeviceEventEmitter.
+    @ReactMethod
+    fun addListener(eventName: String) {}
+
+    // Required for NativeEventEmitter; events are dispatched via RCTDeviceEventEmitter.
+    @ReactMethod
+    fun removeListeners(count: Int) {}
+
     /**
      * Retrieve top-[k] doc chunks with their full enclosing section text expanded.
      *

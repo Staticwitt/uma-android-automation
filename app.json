@@ -8,7 +8,7 @@
                 "llama.rn",
                 {
                     "forceCxx20": true,
-                    "enableOpenCL": true
+                    "enableOpenCLAndHexagon": true
                 }
             ]
         ]
