@@ -22,11 +22,17 @@ import java.io.File
  * @property context Application context.
  */
 class ModelDownloader(private val context: Context) {
+    /** System [DownloadManager] handle used to enqueue, query, and cancel downloads. */
     private val dm: DownloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
     companion object {
+        /** Logger tag for this class. */
         private const val TAG = "${SharedData.loggerTag}ModelDownloader"
+
+        /** Subdirectory of `getExternalFilesDir(...)` that holds downloaded `.gguf` model files. */
         private const val LLM_DIR = "llm"
+
+        /** Interval between [DownloadManager] cursor polls while a download is in flight. */
         private const val POLL_INTERVAL_MS = 500L
     }
 
@@ -41,10 +47,19 @@ class ModelDownloader(private val context: Context) {
         context.getExternalFilesDir(LLM_DIR) ?: File(context.filesDir, LLM_DIR).also { it.mkdirs() }
     }
 
-    /** Resolve the destination [File] for [filename] inside the model directory. */
+    /**
+     * Resolve the destination [File] for [filename] inside the model directory.
+     *
+     * @param filename Bare file name (no directory components).
+     * @return Absolute [File] pointing at `baseDir/filename`; not guaranteed to exist.
+     */
     fun fileFor(filename: String): File = File(baseDir, filename)
 
-    /** List every `.gguf` model file present on-device, most recently modified first. */
+    /**
+     * List every `.gguf` model file present on-device, most recently modified first.
+     *
+     * @return Non-null list of downloaded `.gguf` files; empty when none exist or [baseDir] is unreadable.
+     */
     fun listModels(): List<File> =
         baseDir.listFiles { f -> f.isFile && f.name.endsWith(".gguf", ignoreCase = true) && f.length() > 0 }
             ?.sortedByDescending { it.lastModified() }
@@ -54,6 +69,9 @@ class ModelDownloader(private val context: Context) {
      * Return the preferred active model file. If [preferredFilename] matches a downloaded file, that one is used;
      * otherwise the most recently modified `.gguf` is returned so a fresh install-and-download flow still works
      * without an explicit selection step.
+     *
+     * @param preferredFilename Optional user-selected filename to prefer when present.
+     * @return The matching or most recently downloaded model file, or null if none are present.
      */
     fun currentModelFile(preferredFilename: String? = null): File? {
         if (!preferredFilename.isNullOrBlank()) {
@@ -63,7 +81,11 @@ class ModelDownloader(private val context: Context) {
         return listModels().firstOrNull()
     }
 
-    /** @return true if at least one non-empty `.gguf` model file is present on-device. */
+    /**
+     * Check whether any model is downloaded.
+     *
+     * @return true if at least one non-empty `.gguf` model file is present on-device.
+     */
     fun isDownloaded(): Boolean = listModels().isNotEmpty()
 
     /**
@@ -92,6 +114,8 @@ class ModelDownloader(private val context: Context) {
      * request.
      *
      * @param url HTTPS URL of the model file.
+     * @param filename Bare destination filename inside [baseDir]; any existing file with this name is replaced.
+     * @param authToken Optional Bearer token sent in the `Authorization` header for gated downloads.
      * @return Cold [Flow] that begins the download when collected.
      */
     fun download(url: String, filename: String, authToken: String? = null): Flow<State> =
@@ -131,7 +155,11 @@ class ModelDownloader(private val context: Context) {
             }
         }
 
-    /** Remove every `.gguf` model file from disk. @return true if at least one file was deleted. */
+    /**
+     * Remove every `.gguf` model file from disk.
+     *
+     * @return true if at least one file was deleted.
+     */
     fun delete(): Boolean {
         val files = baseDir.listFiles { f -> f.isFile && f.name.endsWith(".gguf", ignoreCase = true) } ?: return false
         var any = false
@@ -139,15 +167,31 @@ class ModelDownloader(private val context: Context) {
         return any
     }
 
-    /** Remove a specific model file from disk. @return true if the file existed and was deleted. */
+    /**
+     * Remove a specific model file from disk.
+     *
+     * @param filename Bare filename inside [baseDir].
+     * @return true if the file existed and was deleted.
+     */
     fun deleteByName(filename: String): Boolean {
         val f = fileFor(filename)
         return f.isFile && f.delete()
     }
 
-    /** @return Current size in bytes of the preferred active model file, or 0 if none is present. */
+    /**
+     * Report the on-disk size of the preferred active model file.
+     *
+     * @param preferredFilename Optional user-selected filename to size; falls back to the most recent download.
+     * @return Current size in bytes of the resolved model file, or 0 if none is present.
+     */
     fun size(preferredFilename: String? = null): Long = currentModelFile(preferredFilename)?.length() ?: 0
 
+    /**
+     * Snapshot the current status of [DownloadManager] request [id] and translate it into a [State].
+     *
+     * @param id Request id returned from [DownloadManager.enqueue].
+     * @return The current [State], or null if no row exists for [id] (e.g. it was already removed).
+     */
     private fun query(id: Long): State? {
         val q = DownloadManager.Query().setFilterById(id)
         dm.query(q).use { cursor: Cursor ->
