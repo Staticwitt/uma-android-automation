@@ -21,8 +21,17 @@ export function foldHtmlTags(md: string): string {
         .replace(/<br\s*\/?>/gi, "  \n")
 }
 
+/**
+ * Matches a complete `<details>...<summary>...</summary>...</details>` block, capturing the summary text in
+ * group 1 and the body content in group 2. The `g` flag is required so [splitDetails] can iterate over every
+ * occurrence; lastIndex is reset on entry to avoid carrying state between calls.
+ */
 const DETAILS_RE = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/gi
 
+/**
+ * Output element of [splitDetails]: either a stretch of plain markdown or a complete details block. Tagged
+ * union so the renderer can treat collapsibles distinctly without re-parsing the markdown.
+ */
 export type MdSegment = { kind: "md"; text: string } | { kind: "details"; summary: string; body: string }
 
 /**

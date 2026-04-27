@@ -38,11 +38,22 @@ export function overlap(answer: string, context: string[]): number {
     return matched / answerTokens.size
 }
 
-/** True when [overlap] meets or exceeds [threshold]. */
+/**
+ * Convenience predicate: `true` when [overlap] meets or exceeds [threshold].
+ *
+ * The Chat page does not call this directly because it needs the raw overlap value to display in the mode
+ * label; this helper exists for future call sites that only need a yes/no answer.
+ */
 export function isGrounded(answer: string, context: string[], threshold: number = DEFAULT_THRESHOLD): boolean {
     return overlap(answer, context) >= threshold
 }
 
+/**
+ * Tokenize [text] into a set of lowercased content-word unigrams. Single-character tokens and members of
+ * [STOPWORDS] are dropped so the overlap ratio reflects meaningful matches rather than function-word noise.
+ *
+ * Identical to the Kotlin implementation in `GroundingVerifier.kt` so behavior matches the existing JUnit cases.
+ */
 function contentTokens(text: string): Set<string> {
     const out = new Set<string>()
     const lower = text.toLowerCase()
@@ -61,6 +72,10 @@ function contentTokens(text: string): Set<string> {
     return out
 }
 
+/**
+ * Unicode-aware letter-or-digit test used to split content tokens. Matches `Character.isLetterOrDigit` on the
+ * Kotlin side so identical inputs produce identical token sets across the two implementations.
+ */
 function isLetterOrDigit(ch: string): boolean {
     return /[\p{L}\p{N}]/u.test(ch)
 }

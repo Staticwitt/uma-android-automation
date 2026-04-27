@@ -25,16 +25,28 @@ export interface LoadOptions {
     useMlock?: boolean
 }
 
+/**
+ * One turn of the conversation passed to the model. Mirrors the OpenAI chat-completion shape that `llama.rn`
+ * accepts directly, so callers can build the array without an additional conversion step.
+ */
 export interface ChatMessage {
+    /** Author of the message; `system` is the grounding scaffold, `user` is the question, `assistant` is prior answers. */
     role: "system" | "user" | "assistant"
+    /** Raw message text. The Chat page packs the system prompt plus retrieved excerpts into a single `system` content string. */
     content: string
 }
 
+/** Per-call generation parameters forwarded to `llama.rn`'s `context.completion`. */
 export interface ChatOptions {
+    /** Ordered conversation turns; the last entry is the question being answered. */
     messages: ChatMessage[]
+    /** Hard cap on tokens generated for this answer (`n_predict`). Defaults to 768. */
     maxTokens?: number
+    /** Sampling temperature; lower values produce more deterministic paraphrases. Default 0.35. */
     temperature?: number
+    /** Top-K sampling cutoff. Default 40. */
     topK?: number
+    /** Nucleus (top-P) sampling cutoff. Default 0.95. */
     topP?: number
     /** Strings that, when emitted, halt generation. Defaults cover Gemma + Qwen + Llama EOS markers. */
     stop?: string[]
@@ -56,16 +68,30 @@ export interface ChatStats {
     promptMs: number
 }
 
+/** Final shape returned by [chat]: the assembled answer plus optional engine timing stats. */
 export interface ChatResult {
+    /** Full concatenated answer text after all tokens have been streamed. Empty string when llama.rn returned a non-string `text`. */
     text: string
+    /** Generation timing block from llama.rn's `timings`, or `null` when the engine didn't report one. */
     stats: ChatStats | null
 }
 
+/** Lazily-initialized llama.rn context. Held module-scope so a single GGUF stays loaded across queries. */
 let currentContext: LlamaContext | null = null
+/** Path of the GGUF backing [currentContext]; used by [ensureContext] to detect model swaps. */
 let currentModelPath: string | null = null
+/** Load options [currentContext] was initialized with; used by [optsEqual] to detect when a reload is needed. */
 let currentLoadOpts: LoadOptions = {}
+/** Coalesces concurrent [ensureContext] calls so a second caller during load reuses the in-flight promise instead of triggering a second `initLlama`. */
 let loadInFlight: Promise<LlamaContext | null> | null = null
 
+/**
+ * Default end-of-turn markers passed as `stop` to `llama.rn` when the caller doesn't override it.
+ *
+ * Covers the EOS markers used by the supported preset families - Gemma (`<end_of_turn>`), Qwen
+ * (`<|im_end|>`/`<|end|>`), and Llama (`<|eot_id|>`/`</s>`) - so the model halts cleanly regardless of which
+ * GGUF the user has selected.
+ */
 const DEFAULT_STOP = ["</s>", "<|im_end|>", "<|end|>", "<end_of_turn>", "<|eot_id|>"]
 
 /**
@@ -157,6 +183,10 @@ function extractStats(result: any): ChatStats | null {
     }
 }
 
+/**
+ * Return [value] when it is a finite number, otherwise [fallback]. Defends [extractStats] against the
+ * `NaN`/`undefined`/string entries that older llama.rn builds occasionally emit in the timings block.
+ */
 function numberOr(value: any, fallback: number): number {
     return typeof value === "number" && Number.isFinite(value) ? value : fallback
 }
@@ -185,6 +215,12 @@ export function loadedModelPath(): string | null {
     return currentModelPath
 }
 
+/**
+ * Structural equality for [LoadOptions], with each field defaulted the same way [ensureContext] defaults it.
+ *
+ * Lets [ensureContext] decide whether the cached context can be reused or must be torn down and rebuilt - any
+ * tunable that affects the engine state (notably `nCtx`) needs a reload to take effect.
+ */
 function optsEqual(a: LoadOptions, b: LoadOptions): boolean {
     return (a.nCtx ?? 4096) === (b.nCtx ?? 4096) && (a.nGpuLayers ?? 0) === (b.nGpuLayers ?? 0) && (a.useMlock ?? true) === (b.useMlock ?? true)
 }

@@ -4,25 +4,50 @@ import { databaseManager } from "../database"
  * Persistence layer for the user-tunable chat parameters.
  *
  * Lives outside `BotStateContext`, under category `"chat"`, so values are NOT included in settings exports.
+ * Each tuning value is read directly from SQLite at chat-call time (see [loadChatTuning]) rather than mirrored
+ * into the React context, which keeps the LLM Settings sliders authoritative without a round-trip through
+ * `bsc.setSettings`.
  */
 
+/** SQLite category used by all chat-related settings (model URL, HF token, tuning, active model filename). */
 export const CHAT_CATEGORY = "chat"
 
+/**
+ * Stable key strings for the three generation-tuning sliders shown on the LLM Settings page.
+ *
+ * Centralized so reads ([loadChatTuning]) and writes ([saveTuning]) cannot drift out of sync, and so a future
+ * rename only has to touch this one map.
+ */
 export const SETTING_KEYS = {
     maxOutputTokens: "maxOutputTokens",
     llmCitationCharCap: "llmCitationCharCap",
     modelContextWindow: "modelContextWindow",
 } as const
 
+/**
+ * Defaults applied when a tuning value isn't yet persisted. Hand-picked to fit the on-device profile:
+ * 768 tokens of output is enough for 4-10 sentence answers; 2200 chars per citation lets four expanded
+ * sections fit alongside the system prompt within a 4096-token KV cache.
+ */
 export const DEFAULTS = {
     maxOutputTokens: 768,
     llmCitationCharCap: 2200,
     modelContextWindow: 4096,
 } as const
 
+/**
+ * Snapshot of all three tuning values, returned by [loadChatTuning].
+ *
+ * The Chat page reads this once per query and forwards each value to the corresponding stage of the pipeline:
+ * `llmCitationCharCap` to [trimToCap], `modelContextWindow` to `llamaRunner.ensureContext`, and
+ * `maxOutputTokens` to `llamaRunner.chat`.
+ */
 export interface ChatTuning {
+    /** Hard cap on tokens generated per answer (passed as `n_predict` to llama.rn). */
     maxOutputTokens: number
+    /** Per-citation character cap applied to expanded section text before it enters the system prompt. */
     llmCitationCharCap: number
+    /** Engine KV-cache size (`n_ctx`); changing this triggers a model reload on the next chat call. */
     modelContextWindow: number
 }
 
