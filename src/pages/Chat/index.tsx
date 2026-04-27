@@ -6,13 +6,14 @@ import type { UserTheme } from "react-native-marked/dist/typescript/theme/types"
 import { KotlinCode, DARK_PALETTE, LIGHT_PALETTE } from "../../lib/llm/kotlinHighlight"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
+import CustomSelect from "../../components/CustomSelect"
 import PageHeader from "../../components/PageHeader"
 import { MarkdownView } from "../../components/ChatMarkdown"
 import { databaseManager } from "../../lib/database"
 import * as llamaRunner from "../../lib/chat/llamaRunner"
 import * as verifier from "../../lib/chat/groundingVerifier"
 import { loadChatTuning, trimToCap, type ChatTuning } from "../../lib/chat/chatSettings"
-import { resolveActiveModel } from "../../lib/chat/activeModel"
+import { ACTIVE_MODEL_SETTING, resolveActiveModel } from "../../lib/chat/activeModel"
 
 const HISTORY_CATEGORY = "chat"
 const HISTORY_KEY = "questionHistory"
@@ -62,10 +63,24 @@ const Chat = () => {
     const [history, setHistory] = useState<string[]>([])
     const [tuning, setTuning] = useState<ChatTuning | null>(null)
     const [activeModelFilename, setActiveModelFilename] = useState<string | null | undefined>(undefined)
+    const [downloadedModels, setDownloadedModels] = useState<string[]>([])
 
     const refreshActiveModel = useCallback(async () => {
         const resolved = await resolveActiveModel()
         setActiveModelFilename(resolved?.filename ?? null)
+        try {
+            const list = await NativeModules.LLMChatModule.listModels()
+            setDownloadedModels(Array.isArray(list) ? list.map((m: { filename: string }) => m.filename) : [])
+        } catch {
+            setDownloadedModels([])
+        }
+    }, [])
+
+    const handleSelectModel = useCallback((filename: string | undefined) => {
+        if (!filename) return
+        setActiveModelFilename(filename)
+        NativeModules.LLMChatModule.setActiveModel(filename)
+        databaseManager.saveSetting(ACTIVE_MODEL_SETTING.category, ACTIVE_MODEL_SETTING.key, filename, true).catch(() => undefined)
     }, [])
 
     useFocusEffect(
@@ -265,9 +280,10 @@ const Chat = () => {
                 },
                 emptyText: { color: colors.mutedForeground, textAlign: "center", marginTop: 20, paddingHorizontal: 20 },
                 disclaimer: { fontSize: 11, color: colors.mutedForeground, marginTop: 4, marginBottom: 8, fontStyle: "italic" },
-                modelStatus: { fontSize: 12, color: colors.foreground, marginBottom: 8 },
+                modelStatus: { fontSize: 12, color: colors.foreground },
                 modelStatusInactive: { fontSize: 12, color: colors.mutedForeground, fontStyle: "italic", marginBottom: 8 },
-                modelStatusName: { fontWeight: "600" },
+                modelSelectorRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, marginBottom: 8 },
+                modelSelectorControl: { flex: 1 },
                 historyHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, marginBottom: 6 },
                 historyTitle: { fontSize: 12, fontWeight: "600", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.5 },
                 historyClear: { fontSize: 11, color: colors.mutedForeground, textDecorationLine: "underline" },
@@ -355,10 +371,19 @@ const Chat = () => {
         <View style={styles.root}>
             <PageHeader title="Ask the Docs" />
             <Text style={styles.disclaimer}>Answers are grounded in README.md, HOW_IT_WORKS.md, in-app option descriptions, and the app's Kotlin source code. Fully offline.</Text>
-            {activeModelFilename === undefined ? null : activeModelFilename ? (
-                <Text style={styles.modelStatus}>
-                    Model: <Text style={styles.modelStatusName}>{activeModelFilename}</Text>
-                </Text>
+            {activeModelFilename === undefined ? null : downloadedModels.length > 0 ? (
+                <View style={styles.modelSelectorRow}>
+                    <Text style={styles.modelStatus}>Model:</Text>
+                    <View style={styles.modelSelectorControl}>
+                        <CustomSelect
+                            options={downloadedModels.map((f) => ({ value: f, label: f }))}
+                            value={activeModelFilename ?? undefined}
+                            onValueChange={handleSelectModel}
+                            placeholder="Select a model"
+                            groupLabel="Downloaded models"
+                        />
+                    </View>
+                </View>
             ) : (
                 <Text style={styles.modelStatusInactive}>No model · retrieve-only mode</Text>
             )}
