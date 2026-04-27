@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import { View, ScrollView, StyleSheet, TextInput, Text, NativeModules, Pressable } from "react-native"
+import { useFocusEffect } from "@react-navigation/native"
 import { useMarkdown, type MarkedStyles } from "react-native-marked"
 import type { UserTheme } from "react-native-marked/dist/typescript/theme/types"
 import { KotlinCode, DARK_PALETTE, LIGHT_PALETTE } from "../../lib/llm/kotlinHighlight"
@@ -72,6 +73,12 @@ const Chat = () => {
         const filename = await resolveActiveModelFilename()
         setActiveModelFilename(filename)
     }, [])
+
+    useFocusEffect(
+        useCallback(() => {
+            refreshActiveModel().catch(() => undefined)
+        }, [refreshActiveModel])
+    )
 
     useEffect(() => {
         let cancelled = false
