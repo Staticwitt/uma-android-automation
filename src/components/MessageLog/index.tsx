@@ -404,6 +404,9 @@ ${longTargetsString}
 👤 Discord User ID: ${settings.discord?.discordUserID ? "Configured" : "Not Set"}
 🔑 Discord Bot Token: ${settings.discord?.discordToken ? "Configured" : "Not Set"}
 
+---------- LLM Options ----------
+🤖 Ask the Docs Feature: ${settings.chat?.enableAskTheDocs ? "✅" : "❌"}
+
 ****************************************`
     }, [bsc.settings])
 

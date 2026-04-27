@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking, Pressable } from "react-native"
 import { Check, Trash2 } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
+import { BotStateContext } from "../../context/BotStateContext"
 import CustomButton from "../../components/CustomButton"
+import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomSlider from "../../components/CustomSlider"
 import PageHeader from "../../components/PageHeader"
 import WarningContainer from "../../components/WarningContainer"
@@ -85,6 +87,8 @@ interface DownloadedModel {
  */
 const LLMSettings = () => {
     const { colors } = useTheme()
+    const bsc = useContext(BotStateContext)
+    const enableAskTheDocs = bsc.settings.chat?.enableAskTheDocs ?? false
     const [downloadState, setDownloadState] = useState<DownloadState | null>(null)
     const [hfToken, setHfToken] = useState("")
     const [modelUrl, setModelUrl] = useState(DEFAULT_MODEL_URL)
@@ -367,163 +371,177 @@ const LLMSettings = () => {
                 <InfoContainer>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoContainer>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionLabel}>Chat Model (llama.cpp / GGUF)</Text>
-                    {downloadedModels.length === 0 && <Text style={styles.statusRow}>Not downloaded</Text>}
+                    <CustomCheckbox
+                        checked={enableAskTheDocs}
+                        onCheckedChange={(checked) => bsc.setSettings({ ...bsc.settings, chat: { ...bsc.settings.chat, enableAskTheDocs: checked } })}
+                        label="Enable Ask the Docs feature"
+                        description="Show the Ask the Docs page in the navigation drawer and reveal the rest of these LLM options. Off by default."
+                        searchId="llm-enable-ask-the-docs"
+                    />
+                </View>
+
+                {enableAskTheDocs && (
                     <>
-                        <Text style={styles.hint}>
-                            The Qwen presets are public, no token required. Bigger models summarize better but need more RAM and download time. Pick Custom to paste a different .gguf URL; the token
-                            field will appear if the source is gated.
-                        </Text>
-                        {MODEL_PRESETS.map((p) => {
-                            const selected = p.url === CUSTOM_URL_SENTINEL ? isCustomSelected : modelUrl === p.url
-                            const onPress =
-                                p.url === CUSTOM_URL_SENTINEL
-                                    ? () => {
-                                          if (MODEL_PRESETS.some((q) => q.url !== CUSTOM_URL_SENTINEL && q.url === modelUrl)) {
-                                              persistModelUrl(CUSTOM_URL_SENTINEL)
-                                          }
-                                      }
-                                    : () => persistModelUrl(p.url)
-                            return (
-                                <Pressable key={p.url} style={[styles.presetCard, selected && styles.presetCardSelected]} onPress={onPress}>
-                                    <Text style={styles.presetLabel}>{p.label}</Text>
-                                    <Text style={styles.presetDetail}>{p.detail}</Text>
-                                </Pressable>
-                            )
-                        })}
-                        {isCustomSelected && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>Chat Model (llama.cpp / GGUF)</Text>
+                            {downloadedModels.length === 0 && <Text style={styles.statusRow}>Not downloaded</Text>}
                             <>
-                                <View style={styles.linkRowContainer}>
-                                    {modelUrl !== CUSTOM_URL_SENTINEL && modelUrl.trim().length > 0 && (
-                                        <Pressable style={styles.linkRow} onPress={() => Linking.openURL(modelUrl.replace(/\/resolve\/main\/.*$/, ""))}>
-                                            <Text style={styles.link}>Open selected model page</Text>
+                                <Text style={styles.hint}>
+                                    The Qwen presets are public, no token required. Bigger models summarize better but need more RAM and download time. Pick Custom to paste a different .gguf URL; the
+                                    token field will appear if the source is gated.
+                                </Text>
+                                {MODEL_PRESETS.map((p) => {
+                                    const selected = p.url === CUSTOM_URL_SENTINEL ? isCustomSelected : modelUrl === p.url
+                                    const onPress =
+                                        p.url === CUSTOM_URL_SENTINEL
+                                            ? () => {
+                                                  if (MODEL_PRESETS.some((q) => q.url !== CUSTOM_URL_SENTINEL && q.url === modelUrl)) {
+                                                      persistModelUrl(CUSTOM_URL_SENTINEL)
+                                                  }
+                                              }
+                                            : () => persistModelUrl(p.url)
+                                    return (
+                                        <Pressable key={p.url} style={[styles.presetCard, selected && styles.presetCardSelected]} onPress={onPress}>
+                                            <Text style={styles.presetLabel}>{p.label}</Text>
+                                            <Text style={styles.presetDetail}>{p.detail}</Text>
                                         </Pressable>
-                                    )}
-                                    <Pressable style={styles.linkRow} onPress={() => Linking.openURL("https://huggingface.co/settings/tokens")}>
-                                        <Text style={styles.link}>Create token</Text>
-                                    </Pressable>
-                                </View>
-                                <TextInput
-                                    style={styles.tokenInput}
-                                    value={hfToken}
-                                    onChangeText={persistHfToken}
-                                    placeholder="hf_... (only for gated repos)"
-                                    placeholderTextColor={colors.mutedForeground}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                                <TextInput
-                                    style={styles.tokenInput}
-                                    value={modelUrl === CUSTOM_URL_SENTINEL ? "" : modelUrl}
-                                    onChangeText={persistModelUrl}
-                                    placeholder="Model .gguf URL"
-                                    placeholderTextColor={colors.mutedForeground}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                />
-                            </>
-                        )}
-                    </>
-                    {progressText && <Text style={styles.hint}>{progressText}</Text>}
-                    <View style={styles.buttonRow}>
-                        {!isDownloading && (
-                            <CustomButton variant="primary" onPress={handleDownload} disabled={selectedAlreadyDownloaded}>
-                                {selectedAlreadyDownloaded ? "Already downloaded" : downloadedModels.length > 0 ? "Download another model" : "Download"}
-                            </CustomButton>
-                        )}
-                        {isDownloading && (
-                            <CustomButton variant="destructive" onPress={handleCancel}>
-                                Cancel
-                            </CustomButton>
-                        )}
-                    </View>
-                </View>
-
-                {downloadedModels.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionLabel}>Downloaded Models</Text>
-                        <Text style={styles.hint}>Tap Use to switch the active chat model. Keep multiple variants so you can A/B without re-downloading.</Text>
-                        {downloadedModels.map((m) => {
-                            const isActive = (activeModelFilename ?? downloadedModels[0]?.filename) === m.filename
-                            return (
-                                <View key={m.filename} style={[styles.modelRow, isActive && styles.modelRowActive]}>
-                                    <View style={styles.modelInfo}>
-                                        <Text style={styles.modelFilename} numberOfLines={1}>
-                                            {m.filename}
-                                        </Text>
-                                        <Text style={styles.modelMeta}>{(m.sizeBytes / 1024 / 1024).toFixed(0)} MB</Text>
-                                    </View>
-                                    <View style={styles.modelActions}>
-                                        {isActive ? (
-                                            <View style={styles.activeBadge}>
-                                                <Check size={14} color={colors.primary} />
-                                                <Text style={styles.modelActionActiveText}>Active</Text>
-                                            </View>
-                                        ) : (
-                                            <Pressable style={styles.modelActionButton} onPress={() => handleSelectActiveModel(m.filename)}>
-                                                <Text style={styles.modelActionText}>Use</Text>
+                                    )
+                                })}
+                                {isCustomSelected && (
+                                    <>
+                                        <View style={styles.linkRowContainer}>
+                                            {modelUrl !== CUSTOM_URL_SENTINEL && modelUrl.trim().length > 0 && (
+                                                <Pressable style={styles.linkRow} onPress={() => Linking.openURL(modelUrl.replace(/\/resolve\/main\/.*$/, ""))}>
+                                                    <Text style={styles.link}>Open selected model page</Text>
+                                                </Pressable>
+                                            )}
+                                            <Pressable style={styles.linkRow} onPress={() => Linking.openURL("https://huggingface.co/settings/tokens")}>
+                                                <Text style={styles.link}>Create token</Text>
                                             </Pressable>
-                                        )}
-                                        <Pressable
-                                            style={styles.modelActionButton}
-                                            onPress={() => handleDeleteModelFile(m.filename)}
-                                            accessibilityLabel={`Delete ${m.filename}`}
-                                            accessibilityRole="button"
-                                        >
-                                            <Trash2 size={14} color={colors.foreground} />
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            )
-                        })}
-                    </View>
+                                        </View>
+                                        <TextInput
+                                            style={styles.tokenInput}
+                                            value={hfToken}
+                                            onChangeText={persistHfToken}
+                                            placeholder="hf_... (only for gated repos)"
+                                            placeholderTextColor={colors.mutedForeground}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                        <TextInput
+                                            style={styles.tokenInput}
+                                            value={modelUrl === CUSTOM_URL_SENTINEL ? "" : modelUrl}
+                                            onChangeText={persistModelUrl}
+                                            placeholder="Model .gguf URL"
+                                            placeholderTextColor={colors.mutedForeground}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                    </>
+                                )}
+                            </>
+                            {progressText && <Text style={styles.hint}>{progressText}</Text>}
+                            <View style={styles.buttonRow}>
+                                {!isDownloading && (
+                                    <CustomButton variant="primary" onPress={handleDownload} disabled={selectedAlreadyDownloaded}>
+                                        {selectedAlreadyDownloaded ? "Already downloaded" : downloadedModels.length > 0 ? "Download another model" : "Download"}
+                                    </CustomButton>
+                                )}
+                                {isDownloading && (
+                                    <CustomButton variant="destructive" onPress={handleCancel}>
+                                        Cancel
+                                    </CustomButton>
+                                )}
+                            </View>
+                        </View>
+
+                        {downloadedModels.length > 0 && (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionLabel}>Downloaded Models</Text>
+                                <Text style={styles.hint}>Tap Use to switch the active chat model. Keep multiple variants so you can A/B without re-downloading.</Text>
+                                {downloadedModels.map((m) => {
+                                    const isActive = (activeModelFilename ?? downloadedModels[0]?.filename) === m.filename
+                                    return (
+                                        <View key={m.filename} style={[styles.modelRow, isActive && styles.modelRowActive]}>
+                                            <View style={styles.modelInfo}>
+                                                <Text style={styles.modelFilename} numberOfLines={1}>
+                                                    {m.filename}
+                                                </Text>
+                                                <Text style={styles.modelMeta}>{(m.sizeBytes / 1024 / 1024).toFixed(0)} MB</Text>
+                                            </View>
+                                            <View style={styles.modelActions}>
+                                                {isActive ? (
+                                                    <View style={styles.activeBadge}>
+                                                        <Check size={14} color={colors.primary} />
+                                                        <Text style={styles.modelActionActiveText}>Active</Text>
+                                                    </View>
+                                                ) : (
+                                                    <Pressable style={styles.modelActionButton} onPress={() => handleSelectActiveModel(m.filename)}>
+                                                        <Text style={styles.modelActionText}>Use</Text>
+                                                    </Pressable>
+                                                )}
+                                                <Pressable
+                                                    style={styles.modelActionButton}
+                                                    onPress={() => handleDeleteModelFile(m.filename)}
+                                                    accessibilityLabel={`Delete ${m.filename}`}
+                                                    accessibilityRole="button"
+                                                >
+                                                    <Trash2 size={14} color={colors.foreground} />
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    )
+                                })}
+                            </View>
+                        )}
+
+                        <View style={styles.section}>
+                            <View style={styles.tuningHeader}>
+                                <Text style={styles.sectionLabel}>Generation Tuning</Text>
+                                <Pressable onPress={handleResetTuning} style={styles.linkRow}>
+                                    <Text style={styles.link}>Reset to defaults</Text>
+                                </Pressable>
+                            </View>
+                            <Text style={styles.hint}>Bigger numbers = longer, slower answers. Changes apply to the next chat call. Engine context window changes reload the loaded model.</Text>
+                            <CustomSlider
+                                label="Max output tokens"
+                                description="Upper bound on answer length. 768 default is enough for 4-10 sentences; 1024+ slows generation noticeably on phones."
+                                value={maxOutputTokens}
+                                onValueChange={setMaxOutputTokens}
+                                onSlidingComplete={commitMaxOutputTokens}
+                                min={128}
+                                max={2048}
+                                step={64}
+                            />
+                            <CustomSlider
+                                label="Context per citation (chars)"
+                                description="How much of each retrieved doc section is fed to the LLM. Larger gives the model more to summarize from but eats KV cache budget."
+                                value={llmCitationCharCap}
+                                onValueChange={setLlmCitationCharCap}
+                                onSlidingComplete={commitLlmCitationCharCap}
+                                min={500}
+                                max={4000}
+                                step={100}
+                            />
+                            <CustomSlider
+                                label="Model context window (tokens)"
+                                description="Engine KV cache size. 4096 default fits 4 expanded citations + scaffold + 768 output. Raising this requires the model to support it."
+                                value={modelContextWindow}
+                                onValueChange={setModelContextWindow}
+                                onSlidingComplete={commitModelContextWindow}
+                                min={2048}
+                                max={16384}
+                                step={1024}
+                            />
+                            {ekvCapWarning && <Text style={styles.warningHint}>{ekvCapWarning}</Text>}
+                        </View>
+
+                        <WarningContainer>
+                            Generated answers may occasionally be wrong or phrased imprecisely. A verifier guards against clear hallucinations by falling back to showing the source text verbatim, but
+                            always cross-check important answers against the full docs.
+                        </WarningContainer>
+                    </>
                 )}
-
-                <View style={styles.section}>
-                    <View style={styles.tuningHeader}>
-                        <Text style={styles.sectionLabel}>Generation Tuning</Text>
-                        <Pressable onPress={handleResetTuning} style={styles.linkRow}>
-                            <Text style={styles.link}>Reset to defaults</Text>
-                        </Pressable>
-                    </View>
-                    <Text style={styles.hint}>Bigger numbers = longer, slower answers. Changes apply to the next chat call. Engine context window changes reload the loaded model.</Text>
-                    <CustomSlider
-                        label="Max output tokens"
-                        description="Upper bound on answer length. 768 default is enough for 4-10 sentences; 1024+ slows generation noticeably on phones."
-                        value={maxOutputTokens}
-                        onValueChange={setMaxOutputTokens}
-                        onSlidingComplete={commitMaxOutputTokens}
-                        min={128}
-                        max={2048}
-                        step={64}
-                    />
-                    <CustomSlider
-                        label="Context per citation (chars)"
-                        description="How much of each retrieved doc section is fed to the LLM. Larger gives the model more to summarize from but eats KV cache budget."
-                        value={llmCitationCharCap}
-                        onValueChange={setLlmCitationCharCap}
-                        onSlidingComplete={commitLlmCitationCharCap}
-                        min={500}
-                        max={4000}
-                        step={100}
-                    />
-                    <CustomSlider
-                        label="Model context window (tokens)"
-                        description="Engine KV cache size. 4096 default fits 4 expanded citations + scaffold + 768 output. Raising this requires the model to support it."
-                        value={modelContextWindow}
-                        onValueChange={setModelContextWindow}
-                        onSlidingComplete={commitModelContextWindow}
-                        min={2048}
-                        max={16384}
-                        step={1024}
-                    />
-                    {ekvCapWarning && <Text style={styles.warningHint}>{ekvCapWarning}</Text>}
-                </View>
-
-                <WarningContainer>
-                    Generated answers may occasionally be wrong or phrased imprecisely. A verifier guards against clear hallucinations by falling back to showing the source text verbatim, but always
-                    cross-check important answers against the full docs.
-                </WarningContainer>
             </ScrollView>
         </View>
     )

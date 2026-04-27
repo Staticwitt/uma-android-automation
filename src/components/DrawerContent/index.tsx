@@ -192,6 +192,8 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         [colors]
     )
 
+    const askTheDocsEnabled = bsc.settings.chat?.enableAskTheDocs ?? false
+
     // Define the menu item configurations for the drawer.
     const menuItems: MenuItem[] = [
         {
@@ -199,11 +201,15 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             label: "Home",
             icon: (focused: boolean) => (focused ? "home" : "home-outline"),
         },
-        {
-            name: "Chat",
-            label: "Ask the Docs",
-            icon: (focused: boolean) => (focused ? "chatbubble" : "chatbubble-outline"),
-        },
+        ...(askTheDocsEnabled
+            ? [
+                  {
+                      name: "Chat",
+                      label: "Ask the Docs",
+                      icon: (focused: boolean) => (focused ? "chatbubble" : "chatbubble-outline"),
+                  } as MenuItem,
+              ]
+            : []),
         {
             name: "Settings",
             label: "Settings",

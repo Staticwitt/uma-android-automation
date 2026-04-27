@@ -188,6 +188,11 @@ export interface Settings {
         discordUserID: string
     }
 
+    // On-device docs chatbot settings
+    chat: {
+        enableAskTheDocs: boolean
+    }
+
     // Scenario specific overrides
     scenarioOverrides: {
         trackblazerConsecutiveRacesLimit: number
@@ -411,6 +416,9 @@ export const defaultSettings: Settings = {
         enableDiscordNotifications: false,
         discordToken: "",
         discordUserID: "",
+    },
+    chat: {
+        enableAskTheDocs: false,
     },
     scenarioOverrides: {
         trackblazerConsecutiveRacesLimit: 5,

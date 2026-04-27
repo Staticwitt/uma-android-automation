@@ -837,6 +837,12 @@ const searchConfig: SearchOption[] = [
         page: "Chat",
     },
     {
+        id: "llm-enable-ask-the-docs",
+        title: "Enable Ask the Docs feature",
+        description: "Show the Ask the Docs page in the navigation drawer. Off by default; toggling on reveals the chatbot entry without affecting model downloads or retrieve-only search.",
+        page: "LLMSettings",
+    },
+    {
         id: "llm-model-url",
         title: "Chat Model URL",
         description:
