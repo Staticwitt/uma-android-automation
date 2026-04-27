@@ -61,8 +61,12 @@ class EmbeddingService(private val context: Context) {
                 return null
             }
         val encoded = tokenizer.encode(text)
+        // Shape `[batch=1, seq_len]` matches the BERT-family ONNX input contract for all three input tensors.
         val shape = longArrayOf(1, encoded.seqLen.toLong())
 
+        // Each OnnxTensor wraps off-heap native memory; nesting `.use { }` guarantees every tensor is closed
+        // even if the model run throws, so we don't leak native buffers across embed() calls.
+        // The inner `result.use { }` does the same for the output tensors returned by ORT.
         OnnxTensor.createTensor(ortEnv, LongBuffer.wrap(encoded.inputIds), shape).use { ids ->
             OnnxTensor.createTensor(ortEnv, LongBuffer.wrap(encoded.attentionMask), shape).use { mask ->
                 OnnxTensor.createTensor(ortEnv, LongBuffer.wrap(encoded.tokenTypeIds), shape).use { types ->
@@ -73,6 +77,8 @@ class EmbeddingService(private val context: Context) {
                             "token_type_ids" to types,
                         )
                     s.run(inputs).use { result ->
+                        // ORT returns the first output as `[batch][seq_len][embedding_dim]`. Batch is always 1
+                        // here, so [hidden[0]] is the per-token hidden-state matrix that pooling consumes.
                         @Suppress("UNCHECKED_CAST")
                         val hidden = result[0].value as Array<Array<FloatArray>>
                         return meanPoolAndNormalize(hidden[0], encoded.attentionMask)
@@ -92,14 +98,20 @@ class EmbeddingService(private val context: Context) {
     private fun meanPoolAndNormalize(hidden: Array<FloatArray>, mask: LongArray): FloatArray {
         val pooled = FloatArray(EMBEDDING_DIM)
         var count = 0
+
+        // Sum hidden states only at positions where attention_mask == 1. PAD positions carry no meaningful signal and including them would skew the average toward zero.
         for (t in hidden.indices) {
             if (mask[t] == 0L) continue
             val row = hidden[t]
             for (d in 0 until EMBEDDING_DIM) pooled[d] += row[d]
             count += 1
         }
+
+        // Divide by the actual number of attended tokens (not seq_len) to get the true mean. Guarded against the all-PAD edge case so we never divide by zero.
         if (count > 0) for (d in 0 until EMBEDDING_DIM) pooled[d] /= count.toFloat()
 
+        // L2-normalize so cosine similarity reduces to a plain dot product downstream in DocIndex.search().
+        // Matches the reference sentence-transformers post-processing exactly.
         var norm = 0f
         for (d in 0 until EMBEDDING_DIM) norm += pooled[d] * pooled[d]
         norm = sqrt(norm)
