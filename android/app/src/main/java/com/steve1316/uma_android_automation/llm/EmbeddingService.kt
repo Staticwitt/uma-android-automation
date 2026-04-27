@@ -21,13 +21,23 @@ import kotlin.math.sqrt
  * @property context The application context for loading the model and vocab from assets.
  */
 class EmbeddingService(private val context: Context) {
+    /** Process-wide ONNX Runtime environment; cheap singleton handle reused across sessions. */
     private val ortEnv: OrtEnvironment = OrtEnvironment.getEnvironment()
+
+    /** Loaded MiniLM ONNX session; null until [load] succeeds and after [close]. */
     private var session: OrtSession? = null
+
+    /** WordPiece tokenizer paired with the MiniLM vocab; initialized inside [load]. */
     private lateinit var tokenizer: WordPieceTokenizer
 
     companion object {
+        /** Logger tag for this class. */
         private const val TAG = "${SharedData.loggerTag}EmbeddingService"
+
+        /** Asset path of the int8-quantized MiniLM-L6-v2 ONNX model. */
         private const val MODEL_PATH = "llm/minilm-l6-v2-int8.onnx"
+
+        /** Asset path of the BERT-style vocab.txt paired with [MODEL_PATH]. */
         private const val VOCAB_PATH = "llm/minilm-l6-v2-vocab.txt"
 
         /** Output embedding dimensionality - fixed by the MiniLM-L6-v2 architecture. */
@@ -97,6 +107,10 @@ class EmbeddingService(private val context: Context) {
         return pooled
     }
 
+    /**
+     * Load the ONNX model bytes from assets, create the [session], and initialize the [tokenizer] from the paired
+     * vocab. Errors are logged so [embed] can short-circuit gracefully rather than crashing the host process.
+     */
     private fun load() {
         try {
             val modelBytes = context.assets.open(MODEL_PATH).readBytes()
