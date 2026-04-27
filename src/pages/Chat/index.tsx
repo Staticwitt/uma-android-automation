@@ -334,10 +334,28 @@ const Chat = () => {
         [colors]
     )
 
+    /** Smaller-font variant of [markedStyles] used for the doc-citation cards under "Sources". Mirrors the
+     *  answer-card styles but with reduced font sizes and tighter line heights so each citation card stays
+     *  compact. Tune the numbers here in isolation from the main answer card. */
+    const citationMarkedStyles = useMemo<MarkedStyles>(
+        () => ({
+            ...markedStyles,
+            text: { color: colors.foreground, fontSize: 12, lineHeight: 18 },
+            li: { color: colors.foreground, fontSize: 12, lineHeight: 18 },
+            h1: { color: colors.foreground, fontWeight: "700", fontSize: 16, marginTop: 8, marginBottom: 4 },
+            h2: { color: colors.foreground, fontWeight: "700", fontSize: 14, marginTop: 8, marginBottom: 4 },
+            h3: { color: colors.foreground, fontWeight: "600", fontSize: 13, marginTop: 6, marginBottom: 3 },
+            h4: { color: colors.foreground, fontWeight: "600", fontSize: 12, marginTop: 4, marginBottom: 2 },
+            h5: { color: colors.foreground, fontWeight: "600", fontSize: 12, marginTop: 4, marginBottom: 2 },
+            h6: { color: colors.foreground, fontWeight: "600", fontSize: 12, marginTop: 4, marginBottom: 2 },
+        }),
+        [colors, markedStyles]
+    )
+
     return (
         <View style={styles.root}>
             <PageHeader title="Ask the Docs" />
-            <Text style={styles.disclaimer}>Answers are grounded in README.md, HOW_IT_WORKS.md, and in-app option descriptions. Fully offline.</Text>
+            <Text style={styles.disclaimer}>Answers are grounded in README.md, HOW_IT_WORKS.md, in-app option descriptions, and the app's Kotlin source code. Fully offline.</Text>
             {activeModelFilename === undefined ? null : activeModelFilename ? (
                 <Text style={styles.modelStatus}>
                     Model: <Text style={styles.modelStatusName}>{activeModelFilename}</Text>
@@ -419,7 +437,7 @@ const Chat = () => {
                                         <KotlinCode text={r.text} palette={isDark ? DARK_PALETTE : LIGHT_PALETTE} style={{ fontSize: 10, lineHeight: 18 }} />
                                     </View>
                                 ) : (
-                                    <MarkdownView theme={markedTheme} mdStyles={markedStyles}>
+                                    <MarkdownView theme={markedTheme} mdStyles={citationMarkedStyles}>
                                         {r.text}
                                     </MarkdownView>
                                 )}
