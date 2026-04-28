@@ -1,5 +1,5 @@
 import { useMemo, useContext, useState, useEffect, useRef } from "react"
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native"
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native"
 import { Divider } from "react-native-paper"
 import { previewSchedule, SchedulePreview, SolverConfigSnapshot } from "../../lib/solver/preview"
 import { useTheme } from "../../context/ThemeContext"
@@ -190,6 +190,7 @@ const SmartRaceSolverSettings = () => {
     const [preview, setPreview] = useState<SchedulePreview | null>(null)
     const [previewLoading, setPreviewLoading] = useState(false)
     const [previewError, setPreviewError] = useState<string | null>(null)
+    const [selectedTurn, setSelectedTurn] = useState<number | null>(null)
 
     // -------- Derived filters --------
 
@@ -345,20 +346,22 @@ const SmartRaceSolverSettings = () => {
                 inputDescription: { fontSize: 12, color: colors.mutedForeground, marginBottom: 4 },
                 row: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginVertical: 4 },
                 chip: {
-                    paddingHorizontal: 10,
+                    width: "31.5%",
+                    minHeight: 92,
+                    paddingHorizontal: 8,
                     paddingVertical: 6,
-                    borderRadius: 16,
+                    borderRadius: 10,
                     borderWidth: 1,
                     borderColor: colors.border,
                     backgroundColor: colors.background,
                 },
                 chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-                chipText: { color: colors.foreground, fontSize: 12 },
-                chipTextActive: { color: colors.background, fontSize: 12, fontWeight: "600" },
-                chipReward: { color: colors.mutedForeground, fontSize: 10, marginTop: 2, maxWidth: 220 },
-                chipRewardActive: { color: colors.background, fontSize: 10, marginTop: 2, opacity: 0.85, maxWidth: 220 },
-                chipCondition: { color: colors.mutedForeground, fontSize: 10, fontStyle: "italic", marginTop: 2, maxWidth: 220 },
-                chipConditionActive: { color: colors.background, fontSize: 10, fontStyle: "italic", marginTop: 2, opacity: 0.75, maxWidth: 220 },
+                chipText: { color: colors.foreground, fontSize: 12, fontWeight: "600" },
+                chipTextActive: { color: colors.background, fontSize: 12, fontWeight: "700" },
+                chipReward: { color: colors.mutedForeground, fontSize: 10, marginTop: 2 },
+                chipRewardActive: { color: colors.background, fontSize: 10, marginTop: 2, opacity: 0.9 },
+                chipCondition: { color: colors.mutedForeground, fontSize: 10, fontStyle: "italic", marginTop: 2 },
+                chipConditionActive: { color: colors.background, fontSize: 10, fontStyle: "italic", marginTop: 2, opacity: 0.8 },
                 aptRow: { flexDirection: "row", alignItems: "center", marginVertical: 4 },
                 aptLabel: { width: 70, color: colors.foreground, fontSize: 13 },
                 aptButtons: { flexDirection: "row", gap: 4, flex: 1 },
@@ -407,36 +410,53 @@ const SmartRaceSolverSettings = () => {
                     paddingVertical: 4,
                 },
                 yearCard: {
-                    marginVertical: 6,
-                    padding: 8,
+                    marginVertical: 8,
+                    padding: 12,
                     borderWidth: 1,
                     borderColor: colors.border,
-                    borderRadius: 6,
+                    borderRadius: 8,
                     backgroundColor: colors.background,
                 },
-                yearCardTitle: { fontSize: 14, fontWeight: "700", color: colors.foreground, marginBottom: 4 },
-                calendarHeaderRow: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
-                calendarHeaderLabel: { width: 36, fontSize: 11, color: colors.mutedForeground, textAlign: "center" },
-                calendarHeaderPhase: { flex: 1, fontSize: 11, color: colors.mutedForeground, textAlign: "center" },
-                calendarRow: { flexDirection: "row", alignItems: "center", paddingVertical: 3 },
-                calendarMonthLabel: { width: 36, fontSize: 11, color: colors.foreground, textAlign: "center" },
+                yearCardTitle: { fontSize: 16, fontWeight: "700", color: colors.foreground, marginBottom: 6 },
+                calendarHeaderRow: { flexDirection: "row", paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+                calendarHeaderLabel: { width: 48, fontSize: 13, color: colors.mutedForeground, textAlign: "center" },
+                calendarHeaderPhase: { flex: 1, fontSize: 13, color: colors.mutedForeground, textAlign: "center" },
+                calendarRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
+                calendarMonthLabel: { width: 48, fontSize: 13, color: colors.foreground, textAlign: "center", fontWeight: "600" },
                 calendarCell: {
                     flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "center",
-                    paddingVertical: 4,
-                    marginHorizontal: 2,
-                    borderRadius: 4,
+                    paddingVertical: 10,
+                    marginHorizontal: 3,
+                    borderRadius: 6,
                     backgroundColor: colors.card,
-                    minHeight: 24,
+                    minHeight: 44,
                 },
                 calendarCellRace: {
                     backgroundColor: colors.card,
                 },
-                calendarDot: { width: 8, height: 8, borderRadius: 4, marginRight: 4 },
-                calendarGradeLabel: { fontSize: 10, color: colors.foreground, fontWeight: "600" },
-                calendarCellEmpty: { fontSize: 10, color: colors.mutedForeground },
+                calendarCellSelected: {
+                    borderWidth: 2,
+                    borderColor: colors.primary,
+                },
+                calendarDot: { width: 14, height: 14, borderRadius: 7, marginRight: 6 },
+                calendarGradeLabel: { fontSize: 13, color: colors.foreground, fontWeight: "700" },
+                calendarCellEmpty: { fontSize: 12, color: colors.mutedForeground },
+                tooltip: {
+                    marginTop: 10,
+                    padding: 12,
+                    borderWidth: 1,
+                    borderColor: colors.primary,
+                    borderRadius: 8,
+                    backgroundColor: colors.card,
+                },
+                tooltipTitle: { fontSize: 15, fontWeight: "700", color: colors.foreground },
+                tooltipMeta: { fontSize: 12, color: colors.mutedForeground, marginTop: 2 },
+                tooltipSection: { fontSize: 12, fontWeight: "700", color: colors.foreground, marginTop: 8 },
+                tooltipEpithet: { fontSize: 12, color: colors.foreground, marginTop: 2 },
+                tooltipEmpty: { fontSize: 12, color: colors.mutedForeground, marginTop: 2, fontStyle: "italic" },
                 previewStatus: { fontSize: 12, color: colors.mutedForeground, paddingVertical: 4 },
                 previewError: { fontSize: 12, color: "#dc2626", paddingVertical: 4 },
             }),
@@ -487,22 +507,111 @@ const SmartRaceSolverSettings = () => {
 
     const renderCalendarCell = (turn: number) => {
         const entry = preview?.decisions[String(turn)]
+        const isSelected = selectedTurn === turn
+        const togglePress = () => setSelectedTurn(isSelected ? null : turn)
         if (!entry || entry.type !== "Race") {
             return (
-                <View key={turn} style={styles.calendarCell}>
-                    <Text style={styles.calendarCellEmpty}>{entry?.type === "Rest" ? "Rest" : "—"}</Text>
-                </View>
+                <TouchableOpacity
+                    key={turn}
+                    style={[styles.calendarCell, isSelected && styles.calendarCellSelected]}
+                    onPress={togglePress}
+                >
+                    <Text style={styles.calendarCellEmpty}>{entry?.type === "Rest" ? "Rest" : "Train"}</Text>
+                </TouchableOpacity>
             )
         }
         const color = GRADE_COLORS[entry.grade ?? ""] ?? colors.primary
-        const onPress = () => {
-            Alert.alert(`Turn ${turn}`, `${entry.name ?? entry.raceKey ?? "Race"}\n${entry.grade ?? ""}`)
-        }
         return (
-            <TouchableOpacity key={turn} style={[styles.calendarCell, styles.calendarCellRace]} onPress={onPress}>
+            <TouchableOpacity
+                key={turn}
+                style={[styles.calendarCell, styles.calendarCellRace, isSelected && styles.calendarCellSelected]}
+                onPress={togglePress}
+            >
                 <View style={[styles.calendarDot, { backgroundColor: color }]} />
                 <Text style={styles.calendarGradeLabel}>{(entry.grade ?? "").replace("PRE_OP", "Pre")}</Text>
             </TouchableOpacity>
+        )
+    }
+
+    const racesByKey = racesData as unknown as Record<string, RaceEntry>
+
+    const epithetsForRace = (race: RaceEntry): EpithetEntry[] => {
+        const all = epithetsData as unknown as Record<string, EpithetEntry & { matchers?: Array<Record<string, unknown>> }>
+        const out: EpithetEntry[] = []
+        const isGraded = race.grade === "G1" || race.grade === "G2" || race.grade === "G3"
+        const isOpenOrAbove = isGraded || race.grade === "OP" || race.grade === "FINALE" || race.grade === "EX"
+        for (const ep of Object.values(all)) {
+            const matchers = ep.matchers ?? []
+            const matched = matchers.some((m) => {
+                const type = m["type"] as string
+                const name = m["name"] as string | undefined
+                const names = (m["names"] as string[] | undefined) ?? []
+                switch (type) {
+                    case "winRace":
+                    case "winRaceTimes":
+                        return name != null && name === race.name
+                    case "winAnyOf":
+                    case "winAtLeast":
+                        return names.includes(race.name)
+                    case "winCount": {
+                        const f = (m["filter"] as Record<string, unknown> | undefined) ?? {}
+                        if (f["terrain"] && f["terrain"] !== race.terrain) return false
+                        if (f["grade"] && f["grade"] !== race.grade) return false
+                        if (f["gradedOnly"] && !isGraded) return false
+                        if (f["gradeAtLeastOpen"] && !isOpenOrAbove) return false
+                        const dts = f["distanceTypes"] as string[] | undefined
+                        if (dts && dts.length > 0 && !dts.includes(race.distanceType)) return false
+                        const tracks = f["raceTracks"] as string[] | undefined
+                        if (tracks && tracks.length > 0 && !tracks.includes(race.raceTrack)) return false
+                        const nameContains = f["nameContains"] as string | undefined
+                        if (nameContains && !race.name.toLowerCase().includes(nameContains.toLowerCase())) return false
+                        return true
+                    }
+                    default:
+                        return false
+                }
+            })
+            if (matched) out.push(ep)
+        }
+        return out
+    }
+
+    const renderTooltip = () => {
+        if (selectedTurn == null) return null
+        const entry = preview?.decisions[String(selectedTurn)]
+        const turnLabel = `Turn ${selectedTurn}`
+        if (!entry || entry.type !== "Race") {
+            return (
+                <View style={styles.tooltip}>
+                    <Text style={styles.tooltipTitle}>
+                        {turnLabel} — {entry?.type === "Rest" ? "Rest" : "Training"}
+                    </Text>
+                    <Text style={styles.tooltipMeta}>No race scheduled this turn under the current configuration.</Text>
+                </View>
+            )
+        }
+        const race = entry.raceKey ? racesByKey[entry.raceKey] : undefined
+        const matched = race ? epithetsForRace(race) : []
+        return (
+            <View style={styles.tooltip}>
+                <Text style={styles.tooltipTitle}>
+                    {turnLabel} — {entry.name ?? race?.name ?? "Race"}
+                </Text>
+                <Text style={styles.tooltipMeta}>
+                    {(entry.grade ?? race?.grade ?? "").replace("PRE_OP", "Pre-OP")}
+                    {race ? ` · ${race.raceTrack} · ${race.terrain} · ${race.distanceType} (${race.distanceMeters}m) · ${race.fans.toLocaleString()} fans` : ""}
+                </Text>
+                <Text style={styles.tooltipSection}>Progresses these epithets</Text>
+                {matched.length === 0 ? (
+                    <Text style={styles.tooltipEmpty}>None — this race does not match any tracked epithet matcher.</Text>
+                ) : (
+                    matched.map((ep) => (
+                        <Text key={ep.name} style={styles.tooltipEpithet}>
+                            • {ep.name} — {ep.reward_text}
+                        </Text>
+                    ))
+                )}
+            </View>
         )
     }
 
@@ -855,7 +964,7 @@ const SmartRaceSolverSettings = () => {
                             <View style={sectionsDisabledStyle}>
                                 <Text style={styles.sectionTitle}>Schedule Preview</Text>
                                 <Text style={styles.description}>
-                                    Compact preview of the schedule the solver would start with. Tap a colored cell for the full race name. Does not reflect mid-run dynamic re-planning.
+                                    Preview of the schedule the solver would start with. Tap a cell to inspect the race, its grade and track, and which epithets it progresses. Does not reflect mid-run dynamic re-planning.
                                 </Text>
                                 {previewLoading && (
                                     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -870,6 +979,7 @@ const SmartRaceSolverSettings = () => {
                                     </Text>
                                 )}
                                 {YEAR_LABELS.map(renderYearCard)}
+                                {renderTooltip()}
                             </View>
                         </SearchableItem>
 
