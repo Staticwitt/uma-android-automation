@@ -357,6 +357,8 @@ const SmartRaceSolverSettings = () => {
                 chipTextActive: { color: colors.background, fontSize: 12, fontWeight: "600" },
                 chipReward: { color: colors.mutedForeground, fontSize: 10, marginTop: 2, maxWidth: 220 },
                 chipRewardActive: { color: colors.background, fontSize: 10, marginTop: 2, opacity: 0.85, maxWidth: 220 },
+                chipCondition: { color: colors.mutedForeground, fontSize: 10, fontStyle: "italic", marginTop: 2, maxWidth: 220 },
+                chipConditionActive: { color: colors.background, fontSize: 10, fontStyle: "italic", marginTop: 2, opacity: 0.75, maxWidth: 220 },
                 aptRow: { flexDirection: "row", alignItems: "center", marginVertical: 4 },
                 aptLabel: { width: 70, color: colors.foreground, fontSize: 13 },
                 aptButtons: { flexDirection: "row", gap: 4, flex: 1 },
@@ -473,6 +475,11 @@ const SmartRaceSolverSettings = () => {
             {epithet.reward_text ? (
                 <Text style={selected ? styles.chipRewardActive : styles.chipReward} numberOfLines={2}>
                     {epithet.reward_text}
+                </Text>
+            ) : null}
+            {epithet.condition_text ? (
+                <Text style={selected ? styles.chipConditionActive : styles.chipCondition} numberOfLines={3}>
+                    {epithet.condition_text}
                 </Text>
             ) : null}
         </TouchableOpacity>
