@@ -1,6 +1,8 @@
 import { createContext, useState, useMemo, useCallback } from "react"
 import { startTiming } from "../lib/performanceLogger"
 import racesData from "../data/races.json"
+import epithetsData from "../data/epithets.json"
+import characterPresetsData from "../data/characterPresets.json"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
 
 /**
@@ -71,6 +73,16 @@ export interface Settings {
         minimumQualityThreshold: number
         timeDecayFactor: number
         improvementThreshold: number
+        // Smart Race Solver — opt-in alternative to the legacy Racing Plan.
+        enableSmartRaceSolver: boolean
+        smartRaceSolverCharacterPreset: string
+        smartRaceSolverAptitudes: string
+        smartRaceSolverTargetEpithets: string
+        smartRaceSolverForcedEpithets: string
+        smartRaceSolverManualLocks: string
+        smartRaceSolverWeights: string
+        epithetsData: string
+        characterPresetsData: string
     }
 
     // Skill Settings
@@ -262,6 +274,31 @@ export const defaultSettings: Settings = {
         minimumQualityThreshold: 50.0,
         timeDecayFactor: 0.7,
         improvementThreshold: 50.0,
+        enableSmartRaceSolver: false,
+        smartRaceSolverCharacterPreset: "",
+        smartRaceSolverAptitudes: JSON.stringify({
+            Sprint: "A",
+            Mile: "A",
+            Medium: "A",
+            Long: "A",
+            Turf: "A",
+            Dirt: "A",
+        }),
+        smartRaceSolverTargetEpithets: "[]",
+        smartRaceSolverForcedEpithets: "[]",
+        smartRaceSolverManualLocks: "{}",
+        smartRaceSolverWeights: JSON.stringify({
+            raceValue: 1.0,
+            epithetValue: 1.0,
+            statWeight: 1.0,
+            spWeight: 1.0,
+            hintWeight: 8.0,
+            consecutiveRacePenalty: 3.0,
+            summerPenalty: 5.0,
+            aptitudeThreshold: "C",
+        }),
+        epithetsData: JSON.stringify(epithetsData),
+        characterPresetsData: JSON.stringify(characterPresetsData),
     },
     skills: {
         enableSkillPointCheck: false,

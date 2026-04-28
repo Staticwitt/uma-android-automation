@@ -41,6 +41,7 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
         "TrainingEventSettings",
         "RacingSettings",
         "RacingPlanSettings",
+        "SmartRaceSolverSettings",
         "SkillSettings",
         ...Object.values(skillPlanSettingsPages).flatMap((item) => item.name),
         "EventLogVisualizer",
@@ -235,6 +236,11 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                             label: "Racing Plan Settings",
                             icon: () => "map-outline",
                         },
+                        {
+                            name: "SmartRaceSolverSettings",
+                            label: "Smart Race Solver",
+                            icon: () => "rocket-outline",
+                        },
                     ],
                 },
                 {
@@ -319,8 +325,8 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             newExpanded.add("Settings")
         }
 
-        // Auto-expand Racing Settings if Racing Plan Settings is active.
-        if (currentScreen === "RacingPlanSettings") {
+        // Auto-expand Racing Settings if Racing Plan Settings or Smart Race Solver Settings is active.
+        if (currentScreen === "RacingPlanSettings" || currentScreen === "SmartRaceSolverSettings") {
             newExpanded.add("RacingSettings")
         }
 

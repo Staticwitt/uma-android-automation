@@ -1,0 +1,698 @@
+import { useMemo, useContext, useState, useEffect, useRef } from "react"
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native"
+import { Divider } from "react-native-paper"
+import { useTheme } from "../../context/ThemeContext"
+import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
+import { SearchPageProvider } from "../../context/SearchPageContext"
+import CustomCheckbox from "../../components/CustomCheckbox"
+import CustomButton from "../../components/CustomButton"
+import { Input } from "../../components/ui/input"
+import { Trash2 } from "lucide-react-native"
+import racesData from "../../data/races.json"
+import epithetsData from "../../data/epithets.json"
+import characterPresetsData from "../../data/characterPresets.json"
+import PageHeader from "../../components/PageHeader"
+import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
+import SearchableItem from "../../components/SearchableItem"
+
+interface RaceEntry {
+    name: string
+    date: string
+    turnNumber: number
+    grade: string
+    terrain: string
+    distanceType: string
+    distanceMeters: number
+    fans: number
+    raceTrack: string
+}
+
+interface EpithetEntry {
+    name: string
+    category: string
+    reward_text: string
+    condition_text: string
+}
+
+interface CharacterPresetEntry {
+    name: string
+    distanceAptitudes: { Sprint: string; Mile: string; Medium: string; Long: string }
+    surfaceAptitudes: { Turf: string; Dirt: string }
+}
+
+interface AptitudeMap {
+    Sprint: string
+    Mile: string
+    Medium: string
+    Long: string
+    Turf: string
+    Dirt: string
+}
+
+interface WeightsMap {
+    raceValue: number
+    epithetValue: number
+    statWeight: number
+    spWeight: number
+    hintWeight: number
+    consecutiveRacePenalty: number
+    summerPenalty: number
+    aptitudeThreshold: string
+}
+
+const APTITUDE_RANKS = ["S", "A", "B", "C", "D", "E", "F", "G"]
+const DEFAULT_APTITUDES: AptitudeMap = { Sprint: "A", Mile: "A", Medium: "A", Long: "A", Turf: "A", Dirt: "A" }
+const DEFAULT_WEIGHTS: WeightsMap = {
+    raceValue: 1.0,
+    epithetValue: 1.0,
+    statWeight: 1.0,
+    spWeight: 1.0,
+    hintWeight: 8.0,
+    consecutiveRacePenalty: 3.0,
+    summerPenalty: 5.0,
+    aptitudeThreshold: "C",
+}
+
+const SmartRaceSolverSettings = () => {
+    usePerformanceLogging("SmartRaceSolverSettings")
+    const { colors } = useTheme()
+    const bsc = useContext(BotStateContext)
+    const scrollViewRef = useRef<ScrollView>(null)
+    const { settings, setSettings } = bsc
+
+    // Merge with defaults so partially-saved profiles keep working when fields are added.
+    const racingSettings = { ...defaultSettings.racing, ...settings.racing }
+    const {
+        enableSmartRaceSolver,
+        smartRaceSolverCharacterPreset,
+        smartRaceSolverAptitudes,
+        smartRaceSolverTargetEpithets,
+        smartRaceSolverForcedEpithets,
+        smartRaceSolverManualLocks,
+        smartRaceSolverWeights,
+    } = racingSettings
+
+    // -------- Parsed state --------
+
+    const aptitudes: AptitudeMap = useMemo(() => {
+        try {
+            return { ...DEFAULT_APTITUDES, ...JSON.parse(smartRaceSolverAptitudes || "{}") }
+        } catch {
+            return DEFAULT_APTITUDES
+        }
+    }, [smartRaceSolverAptitudes])
+
+    const targetEpithets: string[] = useMemo(() => {
+        try {
+            return JSON.parse(smartRaceSolverTargetEpithets || "[]")
+        } catch {
+            return []
+        }
+    }, [smartRaceSolverTargetEpithets])
+
+    const forcedEpithets: string[] = useMemo(() => {
+        try {
+            return JSON.parse(smartRaceSolverForcedEpithets || "[]")
+        } catch {
+            return []
+        }
+    }, [smartRaceSolverForcedEpithets])
+
+    const manualLocks: Record<string, string> = useMemo(() => {
+        try {
+            return JSON.parse(smartRaceSolverManualLocks || "{}")
+        } catch {
+            return {}
+        }
+    }, [smartRaceSolverManualLocks])
+
+    const weights: WeightsMap = useMemo(() => {
+        try {
+            return { ...DEFAULT_WEIGHTS, ...JSON.parse(smartRaceSolverWeights || "{}") }
+        } catch {
+            return DEFAULT_WEIGHTS
+        }
+    }, [smartRaceSolverWeights])
+
+    const allEpithets = useMemo<EpithetEntry[]>(
+        () => Object.values(epithetsData) as EpithetEntry[],
+        []
+    )
+    const allPresets = useMemo<CharacterPresetEntry[]>(
+        () => Object.values(characterPresetsData) as CharacterPresetEntry[],
+        []
+    )
+    const allRaces = useMemo<RaceEntry[]>(() => Object.values(racesData) as RaceEntry[], [])
+
+    // -------- Local input state for decimals --------
+
+    const [raceValueInput, setRaceValueInput] = useState(weights.raceValue.toString())
+    const [epithetValueInput, setEpithetValueInput] = useState(weights.epithetValue.toString())
+    const [hintWeightInput, setHintWeightInput] = useState(weights.hintWeight.toString())
+    const [consecPenaltyInput, setConsecPenaltyInput] = useState(weights.consecutiveRacePenalty.toString())
+    const [summerPenaltyInput, setSummerPenaltyInput] = useState(weights.summerPenalty.toString())
+
+    useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
+    useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
+    useEffect(() => setHintWeightInput(weights.hintWeight.toString()), [weights.hintWeight])
+    useEffect(() => setConsecPenaltyInput(weights.consecutiveRacePenalty.toString()), [weights.consecutiveRacePenalty])
+    useEffect(() => setSummerPenaltyInput(weights.summerPenalty.toString()), [weights.summerPenalty])
+
+    const [presetSearch, setPresetSearch] = useState("")
+    const [epithetSearch, setEpithetSearch] = useState("")
+    const [lockTurnInput, setLockTurnInput] = useState("")
+    const [lockRaceSearch, setLockRaceSearch] = useState("")
+
+    // -------- Derived filters --------
+
+    const filteredPresets = useMemo(() => {
+        if (!presetSearch) return allPresets.slice(0, 30)
+        const q = presetSearch.toLowerCase()
+        return allPresets.filter((p) => p.name.toLowerCase().includes(q)).slice(0, 30)
+    }, [allPresets, presetSearch])
+
+    const filteredEpithets = useMemo(() => {
+        if (!epithetSearch) return allEpithets
+        const q = epithetSearch.toLowerCase()
+        return allEpithets.filter(
+            (e) => e.name.toLowerCase().includes(q) || e.reward_text.toLowerCase().includes(q)
+        )
+    }, [allEpithets, epithetSearch])
+
+    const lockTurnNumber = useMemo(() => {
+        const n = parseInt(lockTurnInput, 10)
+        return Number.isFinite(n) && n >= 1 && n <= 72 ? n : null
+    }, [lockTurnInput])
+
+    const racesForLockTurn = useMemo(() => {
+        if (lockTurnNumber == null) return []
+        const q = lockRaceSearch.toLowerCase()
+        return allRaces
+            .filter((r) => r.turnNumber === lockTurnNumber)
+            .filter((r) => !q || r.name.toLowerCase().includes(q))
+    }, [allRaces, lockTurnNumber, lockRaceSearch])
+
+    // -------- Setters --------
+
+    /**
+     * Update a single racing setting, preserving the rest of the racing block.
+     *
+     * @param key The settings.racing key to update.
+     * @param value The new value.
+     */
+    const updateRacingSetting = (key: string, value: any) => {
+        setSettings({
+            ...bsc.settings,
+            racing: { ...bsc.settings.racing, [key]: value },
+        })
+    }
+
+    const setAptitude = (slot: keyof AptitudeMap, rank: string) => {
+        updateRacingSetting("smartRaceSolverAptitudes", JSON.stringify({ ...aptitudes, [slot]: rank }))
+    }
+
+    const applyPreset = (preset: CharacterPresetEntry) => {
+        updateRacingSetting("smartRaceSolverCharacterPreset", preset.name)
+        updateRacingSetting(
+            "smartRaceSolverAptitudes",
+            JSON.stringify({
+                Sprint: preset.distanceAptitudes.Sprint,
+                Mile: preset.distanceAptitudes.Mile,
+                Medium: preset.distanceAptitudes.Medium,
+                Long: preset.distanceAptitudes.Long,
+                Turf: preset.surfaceAptitudes.Turf,
+                Dirt: preset.surfaceAptitudes.Dirt,
+            })
+        )
+    }
+
+    const toggleTargetEpithet = (name: string) => {
+        const next = targetEpithets.includes(name)
+            ? targetEpithets.filter((n) => n !== name)
+            : [...targetEpithets, name]
+        updateRacingSetting("smartRaceSolverTargetEpithets", JSON.stringify(next))
+    }
+
+    const toggleForcedEpithet = (name: string) => {
+        const next = forcedEpithets.includes(name)
+            ? forcedEpithets.filter((n) => n !== name)
+            : [...forcedEpithets, name]
+        updateRacingSetting("smartRaceSolverForcedEpithets", JSON.stringify(next))
+    }
+
+    const addManualLock = (turn: number, raceName: string) => {
+        const next = { ...manualLocks, [String(turn)]: raceName }
+        updateRacingSetting("smartRaceSolverManualLocks", JSON.stringify(next))
+        setLockTurnInput("")
+        setLockRaceSearch("")
+    }
+
+    const removeManualLock = (turn: string) => {
+        const next = { ...manualLocks }
+        delete next[turn]
+        updateRacingSetting("smartRaceSolverManualLocks", JSON.stringify(next))
+    }
+
+    const updateWeight = (key: keyof WeightsMap, value: number | string) => {
+        updateRacingSetting("smartRaceSolverWeights", JSON.stringify({ ...weights, [key]: value }))
+    }
+
+    // -------- Styles --------
+
+    const styles = useMemo(
+        () =>
+            StyleSheet.create({
+                root: { flex: 1, flexDirection: "column", margin: 10, backgroundColor: colors.background },
+                section: { marginVertical: 8, padding: 12, backgroundColor: colors.card, borderRadius: 8 },
+                sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.foreground, marginBottom: 6 },
+                description: { fontSize: 13, color: colors.mutedForeground, marginBottom: 8 },
+                inputLabel: { fontSize: 14, color: colors.foreground, marginBottom: 4, marginTop: 6 },
+                input: { backgroundColor: colors.background, color: colors.foreground, marginBottom: 4 },
+                inputDescription: { fontSize: 12, color: colors.mutedForeground, marginBottom: 4 },
+                row: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginVertical: 4 },
+                chip: {
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                },
+                chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+                chipText: { color: colors.foreground, fontSize: 12 },
+                chipTextActive: { color: colors.background, fontSize: 12, fontWeight: "600" },
+                aptRow: { flexDirection: "row", alignItems: "center", marginVertical: 4 },
+                aptLabel: { width: 70, color: colors.foreground, fontSize: 13 },
+                aptButtons: { flexDirection: "row", gap: 4, flex: 1 },
+                aptBtn: {
+                    flex: 1,
+                    paddingVertical: 6,
+                    borderRadius: 4,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    alignItems: "center",
+                    backgroundColor: colors.background,
+                },
+                aptBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+                aptBtnText: { color: colors.foreground, fontSize: 12 },
+                aptBtnTextActive: { color: colors.background, fontSize: 12, fontWeight: "700" },
+                lockRow: {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 6,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderColor: colors.border,
+                },
+                lockTurn: { width: 60, color: colors.foreground, fontSize: 13 },
+                lockRace: { flex: 1, color: colors.foreground, fontSize: 13 },
+                presetItem: {
+                    paddingVertical: 8,
+                    paddingHorizontal: 6,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderColor: colors.border,
+                },
+                presetItemActive: { backgroundColor: colors.primary },
+                presetName: { color: colors.foreground, fontSize: 14 },
+                presetNameActive: { color: colors.background, fontSize: 14, fontWeight: "700" },
+                presetAptitudes: { color: colors.mutedForeground, fontSize: 11, marginTop: 2 },
+                summary: {
+                    color: colors.mutedForeground,
+                    fontSize: 12,
+                    fontFamily: "monospace",
+                    paddingVertical: 4,
+                },
+            }),
+        [colors]
+    )
+
+    // -------- Helpers --------
+
+    const renderAptitudeRow = (slot: keyof AptitudeMap, label: string) => (
+        <View style={styles.aptRow} key={slot}>
+            <Text style={styles.aptLabel}>{label}</Text>
+            <View style={styles.aptButtons}>
+                {APTITUDE_RANKS.map((rank) => {
+                    const active = aptitudes[slot] === rank
+                    return (
+                        <TouchableOpacity
+                            key={rank}
+                            style={[styles.aptBtn, active && styles.aptBtnActive]}
+                            onPress={() => setAptitude(slot, rank)}
+                        >
+                            <Text style={active ? styles.aptBtnTextActive : styles.aptBtnText}>{rank}</Text>
+                        </TouchableOpacity>
+                    )
+                })}
+            </View>
+        </View>
+    )
+
+    const renderEpithetChip = (epithet: EpithetEntry, selected: boolean, onPress: () => void) => (
+        <TouchableOpacity
+            key={epithet.name}
+            style={[styles.chip, selected && styles.chipActive]}
+            onPress={onPress}
+        >
+            <Text style={selected ? styles.chipTextActive : styles.chipText}>{epithet.name}</Text>
+        </TouchableOpacity>
+    )
+
+    // -------- Render --------
+
+    const sectionsDisabledStyle = enableSmartRaceSolver ? undefined : ({ opacity: 0.4 } as const)
+
+    return (
+        <View style={styles.root}>
+            <PageHeader title="Smart Race Solver" />
+
+            <SearchPageProvider page="SmartRaceSolverSettings" scrollViewRef={scrollViewRef}>
+                <ScrollView
+                    ref={scrollViewRef}
+                    nestedScrollEnabled={true}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ flexGrow: 1 }}
+                >
+                    <View className="m-1">
+                        {/* Master toggle */}
+                        <SearchableItem
+                            id="enable-smart-race-solver"
+                            title="Enable Smart Race Solver"
+                            description="Beam-search-based race scheduler that targets epithet completions and re-plans dynamically across the 72-turn career."
+                            style={styles.section}
+                        >
+                            <CustomCheckbox
+                                label="Enable Smart Race Solver"
+                                description="Opt-in. Replaces the default race-pick logic for extra races when active. Conditions to actually run match the legacy Smart Racing Plan: scenario year ≠ Junior, Farming Fans on, Force Racing off."
+                                checked={enableSmartRaceSolver}
+                                onCheckedChange={(checked) => updateRacingSetting("enableSmartRaceSolver", checked)}
+                            />
+                        </SearchableItem>
+
+                        {/* Character preset */}
+                        <SearchableItem
+                            id="smart-solver-character-preset"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Character Preset"
+                            description="Pick a character to seed aptitude defaults. You can still override individual aptitudes below."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Character Preset</Text>
+                                <Text style={styles.description}>
+                                    Selected: {smartRaceSolverCharacterPreset || "(none)"}
+                                </Text>
+                                <Input
+                                    style={styles.input}
+                                    value={presetSearch}
+                                    onChangeText={setPresetSearch}
+                                    placeholder="Search 125 characters…"
+                                />
+                                {filteredPresets.map((p) => {
+                                    const active = smartRaceSolverCharacterPreset === p.name
+                                    return (
+                                        <TouchableOpacity
+                                            key={p.name}
+                                            style={[styles.presetItem, active && styles.presetItemActive]}
+                                            onPress={() => applyPreset(p)}
+                                        >
+                                            <Text style={active ? styles.presetNameActive : styles.presetName}>{p.name}</Text>
+                                            <Text style={styles.presetAptitudes}>
+                                                Sprint {p.distanceAptitudes.Sprint} · Mile {p.distanceAptitudes.Mile} · Med {p.distanceAptitudes.Medium} · Long {p.distanceAptitudes.Long} · Turf {p.surfaceAptitudes.Turf} · Dirt {p.surfaceAptitudes.Dirt}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                                {presetSearch && filteredPresets.length === 0 && (
+                                    <Text style={styles.inputDescription}>No matches.</Text>
+                                )}
+                            </View>
+                        </SearchableItem>
+
+                        {/* Aptitudes */}
+                        <SearchableItem
+                            id="smart-solver-aptitudes"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Aptitudes"
+                            description="Distance and surface aptitude grades. Races below the threshold are excluded from the candidate pool."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Aptitudes</Text>
+                                <Text style={styles.description}>S = best, G = worst. Tap to set.</Text>
+                                {renderAptitudeRow("Sprint", "Sprint")}
+                                {renderAptitudeRow("Mile", "Mile")}
+                                {renderAptitudeRow("Medium", "Medium")}
+                                {renderAptitudeRow("Long", "Long")}
+                                <Divider style={{ marginVertical: 6 }} />
+                                {renderAptitudeRow("Turf", "Turf")}
+                                {renderAptitudeRow("Dirt", "Dirt")}
+                            </View>
+                        </SearchableItem>
+
+                        {/* Aptitude threshold */}
+                        <SearchableItem
+                            id="smart-solver-aptitude-threshold"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Aptitude Threshold"
+                            description="Minimum aptitude (distance AND surface) required for a race to be eligible."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Aptitude Threshold</Text>
+                                <View style={styles.aptButtons}>
+                                    {APTITUDE_RANKS.map((rank) => {
+                                        const active = weights.aptitudeThreshold === rank
+                                        return (
+                                            <TouchableOpacity
+                                                key={rank}
+                                                style={[styles.aptBtn, active && styles.aptBtnActive]}
+                                                onPress={() => updateWeight("aptitudeThreshold", rank)}
+                                            >
+                                                <Text style={active ? styles.aptBtnTextActive : styles.aptBtnText}>{rank}</Text>
+                                            </TouchableOpacity>
+                                        )
+                                    })}
+                                </View>
+                            </View>
+                        </SearchableItem>
+
+                        {/* Target epithets */}
+                        <SearchableItem
+                            id="smart-solver-target-epithets"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Target Epithets"
+                            description="Epithets the solver actively pursues. Selecting one biases the schedule toward completing it."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Target Epithets ({targetEpithets.length} selected)</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={epithetSearch}
+                                    onChangeText={setEpithetSearch}
+                                    placeholder="Search 36 epithets…"
+                                />
+                                <View style={styles.row}>
+                                    {filteredEpithets.map((ep) =>
+                                        renderEpithetChip(ep, targetEpithets.includes(ep.name), () => toggleTargetEpithet(ep.name))
+                                    )}
+                                </View>
+                            </View>
+                        </SearchableItem>
+
+                        {/* Forced epithets */}
+                        <SearchableItem
+                            id="smart-solver-forced-epithets"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Forced Epithets"
+                            description="Epithets the solver MUST complete. Beams that lose feasibility for any forced epithet are pruned."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Forced Epithets ({forcedEpithets.length} selected)</Text>
+                                <Text style={styles.description}>
+                                    Caution: forcing too many can over-constrain the schedule.
+                                </Text>
+                                <View style={styles.row}>
+                                    {allEpithets.map((ep) =>
+                                        renderEpithetChip(ep, forcedEpithets.includes(ep.name), () => toggleForcedEpithet(ep.name))
+                                    )}
+                                </View>
+                            </View>
+                        </SearchableItem>
+
+                        {/* Manual locks */}
+                        <SearchableItem
+                            id="smart-solver-manual-locks"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Manual Turn Locks"
+                            description="Force a specific race choice on a specific turn. Overrides the solver's pick for that turn."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Manual Turn Locks</Text>
+                                <Text style={styles.description}>Add a lock by entering a turn number (1-72) then picking a race.</Text>
+                                <Text style={styles.inputLabel}>Turn Number</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={lockTurnInput}
+                                    onChangeText={setLockTurnInput}
+                                    keyboardType="numeric"
+                                    placeholder="e.g. 49"
+                                />
+                                {lockTurnNumber != null && (
+                                    <>
+                                        <Text style={styles.inputLabel}>Pick a race available on turn {lockTurnNumber}</Text>
+                                        <Input
+                                            style={styles.input}
+                                            value={lockRaceSearch}
+                                            onChangeText={setLockRaceSearch}
+                                            placeholder="Search races…"
+                                        />
+                                        {racesForLockTurn.length === 0 && (
+                                            <Text style={styles.inputDescription}>No races on this turn (or no match).</Text>
+                                        )}
+                                        {racesForLockTurn.slice(0, 12).map((r) => (
+                                            <TouchableOpacity
+                                                key={`${r.name}-${r.date}`}
+                                                style={styles.presetItem}
+                                                onPress={() => addManualLock(lockTurnNumber, r.name)}
+                                            >
+                                                <Text style={styles.presetName}>{r.name}</Text>
+                                                <Text style={styles.presetAptitudes}>
+                                                    {r.grade} · {r.terrain} · {r.distanceType} {r.distanceMeters}m · {r.fans.toLocaleString()} fans
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </>
+                                )}
+                                <Divider style={{ marginVertical: 8 }} />
+                                <Text style={styles.sectionTitle}>Active Locks ({Object.keys(manualLocks).length})</Text>
+                                {Object.keys(manualLocks).length === 0 ? (
+                                    <Text style={styles.inputDescription}>None.</Text>
+                                ) : (
+                                    Object.entries(manualLocks)
+                                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                        .map(([turn, raceName]) => (
+                                            <View key={turn} style={styles.lockRow}>
+                                                <Text style={styles.lockTurn}>T{turn}</Text>
+                                                <Text style={styles.lockRace}>{raceName}</Text>
+                                                <CustomButton
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    icon={<Trash2 size={16} color={colors.background} />}
+                                                    onPress={() => removeManualLock(turn)}
+                                                >
+                                                    {""}
+                                                </CustomButton>
+                                            </View>
+                                        ))
+                                )}
+                            </View>
+                        </SearchableItem>
+
+                        {/* Weights */}
+                        <SearchableItem
+                            id="smart-solver-weights"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Scoring Weights"
+                            description="Tune how the solver balances race value, epithet completion, and penalties."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Scoring Weights</Text>
+
+                                <Text style={styles.inputLabel}>Race Value Weight</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={raceValueInput}
+                                    onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setRaceValueInput(t)}
+                                    onBlur={() => updateWeight("raceValue", parseFloat(raceValueInput) || 0)}
+                                    keyboardType="decimal-pad"
+                                    placeholder="1.0"
+                                />
+                                <Text style={styles.inputDescription}>Multiplier applied to per-race base score (fans + grade + SP).</Text>
+
+                                <Text style={styles.inputLabel}>Epithet Value Weight</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={epithetValueInput}
+                                    onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setEpithetValueInput(t)}
+                                    onBlur={() => updateWeight("epithetValue", parseFloat(epithetValueInput) || 0)}
+                                    keyboardType="decimal-pad"
+                                    placeholder="1.0"
+                                />
+                                <Text style={styles.inputDescription}>Multiplier applied to epithet completion bonuses. Raise this to make epithets dominate fan-driven race value.</Text>
+
+                                <Text style={styles.inputLabel}>Hint Reward Weight</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={hintWeightInput}
+                                    onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setHintWeightInput(t)}
+                                    onBlur={() => updateWeight("hintWeight", parseFloat(hintWeightInput) || 0)}
+                                    keyboardType="decimal-pad"
+                                    placeholder="8.0"
+                                />
+                                <Text style={styles.inputDescription}>Score awarded for skill-hint epithets (e.g. Legendary). Higher = bot pursues hint epithets harder.</Text>
+
+                                <Text style={styles.inputLabel}>Consecutive Race Penalty</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={consecPenaltyInput}
+                                    onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setConsecPenaltyInput(t)}
+                                    onBlur={() => updateWeight("consecutiveRacePenalty", parseFloat(consecPenaltyInput) || 0)}
+                                    keyboardType="decimal-pad"
+                                    placeholder="3.0"
+                                />
+                                <Text style={styles.inputDescription}>Penalty applied to the 3rd (and beyond) race in a row to model conditioning loss.</Text>
+
+                                <Text style={styles.inputLabel}>Summer Block Penalty</Text>
+                                <Input
+                                    style={styles.input}
+                                    value={summerPenaltyInput}
+                                    onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setSummerPenaltyInput(t)}
+                                    onBlur={() => updateWeight("summerPenalty", parseFloat(summerPenaltyInput) || 0)}
+                                    keyboardType="decimal-pad"
+                                    placeholder="5.0"
+                                />
+                                <Text style={styles.inputDescription}>Penalty for racing during summer training blocks (turns 12-14, 36-39, 60-63).</Text>
+                            </View>
+                        </SearchableItem>
+
+                        {/* Diagnostic */}
+                        <SearchableItem
+                            id="smart-solver-diagnostic"
+                            condition={enableSmartRaceSolver}
+                            parentId="enable-smart-race-solver"
+                            title="Configuration Summary"
+                            description="Read-only summary of the current solver configuration."
+                            style={styles.section}
+                        >
+                            <View style={sectionsDisabledStyle}>
+                                <Text style={styles.sectionTitle}>Configuration Summary</Text>
+                                <Text style={styles.summary}>Preset: {smartRaceSolverCharacterPreset || "(none)"}</Text>
+                                <Text style={styles.summary}>
+                                    Aptitudes: Spr {aptitudes.Sprint} · Mil {aptitudes.Mile} · Med {aptitudes.Medium} · Lng {aptitudes.Long} · Trf {aptitudes.Turf} · Drt {aptitudes.Dirt}
+                                </Text>
+                                <Text style={styles.summary}>Threshold: {weights.aptitudeThreshold}</Text>
+                                <Text style={styles.summary}>Targets ({targetEpithets.length}): {targetEpithets.join(", ") || "(none)"}</Text>
+                                <Text style={styles.summary}>Forced ({forcedEpithets.length}): {forcedEpithets.join(", ") || "(none)"}</Text>
+                                <Text style={styles.summary}>Locks ({Object.keys(manualLocks).length}): {Object.keys(manualLocks).length === 0 ? "(none)" : Object.entries(manualLocks).map(([t, r]) => `T${t}→${r}`).join(" · ")}</Text>
+                                <Text style={styles.summary}>Weights: race {weights.raceValue}, epithet {weights.epithetValue}, hint {weights.hintWeight}, consec −{weights.consecutiveRacePenalty}, summer −{weights.summerPenalty}</Text>
+                            </View>
+                        </SearchableItem>
+                    </View>
+                </ScrollView>
+            </SearchPageProvider>
+        </View>
+    )
+}
+
+export default SmartRaceSolverSettings
