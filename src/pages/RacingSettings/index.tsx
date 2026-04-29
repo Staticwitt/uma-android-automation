@@ -2,7 +2,7 @@ import { useMemo, useContext, useRef, useCallback } from "react"
 import { View, Text, TextInput, ScrollView, StyleSheet } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
+import { RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomSelect from "../../components/CustomSelect"
@@ -23,12 +23,11 @@ const RacingSettings = () => {
     usePerformanceLogging("RacingSettings")
     const { colors } = useTheme()
     const navigation = useNavigation()
-    const bsc = useContext(BotStateContext)
+    const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
-    const { settings, setSettings } = bsc
     // Merge current racing settings with defaults to handle missing properties.
-    const racingSettings = { ...defaultSettings.racing, ...settings.racing }
+    const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
@@ -57,29 +56,20 @@ const RacingSettings = () => {
      * @param value The value to set the setting to.
      */
     const updateRacingSetting = useCallback(
-        (key: keyof typeof settings.racing, value: any) => {
+        (key: keyof Settings["racing"], value: any) => {
             if (key === "enableUserInGameRaceAgenda" && value) {
-                setSettings((prev) => ({
+                updateRacing((prev) => ({
+                    // Disable Farming Fans and Racing Plan when User In Game Race Agenda is enabled.
                     ...prev,
-                    racing: {
-                        // Disable the Farming Fans and Racing Plan settings when User In Game Race Agenda is enabled.
-                        ...prev.racing,
-                        enableFarmingFans: false,
-                        enableUserInGameRaceAgenda: true,
-                        enableRacingPlan: false,
-                    },
+                    enableFarmingFans: false,
+                    enableUserInGameRaceAgenda: true,
+                    enableRacingPlan: false,
                 }))
             } else {
-                setSettings((prev) => ({
-                    ...prev,
-                    racing: {
-                        ...prev.racing,
-                        [key]: value,
-                    },
-                }))
+                updateRacing({ [key]: value } as Partial<Settings["racing"]>)
             }
         },
-        [setSettings]
+        [updateRacing]
     )
 
     const styles = useMemo(
