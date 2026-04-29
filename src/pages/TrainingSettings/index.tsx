@@ -19,6 +19,7 @@ import PageHeader from "../../components/PageHeader"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
+import { shallowArrayEqual } from "../../lib/utils"
 import WarningContainer from "../../components/WarningContainer"
 
 /**
@@ -94,8 +95,7 @@ const TrainingSettings = () => {
     // We also verify that the values are actually different before triggering an update.
     useEffect(() => {
         if (isMounted.current) {
-            const currentVal = settings.training?.statPrioritization
-            if (JSON.stringify(currentVal) !== JSON.stringify(statPrioritizationItems)) {
+            if (!shallowArrayEqual(settings.training?.statPrioritization, statPrioritizationItems)) {
                 updateTrainingSetting("statPrioritization", statPrioritizationItems)
             }
         }
@@ -103,8 +103,7 @@ const TrainingSettings = () => {
 
     useEffect(() => {
         if (isMounted.current) {
-            const currentVal = settings.training?.trainingBlacklist
-            if (JSON.stringify(currentVal) !== JSON.stringify(blacklistItems)) {
+            if (!shallowArrayEqual(settings.training?.trainingBlacklist, blacklistItems)) {
                 updateTrainingSetting("trainingBlacklist", blacklistItems)
             }
         }
@@ -112,8 +111,7 @@ const TrainingSettings = () => {
 
     useEffect(() => {
         if (isMounted.current) {
-            const currentVal = settings.training?.focusOnSparkStatTarget
-            if (JSON.stringify(currentVal) !== JSON.stringify(sparkStatTargetItems)) {
+            if (!shallowArrayEqual(settings.training?.focusOnSparkStatTarget, sparkStatTargetItems)) {
                 updateTrainingSetting("focusOnSparkStatTarget", sparkStatTargetItems)
             }
         }
@@ -127,21 +125,21 @@ const TrainingSettings = () => {
     // Sync local state when settings change (e.g., when switching profiles).
     useEffect(() => {
         const newVal = settings.training?.trainingBlacklist
-        if (newVal !== undefined && JSON.stringify(newVal) !== JSON.stringify(blacklistItems)) {
+        if (newVal !== undefined && !shallowArrayEqual(newVal, blacklistItems)) {
             setBlacklistItems(newVal)
         }
     }, [settings.training?.trainingBlacklist])
 
     useEffect(() => {
         const newVal = settings.training?.statPrioritization
-        if (newVal !== undefined && JSON.stringify(newVal) !== JSON.stringify(statPrioritizationItems)) {
+        if (newVal !== undefined && !shallowArrayEqual(newVal, statPrioritizationItems)) {
             setStatPrioritizationItems(newVal)
         }
     }, [settings.training?.statPrioritization])
 
     useEffect(() => {
         const newVal = settings.training?.focusOnSparkStatTarget
-        if (newVal !== undefined && Array.isArray(newVal) && JSON.stringify(newVal) !== JSON.stringify(sparkStatTargetItems)) {
+        if (newVal !== undefined && Array.isArray(newVal) && !shallowArrayEqual(newVal, sparkStatTargetItems)) {
             setSparkStatTargetItems(newVal)
         }
     }, [settings.training?.focusOnSparkStatTarget])
