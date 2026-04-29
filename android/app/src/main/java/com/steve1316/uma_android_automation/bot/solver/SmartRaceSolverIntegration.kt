@@ -34,6 +34,15 @@ object SmartRaceSolverIntegration {
 
     @Volatile private var cachedRaces: Map<TurnNumber, List<RaceCandidate>>? = null
 
+    /**
+     * Content-keyed cache for races/epithets passed inline through [previewSchedule]'s configJson.
+     * The JS layer stringifies the bundled JSON once at module load and ships it on every preview
+     * call (~150KB), so without this cache we'd re-parse on every debounced re-solve. Keyed by
+     * `String.hashCode()` since the bundled JSON is identical across calls.
+     */
+    @Volatile private var cachedInlineRaces: Pair<Int, Map<TurnNumber, List<RaceCandidate>>>? = null
+    @Volatile private var cachedInlineEpithets: Pair<Int, List<Epithet>>? = null
+
     /** Clears in-memory race history. Call at the start of a fresh bot run. */
     fun reset() {
         synchronized(raceHistory) { raceHistory.clear() }
@@ -341,16 +350,22 @@ object SmartRaceSolverIntegration {
 
     private fun parseRacesJsonField(json: String?): Map<TurnNumber, List<RaceCandidate>>? {
         if (json.isNullOrEmpty()) return null
+        val hash = json.hashCode()
+        cachedInlineRaces?.let { (cachedHash, value) -> if (cachedHash == hash) return value }
         return runCatching { parseRacesData(json) }
             .onFailure { MessageLog.e(TAG, "Failed to parse inline racesDataJson: ${it.message}") }
             .getOrNull()
+            ?.also { cachedInlineRaces = hash to it }
     }
 
     private fun parseEpithetsJsonField(json: String?): List<Epithet>? {
         if (json.isNullOrEmpty()) return null
+        val hash = json.hashCode()
+        cachedInlineEpithets?.let { (cachedHash, value) -> if (cachedHash == hash) return value }
         return runCatching { parseEpithets(json) }
             .onFailure { MessageLog.e(TAG, "Failed to parse inline epithetsDataJson: ${it.message}") }
             .getOrNull()
+            ?.also { cachedInlineEpithets = hash to it }
     }
 
     private fun parseRacesData(json: String): Map<TurnNumber, List<RaceCandidate>> {
