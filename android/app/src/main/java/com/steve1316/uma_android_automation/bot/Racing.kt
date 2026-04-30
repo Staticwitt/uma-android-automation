@@ -50,7 +50,6 @@ import com.steve1316.uma_android_automation.types.TrackSurface
 import com.steve1316.uma_android_automation.utils.CustomImageUtils.RaceDetails
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
-import org.json.JSONArray
 import org.json.JSONObject
 import org.opencv.core.Point
 
@@ -85,9 +84,10 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     /** Whether to force the bot to race extra races regardless of other conditions. */
     val enableForceRacing = SettingsHelper.getBooleanSetting("racing", "enableForceRacing")
 
-    private val enableSmartRaceSolver = SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver").also {
-        if (it) SmartRaceSolverIntegration.reset()
-    }
+    private val enableSmartRaceSolver =
+        SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver").also {
+            if (it) SmartRaceSolverIntegration.reset()
+        }
 
     /** Whether to use the in-game race agenda feature. */
     val enableUserInGameRaceAgenda = SettingsHelper.getBooleanSetting("racing", "enableUserInGameRaceAgenda")
@@ -234,8 +234,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             fans,
             nameFormatted,
             TrackSurface.fromName(trackSurface)!!,
-            // Scraper source uses "Short" instead of "Sprint" which is expected by our enum.
-            TrackDistance.fromName(trackDistance.lowercase().replace("short", "sprint"))!!,
+            TrackDistance.fromName(trackDistance)!!,
             turnNumber,
         )
     }
@@ -2002,11 +2001,12 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             return false
         }
 
-        val solverPick = SmartRaceSolverIntegration.pickRace(
-            currentTurn = campaign.date.day,
-            scenario = SettingsHelper.getStringSetting("general", "scenario"),
-            candidates = currentRaces,
-        )
+        val solverPick =
+            SmartRaceSolverIntegration.pickRace(
+                currentTurn = campaign.date.day,
+                scenario = SettingsHelper.getStringSetting("general", "scenario"),
+                candidates = currentRaces,
+            )
         if (solverPick == null) {
             MessageLog.i(TAG, "[RACE] Smart Race Solver did not return a pick for turn ${campaign.date.day}. Canceling racing process.")
             return false
