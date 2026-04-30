@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useSettings } from "../context/SettingsContext"
 import { BotStateContext, Settings, defaultSettings } from "../context/BotStateContext"
 import { logErrorWithTimestamp } from "../lib/logger"
+import { deepMerge } from "../lib/settingsUtils"
 
 /**
  * Format a value for display in the preview dialog.
@@ -67,10 +68,7 @@ const compareSettings = (current: Settings, imported: Settings) => {
 
         for (const key of Object.keys(importedCategory)) {
             // Skip large settings fields that shouldn't be shown in preview.
-            if (
-                (category === "racing" && (key === "epithetsData" || key === "characterPresetsData" || key === "racesData")) ||
-                (category === "misc" && key === "formattedSettingsString")
-            ) {
+            if ((category === "racing" && (key === "epithetsData" || key === "characterPresetsData" || key === "racesData")) || (category === "misc" && key === "formattedSettingsString")) {
                 continue
             }
 
@@ -85,28 +83,6 @@ const compareSettings = (current: Settings, imported: Settings) => {
     }
 
     return changes
-}
-
-/**
- * Deep merges two objects, preserving nested structure.
- * Recursively merges source object into target, ensuring all nested properties
- * are properly merged rather than replaced. Used to merge imported settings
- * with default settings to ensure all required fields exist.
- * @param target - The target object to merge into (typically default settings).
- * @param source - The source object to merge from (typically imported settings).
- * @returns A new object with merged values from both target and source.
- */
-const deepMerge = <T extends Record<string, any>>(target: T, source: Partial<T>): T => {
-    const output = { ...target }
-    for (const key in source) {
-        if (source[key] && typeof source[key] === "object" && !Array.isArray(source[key]) && source[key] !== null) {
-            // Recursively merge nested objects.
-            output[key] = deepMerge((target[key] || {}) as Record<string, any>, source[key] as any) as T[Extract<keyof T, string>]
-        } else if (source[key] !== undefined) {
-            output[key] = source[key] as T[Extract<keyof T, string>]
-        }
-    }
-    return output
 }
 
 /**
