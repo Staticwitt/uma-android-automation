@@ -2,14 +2,13 @@ import { useMemo, useContext, useState, useEffect, useRef } from "react"
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native"
 import { Divider } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
-import { BotStateContext, defaultSettings } from "../../context/BotStateContext"
+import { RacingContext, defaultSettings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomButton from "../../components/CustomButton"
 import CustomScrollView from "../../components/CustomScrollView"
 import { Input } from "../../components/ui/input"
 import { CircleCheckBig, Plus, Trash2 } from "lucide-react-native"
-import racesData from "../../data/races.json"
 import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import SearchableItem from "../../components/SearchableItem"
@@ -58,13 +57,11 @@ interface PlannedRace {
 const RacingPlanSettings = () => {
     usePerformanceLogging("RacingPlanSettings")
     const { colors } = useTheme()
-    const bsc = useContext(BotStateContext)
+    const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
-    const { settings, setSettings } = bsc
-
     // Merge current racing settings with defaults to handle missing properties.
-    const racingSettings = { ...defaultSettings.racing, ...settings.racing }
+    const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableRacingPlan,
         enableMandatoryRacingPlan,
@@ -104,8 +101,8 @@ const RacingPlanSettings = () => {
         return racingPlan && racingPlan !== "[]" && typeof racingPlan === "string" ? JSON.parse(racingPlan) : []
     }, [racingPlan])
 
-    // Convert races.json to array.
-    const allRaces: Race[] = useMemo(() => Object.values(racesData), [])
+    // Convert races.json to array. Lazy-required so the parse only happens when this page mounts.
+    const allRaces: Race[] = useMemo(() => Object.values(require("../../data/races.json")) as Race[], [])
 
     // Filter races based on search and preferences.
     const filteredRaces = useMemo(() => {
@@ -128,25 +125,16 @@ const RacingPlanSettings = () => {
      */
     const updateRacingSetting = (key: string, value: any) => {
         if (key === "enableRacingPlan" && value) {
-            setSettings({
-                ...bsc.settings,
-                racing: {
-                    // The following settings need to be set due to being two distinct racing systems.
-                    ...bsc.settings.racing,
-                    enableFarmingFans: true,
-                    enableForceRacing: false,
-                    enableUserInGameRaceAgenda: false,
-                    enableRacingPlan: true,
-                },
-            })
+            updateRacing((prev) => ({
+                // The following settings need to be set due to being two distinct racing systems.
+                ...prev,
+                enableFarmingFans: true,
+                enableForceRacing: false,
+                enableUserInGameRaceAgenda: false,
+                enableRacingPlan: true,
+            }))
         } else {
-            setSettings({
-                ...bsc.settings,
-                racing: {
-                    ...bsc.settings.racing,
-                    [key]: value,
-                },
-            })
+            updateRacing({ [key]: value } as any)
         }
     }
 

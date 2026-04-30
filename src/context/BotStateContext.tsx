@@ -1,7 +1,25 @@
 import { createContext, useState, useMemo, useCallback } from "react"
 import { startTiming } from "../lib/performanceLogger"
-import racesData from "../data/races.json"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
+
+// Defer parsing the races.json bundle until the racing-plan defaults are first read.
+// This keeps the cold-start path off the main thread until something actually consumes it.
+let _racingDefaultsCache: { plan: string; data: string } | null = null
+const _getRacingDefaults = (): { plan: string; data: string } => {
+    if (_racingDefaultsCache) return _racingDefaultsCache
+    const racesData = require("../data/races.json")
+    _racingDefaultsCache = {
+        plan: JSON.stringify(
+            Object.values(racesData as Record<string, { name: string; date: string }>).map((race, index) => ({
+                raceName: race.name,
+                date: race.date,
+                priority: index,
+            }))
+        ),
+        data: JSON.stringify(racesData),
+    }
+    return _racingDefaultsCache
+}
 
 /**
  * Configuration for an individual skill plan (e.g. preFinals, careerComplete).
@@ -240,14 +258,12 @@ export const defaultSettings: Settings = {
         customAgendaTitle: "",
         enableRacingPlan: false,
         enableMandatoryRacingPlan: false,
-        racingPlan: JSON.stringify(
-            Object.values(racesData).map((race, index) => ({
-                raceName: race.name,
-                date: race.date,
-                priority: index,
-            }))
-        ),
-        racingPlanData: JSON.stringify(racesData),
+        get racingPlan() {
+            return _getRacingDefaults().plan
+        },
+        get racingPlanData() {
+            return _getRacingDefaults().data
+        },
         minFansThreshold: 0,
         preferredTerrain: "Any",
         preferredGrades: ["G1", "G2", "G3"],
@@ -440,6 +456,10 @@ export const defaultSettings: Settings = {
 /**
  * Context value interface for the BotState provider.
  * Exposes application-wide state including readiness, settings, and app metadata.
+ * Kept for the three full-settings consumers (`useSettingsManager`, `useSettingsFileManager`,
+ * `MessageLog`'s formatted-string memo). Per-page consumers should subscribe to a slice
+ * context (`RacingContext`, `TrainingContext`, ...) so a single-domain edit doesn't
+ * re-render every page tree.
  */
 export interface BotStateProviderProps {
     /** Whether the bot/app is ready (initialized and settings loaded). */
@@ -463,6 +483,90 @@ export interface BotStateProviderProps {
 }
 
 export const BotStateContext = createContext<BotStateProviderProps>({} as BotStateProviderProps)
+
+/**
+ * Slice updater accepts either a partial slice (merged shallowly) or a functional updater
+ * that receives the previous slice and returns the next. Functional callers always see the
+ * latest slice value, eliminating stale-closure races on rapid taps.
+ */
+type SliceUpdater<T> = (update: Partial<T> | ((prev: T) => T)) => void
+
+/** App metadata + readyStatus + immutable defaultSettings. Updates rarely. */
+export interface BotMetaContextValue {
+    readyStatus: boolean
+    setReadyStatus: (readyStatus: boolean) => void
+    defaultSettings: Settings
+    appName: string
+    setAppName: (appName: string) => void
+    appVersion: string
+    setAppVersion: (appVersion: string) => void
+    /**
+     * Bulk settings setter. Exposed here (rather than only via the legacy `BotStateContext`)
+     * so cross-slice writers (e.g., profile overwrite) can mutate without subscribing to the
+     * full settings object, since `setSettings` is a stable callback identity.
+     */
+    setSettings: (settings: Settings | ((prev: Settings) => Settings)) => void
+}
+
+export interface RacingContextValue {
+    racing: Settings["racing"]
+    updateRacing: SliceUpdater<Settings["racing"]>
+}
+
+export interface SkillsContextValue {
+    skills: Settings["skills"]
+    updateSkills: SliceUpdater<Settings["skills"]>
+}
+
+export interface TrainingContextValue {
+    training: Settings["training"]
+    trainingStatTarget: Settings["trainingStatTarget"]
+    updateTraining: SliceUpdater<Settings["training"]>
+    updateTrainingStatTarget: SliceUpdater<Settings["trainingStatTarget"]>
+}
+
+export interface TrainingEventContextValue {
+    trainingEvent: Settings["trainingEvent"]
+    updateTrainingEvent: SliceUpdater<Settings["trainingEvent"]>
+}
+
+export interface GeneralMiscContextValue {
+    general: Settings["general"]
+    misc: Settings["misc"]
+    updateGeneral: SliceUpdater<Settings["general"]>
+    updateMisc: SliceUpdater<Settings["misc"]>
+}
+
+export interface DebugContextValue {
+    debug: Settings["debug"]
+    updateDebug: SliceUpdater<Settings["debug"]>
+}
+
+export interface DiscordContextValue {
+    discord: Settings["discord"]
+    updateDiscord: SliceUpdater<Settings["discord"]>
+}
+
+export interface ChatContextValue {
+    chat: Settings["chat"]
+    updateChat: SliceUpdater<Settings["chat"]>
+}
+
+export interface ScenarioOverridesContextValue {
+    scenarioOverrides: Settings["scenarioOverrides"]
+    updateScenarioOverrides: SliceUpdater<Settings["scenarioOverrides"]>
+}
+
+export const BotMetaContext = createContext<BotMetaContextValue>({} as BotMetaContextValue)
+export const RacingContext = createContext<RacingContextValue>({} as RacingContextValue)
+export const SkillsContext = createContext<SkillsContextValue>({} as SkillsContextValue)
+export const TrainingContext = createContext<TrainingContextValue>({} as TrainingContextValue)
+export const TrainingEventContext = createContext<TrainingEventContextValue>({} as TrainingEventContextValue)
+export const GeneralMiscContext = createContext<GeneralMiscContextValue>({} as GeneralMiscContextValue)
+export const DebugContext = createContext<DebugContextValue>({} as DebugContextValue)
+export const DiscordContext = createContext<DiscordContextValue>({} as DiscordContextValue)
+export const ChatContext = createContext<ChatContextValue>({} as ChatContextValue)
+export const ScenarioOverridesContext = createContext<ScenarioOverridesContextValue>({} as ScenarioOverridesContextValue)
 
 /**
  * Provider component for the BotState context.
@@ -503,7 +607,35 @@ export const BotStateProvider = ({ children }: any): React.ReactElement => {
         }
     }, [])
 
-    // Memoize the provider value to prevent cascading re-renders.
+    // Build a slice-aware updater. Accepts either `Partial<Slice>` (shallow-merged) or
+    // `(prev) => next`. Functional updaters always read the freshest slice, avoiding
+    // stale-closure races when multiple toggles fire in the same React batch.
+    const makeSliceUpdater = useCallback(
+        <K extends keyof Settings>(key: K): SliceUpdater<Settings[K]> =>
+            (update) => {
+                setSettingsWithLogging((prev) => {
+                    const prevSlice = prev[key]
+                    const nextSlice = typeof update === "function" ? (update as (p: Settings[K]) => Settings[K])(prevSlice) : ({ ...prevSlice, ...update } as Settings[K])
+                    if (nextSlice === prevSlice) return prev
+                    return { ...prev, [key]: nextSlice }
+                })
+            },
+        [setSettingsWithLogging]
+    )
+
+    const updateRacing = useMemo(() => makeSliceUpdater("racing"), [makeSliceUpdater])
+    const updateSkills = useMemo(() => makeSliceUpdater("skills"), [makeSliceUpdater])
+    const updateTraining = useMemo(() => makeSliceUpdater("training"), [makeSliceUpdater])
+    const updateTrainingStatTarget = useMemo(() => makeSliceUpdater("trainingStatTarget"), [makeSliceUpdater])
+    const updateTrainingEvent = useMemo(() => makeSliceUpdater("trainingEvent"), [makeSliceUpdater])
+    const updateGeneral = useMemo(() => makeSliceUpdater("general"), [makeSliceUpdater])
+    const updateMisc = useMemo(() => makeSliceUpdater("misc"), [makeSliceUpdater])
+    const updateDebug = useMemo(() => makeSliceUpdater("debug"), [makeSliceUpdater])
+    const updateDiscord = useMemo(() => makeSliceUpdater("discord"), [makeSliceUpdater])
+    const updateChat = useMemo(() => makeSliceUpdater("chat"), [makeSliceUpdater])
+    const updateScenarioOverrides = useMemo(() => makeSliceUpdater("scenarioOverrides"), [makeSliceUpdater])
+
+    // Aggregate (legacy) context value — only the three full-settings consumers should subscribe.
     const providerValues = useMemo<BotStateProviderProps>(
         () => ({
             readyStatus,
@@ -519,5 +651,53 @@ export const BotStateProvider = ({ children }: any): React.ReactElement => {
         [readyStatus, settings, appName, appVersion, setSettingsWithLogging]
     )
 
-    return <BotStateContext.Provider value={providerValues}>{children}</BotStateContext.Provider>
+    // Per-slice values memoized on their own slice reference. An untouched slice keeps a
+    // stable identity across renders, so consumers of that slice's context skip re-rendering
+    // when an unrelated domain mutates.
+    const metaValue = useMemo<BotMetaContextValue>(
+        () => ({ readyStatus, setReadyStatus, defaultSettings, appName, setAppName, appVersion, setAppVersion, setSettings: setSettingsWithLogging }),
+        [readyStatus, appName, appVersion, setSettingsWithLogging]
+    )
+    const racingValue = useMemo<RacingContextValue>(() => ({ racing: settings.racing, updateRacing }), [settings.racing, updateRacing])
+    const skillsValue = useMemo<SkillsContextValue>(() => ({ skills: settings.skills, updateSkills }), [settings.skills, updateSkills])
+    const trainingValue = useMemo<TrainingContextValue>(
+        () => ({ training: settings.training, trainingStatTarget: settings.trainingStatTarget, updateTraining, updateTrainingStatTarget }),
+        [settings.training, settings.trainingStatTarget, updateTraining, updateTrainingStatTarget]
+    )
+    const trainingEventValue = useMemo<TrainingEventContextValue>(() => ({ trainingEvent: settings.trainingEvent, updateTrainingEvent }), [settings.trainingEvent, updateTrainingEvent])
+    const generalMiscValue = useMemo<GeneralMiscContextValue>(
+        () => ({ general: settings.general, misc: settings.misc, updateGeneral, updateMisc }),
+        [settings.general, settings.misc, updateGeneral, updateMisc]
+    )
+    const debugValue = useMemo<DebugContextValue>(() => ({ debug: settings.debug, updateDebug }), [settings.debug, updateDebug])
+    const discordValue = useMemo<DiscordContextValue>(() => ({ discord: settings.discord, updateDiscord }), [settings.discord, updateDiscord])
+    const chatValue = useMemo<ChatContextValue>(() => ({ chat: settings.chat, updateChat }), [settings.chat, updateChat])
+    const scenarioOverridesValue = useMemo<ScenarioOverridesContextValue>(
+        () => ({ scenarioOverrides: settings.scenarioOverrides, updateScenarioOverrides }),
+        [settings.scenarioOverrides, updateScenarioOverrides]
+    )
+
+    return (
+        <BotStateContext.Provider value={providerValues}>
+            <BotMetaContext.Provider value={metaValue}>
+                <GeneralMiscContext.Provider value={generalMiscValue}>
+                    <RacingContext.Provider value={racingValue}>
+                        <SkillsContext.Provider value={skillsValue}>
+                            <TrainingContext.Provider value={trainingValue}>
+                                <TrainingEventContext.Provider value={trainingEventValue}>
+                                    <DebugContext.Provider value={debugValue}>
+                                        <DiscordContext.Provider value={discordValue}>
+                                            <ChatContext.Provider value={chatValue}>
+                                                <ScenarioOverridesContext.Provider value={scenarioOverridesValue}>{children}</ScenarioOverridesContext.Provider>
+                                            </ChatContext.Provider>
+                                        </DiscordContext.Provider>
+                                    </DebugContext.Provider>
+                                </TrainingEventContext.Provider>
+                            </TrainingContext.Provider>
+                        </SkillsContext.Provider>
+                    </RacingContext.Provider>
+                </GeneralMiscContext.Provider>
+            </BotMetaContext.Provider>
+        </BotStateContext.Provider>
+    )
 }
