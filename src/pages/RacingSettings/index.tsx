@@ -17,7 +17,7 @@ import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 /**
  * The Racing Settings page.
  * Provides configuration for fan farming, race retries, mandatory race handling, race strategies (Junior vs. Original),
- * force racing, in-game race agenda, and navigation to the Racing Plan Settings sub-page.
+ * force racing, in-game race agenda, and navigation to the Smart Race Solver Settings sub-page.
  */
 const RacingSettings = () => {
     usePerformanceLogging("RacingSettings")
@@ -51,7 +51,7 @@ const RacingSettings = () => {
 
     /**
      * Update a racing setting with special handling for the in-game race agenda.
-     * When the in-game race agenda is enabled, it automatically disables the Farming Fans and Racing Plan settings to prevent conflicts.
+     * When the in-game race agenda is enabled, it automatically disables the Farming Fans and Smart Race Solver settings to prevent conflicts.
      * @param key The key of the setting to update.
      * @param value The value to set the setting to.
      */
@@ -144,8 +144,7 @@ const RacingSettings = () => {
                             />
                             <Text style={styles.inputDescription}>
                                 Controls when extra races can be run using modulo arithmetic. For example, if set to 5, extra races will only be available on days 5, 10, 15, etc. (when current day % 5
-                                = 0). Note: This setting has no effect when Racing Plan is enabled, as Racing Plan controls when races occur based on opportunity cost analysis or mandatory race
-                                detection.
+                                = 0). Note: This setting has no effect when Smart Race Solver is enabled, as the solver controls race scheduling based on epithet completion analysis.
                             </Text>
                         </SearchableItem>
 
