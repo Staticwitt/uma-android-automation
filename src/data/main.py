@@ -1076,7 +1076,10 @@ class RaceScraper(BaseScraper):
                     "direction": "Right" if info_map.get("Direction") in ["Clockwise", "Right"] else "Left",
                     "grade": info_map.get("Grade"),
                     "terrain": info_map.get("Terrain"),
-                    "distanceType": info_map.get("Distance (type)"),
+                    # The umamusu wiki labels sprint races as "Short", but the in-game UI
+                    # uses "Sprint" for both the race distance type and the matching aptitude.
+                    # Normalize at scrape time so downstream consumers see one canonical name.
+                    "distanceType": "Sprint" if info_map.get("Distance (type)") == "Short" else info_map.get("Distance (type)"),
                     "distanceMeters": int(info_map.get("Distance (meters)")),
                     "fans": int(
                         dialog_schedule_items[-1]
@@ -1091,7 +1094,7 @@ class RaceScraper(BaseScraper):
                 race_data["turnNumber"] = calculate_turn_number(race_data["date"])
 
                 # Construct the in-game formatted name of the race.
-                distance_type_formatted = "Med" if info_map.get("Distance (type)") == "Medium" else info_map.get("Distance (type)")
+                distance_type_formatted = "Med" if info_map.get("Distance (type)") == "Medium" else race_data["distanceType"]
                 race_data["nameFormatted"] = (
                     f"{race_data['raceTrack']} {race_data['terrain']} {race_data['distanceMeters']}m ({distance_type_formatted}) {race_data['direction']}"
                 )
