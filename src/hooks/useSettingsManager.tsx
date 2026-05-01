@@ -2,7 +2,7 @@ import { useState, useEffect, useContext, useMemo, useRef } from "react"
 import * as FileSystem from "expo-file-system"
 import * as Sharing from "expo-sharing"
 import { startActivityAsync } from "expo-intent-launcher"
-import { defaultSettings, Settings, BotStateContext } from "../context/BotStateContext"
+import { defaultSettings, Settings, BotMetaContext, useSettingsSnapshot } from "../context/BotStateContext"
 import { databaseManager } from "../lib/database"
 import { startTiming } from "../lib/performanceLogger"
 import { logWithTimestamp, logErrorWithTimestamp } from "../lib/logger"
@@ -19,10 +19,11 @@ export const useSettingsManager = () => {
     const [isSaving, setIsSaving] = useState(false)
     const [migrationCompleted, setMigrationCompleted] = useState(false)
 
-    const bsc = useContext(BotStateContext)
+    const { setSettings, setReadyStatus } = useContext(BotMetaContext)
+    const settings = useSettingsSnapshot()
 
     // Ref to always track the latest settings, avoiding stale closure issues.
-    const settingsRef = useRef<Settings>(bsc.settings)
+    const settingsRef = useRef<Settings>(settings)
 
     // Track whether the initial load from database has completed.
     const hasLoadedRef = useRef(false)
@@ -32,8 +33,8 @@ export const useSettingsManager = () => {
 
     // Keep the ref in sync with the latest settings.
     useEffect(() => {
-        settingsRef.current = bsc.settings
-    }, [bsc.settings])
+        settingsRef.current = settings
+    }, [settings])
 
     // Direct database operations.
     const isSQLiteInitialized = databaseManager.isInitialized()
@@ -75,7 +76,7 @@ export const useSettingsManager = () => {
                 clearTimeout(autoSaveTimerRef.current)
             }
         }
-    }, [bsc.settings, isSQLiteInitialized])
+    }, [settings, isSQLiteInitialized])
 
     /**
      * Save settings to `SQLite` database.
@@ -174,7 +175,7 @@ export const useSettingsManager = () => {
                 }
             }
 
-            bsc.setSettings(newSettings)
+            setSettings(newSettings)
             // Mark that the initial load has completed so auto-save can begin.
             hasLoadedRef.current = true
             logWithTimestamp(`[SettingsManager] Settings loaded and applied to context ${context}.`)
@@ -182,8 +183,8 @@ export const useSettingsManager = () => {
             endTiming({ status: "success", usedDefaults: newSettings === defaultSettings })
         } catch (error) {
             logErrorWithTimestamp(`[SettingsManager] Error loading settings${context}:`, error)
-            bsc.setSettings(JSON.parse(JSON.stringify(defaultSettings)))
-            bsc.setReadyStatus(false)
+            setSettings(JSON.parse(JSON.stringify(defaultSettings)))
+            setReadyStatus(false)
             endTiming({ status: "error", error: error instanceof Error ? error.message : String(error) })
         }
     }
@@ -256,7 +257,7 @@ export const useSettingsManager = () => {
 
             // Save settings to SQLite database.
             await databaseManager.saveSettingsBatch(convertSettingsToBatch(importedSettings))
-            bsc.setSettings(importedSettings)
+            setSettings(importedSettings)
 
             // Import profiles if they exist.
             if (profiles && Array.isArray(profiles) && profiles.length > 0) {
@@ -331,7 +332,7 @@ export const useSettingsManager = () => {
             // `misc.formattedSettingsString`) are now filtered out at the load boundary
             // (`stripDbOwnedKeys`) so they never reach React state to begin with — only the
             // user-owned fields remain to be deep-cloned here.
-            const settingsForExport = JSON.parse(JSON.stringify(bsc.settings))
+            const settingsForExport = JSON.parse(JSON.stringify(settings))
 
             // Drop fields that are export-irrelevant but still live in React state.
             delete settingsForExport.misc.currentProfileName
@@ -451,8 +452,8 @@ export const useSettingsManager = () => {
             await databaseManager.saveSettingsBatch(convertSettingsToBatch(defaultSettingsCopy))
 
             // Update the current settings in context.
-            bsc.setSettings(defaultSettingsCopy)
-            bsc.setReadyStatus(false)
+            setSettings(defaultSettingsCopy)
+            setReadyStatus(false)
 
             logWithTimestamp("Settings reset to defaults successfully.")
 
