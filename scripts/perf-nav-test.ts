@@ -55,6 +55,20 @@ interface NavScenario {
     toggleTapX?: number
     /** Companion Y-coordinate to `toggleTapX`. */
     toggleTapY?: number
+    /**
+     * Sub-nested route name as it appears in `[PERF] UI - navigation_to_<subRoute>` log lines.
+     * When set, the harness performs a second navigation hop after the parent page settles:
+     * scroll the parent `subScrolls` times, tap `(subTapX, subTapY)` (the in-page link), and
+     * measure the sub-route's mount as if it were a fresh cold-nav. The parent's first nav
+     * still runs but its metrics are reported as warm-up for the sub-route's budget check.
+     */
+    subRoute?: string
+    /** Number of swipe-up gestures to perform on the parent page before tapping the sub-link. */
+    subScrolls?: number
+    /** X-coordinate (px) of the in-page link to the sub-nested route. */
+    subTapX?: number
+    /** Y-coordinate (px) of the in-page link to the sub-nested route. */
+    subTapY?: number
 }
 
 // Coordinates calibrated with `enableAskTheDocs=true` (Chat row inserted between
@@ -72,8 +86,39 @@ const SCENARIOS: NavScenario[] = [
     { name: "Scenario Overrides Settings", route: "ScenarioOverridesSettings", tapX: 290, tapY: 1065 },
     { name: "Debug Settings", route: "DebugSettings", tapX: 220, tapY: 1153 },
     { name: "LLM Settings", route: "LLMSettings", tapX: 220, tapY: 1227 },
-    // RacingPlanSettings / SkillPlanSettings are sub-nested and need a multi-tap nav (expand
-    // chevron then tap row) — not scripted yet.
+    // Sub-nested pages: navigate to the parent first, scroll to the in-page link, then tap. The
+    // sub-link y-coords are the on-screen position *after* the configured number of swipe-ups
+    // brings the link into view. Calibrated 2026-05-01 on the same emulator as the drawer rows.
+    //
+    // Order matters: navigating to a sub-route auto-expands the drawer to show that sub-route
+    // as a nested row, which shifts every drawer row *below* its parent down by ~89 px. Run
+    // Skill Plan first because Skill Settings (y=826) sits below Racing Settings (y=744) — the
+    // shift only affects rows below Skill Settings (none of which we touch later in the run).
+    // Reversing the order would shift Skill Settings out from under the Racing-Plan-iteration
+    // tap.
+    // The Skill Plan Settings page has 3 in-page entry links (Skill Point Check, Pre-Finals,
+    // Career Complete) that mount the same component under distinct route names — we measure
+    // the canonical "Skill Point Check" entry.
+    {
+        name: "Skill Plan Settings",
+        route: "SkillSettings",
+        tapX: 220,
+        tapY: 826,
+        subRoute: "SkillPlanSettingsSkillPointCheck",
+        subScrolls: 4,
+        subTapX: 540,
+        subTapY: 1474,
+    },
+    {
+        name: "Racing Plan Settings",
+        route: "RacingSettings",
+        tapX: 229,
+        tapY: 744,
+        subRoute: "RacingPlanSettings",
+        subScrolls: 3,
+        subTapX: 540,
+        subTapY: 1800,
+    },
 ]
 
 // Per-phase budget (ms). Soft thresholds — we report breaches but don't fail the run unless the
@@ -153,6 +198,12 @@ const PHASE_RE = /\[PERF\] UI - navigation_to_([A-Za-z]+)_([a-z_]+): ([\d.]+)ms/
 const TOTAL_RE = /\[PERF\] UI - navigation_to_([A-Za-z]+): ([\d.]+)ms/
 const BLOCK_RE = /\[BLOCK\] JS thread blocked for (\d+)ms/
 const SLOW_COMMIT_RE = /\[SLOW-COMMIT\] (\S+) commit took (\d+)ms/
+// Sub-routes are reached via in-page nav links rather than drawer rows, so they bypass
+// `markNavigationStart` and never get the `navigation_to_<route>` total. The destination's
+// `usePerformanceLogging` hook still fires `[PERF] UI - <component>_commit` on mount, and the
+// `Details` payload carries the real first-commit duration under `duration_ms` — we use that
+// as the sub-route's first-commit metric.
+const COMMIT_DURATION_RE = /\[PERF\] UI - ([A-Za-z]+)_commit: [\d.]+ms \| Details: \{[^}]*"duration_ms":([\d.]+)/
 
 /**
  * Aggregated parse result of one logcat capture window.
@@ -234,6 +285,12 @@ interface ScenarioResult {
     toggleBlocks: number[]
     /** Every `[SLOW-COMMIT]` event observed in the toggle window. */
     toggleSlowCommits: Array<{ component: string; ms: number }>
+    /** Sub-route name (matches `NavScenario.subRoute`), or `null` if this scenario has no sub-hop. */
+    subRoute: string | null
+    /** Total `navigation_to_<subRoute>` time in milliseconds, or `-1` if the log line never fired. */
+    subTotal: number
+    /** Per-phase samples for the sub-route's mount. */
+    subPhases: PhaseSample[]
 }
 
 /**
@@ -345,7 +402,60 @@ const main = async () => {
             await sleep(800)
         }
 
-        summary.push({ route: sc.route, total, phases: routePhases, navBlocks, toggleBlockedMs, toggleBlocks, toggleSlowCommits })
+        // Sub-route phase. Treat the parent page as already-warm: scroll its content the
+        // configured number of times to bring the in-page link into view, then tap it and
+        // measure the sub-route's commit-phase duration. In-page nav links bypass
+        // `markNavigationStart`, so we use the destination's `<Route>_commit` `duration_ms`
+        // as the first-commit metric (see `COMMIT_DURATION_RE`).
+        let subTotal = -1
+        let subPhases: PhaseSample[] = []
+        if (sc.subRoute && sc.subTapX != null && sc.subTapY != null) {
+            // Settle any deferred-render cascade on the parent page first.
+            await sleep(2500)
+            const scrolls = sc.subScrolls ?? 0
+            for (let i = 0; i < scrolls; i++) {
+                adb("shell input swipe 540 1500 540 200 100")
+                await sleep(400)
+            }
+            const subLogsPromise = captureLogcat(4000)
+            tapAt(sc.subTapX, sc.subTapY)
+            const subLogs = await subLogsPromise
+            for (const line of subLogs.split("\n")) {
+                const m = COMMIT_DURATION_RE.exec(line)
+                if (m && m[1] === sc.subRoute) {
+                    const ms = parseFloat(m[2])
+                    subTotal = ms
+                    subPhases = [{ route: sc.subRoute, phase: "first_commit", ms }]
+                    break
+                }
+            }
+            const firstCommitBudget = PHASE_BUDGETS_MS["first_commit"] ?? TOTAL_BUDGET_MS
+            const tag = subTotal > 0 && subTotal <= firstCommitBudget ? "  ✓" : "  ✗"
+            console.log(`${tag} sub_first_commit ${subTotal === -1 ? "no log" : `${subTotal.toFixed(0)}ms`} (${sc.subRoute}, budget ${firstCommitBudget}ms)`)
+            if (subTotal > firstCommitBudget || subTotal === -1) anyBreach = true
+            // The sub-route lives under a stack-pushed parent (Settings hub → RacingSettings →
+            // RacingPlanSettings). Inside a stack-pushed screen, edge-swipe is intercepted as
+            // stack-pop rather than drawer-open, so the next iteration's `openDrawer()` would
+            // silently fail. Pop twice to land back on the drawer-level Settings hub before
+            // the post-iteration `am start LAUNCHER` reset.
+            adb("shell input keyevent KEYCODE_BACK")
+            await sleep(500)
+            adb("shell input keyevent KEYCODE_BACK")
+            await sleep(500)
+        }
+
+        summary.push({
+            route: sc.route,
+            total,
+            phases: routePhases,
+            navBlocks,
+            toggleBlockedMs,
+            toggleBlocks,
+            toggleSlowCommits,
+            subRoute: sc.subRoute ?? null,
+            subTotal,
+            subPhases,
+        })
 
         // Reset to a known state by re-launching the activity rather than relying on BACK
         // semantics (which differ for drawer-level vs stack-level screens). singleTask + the
@@ -360,6 +470,10 @@ const main = async () => {
         const phasePart = s.phases.map((p) => `${p.phase}=${p.ms.toFixed(0)}`).join(" ")
         const togglePart = s.toggleBlockedMs != null ? ` toggle_blocked=${s.toggleBlockedMs}ms` : ""
         console.log(`  ${s.route.padEnd(28)} total=${s.total}ms ${phasePart}${togglePart}`)
+        if (s.subRoute) {
+            const subPhasePart = s.subPhases.map((p) => `${p.phase}=${p.ms.toFixed(0)}`).join(" ")
+            console.log(`    └─ ${s.subRoute.padEnd(24)} total=${s.subTotal}ms ${subPhasePart}`)
+        }
     }
 
     if (anyBreach) {
