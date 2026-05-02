@@ -767,9 +767,7 @@ const SmartRaceSolverSettings = () => {
 
     // -------- Helpers --------
 
-    const renderAptitudeRow = (slot: keyof AptitudeMap, label: string) => (
-        <AptitudeRow key={slot} slot={slot} label={label} currentRank={aptitudes[slot]} onChange={setAptitude} styles={styles} />
-    )
+    const renderAptitudeRow = (slot: keyof AptitudeMap, label: string) => <AptitudeRow key={slot} slot={slot} label={label} currentRank={aptitudes[slot]} onChange={setAptitude} styles={styles} />
 
     const renderEpithetChip = (epithet: EpithetEntry, selected: boolean, onPress: () => void) => (
         <TouchableOpacity key={epithet.name} style={[styles.chip, selected && styles.chipActive]} onPress={onPress}>
