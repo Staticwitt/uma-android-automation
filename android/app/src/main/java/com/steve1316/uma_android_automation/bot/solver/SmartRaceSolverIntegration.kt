@@ -867,6 +867,7 @@ object SmartRaceSolverIntegration {
                 RaceCandidate(
                     key = key,
                     name = r.optString("name", ""),
+                    nameFormatted = r.optString("nameFormatted", ""),
                     date = date,
                     classYear = classYear,
                     raceTrack = r.optString("raceTrack", ""),
@@ -1003,6 +1004,7 @@ object SmartRaceSolverIntegration {
         RaceCandidate(
             key = name,
             name = name,
+            nameFormatted = "",
             date = "",
             classYear = "",
             raceTrack = "",

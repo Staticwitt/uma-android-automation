@@ -120,6 +120,7 @@ data class Weights(
 data class RaceCandidate(
     val key: String,
     val name: String,
+    val nameFormatted: String,
     val date: String,
     val classYear: String,
     val raceTrack: String,
