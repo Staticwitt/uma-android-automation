@@ -197,6 +197,17 @@ abstract class Campaign(game: Game) : Task(game) {
      */
     protected var bHasCheckedDateThisTurn: Boolean = false
 
+    /**
+     * Counts consecutive [performMiscChecks] iterations where [ButtonCancel] matched. The bot only
+     * exits on a confirmed warning popup once this reaches [WARNING_POPUP_CONFIRM_THRESHOLD], so a
+     * single-frame template miss against an unrelated UI element no longer trips a false-positive exit.
+     * Reset to 0 on any iteration that does not match.
+     */
+    private var consecutiveButtonCancelMatches: Int = 0
+
+    /** Number of consecutive [ButtonCancel] matches required to confirm a real warning popup. */
+    private val WARNING_POPUP_CONFIRM_THRESHOLD: Int = 5
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Debug Tests
@@ -1521,21 +1532,14 @@ abstract class Campaign(game: Game) : Task(game) {
     /**
      * Performs miscellaneous checks to resolve instances where the bot might be stuck.
      *
-     * @return True if the checks passed, false if the bot encountered a warning popup and needs to exit.
+     * @return True if a misc check handled the current screen, false otherwise.
      */
     open fun performMiscChecks(): Boolean {
         MessageLog.i(TAG, "\n[MISC] Beginning check for misc cases...")
 
         val sourceBitmap = game.imageUtils.getSourceBitmap()
 
-        if (game.enablePopupCheck && ButtonCancel.check(game.imageUtils, sourceBitmap = sourceBitmap)) {
-            MessageLog.v(TAG, "\n[END] Bot may have encountered a warning popup. Exiting now...")
-            game.notificationMessage = "Bot may have encountered a warning popup"
-            if (DiscordUtils.enableDiscordNotifications) {
-                DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot may have encountered a warning popup. Exiting now...\n```")
-            }
-            throw CampaignBreakpointException(game.notificationMessage)
-        } else if (ButtonNext.click(game.imageUtils, sourceBitmap = sourceBitmap)) {
+        if (ButtonNext.click(game.imageUtils, sourceBitmap = sourceBitmap)) {
             // Now confirm the completion of a Training Goal popup.
             MessageLog.i(TAG, "[MISC] Popup detected that needs to be dismissed with the \"Next\" button.")
             game.wait(2.0)
@@ -1583,7 +1587,20 @@ abstract class Campaign(game: Game) : Task(game) {
         } else if (!BotService.isRunning) {
             MessageLog.v(TAG, "\n[END] BotService is not running. Exiting now...")
             throw InterruptedException()
+        } else if (ButtonCancel.check(game.imageUtils, sourceBitmap = sourceBitmap)) {
+            consecutiveButtonCancelMatches++
+            if (consecutiveButtonCancelMatches >= WARNING_POPUP_CONFIRM_THRESHOLD) {
+                MessageLog.v(TAG, "\n[END] Bot may have encountered a warning popup. Exiting now...")
+                game.notificationMessage = "Bot may have encountered a warning popup"
+                if (DiscordUtils.enableDiscordNotifications) {
+                    DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot may have encountered a warning popup. Exiting now...\n```")
+                }
+                throw CampaignBreakpointException(game.notificationMessage)
+            }
+            MessageLog.i(TAG, "[MISC] ButtonCancel matched ($consecutiveButtonCancelMatches/$WARNING_POPUP_CONFIRM_THRESHOLD). Will exit if it persists across consecutive iterations.")
+            return false
         } else {
+            consecutiveButtonCancelMatches = 0
             MessageLog.i(TAG, "[MISC] Did not detect any popups or the Crane Game on the screen. Moving on...")
         }
 

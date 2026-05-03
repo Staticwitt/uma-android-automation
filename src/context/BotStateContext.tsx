@@ -27,7 +27,6 @@ export interface Settings {
     // General settings
     general: {
         scenario: string
-        enablePopupCheck: boolean
         enableCraneGameAttempt: boolean
         enableStopBeforeFinals: boolean
         enableStopAtDate: boolean
@@ -217,7 +216,6 @@ export interface Settings {
 export const defaultSettings: Settings = {
     general: {
         scenario: "",
-        enablePopupCheck: false,
         enableCraneGameAttempt: false,
         enableStopBeforeFinals: false,
         enableStopAtDate: false,
