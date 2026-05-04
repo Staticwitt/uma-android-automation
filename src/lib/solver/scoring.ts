@@ -6,7 +6,6 @@ import {
     BASE_STAT_BY_GRADE,
     COUNTRY_NAMES,
     EpithetEntry,
-    EpithetWithMatchers,
     MatcherProgress,
     OP_GRADES,
     PreviewStats,
@@ -15,8 +14,80 @@ import {
 } from "./constants"
 import { SchedulePreview } from "./preview"
 
+/** Matches gametora's "<X> scenario only" bullet. Group 1 captures the scenario name. */
+const SCENARIO_RESTRICTION_REGEX = /([A-Za-z][A-Za-z0-9 \-]*?) scenario only/i
+
+/** Matches gametora's character-restriction bullet, e.g. "Yaeno Muteki only". */
+const CHARACTER_RESTRICTION_REGEX = /^(.+?)\s+only$/
+
+/** Matches gametora's stat-reward bullet. Group 1+2 = current "<count> random stats +<perStat>"; group 3+4 = legacy "+<perStat> to <count> random stats". */
+const STAT_REWARD_REGEX = /(?:(\d+)\s+random\s+stats?\s*\+(\d+))|(?:\+(\d+)\s+to\s+(\d+)\s+random\s+stats?)/i
+
+/** Matches gametora's hint-reward bullet, e.g. "Reward: Top Pick hint +1". Group 1 = level. */
+const HINT_REWARD_REGEX = /hint\s*\+(\d+)/i
+
 /** True iff the race's name contains one of the COUNTRY_NAMES tokens (Globe-Trotter filter). */
 export const nameContainsCountry = (name: string): boolean => COUNTRY_NAMES.some((c) => name.includes(c))
+
+/**
+ * Scenario gate for an epithet. Prefers the structured `scenarios` field, falling back to scanning `bullet_points` for "<X> scenario only".
+ *
+ * @param e Epithet entry to inspect.
+ * @returns Scenario names referenced by any "<X> scenario only" bullet.
+ */
+export const scenariosForEpithet = (e: EpithetEntry): string[] => {
+    if (e.scenarios && e.scenarios.length > 0) return e.scenarios
+    const bullets = e.bullet_points ?? []
+    const out: string[] = []
+    for (const b of bullets) {
+        const m = SCENARIO_RESTRICTION_REGEX.exec(b)
+        if (m) out.push(m[1].trim())
+    }
+    return out
+}
+
+/**
+ * Character gate for an epithet. Prefers the structured `characters` field, falling back to scanning `bullet_points` for standalone "<name> only".
+ *
+ * @param e Epithet entry to inspect.
+ * @returns Character names referenced by any standalone "<name> only" bullet.
+ */
+export const charactersForEpithet = (e: EpithetEntry): string[] => {
+    if (e.characters && e.characters.length > 0) return e.characters
+    const bullets = e.bullet_points ?? []
+    const out: string[] = []
+    for (const b of bullets) {
+        const trimmed = b.trim().replace(/\.$/, "")
+        if (/scenario only/i.test(trimmed)) continue
+        const m = CHARACTER_RESTRICTION_REGEX.exec(trimmed)
+        if (m) out.push(m[1].trim())
+    }
+    return out
+}
+
+/**
+ * Parses an epithet's reward bullet into kind + total magnitude.
+ * The reward bullet is the last bullet by convention; this scans every bullet so a row whose reward isn't last still works.
+ *
+ * @param e Epithet entry to inspect.
+ * @returns `{ kind, amount }` where `amount` is `per_stat * stat_count` for stat rewards, the level for hint rewards, and 0 otherwise.
+ */
+export const epithetReward = (e: EpithetEntry): { kind: "stat" | "hint" | "unknown"; amount: number } => {
+    const bullets = e.bullet_points ?? []
+    if (bullets.length === 0) return { kind: "unknown", amount: 0 }
+    const ordered = [bullets[bullets.length - 1], ...bullets.slice(0, -1)]
+    for (const b of ordered) {
+        const stat = STAT_REWARD_REGEX.exec(b)
+        if (stat) {
+            const count = parseInt(stat[1] ?? stat[4] ?? "0", 10)
+            const perStat = parseInt(stat[2] ?? stat[3] ?? "0", 10)
+            return { kind: "stat", amount: count * perStat }
+        }
+        const hint = HINT_REWARD_REGEX.exec(b)
+        if (hint) return { kind: "hint", amount: parseInt(hint[1], 10) }
+    }
+    return { kind: "unknown", amount: 0 }
+}
 
 const isGradedRace = (grade: string): boolean => grade === "G1" || grade === "G2" || grade === "G3"
 const isOpenOrAboveRace = (grade: string): boolean => isGradedRace(grade) || grade === "OP" || grade === "FINALE" || grade === "EX"
@@ -48,7 +119,7 @@ export const isRaceEligible = (race: RaceEntry, aptitudes: AptitudeMap, weights:
  * `epithetAll` / `epithetAnyOf` are dependency matchers and are intentionally skipped here.
  */
 export const epithetsForRace = (race: RaceEntry): EpithetEntry[] => {
-    const all = epithetsData as unknown as Record<string, EpithetWithMatchers>
+    const all = epithetsData as unknown as Record<string, EpithetEntry>
     const out: EpithetEntry[] = []
     const graded = isGradedRace(race.grade)
     const openOrAbove = isOpenOrAboveRace(race.grade)
@@ -165,7 +236,7 @@ export const matcherProgress = (upToTurn: number, matcher: Record<string, unknow
  * `(current, required)` so multi-condition epithets like Turf Tussler render as "(1/4) → (4/4)"
  * instead of "(1/1)" after just one matcher fires. Returns null when no matchers progress.
  */
-export const epithetProgress = (upToTurn: number, ep: EpithetWithMatchers, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): MatcherProgress | null => {
+export const epithetProgress = (upToTurn: number, ep: EpithetEntry, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): MatcherProgress | null => {
     let totalCurrent = 0
     let totalRequired = 0
     for (const m of ep.matchers ?? []) {
@@ -183,7 +254,7 @@ export const epithetProgress = (upToTurn: number, ep: EpithetWithMatchers, previ
  * total race stats (BASE_STAT × (1 + raceBonusPct/100)), race SP, epithet stats, and hint count.
  */
 export const computePreviewStats = (preview: SchedulePreview, weights: Pick<WeightsMap, "raceBonusPct">, racesByKey: Record<string, RaceEntry>): PreviewStats => {
-    const epithetsAll = epithetsData as unknown as Record<string, EpithetEntry & { reward_kind?: string; amount?: number }>
+    const epithetsAll = epithetsData as unknown as Record<string, EpithetEntry>
     const rb = Math.max(0, weights.raceBonusPct) / 100
     let races = 0
     let raceStats = 0
@@ -201,8 +272,9 @@ export const computePreviewStats = (preview: SchedulePreview, weights: Pick<Weig
     for (const name of preview.projectedEpithets) {
         const ep = epithetsAll[name]
         if (!ep) continue
-        if (ep.reward_kind === "stat") epithetStats += ep.amount ?? 0
-        else if (ep.reward_kind === "hint") hints += 1
+        const { kind, amount } = epithetReward(ep)
+        if (kind === "stat") epithetStats += amount
+        else if (kind === "hint") hints += 1
     }
     return { races, epithets: preview.projectedEpithets.length, raceStats, raceSp, epithetStats, hints }
 }

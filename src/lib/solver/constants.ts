@@ -23,13 +23,11 @@ export interface RaceEntry {
 
 export interface EpithetEntry {
     name: string
-    category: string
-    reward_text: string
-    condition_text: string
+    bullet_points: string[]
+    scenarios?: string[]
+    characters?: string[]
+    matchers?: Array<Record<string, unknown>>
 }
-
-/** Epithet shape with its matcher list inflated. Used by `epithetsForRace` / `epithetProgress`. */
-export type EpithetWithMatchers = EpithetEntry & { matchers?: Array<Record<string, unknown>> }
 
 export interface CharacterPresetEntry {
     name: string
