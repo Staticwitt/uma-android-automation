@@ -524,11 +524,19 @@ const SmartRaceSolverSettings = () => {
                 lockTurn: { width: 60, color: colors.foreground, fontSize: 13 },
                 lockRace: { flex: 1, color: colors.foreground, fontSize: 13 },
                 presetList: {
-                    maxHeight: 280,
+                    maxHeight: 600,
                     marginBottom: 8,
                     borderWidth: StyleSheet.hairlineWidth,
                     borderColor: colors.border,
                     borderRadius: 6,
+                },
+                epithetList: {
+                    maxHeight: 600,
+                    marginVertical: 4,
+                    borderWidth: StyleSheet.hairlineWidth,
+                    borderColor: colors.border,
+                    borderRadius: 6,
+                    padding: 6,
                 },
                 presetItem: {
                     paddingVertical: 8,
@@ -1046,11 +1054,13 @@ const SmartRaceSolverSettings = () => {
                                             completion use Forced Epithets instead.
                                         </Text>
                                         <Input style={styles.input} value={epithetSearch} onChangeText={setEpithetSearch} placeholder="Search 36 epithets…" />
-                                        <View style={styles.row}>
-                                            {filteredEpithets.map((ep) => (
-                                                <EpithetChip key={ep.name} epithet={ep} selected={targetEpithets.includes(ep.name)} onToggle={toggleTargetEpithet} styles={styles} />
-                                            ))}
-                                        </View>
+                                        <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                                            <View style={styles.row}>
+                                                {filteredEpithets.map((ep) => (
+                                                    <EpithetChip key={ep.name} epithet={ep} selected={targetEpithets.includes(ep.name)} onToggle={toggleTargetEpithet} styles={styles} />
+                                                ))}
+                                            </View>
+                                        </ScrollView>
                                     </View>
                                 </SearchableItem>
 
@@ -1070,11 +1080,13 @@ const SmartRaceSolverSettings = () => {
                                             sparingly — every forced epithet shrinks the search space and may push the solver to skip otherwise-valuable races just to satisfy the constraint.
                                         </Text>
                                         <Input style={styles.input} value={forcedEpithetSearch} onChangeText={setForcedEpithetSearch} placeholder="Search 36 epithets…" />
-                                        <View style={styles.row}>
-                                            {filteredForcedEpithets.map((ep) => (
-                                                <EpithetChip key={ep.name} epithet={ep} selected={forcedEpithets.includes(ep.name)} onToggle={toggleForcedEpithet} styles={styles} />
-                                            ))}
-                                        </View>
+                                        <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                                            <View style={styles.row}>
+                                                {filteredForcedEpithets.map((ep) => (
+                                                    <EpithetChip key={ep.name} epithet={ep} selected={forcedEpithets.includes(ep.name)} onToggle={toggleForcedEpithet} styles={styles} />
+                                                ))}
+                                            </View>
+                                        </ScrollView>
                                     </View>
                                 </SearchableItem>
 
