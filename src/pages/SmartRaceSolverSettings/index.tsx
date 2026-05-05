@@ -17,7 +17,16 @@ import {
     WeightsMap,
     YEAR_LABELS,
 } from "../../lib/solver/constants"
-import { charactersForEpithet, computePreviewStats, epithetProgress, epithetsForRace, isRaceEligible, scenariosForEpithet, turnsContributingToEpithet } from "../../lib/solver/scoring"
+import {
+    charactersForEpithet,
+    computePreviewStats,
+    conditionLabelsForRaceAndEpithet,
+    epithetProgress,
+    epithetsForRace,
+    isRaceEligible,
+    scenariosForEpithet,
+    turnsContributingToEpithet,
+} from "../../lib/solver/scoring"
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, GeneralMiscContext, defaultSettings } from "../../context/BotStateContext"
@@ -809,11 +818,13 @@ const SmartRaceSolverSettings = () => {
                                 const before = preview ? epithetProgress(turn - 1, ep, preview, racesByKey) : null
                                 const after = preview ? epithetProgress(turn, ep, preview, racesByKey) : null
                                 const progLabel = before && after ? `(${before.current}/${before.required} -> ${after.current}/${after.required}) ` : ""
-                                const rewardBullet = (ep.bullet_points ?? []).slice(-1)[0] ?? ""
+                                const conditions = race ? conditionLabelsForRaceAndEpithet(race, ep) : []
+                                const tail = conditions.join("; ")
                                 return (
                                     <Text key={ep.name} style={styles.popoverEpithet}>
                                         • {progLabel}
-                                        {ep.name} — {rewardBullet}
+                                        {ep.name}
+                                        {tail ? ` — ${tail}` : ""}
                                     </Text>
                                 )
                             })
@@ -1019,24 +1030,25 @@ const SmartRaceSolverSettings = () => {
                                         <View>
                                             <Text style={styles.infoLabel}>How it works</Text>
                                             <Text style={styles.infoDescription}>
-                                                The solver searches the entire 72-turn career and picks, for every turn, the best decision (Race / Train / Rest) that maximizes your projected score against the
-                                                target epithet rewards. The bot only runs the races the solver currently plans and treats the rest of the schedule as training or rest.
+                                                The solver searches the entire 72-turn career and picks, for every turn, the best decision (Race / Train / Rest) that maximizes your projected score
+                                                against the target epithet rewards. The bot only runs the races the solver currently plans and treats the rest of the schedule as training or rest.
                                             </Text>
 
                                             <View style={styles.infoBlock}>
                                                 <Text style={styles.infoLabel}>What happens when you lose a race</Text>
                                                 <Text style={styles.infoDescription}>
-                                                    A loss is recorded against that turn and the solver immediately re-plans the remaining turns. Epithets that depended on the lost race may shift to alternative
-                                                    paths or drop out entirely, so later races / trainings can change to keep the rest of the run on the highest-scoring track still available.
+                                                    A loss is recorded against that turn and the solver immediately re-plans the remaining turns. Epithets that depended on the lost race may shift to
+                                                    alternative paths or drop out entirely, so later races / trainings can change to keep the rest of the run on the highest-scoring track still
+                                                    available.
                                                 </Text>
                                             </View>
 
                                             <View style={styles.infoBlock}>
                                                 <Text style={styles.infoLabel}>Race History scrape</Text>
                                                 <Text style={styles.infoDescription}>
-                                                    On bot start (and only when the career is past the pre-debut turns), the bot opens the in-game Career → Race History dialog and scrapes every past race entry. Each
-                                                    row is matched to the race calendar so wins seed your epithet progress and losses are remembered when re-planning. This lets you stop and resume a career mid-run
-                                                    without the solver forgetting what already happened.
+                                                    On bot start (and only when the career is past the pre-debut turns), the bot opens the in-game Career → Race History dialog and scrapes every past
+                                                    race entry. Each row is matched to the race calendar so wins seed your epithet progress and losses are remembered when re-planning. This lets you
+                                                    stop and resume a career mid-run without the solver forgetting what already happened.
                                                 </Text>
                                             </View>
                                         </View>

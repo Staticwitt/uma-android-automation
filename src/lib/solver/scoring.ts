@@ -146,6 +146,46 @@ export const isRaceEligible = (race: RaceEntry, aptitudes: AptitudeMap, weights:
 }
 
 /**
+ * Predicate evaluating whether `matcher` (a raw record from `epithets.json`) is satisfied by `race`.
+ * Mirrors the matcher branches in `Epithet.kt`: `winRace`, `winRaceTimes`, `winAnyOf`, `winAtLeast`, `winCount`.
+ * `epithetAll` / `epithetAnyOf` are dependency matchers and return false here.
+ *
+ * @param matcher Raw matcher record from `epithets.json`.
+ * @param race The race to test.
+ * @returns True when this matcher fires for this race.
+ */
+const matcherMatchesRace = (matcher: Record<string, unknown>, race: RaceEntry): boolean => {
+    const type = matcher["type"] as string
+    const name = matcher["name"] as string | undefined
+    const names = (matcher["names"] as string[] | undefined) ?? []
+    switch (type) {
+        case "winRace":
+        case "winRaceTimes":
+            return name != null && name === race.name
+        case "winAnyOf":
+        case "winAtLeast":
+            return names.includes(race.name)
+        case "winCount": {
+            const f = (matcher["filter"] as Record<string, unknown> | undefined) ?? {}
+            if (f["terrain"] && f["terrain"] !== race.terrain) return false
+            if (f["grade"] && f["grade"] !== race.grade) return false
+            if (f["gradedOnly"] && !isGradedRace(race.grade)) return false
+            if (f["gradeAtLeastOpen"] && !isOpenOrAboveRace(race.grade)) return false
+            const dts = f["distanceTypes"] as string[] | undefined
+            if (dts && dts.length > 0 && !dts.includes(race.distanceType)) return false
+            const tracks = f["raceTracks"] as string[] | undefined
+            if (tracks && tracks.length > 0 && !tracks.includes(race.raceTrack)) return false
+            const nameContains = f["nameContains"] as string | undefined
+            if (nameContains && !race.name.toLowerCase().includes(nameContains.toLowerCase())) return false
+            if (f["nameContainsCountry"] && !nameContainsCountry(race.name)) return false
+            return true
+        }
+        default:
+            return false
+    }
+}
+
+/**
  * Returns every epithet whose matcher list references the given race.
  * Mirrors the matcher branches in `Epithet.kt`: `winRace`, `winRaceTimes`, `winAnyOf`, `winAtLeast`, `winCount`.
  * `epithetAll` / `epithetAnyOf` are dependency matchers and are intentionally skipped here.
@@ -156,41 +196,108 @@ export const isRaceEligible = (race: RaceEntry, aptitudes: AptitudeMap, weights:
 export const epithetsForRace = (race: RaceEntry): EpithetEntry[] => {
     const all = epithetsData as unknown as Record<string, EpithetEntry>
     const out: EpithetEntry[] = []
-    const graded = isGradedRace(race.grade)
-    const openOrAbove = isOpenOrAboveRace(race.grade)
     for (const ep of Object.values(all)) {
         const matchers = ep.matchers ?? []
-        const matched = matchers.some((m) => {
-            const type = m["type"] as string
-            const name = m["name"] as string | undefined
-            const names = (m["names"] as string[] | undefined) ?? []
-            switch (type) {
-                case "winRace":
-                case "winRaceTimes":
-                    return name != null && name === race.name
-                case "winAnyOf":
-                case "winAtLeast":
-                    return names.includes(race.name)
-                case "winCount": {
-                    const f = (m["filter"] as Record<string, unknown> | undefined) ?? {}
-                    if (f["terrain"] && f["terrain"] !== race.terrain) return false
-                    if (f["grade"] && f["grade"] !== race.grade) return false
-                    if (f["gradedOnly"] && !graded) return false
-                    if (f["gradeAtLeastOpen"] && !openOrAbove) return false
-                    const dts = f["distanceTypes"] as string[] | undefined
-                    if (dts && dts.length > 0 && !dts.includes(race.distanceType)) return false
-                    const tracks = f["raceTracks"] as string[] | undefined
-                    if (tracks && tracks.length > 0 && !tracks.includes(race.raceTrack)) return false
-                    const nameContains = f["nameContains"] as string | undefined
-                    if (nameContains && !race.name.toLowerCase().includes(nameContains.toLowerCase())) return false
-                    if (f["nameContainsCountry"] && !nameContainsCountry(race.name)) return false
-                    return true
-                }
-                default:
-                    return false
+        if (matchers.some((m) => matcherMatchesRace(m, race))) out.push(ep)
+    }
+    return out
+}
+
+/**
+ * Returns the indices of matchers in `ep.matchers` that fire for `race`.
+ * Useful when callers need to know not just whether an epithet matched but which matcher(s) drove the match.
+ *
+ * @param race The race being scheduled.
+ * @param ep Epithet whose matcher list should be evaluated.
+ * @returns Indices into `ep.matchers` for matchers satisfied by `race`. Empty when none fire.
+ */
+export const matchingMatcherIndicesForRace = (race: RaceEntry, ep: EpithetEntry): number[] => {
+    const matchers = ep.matchers ?? []
+    const out: number[] = []
+    for (let i = 0; i < matchers.length; i++) {
+        if (matcherMatchesRace(matchers[i], race)) out.push(i)
+    }
+    return out
+}
+
+/**
+ * Picks the best display string for a single fired matcher.
+ * Prefers a verbatim bullet from `bullets` so the label matches gametora's authored phrasing in the rest of the UI.
+ * Falls back to a synthesized phrase when no bullet matches.
+ *
+ * @param matcher The matcher that fired.
+ * @param race The race that triggered it.
+ * @param bullets The same epithet's `bullet_points` array.
+ * @returns Display label, or null when `matcher` is a prerequisite type with no race-condition meaning.
+ */
+const matcherConditionLabel = (matcher: Record<string, unknown>, race: RaceEntry, bullets: string[]): string | null => {
+    const type = matcher["type"] as string
+    const name = matcher["name"] as string | undefined
+    const findBulletContaining = (needle: string): string | null => {
+        if (!needle) return null
+        const lower = needle.toLowerCase()
+        return bullets.find((b) => b.toLowerCase().includes(lower)) ?? null
+    }
+    switch (type) {
+        case "winRace": {
+            if (!name) return null
+            return findBulletContaining(name) ?? `Win the ${name}`
+        }
+        case "winRaceTimes": {
+            if (!name) return null
+            const times = matcher["times"] as number | undefined
+            return findBulletContaining(name) ?? (times != null ? `Win the ${name} (${times} times)` : `Win the ${name}`)
+        }
+        case "winAnyOf":
+        case "winAtLeast":
+            return findBulletContaining(race.name) ?? `Win the ${race.name}`
+        case "winCount": {
+            const f = (matcher["filter"] as Record<string, unknown> | undefined) ?? {}
+            const terrain = f["terrain"] as string | undefined
+            const grade = f["grade"] as string | undefined
+            const dts = (f["distanceTypes"] as string[] | undefined) ?? []
+            const keywords: string[] = []
+            if (terrain) keywords.push(terrain.toLowerCase())
+            if (grade) keywords.push(grade)
+            for (const dt of dts) keywords.push(dt.toLowerCase())
+            for (const k of keywords) {
+                const hit = findBulletContaining(k)
+                if (hit) return hit
             }
-        })
-        if (matched) out.push(ep)
+            const count = (matcher["count"] as number | undefined) ?? 1
+            const parts: string[] = []
+            if (grade) parts.push(grade)
+            if (f["gradeAtLeastOpen"]) parts.push("OP+")
+            if (f["gradedOnly"]) parts.push("graded")
+            if (terrain) parts.push(terrain.toLowerCase())
+            if (f["nameContainsCountry"]) parts.push("country-named")
+            parts.push(count === 1 ? "race" : "races")
+            return `Win ${count} ${parts.join(" ")}`.replace(/\s+/g, " ").trim()
+        }
+        default:
+            return null
+    }
+}
+
+/**
+ * Builds short labels describing which condition(s) of `ep` this race progresses.
+ * For each matcher that fires for `race`, the helper prefers a verbatim bullet from `ep.bullet_points` so the label matches gametora's wording.
+ *
+ * @param race The race contributing progress.
+ * @param ep Epithet whose condition the race advances.
+ * @returns Deduped condition labels in matcher-list order. Empty when no matcher in `ep` fires for `race`.
+ */
+export const conditionLabelsForRaceAndEpithet = (race: RaceEntry, ep: EpithetEntry): string[] => {
+    const matchers = ep.matchers ?? []
+    const bullets = ep.bullet_points ?? []
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const idx of matchingMatcherIndicesForRace(race, ep)) {
+        const label = matcherConditionLabel(matchers[idx], race, bullets)
+        if (label && !seen.has(label)) {
+            seen.add(label)
+            out.push(label)
+        }
     }
     return out
 }
