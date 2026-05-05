@@ -25,6 +25,7 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomButton from "../../components/CustomButton"
 import CustomAccordion from "../../components/CustomAccordion"
+import InfoContainer from "../../components/InfoContainer"
 import { Input } from "../../components/ui/input"
 import racesData from "../../data/races.json"
 import epithetsData from "../../data/epithets.json"
@@ -537,6 +538,9 @@ const SmartRaceSolverSettings = () => {
                 section: { marginVertical: 8, padding: 12, backgroundColor: colors.card, borderRadius: 8 },
                 sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.foreground, marginBottom: 6 },
                 description: { fontSize: 13, color: colors.mutedForeground, marginBottom: 8 },
+                infoBlock: { marginTop: 12 },
+                infoLabel: { fontWeight: "bold", color: colors.foreground, fontSize: 14, lineHeight: 22, includeFontPadding: false },
+                infoDescription: { fontSize: 14, color: colors.foreground, opacity: 0.7, lineHeight: 22, includeFontPadding: false, marginTop: 2 },
                 restrictionNotice: {
                     fontSize: 12,
                     color: colors.foreground,
@@ -1009,6 +1013,36 @@ const SmartRaceSolverSettings = () => {
 
                         {showHeavySections && (
                             <>
+                                {/* How it works info box. */}
+                                <View style={styles.section}>
+                                    <InfoContainer>
+                                        <View>
+                                            <Text style={styles.infoLabel}>How it works</Text>
+                                            <Text style={styles.infoDescription}>
+                                                The solver searches the entire 72-turn career and picks, for every turn, the best decision (Race / Train / Rest) that maximizes your projected score against the
+                                                target epithet rewards. The bot only runs the races the solver currently plans and treats the rest of the schedule as training or rest.
+                                            </Text>
+
+                                            <View style={styles.infoBlock}>
+                                                <Text style={styles.infoLabel}>What happens when you lose a race</Text>
+                                                <Text style={styles.infoDescription}>
+                                                    A loss is recorded against that turn and the solver immediately re-plans the remaining turns. Epithets that depended on the lost race may shift to alternative
+                                                    paths or drop out entirely, so later races / trainings can change to keep the rest of the run on the highest-scoring track still available.
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.infoBlock}>
+                                                <Text style={styles.infoLabel}>Race History scrape</Text>
+                                                <Text style={styles.infoDescription}>
+                                                    On bot start (and only when the career is past the pre-debut turns), the bot opens the in-game Career → Race History dialog and scrapes every past race entry. Each
+                                                    row is matched to the race calendar so wins seed your epithet progress and losses are remembered when re-planning. This lets you stop and resume a career mid-run
+                                                    without the solver forgetting what already happened.
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </InfoContainer>
+                                </View>
+
                                 {/* Character preset */}
                                 <SearchableItem
                                     id="smart-solver-character-preset"
