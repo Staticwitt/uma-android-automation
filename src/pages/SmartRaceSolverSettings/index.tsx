@@ -17,15 +17,7 @@ import {
     WeightsMap,
     YEAR_LABELS,
 } from "../../lib/solver/constants"
-import {
-    charactersForEpithet,
-    computePreviewStats,
-    epithetProgress,
-    epithetsForRace,
-    isRaceEligible,
-    scenariosForEpithet,
-    turnsContributingToEpithet,
-} from "../../lib/solver/scoring"
+import { charactersForEpithet, computePreviewStats, epithetProgress, epithetsForRace, isRaceEligible, scenariosForEpithet, turnsContributingToEpithet } from "../../lib/solver/scoring"
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, GeneralMiscContext, defaultSettings } from "../../context/BotStateContext"
@@ -41,29 +33,18 @@ import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import SearchableItem from "../../components/SearchableItem"
 
-// Stringify the bundled JSON once at module load so we don't pay the serialisation cost on
-// every debounced preview call.
+// Stringify the bundled JSON once at module load so we don't pay the serialisation cost on every debounced preview call.
 const RACES_DATA_JSON = JSON.stringify(racesData)
 const EPITHETS_DATA_JSON = JSON.stringify(epithetsData)
 
-// Module-scoped cache of the last computed preview so navigating away and back to this page shows
-// the previous calendar instantly while a fresh re-solve runs in the background. Cleared on app
-// reload, not by navigation. Pair: snapshotKey (JSON.stringify of solver-relevant settings) and
-// the preview result it produced.
+// Remembers the last preview so re-opening this page shows the previous calendar instantly instead of a blank screen while the solver re-runs.
+// Keyed on a JSON snapshot of the solver-relevant settings. Cleared only on app reload.
 let lastPreviewCache: { key: string; preview: SchedulePreview } | null = null
 
-// Kotlin caches parsed races/epithets across calls; once we've shipped the bundled JSON once we
-// can omit it from subsequent bridge payloads, dropping ~150KB of marshalling per call.
+// Tracks whether the bundled races/epithets JSON has been shipped to Kotlin.
+// After the first bridge call Kotlin caches its own copy, so subsequent calls omit the payload and save ~150KB of marshalling.
 let bridgeDataPrimed = false
 
-/**
- * Memoized aptitude row. Six of these mount simultaneously (Sprint, Mile, Medium, Long, Turf,
- * Dirt). Tapping any rank only changes the slice key for one slot, so the other five rows pass
- * identical props and skip reconciliation entirely.
- *
- * `onChange` is the parent's `setAptitude` callback — kept stable via `useCallback` with a
- * functional updater, so the shallow comparison succeeds for unchanged rows.
- */
 interface AptitudeRowProps {
     /** The aptitude slot this row controls (e.g. "Sprint", "Mile"). */
     slot: keyof AptitudeMap
@@ -76,6 +57,13 @@ interface AptitudeRowProps {
     /** Style sheet from the parent (stable across renders). */
     styles: any
 }
+
+/**
+ * Memoized row of rank buttons (S..G) for one aptitude slot.
+ *
+ * @param props The {@link AptitudeRowProps} for this row.
+ * @returns The rendered aptitude row.
+ */
 const AptitudeRow = memo(({ slot, label, currentRank, onChange, styles }: AptitudeRowProps) => (
     <View style={styles.aptRow}>
         <Text style={styles.aptLabel}>{label}</Text>
@@ -93,12 +81,6 @@ const AptitudeRow = memo(({ slot, label, currentRank, onChange, styles }: Aptitu
 ))
 AptitudeRow.displayName = "AptitudeRow"
 
-/**
- * Memoized epithet chip. The Selected and Projected lists each render up to 36 of these. With
- * a stable `onToggle` callback (the parent uses `useCallback` + functional updater) and a
- * stable `epithet` reference (the data files are loaded once at module scope), only the chips
- * whose `selected` flag flipped reconcile on a target/forced toggle.
- */
 interface EpithetChipProps {
     /** The epithet entry to render (data file row). */
     epithet: { name: string; bullet_points?: string[]; [k: string]: any }
@@ -110,10 +92,15 @@ interface EpithetChipProps {
     styles: any
 }
 
+/**
+ * Memoized chip for a single epithet in the target / forced pickers.
+ *
+ * @param props The {@link EpithetChipProps} for this chip.
+ * @returns The rendered epithet chip.
+ */
 const EpithetChip = memo(({ epithet, selected, onToggle, styles }: EpithetChipProps) => {
     const bullets = epithet.bullet_points ?? []
-    // By convention the last bullet is the reward and gets the bolder `chipReward` styling so
-    // the visual hierarchy matches the legacy reward_text / condition_text layout.
+    // Last bullet is the reward; earlier bullets are conditions.
     const conditionBullets = bullets.length > 1 ? bullets.slice(0, -1) : []
     const rewardBullet = bullets.length > 0 ? bullets[bullets.length - 1] : null
     return (
@@ -142,8 +129,7 @@ EpithetChip.displayName = "EpithetChip"
 const SmartRaceSolverSettings = () => {
     usePerformanceLogging("SmartRaceSolverSettings")
     const { colors } = useTheme()
-    // Subscribe to slices instead of the legacy aggregate `BotStateContext`. With the aggregate
-    // context, every unrelated settings change re-rendered this 1500-line page.
+    // Subscribe to context slices to avoid re-rendering on unrelated settings changes.
     const { racing, updateRacing } = useContext(RacingContext)
     const { general } = useContext(GeneralMiscContext)
     const scrollViewRef = useRef<ScrollView>(null)
@@ -163,8 +149,6 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Parsed state
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const aptitudes: AptitudeMap = useMemo(() => {
         try {
@@ -208,12 +192,7 @@ const SmartRaceSolverSettings = () => {
 
     const allEpithetsRaw = useMemo<EpithetEntry[]>(() => Object.values(epithetsData) as unknown as EpithetEntry[], [])
 
-    /** Epithets visible in the target/forced pickers, gated by both `general.scenario` and the
-     *  selected `smartRaceSolverCharacterPreset`. Each gate is parsed from the bullet list:
-     *  scenario via `scenariosForEpithet` (e.g. "Trackblazer scenario only"), character via
-     *  `charactersForEpithet` (e.g. "Yaeno Muteki only"). An epithet that carries no restriction
-     *  of a given kind is universal for that gate. Mirrors `epithetsForActiveContext` in
-     *  `SmartRaceSolverIntegration`. */
+    /** Epithets visible in the target / forced pickers after applying the active scenario and character-preset gates. */
     const allEpithets = useMemo<EpithetEntry[]>(() => {
         const activeScenario = (general?.scenario || "Trackblazer").toLowerCase()
         const activePreset = (smartRaceSolverCharacterPreset || "").toLowerCase()
@@ -226,10 +205,7 @@ const SmartRaceSolverSettings = () => {
         })
     }, [allEpithetsRaw, general?.scenario, smartRaceSolverCharacterPreset])
 
-    /** Human-readable summary of which scenario / character filters are slimming the picker.
-     *  Returns null when no restriction is active (every epithet is visible). Rendered above
-     *  both the Target and Forced pickers so users understand why the list is shorter than
-     *  the full {@link allEpithetsRaw}. */
+    /** User-facing notice describing which scenario / character filters are active, or null when none are. */
     const restrictionNotice = useMemo<string | null>(() => {
         const activeScenario = general?.scenario || "Trackblazer"
         const activePreset = smartRaceSolverCharacterPreset || ""
@@ -245,8 +221,6 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Local input state for decimals
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const [raceValueInput, setRaceValueInput] = useState(weights.raceValue.toString())
     const [epithetValueInput, setEpithetValueInput] = useState(weights.epithetValue.toString())
@@ -267,19 +241,15 @@ const SmartRaceSolverSettings = () => {
     const [presetSearch, setPresetSearch] = useState("")
     const [epithetSearch, setEpithetSearch] = useState("")
     const [forcedEpithetSearch, setForcedEpithetSearch] = useState("")
-    /** When the user taps an epithet in the Selected / Projected lists, the calendar highlights
-     *  cells whose race contributes to that epithet. null = no highlight. */
+    /** Name of the epithet whose contributing races should be highlighted on the calendar. */
     const [highlightedEpithet, setHighlightedEpithet] = useState<string | null>(null)
 
-    // Schedule preview — computed by the Kotlin solver via the React Native bridge.
+    // Schedule preview - computed by the Kotlin solver via the React Native bridge.
     const [preview, setPreview] = useState<SchedulePreview | null>(lastPreviewCache?.preview ?? null)
     const [previewLoading, setPreviewLoading] = useState(false)
     const [previewError, setPreviewError] = useState<string | null>(null)
 
-    // Two-phase mount: the master toggle commits in the first paint, the eight heavy sections
-    // (calendar with 72 popover-wrapped cells, two 36-chip epithet pickers, presets ScrollView,
-    // weights accordion, summary) commit one tick later. Same pattern as `Settings/index.tsx`,
-    // which dropped that page's `first_commit` by 27 % in the perf harness.
+    // Two-phase mount: render the master toggle first, then the heavy sections one tick later.
     const [showHeavySections, setShowHeavySections] = useState(false)
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
@@ -291,8 +261,6 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Derived filters
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const filteredPresets = useMemo(() => {
         if (!presetSearch) return allPresets
@@ -315,8 +283,6 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Setters
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Update a single racing setting, preserving the rest of the racing block.
@@ -328,9 +294,12 @@ const SmartRaceSolverSettings = () => {
         updateRacing({ [key]: value } as any)
     }
 
-    // Functional updater so this callback's identity stays stable across renders. The
-    // memoized `<AptitudeRow>` and `<EpithetChip>` children rely on stable `onChange` props to
-    // skip reconciliation when their own data hasn't changed.
+    /**
+     * Set the rank for a single aptitude slot. Identity-stable so memoized children skip reconciliation on unrelated changes.
+     *
+     * @param slot The aptitude slot being changed.
+     * @param rank The new rank (S..G).
+     */
     const setAptitude = useCallback(
         (slot: keyof AptitudeMap, rank: string) => {
             updateRacing((prev) => {
@@ -341,6 +310,12 @@ const SmartRaceSolverSettings = () => {
         [updateRacing]
     )
 
+    /**
+     * Apply a character preset by saving the preset's name and seeding the six aptitude slots
+     * (four distance + two surface) from the preset's defaults. The user can still override individual aptitudes afterwards.
+     *
+     * @param preset The character preset whose name and aptitudes will be written into the racing settings.
+     */
     const applyPreset = (preset: CharacterPresetEntry) => {
         updateRacingSetting("smartRaceSolverCharacterPreset", preset.name)
         updateRacingSetting(
@@ -356,9 +331,11 @@ const SmartRaceSolverSettings = () => {
         )
     }
 
-    // Functional-updater form keeps these callbacks identity-stable so the memoized
-    // `<EpithetChip>` children below skip re-rendering on unrelated changes (aptitude taps,
-    // weight changes, etc.).
+    /**
+     * Toggle membership of `name` in the target epithets list. Identity-stable for memoized children.
+     *
+     * @param name The epithet name to toggle.
+     */
     const toggleTargetEpithet = useCallback(
         (name: string) => {
             updateRacing((prev) => {
@@ -370,6 +347,11 @@ const SmartRaceSolverSettings = () => {
         [updateRacing]
     )
 
+    /**
+     * Toggle membership of `name` in the forced epithets list. Identity-stable for memoized children.
+     *
+     * @param name The epithet name to toggle.
+     */
     const toggleForcedEpithet = useCallback(
         (name: string) => {
             updateRacing((prev) => {
@@ -381,19 +363,36 @@ const SmartRaceSolverSettings = () => {
         [updateRacing]
     )
 
+    /**
+     * Lock a turn to a specific race name (or `TRAIN_LOCK_SENTINEL` for Train).
+     *
+     * @param turn The turn number being locked.
+     * @param raceName The race name (or sentinel) to lock to.
+     */
     const addManualLock = (turn: number, raceName: string) => {
         const next = { ...manualLocks, [String(turn)]: raceName }
         updateRacingSetting("smartRaceSolverManualLocks", JSON.stringify(next))
     }
 
+    /**
+     * Remove the lock for a turn.
+     *
+     * @param turn The turn number (as string key) to unlock.
+     */
     const removeManualLock = (turn: string) => {
         const next = { ...manualLocks }
         delete next[turn]
         updateRacingSetting("smartRaceSolverManualLocks", JSON.stringify(next))
     }
 
-    /** Toggles whether the given turn is locked. If currently unlocked, locks to whatever is
-     *  currently scheduled there (race name, or [TRAIN_LOCK_SENTINEL] for Train turns). */
+    /**
+     * Toggles whether the given turn is locked.
+     * If currently unlocked, locks to whatever is currently scheduled there (race name, or `TRAIN_LOCK_SENTINEL` for Train turns).
+     *
+     * @param turn The turn number to toggle the lock on.
+     * @param currentlyLocked Whether the turn is currently locked.
+     * @param raceNameToLock The race name to lock to, or null to lock to Train.
+     */
     const toggleLockForTurn = (turn: number, currentlyLocked: boolean, raceNameToLock: string | null) => {
         if (currentlyLocked) {
             removeManualLock(String(turn))
@@ -403,17 +402,32 @@ const SmartRaceSolverSettings = () => {
         addManualLock(turn, value)
     }
 
-    /** "Delete pick" on a race cell — replaces the race lock with a Train lock so the solver
-     *  can't put a race there next time. Equivalent to "lock to Train". */
+    /**
+     * "Delete pick" on a race cell - replaces the race lock with a Train lock so the solver can't put a race there next time.
+     * Equivalent to "lock to Train".
+     *
+     * @param turn The turn number to lock to Train.
+     */
     const lockTurnToTrain = (turn: number) => {
         addManualLock(turn, TRAIN_LOCK_SENTINEL)
     }
 
-    /** Switches the locked race for a given turn. Used by the in-popover alternatives list. */
+    /**
+     * Switches the locked race for a given turn. Used by the in-popover alternatives list.
+     *
+     * @param turn The turn number whose lock is being switched.
+     * @param newRaceName The new race name to lock to.
+     */
     const switchTurnRace = (turn: number, newRaceName: string) => {
         addManualLock(turn, newRaceName)
     }
 
+    /**
+     * Update a single scoring weight, preserving the rest.
+     *
+     * @param key The weight key to update.
+     * @param value The new value.
+     */
     const updateWeight = (key: keyof WeightsMap, value: number | string | boolean) => {
         updateRacingSetting("smartRaceSolverWeights", JSON.stringify({ ...weights, [key]: value }))
     }
@@ -421,9 +435,12 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Preview
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Build the snapshot payload sent to the Kotlin solver via the bridge.
+     *
+     * @returns The current settings packaged as a {@link SolverConfigSnapshot}.
+     */
     const buildSnapshot = (): SolverConfigSnapshot => ({
         scenario: general?.scenario || "Trackblazer",
         characterPreset: smartRaceSolverCharacterPreset,
@@ -437,8 +454,7 @@ const SmartRaceSolverSettings = () => {
         epithetsDataJson: bridgeDataPrimed ? undefined : EPITHETS_DATA_JSON,
     })
 
-    /** Snapshot key of the settings that produced [preview]. Used to detect whether the
-     *  current preview is stale relative to the live settings. */
+    /** Snapshot key of the settings that produced `preview`. Used to detect whether the current preview is stale relative to the live settings. */
     const [previewSnapshotKey, setPreviewSnapshotKey] = useState<string | null>(lastPreviewCache?.key ?? null)
 
     const currentSnapshotKey = useMemo(
@@ -456,19 +472,21 @@ const SmartRaceSolverSettings = () => {
     )
 
     /**
-     * True when any solver-relevant setting has changed since the last preview. Recalculate is
-     * the only path that triggers a fresh `previewSchedule` call (auto-recalculate was removed
-     * because it caused noticeable bridge lag on every keystroke); tapping it sets
-     * `previewSnapshotKey = currentSnapshotKey` and clears this flag automatically.
+     * True when the current settings no longer match the ones that produced the visible preview.
+     * The Recalculate button is the only way to refresh - auto-recalculate was removed because it lagged the bridge on every keystroke.
      */
     const dirty = previewSnapshotKey != null && currentSnapshotKey !== previewSnapshotKey
 
-    /** Force a fresh solve. Surfaced as the Recalculate button in the Schedule Preview section. */
+    /**
+     * Force a fresh solve. Surfaced as the Recalculate button.
+     *
+     * @returns A promise that resolves once the preview has been refreshed.
+     */
     const runPreview = async () => {
         if (!enableSmartRaceSolver) return
         const snapshot = buildSnapshot()
         const key = currentSnapshotKey
-        // Cache hit — instant, no bridge call.
+        // Cache hit - instant, no bridge call.
         if (lastPreviewCache && lastPreviewCache.key === key) {
             setPreview(lastPreviewCache.preview)
             setPreviewError(lastPreviewCache.preview.error ?? null)
@@ -495,15 +513,12 @@ const SmartRaceSolverSettings = () => {
         }
     }
 
-    // Auto-run on first mount (or when the user toggles the feature on) so the calendar isn't
-    // blank when the page opens. Subsequent settings changes mark dirty without auto-recalc.
+    // Auto-run on first mount or when the feature is toggled on; clear state when toggled off.
     useEffect(() => {
         if (!enableSmartRaceSolver) {
             setPreview(null)
             setPreviewError(null)
-            // Reset the snapshot key too so derived `dirty` doesn't stay stuck "true" if the
-            // user re-enables the feature later with a different config than what was previously
-            // previewed.
+            // Reset the snapshot key so `dirty` doesn't stay stuck true on re-enable.
             setPreviewSnapshotKey(null)
             return
         }
@@ -514,8 +529,6 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Styles
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const styles = useMemo(
         () =>
@@ -749,17 +762,16 @@ const SmartRaceSolverSettings = () => {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Helpers
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const renderAptitudeRow = (slot: keyof AptitudeMap, label: string) => <AptitudeRow key={slot} slot={slot} label={label} currentRank={aptitudes[slot]} onChange={setAptitude} styles={styles} />
 
     /**
-     * Popover content shown on every clickable calendar cell. Top section describes the
-     * currently-scheduled decision (race meta + matched epithets, or "No race / Rest").
-     * Action section: Lock checkbox, Delete-pick (race) / Lock-to-Train (no race).
-     * Alternatives section: scrollable list of every eligible race for this turn that the
-     * user can switch to with one tap.
+     * Popover content shown when a calendar cell is tapped: current pick, lock controls, and
+     * a list of alternative races for that turn.
+     *
+     * @param turn The 1-indexed turn number this popover is for.
+     * @param entry The schedule decision currently assigned to that turn.
+     * @returns The popover body element.
      */
     const renderPopoverBody = (turn: number, entry: ScheduleEntry | undefined) => {
         const turnYearOffset = (turn - 1) % 24
@@ -849,12 +861,11 @@ const SmartRaceSolverSettings = () => {
     }
 
     /**
-     * 4×6-grid cell. All non-Pre-Debut cells (race or Train/Rest) are tappable so the user can
-     * lock, delete, or switch the pick from inside the popover. Locked cells render with a
-     * thicker border to visually indicate they're frozen against the solver.
+     * Render one calendar cell. Pre-Debut and summer-blocked turns render as non-tappable placeholders. All others open the popover on tap.
      *
-     * Junior turns 1..13 (Early Jan → Early Jul) are the in-game pre-debut period with no
-     * available races; they render with a "Pre-Debut" locked style and are not tappable.
+     * @param turn The absolute 1-indexed turn number (1..72).
+     * @param turnInYear The 0-indexed turn offset within the year card (0..23).
+     * @returns The rendered calendar cell element.
      */
     const renderCalendarCell = (turn: number, turnInYear: number) => {
         const entry = preview?.decisions[String(turn)]
@@ -942,8 +953,11 @@ const SmartRaceSolverSettings = () => {
     }, [highlightedEpithet, preview, racesByKey])
 
     /**
-     * 4-column × 6-row layout, row-major: row 0 = Jan Early, Jan Late, Feb Early, Feb Late;
-     * row 5 = Nov Early, Nov Late, Dec Early, Dec Late. Mirrors the in-game calendar layout.
+     * Render one year's 4x6 calendar card.
+     *
+     * @param year The year descriptor (heading name and the absolute turn number of the
+     *   top-left cell).
+     * @returns The rendered year card.
      */
     const renderYearCard = (year: { name: string; startTurn: number }) => {
         const rows: number[][] = []
@@ -960,22 +974,14 @@ const SmartRaceSolverSettings = () => {
         )
     }
 
-    /**
-     * Memoized calendar grid (3 year cards × 24 cells = 72 cells). Without this, every aptitude
-     * or epithet tap triggered ~411 ms of cell reconciliation even though none of those changes
-     * affect the cells' visible content (cells only depend on `preview`, `manualLocks`, the
-     * summer-blackout weight, and the epithet highlight). Aptitude / epithet / weight changes
-     * still update the popover content the next time a cell is opened, but the static grid no
-     * longer rebuilds.
-     */
+    // Memoized 72-cell grid: rebuild only when the preview, locks, summer-blackout weight, or highlight change.
+    // Other settings refresh inside popovers when next opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const calendarYearCards = useMemo(() => YEAR_LABELS.map(renderYearCard), [preview, manualLocks, weights.allowSummerRacing, highlightedEpithet, contributingTurnsForHighlight])
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Render
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
-    // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     const sectionsDisabledStyle = enableSmartRaceSolver ? undefined : ({ opacity: 0.4 } as const)
 

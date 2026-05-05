@@ -220,7 +220,7 @@ def download_image(url: str, out_fp: str):
 
 
 def fetch_gametora_manifest_data(manifest_name: str) -> dict:
-    """Fetches data from gametora's JSON manifest.
+    """Fetches data from GameTora's JSON manifest.
 
     Args:
         manifest_name (str): The name of the manifest to fetch data from.
@@ -595,7 +595,7 @@ class SkillScraper(BaseScraper):
                 for div in divs:
                     anchor = div.find_elements(By.TAG_NAME, "a")[-1]
                     skill_name = anchor.text.strip()
-                    # Make sure we use the same special characters as gametora.
+                    # Make sure we use the same special characters as GameTora.
                     skill_name = skill_name.replace("◯", "○")
                     skill_name = skill_name.replace("◎", "◎")
                     # Get rid of any double spaces.
@@ -1116,14 +1116,14 @@ class RaceScraper(BaseScraper):
 
 
 class EpithetScraper(BaseScraper):
-    """Scrapes the epithets/nicknames from gametora.
+    """Scrapes the epithets/nicknames from GameTora.
 
-    Each epithet's row on gametora is a free-text bullet list — scenario restriction (when
+    Each epithet's row on GameTora is a free-text bullet list - scenario restriction (when
     present), conditions, qualifiers, then the reward. The Smart Race Solver stores these
     bullets verbatim into `bullet_points` and derives every structured property it needs
     from them at runtime: reward kind/amount, scenario gate, and the AND-list of race-win
     matchers the solver evaluates. `matchers` are derived here in the scraper via
-    [derive_matchers] so a re-scrape always rebuilds them from current bullet text — no
+    `derive_matchers` so a re-scrape always rebuilds them from current bullet text - no
     hand-curation step is required.
     """
 
@@ -1136,36 +1136,36 @@ class EpithetScraper(BaseScraper):
         "matchers",
     )
 
-    # Regex matching gametora's `<X> scenario only` bullet. Group 1 captures the scenario.
+    # Regex matching GameTora's `<X> scenario only` bullet. Group 1 captures the scenario.
     _SCENARIO_RESTRICTION_RE = re.compile(r"([A-Za-z][A-Za-z0-9 \-]*?) scenario only", re.IGNORECASE)
 
-    # Regex matching gametora's character-restriction bullet, e.g. `Yaeno Muteki only`.
+    # Regex matching GameTora's character-restriction bullet, e.g. `Yaeno Muteki only`.
     # Anchored so bullets with extra words (e.g. "Win 5 races as a Late Surger only")
     # never qualify. Bullets containing `scenario only` are filtered out by the caller.
     _CHARACTER_RESTRICTION_RE = re.compile(r"^(.+?)\s+only$")
 
     # //////////////////////////////////////////////////////////////////////////////////////////////////
-    # Bullet → matcher derivation
     # //////////////////////////////////////////////////////////////////////////////////////////////////
+    # Bullet -> matcher derivation
 
     # Number-word lookup so "Win three races..." is treated identically to "Win 3 races...".
     _NUMBER_WORDS = {
         "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
         "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
     }
-    # "twice" / "three times" / etc. → numeric times count for [winRaceTimes].
+    # "twice" / "three times" / etc. -> numeric times count for `winRaceTimes`.
     _TIMES_WORDS = {
         "twice": 2, "three times": 3, "four times": 4,
         "five times": 5, "six times": 6, "seven times": 7,
     }
 
-    # Whitelisted descriptor tokens for the [winCount] filter. Anything outside this set
+    # Whitelisted descriptor tokens for the `winCount` filter. Anything outside this set
     # disqualifies the bullet so the parser never produces a partially-correct matcher that
-    # would over-fire (e.g. "Win 5 G1 races with a Mood level of Bad" — the Mood clause is
+    # would over-fire (e.g. "Win 5 G1 races with a Mood level of Bad" - the Mood clause is
     # not representable, so we skip the whole bullet rather than emit a too-broad winCount).
     _TERRAIN_WORDS = {"dirt": "Dirt", "turf": "Turf"}
     _GRADE_WORDS = {"g1": "G1", "g2": "G2", "g3": "G3", "op": "OP"}
-    # Includes gametora's hyphenated forms ("short-distance", "medium-distance",
+    # Includes GameTora's hyphenated forms ("short-distance", "medium-distance",
     # "long-distance"). "Sprint" / "Mile" / "Medium" / "Long" mirror the Kotlin
     # `TrackDistance` enum.
     _DISTANCE_WORDS = {
@@ -1187,9 +1187,9 @@ class EpithetScraper(BaseScraper):
 
     # Substrings that, when present in a bullet, mark it as carrying a sub-clause the
     # parser can't represent. Bullets matching any of these are dropped silently.
-    # `with` / `that have` are intentionally not blanket-blocked — gametora uses both
+    # `with` / `that have` are intentionally not blanket-blocked - GameTora uses both
     # for representable filters (e.g. `with 'Junior Stakes' in their name`,
-    # `that are held in either Sapporo or Hakodate`); the dedicated sub-parsers handle
+    # `that are held in either Sapporo or Hakodate`). The dedicated sub-parsers handle
     # those shapes before the generic block runs.
     _UNREPRESENTABLE_MARKERS = (
         " with a difference ", " with a length ", " with a mood ", " with at least ",
@@ -1222,9 +1222,9 @@ class EpithetScraper(BaseScraper):
         logging.info(f"Scraped {len(scraped)} epithets from {self.url}.")
 
         # Each scrape regenerates `matchers` from the current bullet text via
-        # [derive_matchers]. This keeps the JSON fully automated — gametora copy
+        # `derive_matchers`. This keeps the JSON fully automated - GameTora copy
         # changes flow into solver matchers on the next re-scrape, and there's no
-        # hand-curation step that can drift. The merge with [self.data] still
+        # hand-curation step that can drift. The merge with `self.data` still
         # passes through any extra fields a future schema may carry.
         for name, fresh in scraped.items():
             existing = self.data.get(name, {})
@@ -1248,7 +1248,7 @@ class EpithetScraper(BaseScraper):
         `EpithetFilters.scenariosFromBullets` in Kotlin and `scenariosForEpithet` in TS.
 
         Args:
-            bullets: The epithet's `bullet_points` array as scraped from gametora.
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
 
         Returns:
             Distinct scenario names referenced by any restriction bullet, in order.
@@ -1273,7 +1273,7 @@ class EpithetScraper(BaseScraper):
         `EpithetFilters.charactersFromBullets` in Kotlin and `charactersForEpithet` in TS.
 
         Args:
-            bullets: The epithet's `bullet_points` array as scraped from gametora.
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
 
         Returns:
             Distinct character names referenced by any standalone restriction bullet.
@@ -1298,30 +1298,30 @@ class EpithetScraper(BaseScraper):
         """Builds the AND-combined `matchers` list for an epithet from its bullet text.
 
         Each bullet is run through a strict pattern cascade. Bullets that match a known
-        race-win shape contribute one (or more) structured matcher entries; everything
+        race-win shape contribute one (or more) structured matcher entries. Everything
         else is dropped. The conservative approach prevents partially-recognised bullets
-        from over-firing — the solver would rather miss a matcher than mis-complete an
+        from over-firing - the solver would rather miss a matcher than mis-complete an
         epithet that still has unfulfilled conditions.
 
         Recognised bullet shapes (case-insensitive):
 
-        - `Get [either] the X[, Y, ... [and|or] Z] epithet[s]` → `epithetAll` /
+        - `Get [either] the X[, Y, ... [and|or] Z] epithet[s]` -> `epithetAll` /
           `epithetAnyOf` (the `either` keyword switches to the disjunctive form).
-        - `Win any (N|<word>) of [the] A, B, ... [and|or] Z` → `winAnyOf` with `count=N`.
-        - `Win [either] the X or [the] Y` → `winAnyOf` with `count=1`.
+        - `Win any (N|<word>) of [the] A, B, ... [and|or] Z` -> `winAnyOf` with `count=N`.
+        - `Win [either] the X or [the] Y` -> `winAnyOf` with `count=1`.
         - `Win [at least|exactly] N <descriptor> races?` where `<descriptor>` is composed
-          only of whitelisted terrain / grade / distance / "graded" tokens → `winCount`
-          with the corresponding [filter]. The "country's name" idiom maps to
+          only of whitelisted terrain / grade / distance / "graded" tokens -> `winCount`
+          with the corresponding `filter`. The "country's name" idiom maps to
           `nameContainsCountry: true` for the Globe-Trotter epithet.
-        - `Win the X[, Y, ... [and|or] Z]` → one `winRace` per name, with `atClass` lifted
+        - `Win the X[, Y, ... [and|or] Z]` -> one `winRace` per name, with `atClass` lifted
           from any `(Junior|Classic|Senior)` qualifier.
-        - `Win the X (twice|N times)` → `winRaceTimes`.
+        - `Win the X (twice|N times)` -> `winRaceTimes`.
 
         Args:
-            bullets: The epithet's `bullet_points` array as scraped from gametora.
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
 
         Returns:
-            Ordered list of structured matchers; empty when no bullet matched any
+            Ordered list of structured matchers. Empty when no bullet matched any
             recognised shape.
         """
         out: List[Dict[str, Any]] = []
@@ -1335,7 +1335,7 @@ class EpithetScraper(BaseScraper):
                 continue
             if "scenario only" in lower:
                 continue
-            # Skip bullets carrying sub-clauses we can't represent; emitting a
+            # Skip bullets carrying sub-clauses we can't represent. Emitting a
             # partial matcher here would mark the epithet completable on conditions
             # the user hasn't actually met.
             if any(marker in (" " + lower + " ") for marker in cls._UNREPRESENTABLE_MARKERS):
@@ -1365,8 +1365,14 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_get_epithet(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Parses `Get [either] the X[, Y[ and|or] Z] epithet[s]` into `epithetAll` /
-        `epithetAnyOf`. Returns None when [b] doesn't match the prefix."""
+        """Parses `Get [either] the X[, Y[ and|or] Z] epithet[s]` into `epithetAll` / `epithetAnyOf`.
+
+        Args:
+            b: The bullet text to match (already stripped of leading/trailing whitespace and trailing period).
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the prefix.
+        """
         m = re.match(r"^Get\s+(either\s+)?the\s+(.+?)\s+epithets?$", b, re.IGNORECASE)
         if not m:
             return None
@@ -1380,9 +1386,16 @@ class EpithetScraper(BaseScraper):
     @classmethod
     def _parse_win_any_of(cls, b: str) -> Optional[Dict[str, Any]]:
         """Parses `Win any (N|<word>) of [the] A, B[, ... [and|or] Z]` into `winAtLeast`.
-        Gametora's "any N of" phrasing maps to the **distinct-race** variant — racing the
-        same horse twice doesn't count for two — so we emit [EpithetMatcher.WinAtLeast]
-        rather than the looser [EpithetMatcher.WinAnyOf] which counts repeats."""
+
+        GameTora's "any N of" phrasing maps to the distinct-race variant - racing the same horse twice doesn't count for two - so
+        we emit `EpithetMatcher.WinAtLeast` rather than the looser `EpithetMatcher.WinAnyOf` which counts repeats.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(r"^Win\s+any\s+(\d+|[A-Za-z]+)\s+of\s+(?:the\s+)?(.+)$", b, re.IGNORECASE)
         if not m:
             return None
@@ -1396,11 +1409,18 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_either_or(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Parses `Win [either] the X or [the] Y` into `winAnyOf` with `count=1`."""
+        """Parses `Win [either] the X or [the] Y` into `winAnyOf` with `count=1`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(r"^Win\s+(?:either\s+)?the\s+(.+?)\s+or\s+(?:the\s+)?(.+)$", b, re.IGNORECASE)
         if not m:
             return None
-        # Reject if the right side itself contains another " or " — that's a list and
+        # Reject if the right side itself contains another " or " - that's a list and
         # `_split_name_list` would handle it, but only via `_parse_win_any_of` which
         # has already run. Falling through avoids ambiguity.
         if " or " in m.group(2):
@@ -1416,9 +1436,16 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_count_name_contains(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Recognises `Win N races with 'X' in their name` (Junior Jewel, Umatastic)
-        and produces a [winCount] with `nameContains: "X"`. The single-quoted
-        substring may use either ASCII or curly quotes."""
+        """Recognises `Win N races with 'X' in their name` (Junior Jewel, Umatastic) and produces a `winCount` with `nameContains: "X"`.
+
+        The single-quoted substring may use either ASCII or curly quotes.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(
             r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+with\s+['‘’\"“”](.+?)['‘’\"“”]\s+in\s+their\s+name$",
             b,
@@ -1433,8 +1460,14 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_count_grade_open(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Recognises `Win N races of grade Open or higher` (Pro Racer) and produces
-        a [winCount] with `gradeAtLeastOpen: true`."""
+        """Recognises `Win N races of grade Open or higher` (Pro Racer) and produces a `winCount` with `gradeAtLeastOpen: true`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(
             r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+of\s+grade\s+open\s+or\s+higher$",
             b,
@@ -1449,10 +1482,17 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_one_per_distance(cls, b: str) -> Optional[List[Dict[str, Any]]]:
-        """Recognises `Win one [terrain] D1, D2[, ... and Dn] race` (Dirt Dancer,
-        Turf Tussler) and emits a separate [winCount] per distance with `count=1`,
-        each carrying the shared terrain filter when present. Returning a list lets
-        [derive_matchers] flatten them into the AND list."""
+        """Recognises `Win one [terrain] D1, D2[, ... and Dn] race` (Dirt Dancer, Turf Tussler).
+
+        Emits a separate `winCount` per distance with `count=1`, each carrying the shared terrain filter when present. Returning a list
+        lets `derive_matchers` flatten them into the AND list.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            A list of matcher dicts (one per distance), or None when `b` doesn't match the shape.
+        """
         m = re.match(r"^Win\s+one\s+(.+?)\s+races?$", b, re.IGNORECASE)
         if not m:
             return None
@@ -1493,10 +1533,17 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_count_country_idiom(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Recognises gametora's Globe-Trotter wording, `Win N races which include a
-        country's name in their name`, and produces a [winCount] with the
-        `nameContainsCountry` filter — the only filter shape that doesn't fit the
-        token-based descriptor parser."""
+        """Recognises GameTora's Globe-Trotter wording, `Win N races which include a country's name in their name`.
+
+        Produces a `winCount` with the `nameContainsCountry` filter - the only filter shape that doesn't fit the token-based
+        descriptor parser.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(
             r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+which\s+include\s+a\s+country['’]?s?\s+name",
             b,
@@ -1511,11 +1558,18 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_count_at_tracks(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Recognises `Win N <descriptor> races (that are )?held in/at <track list>`
-        and produces a [winCount] with `raceTracks` plus any `gradedOnly` flag picked
-        up from the descriptor. Used by the Hokkaido Hotshot / Kanto Conqueror /
-        Tohoku Top Dog / Kokura Constable / West Japan Whiz / Kyushu / Pro Racer
-        epithets, which all describe their location filter this way."""
+        """Recognises `Win N <descriptor> races (that are )?held in/at <track list>` and produces a `winCount` with `raceTracks`.
+
+        Any `gradedOnly` flag picked up from the descriptor is preserved. Used by the Hokkaido Hotshot / Kanto Conqueror /
+        Tohoku Top Dog / Kokura Constable / West Japan Whiz / Kyushu / Pro Racer epithets, which all describe their
+        location filter this way.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(
             r"^Win\s+(?:at\s+least\s+|exactly\s+)?(\d+|[A-Za-z]+)\s+(.+?)\s+races?\s+(?:that\s+are\s+)?held\s+(?:in|at|on)\s+(?:either\s+)?(.+)$",
             b,
@@ -1538,7 +1592,14 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_count(cls, b: str) -> Optional[Dict[str, Any]]:
-        """Parses `Win [at least|exactly] N <descriptor> races?` into `winCount`."""
+        """Parses `Win [at least|exactly] N <descriptor> races?` into `winCount`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
         m = re.match(
             r"^Win\s+(?:at\s+least\s+|exactly\s+)?(\d+|[A-Za-z]+)\s+(.+?)\s+races?$",
             b,
@@ -1550,8 +1611,8 @@ class EpithetScraper(BaseScraper):
         if count is None:
             return None
         descriptor = m.group(2).strip()
-        # "races which include a country's name in their name" — the only special-case
-        # idiom on gametora that maps to the structured `nameContainsCountry` filter.
+        # "races which include a country's name in their name" - the only special-case
+        # idiom on GameTora that maps to the structured `nameContainsCountry` filter.
         if "country" in descriptor.lower() and "name" in descriptor.lower():
             return {"type": "winCount", "count": count, "filter": {"nameContainsCountry": True}}
         filt = cls._parse_filter(descriptor)
@@ -1561,11 +1622,18 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_win_races(cls, b: str) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
-        """Parses `Win the X[, Y, ... [and] Z] [twice|N times]` into one or more
-        `winRace` entries — or a single `winRaceTimes` entry when the bullet ends in a
-        repeat qualifier. The leading `the` is required so race-count bullets (`Win 3
-        graded races that are held in either Sapporo or Hakodate`) don't accidentally
-        split on their internal `or`."""
+        """Parses `Win the X[, Y, ... [and] Z] [twice|N times]` into one or more `winRace` entries.
+
+        Returns a single `winRaceTimes` entry when the bullet ends in a repeat qualifier. The leading `the` is required
+        so race-count bullets (`Win 3 graded races that are held in either Sapporo or Hakodate`) don't accidentally
+        split on their internal `or`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            A single `winRaceTimes` dict, a list of `winRace` dicts, or None when `b` doesn't match the shape.
+        """
         # Detect a trailing repeat qualifier: " twice" / " three times" / etc.
         repeat: Optional[int] = None
         body = b
@@ -1585,7 +1653,7 @@ class EpithetScraper(BaseScraper):
 
         if repeat is not None:
             if len(names) != 1:
-                # Ambiguous: "Win the A, B and C twice" — skip rather than guess.
+                # Ambiguous: "Win the A, B and C twice" - skip rather than guess.
                 return None
             name, atclass = names[0]
             entry: Dict[str, Any] = {"type": "winRaceTimes", "name": name, "times": repeat}
@@ -1603,13 +1671,20 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _parse_filter(cls, descriptor: str) -> Optional[Dict[str, Any]]:
-        """Translates a [winCount] descriptor like `dirt G1` or `non-core distance` into
-        a filter dict. Returns None when the descriptor contains a token that doesn't
-        map to a whitelisted filter key — that's the safety guard that prevents
-        partial matchers."""
+        """Translates a `winCount` descriptor like `dirt G1` or `non-core distance` into a filter dict.
+
+        Returns None when the descriptor contains a token that doesn't map to a whitelisted filter key - that's the
+        safety guard that prevents partial matchers.
+
+        Args:
+            descriptor: The descriptor portion of the bullet (between count and `races?`).
+
+        Returns:
+            A filter dict, or None when any token in `descriptor` is unrecognised.
+        """
         f: Dict[str, Any] = {}
         # The "distance" suffix in "core distance" / "non-core distance" is grammatical
-        # filler — drop it so the group token resolves cleanly.
+        # filler - drop it so the group token resolves cleanly.
         cleaned = re.sub(r"\bdistance\b", " ", descriptor, flags=re.IGNORECASE)
         for token in cleaned.split():
             tl = token.lower().rstrip(",")
@@ -1627,14 +1702,21 @@ class EpithetScraper(BaseScraper):
             elif tl == "graded":
                 f["gradedOnly"] = True
             else:
-                # Any unknown token disqualifies the entire bullet — bail rather than
+                # Any unknown token disqualifies the entire bullet - bail rather than
                 # produce a partially-correct filter that would over-fire.
                 return None
         return f
 
     @classmethod
     def _parse_count_word(cls, raw: str) -> Optional[int]:
-        """Returns the integer for `raw` (digit string or English number word) or None."""
+        """Returns the integer for `raw` (digit string or English number word).
+
+        Args:
+            raw: A digit string (e.g. "3") or English number word (e.g. "three").
+
+        Returns:
+            The integer value, or None when `raw` is neither a digit string nor a known number word.
+        """
         s = raw.lower().strip()
         if s.isdigit():
             return int(s)
@@ -1642,8 +1724,16 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _split_name_list(cls, s: str) -> List[Tuple[str, Optional[str]]]:
-        """Splits a comma/`and`/`or`-separated race or epithet list, stripping any
-        `(Junior|Classic|Senior)` class qualifier into the second tuple element."""
+        """Splits a comma/`and`/`or`-separated race or epithet list.
+
+        Any `(Junior|Classic|Senior)` class qualifier is stripped into the second tuple element.
+
+        Args:
+            s: The list string (e.g. `"Tokyo Yushun (Classic), Arima Kinen and Japan Cup"`).
+
+        Returns:
+            A list of `(name, atClass)` tuples in input order; `atClass` is None when no class qualifier was present.
+        """
         s = s.strip().rstrip(".")
         # Replace " and " / " or " with commas before splitting so the list reads
         # uniformly. Avoid splitting inside parens (e.g. "Tokyo Yushun (Japanese
@@ -1666,21 +1756,29 @@ class EpithetScraper(BaseScraper):
 
     @classmethod
     def _strip_class(cls, name: str) -> Tuple[str, Optional[str]]:
-        """Splits a trailing `(Junior|Classic|Senior)` qualifier off [name]. Other
-        parenthesised suffixes (e.g. `Tokyo Yushun (Japanese Derby)`) are left intact."""
+        """Splits a trailing `(Junior|Classic|Senior)` qualifier off `name`.
+
+        Other parenthesised suffixes (e.g. `Tokyo Yushun (Japanese Derby)`) are left intact.
+
+        Args:
+            name: A race-name candidate that may carry a trailing class qualifier.
+
+        Returns:
+            A `(name, atClass)` tuple where `atClass` is the capitalised class name when present, otherwise None.
+        """
         m = re.match(r"^(.+?)\s+\((Junior|Classic|Senior)\)$", name, re.IGNORECASE)
         if m:
             return m.group(1).strip(), m.group(2).capitalize()
         return name.strip(), None
 
     def _extract_epithets(self, driver: webdriver.Chrome) -> Dict[str, Dict[str, Any]]:
-        """Extracts epithet rows from the gametora nicknames page.
+        """Extracts epithet rows from the GameTora nicknames page.
 
         As of 2026-05, each row uses CSS-module classes prefixed `titles_nickname_row`,
         with the name in a `titles_nickname_name` block (containing a `<b>` element) and
         the bullet list in a `titles_nickname_desc` block as a `<ul><li>` list. The reward
         is the last `<li>` and is prefixed with "Reward: " when present. We capture every
-        bullet verbatim — downstream parsers strip the "Reward: " prefix and handle
+        bullet verbatim - downstream parsers strip the "Reward: " prefix and handle
         reward/scenario derivation.
 
         Args:
@@ -1692,7 +1790,7 @@ class EpithetScraper(BaseScraper):
         results: Dict[str, Dict[str, Any]] = {}
 
         # The nicknames list renders as repeated `titles_nickname_row` blocks. Selector substrings
-        # may need updating if gametora reshuffles their CSS modules.
+        # may need updating if GameTora reshuffles their CSS modules.
         rows = driver.find_elements(By.XPATH, "//div[contains(@class, 'titles_nickname_row')]")
 
         for row in rows:
@@ -1718,13 +1816,13 @@ class EpithetScraper(BaseScraper):
     def _extract_bullets(row: WebElement) -> List[str]:
         """Extracts every `<li>` element from a row's `titles_nickname_desc` block.
 
-        Returns the bullets verbatim in gametora's display order: scenario restriction first
+        Returns the bullets verbatim in GameTora's display order: scenario restriction first
         when present, conditions/qualifiers middle, the "Reward: ..." bullet last. Each
-        bullet is normalized for whitespace; the "Reward: " prefix (when present) is
+        bullet is normalized for whitespace. The "Reward: " prefix (when present) is
         preserved so downstream parsers can locate the reward bullet by prefix.
 
         Args:
-            row: The nickname row element from gametora.
+            row: The nickname row element from GameTora.
 
         Returns:
             Ordered list of bullet strings as they appear on the page. Empty if the row had
@@ -1746,7 +1844,7 @@ class EpithetScraper(BaseScraper):
 class CharacterPresetScraper(BaseScraper):
     """Scrapes per-character distance and surface aptitudes for the Smart Race Solver.
 
-    Each character page on gametora has a "Track aptitude" panel with six grade letters
+    Each character page on GameTora has a "Track aptitude" panel with six grade letters
     (Sprint, Mile, Medium, Long, Turf, Dirt). The Smart Race Solver feeds these into its
     aptitude eligibility filter, so they need to stay in sync with what's in the game.
 
@@ -1769,12 +1867,14 @@ class CharacterPresetScraper(BaseScraper):
         super().__init__("https://gametora.com/umamusume/characters", "characterPresets.json")
 
     def _load_released_en_names(self) -> Optional[set]:
-        """Fetches the gametora characters manifest and returns the set of EN-playable names.
+        """Fetches the GameTora characters manifest and returns the set of EN-playable names.
 
-        Gametora ships a static JSON dataset at `data/umamusume/characters.<hash>.json`; each
-        entry has a `playable_en` flag indicating whether the character is on the EN/global
-        server. Returns None on any failure so the caller can fall back to scraping every
-        character page (the legacy behaviour) without crashing.
+        GameTora ships a static JSON dataset at `data/umamusume/characters.<hash>.json`. Each entry has a `playable_en` flag
+        indicating whether the character is on the EN/global server. Returns None on any failure so the caller can fall back
+        to scraping every character page (the legacy behaviour) without crashing.
+
+        Returns:
+            The set of EN-playable character names, or None when the manifest fetch or parse fails.
         """
         try:
             manifest = requests.get(GAMETORA_MANIFESTS_URL, timeout=15).json()
@@ -1854,7 +1954,7 @@ class CharacterPresetScraper(BaseScraper):
     def _extract_aptitudes(self, driver: webdriver.Chrome) -> Optional[Dict[str, str]]:
         """Pulls the six grade letters from the character's aptitude panel.
 
-        Gametora renders aptitudes as a grid of label/value pairs; the labels are the
+        GameTora renders aptitudes as a grid of label/value pairs. The labels are the
         keys in `DISTANCE_KEYS` and `SURFACE_KEYS`. We tolerate selector drift by trying
         a couple of class fragments before giving up.
 

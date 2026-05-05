@@ -8,9 +8,9 @@ package com.steve1316.uma_android_automation.bot.solver
  * resulting schedule to the existing race-execution path.
  *
  * Two backends are available:
- *  - [MilpSolver] (default) — exact MILP via ojAlgo. Mirrors the reference Trackblazer
+ *  - [MilpSolver] (default) - exact MILP via ojAlgo. Mirrors the reference Trackblazer
  *    site's GLPK formulation and produces optimal schedules.
- *  - [Heuristic] — original beam-search, retained as a fallback when MILP is infeasible
+ *  - [Heuristic] - original beam-search, retained as a fallback when MILP is infeasible
  *    (e.g., contradictory forced epithets) or for benchmarking.
  *
  * Re-solving on race loss is handled by callers: build a fresh [SolverState] with the lost
@@ -18,7 +18,7 @@ package com.steve1316.uma_android_automation.bot.solver
  */
 object SmartRaceSolver {
     /**
-     * Computes the highest-scoring schedule achievable from [state]. Tries MILP first; falls
+     * Computes the highest-scoring schedule achievable from [state]. Tries MILP first. Falls
      * back to beam search if MILP returns an empty schedule (infeasible model).
      *
      * @param state Immutable inputs. The search plans from `state.currentTurn` forward.

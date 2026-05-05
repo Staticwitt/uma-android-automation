@@ -15,7 +15,7 @@ import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import org.opencv.core.Point
 
 /**
- * Reads the in-game Career → Race History dialog by OCR. Used at bot startup to seed
+ * Reads the in-game Career -> Race History dialog by OCR. Used at bot startup to seed
  * [SmartRaceSolverIntegration] with the trainee's actual past race wins.
  */
 object RaceHistory {
@@ -42,10 +42,9 @@ object RaceHistory {
     private const val FIRST_PLACE_H = 120
 
     /**
-     * One race entry parsed from the Career → Race History dialog. The race name itself
-     * is intentionally not captured — OCR on the row's primary label was unreliable, and
-     * the tuple of formatted track string + in-game date is sufficient to look the race
-     * up in races.json.
+     * One race entry parsed from the Career -> Race History dialog. The race name itself
+     * is intentionally not captured - OCR on the row's primary label was unreliable, and
+     * the tuple of formatted track string + in-game date is sufficient to look the race up in races.json.
      *
      * @property nameFormatted Formatted track string (e.g. "Tokyo Turf 1600m (Mile) Left").
      * @property dateString In-game date as shown on screen (e.g. "Junior Year Early Nov").
@@ -58,9 +57,9 @@ object RaceHistory {
     // Helpers
 
     /**
-     * Open Career → Race History from the Main Screen, OCR every entry, then close back
+     * Open Career -> Race History from the Main Screen, OCR every entry, then close back
      * to the Main Screen. ScrollList's standard scrollbar-based termination ends the scan
-     * at the bottom of the list; the bottom Junior Make Debut row will appear in the
+     * at the bottom of the list. The bottom Junior Make Debut row will appear in the
      * results but its formatted-name lookup against races.json will fail and the caller
      * silently drops it.
      *

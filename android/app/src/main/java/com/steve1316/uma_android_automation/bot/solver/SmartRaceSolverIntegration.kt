@@ -28,12 +28,12 @@ import org.json.JSONObject
 object SmartRaceSolverIntegration {
     private const val TAG: String = "[SMART_RACE_SOLVER]"
 
-    /** Junior turns 1..13 (Early Jan → Early Jul) are the in-game pre-debut period with no
-     *  races, so the OCR-driven Career → Race History scrape is skipped at or below this
+    /** Junior turns 1..13 (Early Jan -> Early Jul) are the in-game pre-debut period with no
+     *  races, so the OCR-driven Career -> Race History scrape is skipped at or below this
      *  turn and the existing Preview-based seed runs instead. */
     private const val PRE_DEBUT_TURN_THRESHOLD: TurnNumber = 13
 
-    /** Wins for the current run — both confirmed in-game finishes and Preview-assumed wins
+    /** Wins for the current run - both confirmed in-game finishes and Preview-assumed wins
      *  added on a mid-run restart. Cleared by [reset]. Guarded by its own monitor since the
      *  bot and UI threads can read/write here concurrently. */
     private val raceHistory: MutableList<RaceWin> = mutableListOf()
@@ -106,16 +106,16 @@ object SmartRaceSolverIntegration {
 
     /**
      * Once-per-run hook that logs the Preview schedule and seeds [raceHistory] for the
-     * current run. Safe to call every turn — only the first call after [reset] does any
+     * current run. Safe to call every turn - only the first call after [reset] does any
      * work. Intended to run right after the date is detected so the schedule log appears
      * before shop/item dialogs.
      *
      * When [currentTurn] is past the in-game pre-debut period,
-     * this opens the Career → Race History dialog and reads the trainee's actual past
+     * this opens the Career -> Race History dialog and reads the trainee's actual past
      * wins via OCR. On any failure, it falls back to assuming every previewed race
      * was won.
      *
-     * @param game Active Game instance for tap/screenshot/OCR access; null for callers
+     * @param game Active Game instance for tap/screenshot/OCR access. Null for callers
      *   that cannot drive the screen (the OCR scrape is skipped in that case).
      * @param currentTurn The turn the bot is on.
      * @param scenario Active scenario name from `settings.general.scenario`.
@@ -162,11 +162,10 @@ object SmartRaceSolverIntegration {
     /**
      * Logs the epithets the just-confirmed race progresses, with each epithet's aggregated
      * `(satisfied / required)` count both before and after the win so the contribution of
-     * this race is obvious. Aggregation matches the frontend popover (sums per-matcher
-     * `(current, required)` across non-dependency matchers).
+     * this race is obvious. Aggregation matches the frontend popover (sums per-matcher `(current, required)` across non-dependency matchers).
      *
      * @param raceName The just-confirmed race name (matches [RaceCandidate.name]).
-     * @param turnNumber Turn the race ran on; used to look up the [RaceCandidate] for filter checks.
+     * @param turnNumber Turn the race ran on. Used to look up the [RaceCandidate] for filter checks.
      * @param historyBefore Snapshot of [raceHistory] before [recordRaceWon] added this win.
      * @param historyAfter Snapshot of [raceHistory] after [recordRaceWon] added this win.
      */
@@ -187,14 +186,14 @@ object SmartRaceSolverIntegration {
             val total = after?.second ?: before?.second ?: 0
             val beforeC = before?.first ?: 0
             val afterC = after?.first ?: 0
-            sb.append("\n  - \"${epi.name}\" → $status ($beforeC/$total) -> ($afterC/$total)")
+            sb.append("\n  - \"${epi.name}\" -> $status ($beforeC/$total) -> ($afterC/$total)")
         }
         MessageLog.i(TAG, sb.toString())
     }
 
     /**
      * True when the matcher progresses on this specific race. Direct-name matchers compare
-     * by name; [EpithetMatcher.WinCount] matchers evaluate their filter against [race] when
+     * by name. [EpithetMatcher.WinCount] matchers evaluate their filter against [race] when
      * available. Dependency matchers ([EpithetMatcher.EpithetAnyOf] / [EpithetMatcher.EpithetAll])
      * are skipped because they hinge on other epithets, not this race.
      *
@@ -216,7 +215,7 @@ object SmartRaceSolverIntegration {
 
     /**
      * Mirrors `EpithetTracker.matchesFilter` and `MilpSolver.matchesFilter` for the win-progress
-     * log. Keep the three copies in sync — visibility on the originals is `private` so they
+     * log. Keep the three copies in sync - visibility on the originals is `private` so they
      * cannot be called from here directly.
      *
      * @param race Race to test.
@@ -278,9 +277,8 @@ object SmartRaceSolverIntegration {
         }
 
     /**
-     * Sum of [matcherFraction] across this epithet's non-dependency matchers. Returns null
-     * when every matcher is a dependency (no race-win progress to report). Mirrors the
-     * frontend's `epithetProgress` aggregation in `src/lib/solver/scoring.ts`.
+     * Sum of [matcherFraction] across this epithet's non-dependency matchers. Returns null when every matcher is a dependency (no race-win progress
+     * to report). Mirrors the frontend's `epithetProgress` aggregation in `src/lib/solver/scoring.ts`.
      *
      * @param epi Epithet to aggregate.
      * @param state Solver state supplying win counts.
@@ -299,8 +297,7 @@ object SmartRaceSolverIntegration {
 
     /**
      * Picks the on-screen race the solver's schedule prefers for [currentTurn], or returns
-     * null when the solver cannot or should not influence the decision (feature disabled,
-     * data missing, no schedule match).
+     * null when the solver cannot or should not influence the decision (feature disabled, data missing, no schedule match).
      *
      * @param currentTurn The bot's current turn number.
      * @param scenario Active scenario name from `settings.general.scenario`.
@@ -349,7 +346,7 @@ object SmartRaceSolverIntegration {
 
     /**
      * Peeks at the solver's planned [Decision] for [currentTurn] without requiring on-screen
-     * candidates. Returns the full decision shape — `Train`, `Rest`, or `RaceDecision` —
+     * candidates. Returns the full decision shape (`Train`, `Rest`, or `RaceDecision`)
      * so callers can route the bot's per-turn action to match the solver's plan instead of
      * falling through to legacy heuristics on non-Race turns.
      *
@@ -384,8 +381,7 @@ object SmartRaceSolverIntegration {
      * runtime race history. Used by the settings UI to render a calendar preview of what the
      * solver would do if a fresh run started today with the current configuration.
      *
-     * @param configJson Snapshot of the user's solver config: scenario, characterPreset, aptitudes,
-     *   targetEpithets, forcedEpithets, manualLocks, weights.
+     * @param configJson Snapshot of the user's solver config: scenario, characterPreset, aptitudes, targetEpithets, forcedEpithets, manualLocks, weights.
      * @return JSON string of `{decisions, projectedEpithets, totalScore}`. Each decision entry is
      *   either `{type:"Train"}`, `{type:"Rest"}`, or `{type:"Race", raceKey, name, grade}`.
      */
@@ -437,9 +433,8 @@ object SmartRaceSolverIntegration {
      * @param scenario Active scenario name.
      * @param epithets Parsed epithet list.
      * @param racesByTurn Race calendar the solver may pick from.
-     * @param raceHistorySnapshot History to feed the solver. Defaults to a snapshot of the
-     *   current run's accumulated wins.
-     * @param lockedDecisions Manual turn → decision overrides. Defaults to empty (no locks).
+     * @param raceHistorySnapshot History to feed the solver. Defaults to a snapshot of the current run's accumulated wins.
+     * @param lockedDecisions Manual turn -> decision overrides. Defaults to empty (no locks).
      * @return Populated [SolverState].
      */
     private fun newSolverState(
@@ -466,9 +461,9 @@ object SmartRaceSolverIntegration {
 
     /**
      * Filters [epithets] down to those obtainable in the active scenario AND for the active
-     * character preset. Both gates are independent; an epithet must pass each one whose
-     * restriction it carries. Restrictions are parsed from the bullet list — see
-     * [EpithetFilters.scenariosFromBullets] and [EpithetFilters.charactersFromBullets].
+     * character preset. Both gates are independent. An epithet must pass each one whose
+     * restriction it carries. Restrictions are parsed from the bullet list - see [EpithetFilters.scenariosFromBullets]
+     * and [EpithetFilters.charactersFromBullets].
      *
      * Defends against stale snapshots that still list a Trackblazer-only or character-only
      * target after the user switches scenario / preset.
@@ -500,11 +495,9 @@ object SmartRaceSolverIntegration {
      * (when [currentTurn] > 1) replays its Race-decisions for turns before [currentTurn]
      * into [raceHistory] as assumed wins for mid-run restart recovery. The schedule is
      * computed with the same inputs [previewSchedule] uses (currentTurn=1, empty raceHistory,
-     * `manualLocks` from settings) so what the runtime expects matches what the user has been
-     * watching in the UI.
+     * `manualLocks` from settings) so what the runtime expects matches what the user has been watching in the UI.
      *
-     * @param currentTurn The turn the bot is currently on; only turns strictly before this
-     *   are seeded into history.
+     * @param currentTurn The turn the bot is currently on. Only turns strictly before this are seeded into history.
      * @param scenario Active scenario name from `settings.general.scenario`.
      * @param epithets Full list of epithets parsed from settings.
      * @param racesByTurn Full race calendar from settings.
@@ -540,22 +533,22 @@ object SmartRaceSolverIntegration {
     }
 
     /**
-     * Seeds [raceHistory] from the in-game Career → Race History dialog. Reads each
-     * row's race name, in-game date, and 1st-place icon presence; only entries where
-     * the trainee placed 1st become a [RaceWin]. A successful scrape — even one that
-     * produces zero wins — is authoritative ("the trainee genuinely has no past wins")
+     * Seeds [raceHistory] from the in-game Career -> Race History dialog. Reads each
+     * row's race name, in-game date, and 1st-place icon presence. Only entries where
+     * the trainee placed 1st become a [RaceWin]. A successful scrape - even one that
+     * produces zero wins - is authoritative ("the trainee genuinely has no past wins")
      * and prevents the caller from falling back to the preview-as-wins seed.
      *
      * @param game Active Game instance for tap/screenshot/OCR access.
      * @param racesByTurn Race calendar from settings, used to resolve OCR'd race names
      *   into the canonical [RaceCandidate.key] that downstream consumers expect.
-     * @return True if the scrape ran end-to-end; false if navigation or OCR failed and
+     * @return True if the scrape ran end-to-end. False if navigation or OCR failed and
      *   the caller should fall back to preview-based seeding.
      */
     private fun seedHistoryFromCareerScrape(game: Game, racesByTurn: Map<TurnNumber, List<RaceCandidate>>): Boolean {
         val entries = RaceHistory.scrape(game) ?: return false
 
-        // Career → Race History is sorted newest-first; turns must strictly decrease as
+        // Career -> Race History is sorted newest-first, so turns must strictly decrease as
         // we iterate. Any entry that breaks that invariant is OCR garbage from a
         // mid-scroll frame and is safely dropped.
         data class MatchedEntry(val candidate: RaceCandidate, val dateString: String, val won: Boolean)
@@ -587,7 +580,7 @@ object SmartRaceSolverIntegration {
         } else {
             for (m in matched) {
                 val outcome = if (m.won) "Won" else "Lost"
-                sb.append("\n  Turn ${m.candidate.turnNumber} (${m.dateString}): $outcome — ${m.candidate.name}")
+                sb.append("\n  Turn ${m.candidate.turnNumber} (${m.dateString}): $outcome - ${m.candidate.name}")
             }
         }
         MessageLog.i(TAG, sb.toString())
@@ -615,7 +608,7 @@ object SmartRaceSolverIntegration {
                 val name = candidate?.name ?: raceNameFromKey(raceKey)
                 val grade = candidate?.grade?.name ?: "?"
                 val date = candidate?.date?.takeIf { it.isNotBlank() }
-                val datePrefix = if (date != null) "$date — " else ""
+                val datePrefix = if (date != null) "$date - " else ""
                 sb.append("\n  Turn $turn (${datePrefix}$name, $grade)")
             }
         }
@@ -625,7 +618,7 @@ object SmartRaceSolverIntegration {
     /**
      * Reads the user's saved aptitude configuration from settings.
      *
-     * @return Parsed [Aptitudes], or [Aptitudes.DEFAULT_A] when the setting is empty or invalid.
+     * @return Parsed [Aptitudes]. Returns [Aptitudes.DEFAULT_A] when the setting is empty or invalid.
      */
     private fun readUserAptitudes(): Aptitudes {
         val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverAptitudes")
@@ -638,7 +631,7 @@ object SmartRaceSolverIntegration {
      * `Dirt`. Missing keys default to "A".
      *
      * @param obj JSON object to parse, or null.
-     * @return Parsed [Aptitudes]; [Aptitudes.DEFAULT_A] when [obj] is null.
+     * @return Parsed [Aptitudes]. Returns [Aptitudes.DEFAULT_A] when [obj] is null.
      */
     private fun parseAptitudesObj(obj: JSONObject?): Aptitudes {
         if (obj == null) return Aptitudes.DEFAULT_A
@@ -679,11 +672,10 @@ object SmartRaceSolverIntegration {
     }
 
     /**
-     * Parses a weights JSON object. Each field falls back to the corresponding [Weights]
-     * default when missing.
+     * Parses a weights JSON object. Each field falls back to the corresponding [Weights] default when missing.
      *
      * @param obj JSON object to parse, or null.
-     * @return Parsed [Weights]; default [Weights] when [obj] is null.
+     * @return Parsed [Weights]. Returns default [Weights] when [obj] is null.
      */
     private fun parseWeightsObj(obj: JSONObject?): Weights {
         if (obj == null) return Weights()
@@ -707,7 +699,7 @@ object SmartRaceSolverIntegration {
      * Parses a single aptitude letter (e.g. "S", "A", "C") into an [Aptitude] enum.
      *
      * @param s Aptitude letter.
-     * @return Parsed [Aptitude]; [Aptitude.A] on unrecognised input.
+     * @return Parsed [Aptitude]. Returns [Aptitude.A] on unrecognised input.
      */
     private fun parseAptitude(s: String): Aptitude =
         Aptitude.fromName(s) ?: Aptitude.A
@@ -731,7 +723,7 @@ object SmartRaceSolverIntegration {
     /**
      * Lazy, cached parse of the `racesData` setting into a turn-keyed candidate pool.
      *
-     * @return Map of turn → eligible races, or null when the setting is empty or unparseable.
+     * @return Map of turn -> eligible races, or null when the setting is empty or unparseable.
      */
     private fun loadAllRaces(): Map<TurnNumber, List<RaceCandidate>>? {
         cachedRaces?.let { return it }
@@ -747,7 +739,7 @@ object SmartRaceSolverIntegration {
      * Lazy, cached parse of the `characterPresetsData` setting. Invoked from JS via the React
      * Native bridge, so static analysis cannot see the callers.
      *
-     * @return Map of preset name → aptitudes, or null when the setting is empty or unparseable.
+     * @return Map of preset name -> aptitudes, or null when the setting is empty or unparseable.
      */
     fun loadCharacterPresets(): Map<String, Aptitudes>? {
         cachedPresets?.let { return it }
@@ -765,11 +757,10 @@ object SmartRaceSolverIntegration {
 
     /**
      * Parses an epithets JSON document into a list of [Epithet]. The JSON is expected to be a
-     * top-level object whose values are per-epithet entries with the schema produced by the
-     * gametora scraper.
+     * top-level object whose values are per-epithet entries with the schema produced by the GameTora scraper.
      *
      * @param json Raw JSON string.
-     * @return Parsed epithet list. Throws if the JSON is structurally invalid; callers wrap
+     * @return Parsed epithet list. Throws if the JSON is structurally invalid. Callers wrap
      *   in `runCatching` to convert errors into a null fallback.
      */
     internal fun parseEpithets(json: String): List<Epithet> {
@@ -796,7 +787,7 @@ object SmartRaceSolverIntegration {
      * Parses an epithet's matcher array. Unrecognised matcher types are dropped silently.
      *
      * @param arr JSON array of matcher objects, or null.
-     * @return Parsed list of matchers; empty when [arr] is null.
+     * @return Parsed list of matchers. Empty when [arr] is null.
      */
     private fun parseMatchers(arr: JSONArray?): List<EpithetMatcher> {
         if (arr == null) return emptyList()
@@ -855,8 +846,7 @@ object SmartRaceSolverIntegration {
         }
 
     /**
-     * Parses a `winCount` matcher's filter object. Each field defaults to the matching
-     * [EpithetFilter] default when missing.
+     * Parses a `winCount` matcher's filter object. Each field defaults to the matching [EpithetFilter] default when missing.
      *
      * @param o Filter JSON object.
      * @return Parsed [EpithetFilter].
@@ -876,7 +866,7 @@ object SmartRaceSolverIntegration {
         )
 
     /**
-     * Parses a character-presets JSON document into a name → aptitudes map.
+     * Parses a character-presets JSON document into a name -> aptitudes map.
      *
      * @param json Raw JSON string.
      * @return Map of preset name to [Aptitudes]. Entries missing aptitude fields are skipped.
@@ -909,10 +899,10 @@ object SmartRaceSolverIntegration {
      * The JS layer omits `racesDataJson` after the first successful preview to save ~150KB of
      * marshalling per debounced re-solve, so once we've parsed any inline payload we keep using it
      * even when subsequent calls drop the field. Returns null only when nothing has ever been
-     * shipped — callers fall back to [loadAllRaces] (SettingsHelper) in that case.
+     * shipped - callers fall back to [loadAllRaces] (SettingsHelper) in that case.
      *
      * @param json Inline races JSON, or null/empty to use the cached payload.
-     * @return Parsed turn-keyed candidate pool; null when no payload has ever been parsed.
+     * @return Parsed turn-keyed candidate pool. Null when no payload has ever been parsed.
      */
     private fun parseRacesJsonField(json: String?): Map<TurnNumber, List<RaceCandidate>>? {
         if (json.isNullOrEmpty()) return cachedInlineRaces?.second
@@ -925,10 +915,10 @@ object SmartRaceSolverIntegration {
     }
 
     /**
-     * See [parseRacesJsonField] — same omit-after-prime contract for epithets data.
+     * See [parseRacesJsonField] - same omit-after-prime contract for epithets data.
      *
      * @param json Inline epithets JSON, or null/empty to use the cached payload.
-     * @return Parsed epithet list; null when no payload has ever been parsed.
+     * @return Parsed epithet list. Null when no payload has ever been parsed.
      */
     private fun parseEpithetsJsonField(json: String?): List<Epithet>? {
         if (json.isNullOrEmpty()) return cachedInlineEpithets?.second
@@ -942,10 +932,10 @@ object SmartRaceSolverIntegration {
 
     /**
      * Parses a races JSON document into a turn-keyed candidate pool. Each entry must include
-     * a `turnNumber` field — entries with `turnNumber <= 0` are silently dropped.
+     * a `turnNumber` field - entries with `turnNumber <= 0` are silently dropped.
      *
      * @param json Raw races JSON string.
-     * @return Map of turn → list of [RaceCandidate] for that turn.
+     * @return Map of turn -> list of [RaceCandidate] for that turn.
      */
     internal fun parseRacesData(json: String): Map<TurnNumber, List<RaceCandidate>> {
         val obj = JSONObject(json)
@@ -981,14 +971,14 @@ object SmartRaceSolverIntegration {
     }
 
     /**
-     * Parses the manual-lock map from the snapshot. Each entry maps a turn number → either a
+     * Parses the manual-lock map from the snapshot. Each entry maps a turn number to either a
      * race name (forces that race) or the sentinel `"__TRAIN__"` (forces a Train turn). The
      * latter is used by the inline calendar UI to "delete" a scheduled race or lock a turn that
      * had no race so the solver leaves it alone.
      *
      * @param obj JSON object of `{turnNumber: raceName | "__TRAIN__"}` pairs, or null.
      * @param racesByTurn Candidate pool used to resolve race-name locks back to keys.
-     * @return Map of turn → [Decision]. Entries referencing unknown race names are logged and dropped.
+     * @return Map of turn -> [Decision]. Entries referencing unknown race names are logged and dropped.
      */
     private fun parseManualLocks(
         obj: JSONObject?,
@@ -1058,7 +1048,7 @@ object SmartRaceSolverIntegration {
      * Converts a JSON array of strings into a Kotlin list.
      *
      * @param arr JSON array, or null.
-     * @return List of strings; empty when [arr] is null.
+     * @return List of strings. Empty when [arr] is null.
      */
     private fun jsonStringList(arr: JSONArray?): List<String> {
         if (arr == null) return emptyList()

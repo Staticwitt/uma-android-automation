@@ -8,7 +8,7 @@ import com.steve1316.uma_android_automation.types.TrackSurface
 /**
  * Six aptitude rankings (S..G) covering the four distance categories and two surfaces.
  *
- * Higher [Aptitude] ordinal = better in-game grade; the existing enum is ordered G,F,E,D,C,B,A,S
+ * Higher [Aptitude] ordinal = better in-game grade. The existing enum is ordered G,F,E,D,C,B,A,S
  * so `aptitude.ordinal >= other.ordinal` reads as "at least as good as [other]".
  *
  * @property sprint Aptitude for Sprint-distance races.
@@ -69,10 +69,10 @@ data class Aptitudes(
 /**
  * Tunable scoring weights consumed by the heuristic. Defaults mirror the reference Trackblazer
  * solver: a 50% race-bonus uplift on top of the BASE_REWARD table and a per-race cost equal to
- * the weighted G2 baseline. With these defaults G2/G3 races score zero — they tie with Train and
+ * the weighted G2 baseline. With these defaults G2/G3 races score zero - they tie with Train and
  * only get picked when an epithet, fans tiebreaker, or Late-Dec window pushes them positive.
  *
- * @property raceValue Multiplier applied to the per-race net (gross − cost) value.
+ * @property raceValue Multiplier applied to the per-race net (gross - cost) value.
  * @property epithetValue Multiplier applied to every epithet completion's reward.
  * @property statWeight Coefficient on the stat component of gross race reward and cost baseline.
  * @property spWeight Coefficient on the skill-point component of gross race reward and cost baseline.
@@ -107,14 +107,14 @@ data class Weights(
  * @property key Unique key matching the top-level key in races.json (`"<name> (<date>)"`).
  * @property name Human-readable race name (without the date suffix).
  * @property date Free-text date label from races.json.
- * @property classYear Class-year prefix extracted from [date] — "Junior", "Classic", or "Senior".
+ * @property classYear Class-year prefix extracted from [date]: "Junior", "Classic", or "Senior".
  *   Used by matchers that gate on class (e.g. "Japan Cup (Classic)").
  * @property raceTrack In-game track name (e.g. "Tokyo", "Nakayama").
  * @property grade Race grade (G1, G2, G3, OP, Pre-OP, Maiden, Debut, Finale, EX).
- * @property terrain Track surface — Turf or Dirt.
- * @property distanceType Distance category — Sprint, Mile, Medium, or Long.
+ * @property terrain Track surface: Turf or Dirt.
+ * @property distanceType Distance category: Sprint, Mile, Medium, or Long.
  * @property distanceMeters Race distance in meters.
- * @property fans Reward fans count; participates in scoring as a microscopic tiebreaker.
+ * @property fans Reward fans count. Participates in scoring as a microscopic tiebreaker.
  * @property turnNumber Turn the race takes place on (1..72).
  */
 data class RaceCandidate(
@@ -151,22 +151,22 @@ data class RaceWin(
  * Immutable snapshot of everything the solver needs to compute a [Schedule].
  *
  * Re-solves are triggered by constructing a new [SolverState] (e.g. with a freshly-dead
- * epithet added to [deadEpithets] after a race loss). The solver itself is pure — given the
+ * epithet added to [deadEpithets] after a race loss). The solver itself is pure - given the
  * same state, it produces the same schedule.
  *
- * @property currentTurn Turn the bot is currently on; the solver plans from this turn forward.
- * @property scenario "URA Finale", "Unity Cup", or "Trackblazer" — read from settings.general.scenario.
+ * @property currentTurn Turn the bot is currently on. The solver plans from this turn forward.
+ * @property scenario "URA Finale", "Unity Cup", or "Trackblazer". Read from settings.general.scenario.
  * @property characterPreset Selected character preset name, or null for none.
  * @property aptitudes User aptitudes used by [ScoringFunctions.isEligible].
- * @property racesByTurn Pre-grouped candidate pool: turn → races available on that turn.
+ * @property racesByTurn Pre-grouped candidate pool: turn -> races available on that turn.
  * @property epithets Full list of epithets the player can pursue.
  * @property raceHistory Wins accumulated so far this run.
  * @property completedEpithets Epithet names already marked completed by the runtime tracker.
  * @property deadEpithets Epithet names known unreachable (e.g. a required race has been lost).
- * @property forcedEpithets Epithet names the solver MUST complete; infeasibility flags the model.
+ * @property forcedEpithets Epithet names the solver MUST complete. Infeasibility flags the model.
  * @property targetEpithets Epithet names the solver should pursue when score-positive.
- * @property lockedDecisions User-locked turn → decision overrides.
- * @property summerBlockTurns No-race turns; defaults to [DEFAULT_SUMMER_BLOCKS].
+ * @property lockedDecisions User-locked turn -> decision overrides.
+ * @property summerBlockTurns No-race turns. Defaults to [DEFAULT_SUMMER_BLOCKS].
  * @property weights Active scoring weights.
  */
 data class SolverState(
@@ -189,8 +189,8 @@ data class SolverState(
 
     companion object {
         /**
-         * Default summer training blocks (no-race turns). Junior: Early Jul → Early Aug;
-         * Classic & Senior: Early Jul → Late Aug. Mirrors the reference solver's constant.
+         * Default summer training blocks (no-race turns). Junior: Early Jul -> Early Aug.
+         * Classic and Senior: Early Jul -> Late Aug. Mirrors the reference solver's constant.
          */
         val DEFAULT_SUMMER_BLOCKS: Set<TurnNumber> =
             setOf(

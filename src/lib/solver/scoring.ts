@@ -14,23 +14,28 @@ import {
 } from "./constants"
 import { SchedulePreview } from "./preview"
 
-/** Matches gametora's "<X> scenario only" bullet. Group 1 captures the scenario name. */
+/** Matches gametora's "<X> scenario only" bullet. Group 1 captures the scenario name.
+ *  Mirror of `EpithetFilters.SCENARIO_RESTRICTION_REGEX` in the Kotlin solver. */
 const SCENARIO_RESTRICTION_REGEX = /([A-Za-z][A-Za-z0-9 \-]*?) scenario only/i
 
-/** Matches gametora's character-restriction bullet, e.g. "Yaeno Muteki only". */
+/** Matches gametora's character-restriction bullet, e.g. "Yaeno Muteki only".
+ *  The whole bullet must be `<character name> only` - bullets containing extra words don't qualify.
+ *  Mirror of `EpithetFilters.CHARACTER_RESTRICTION_REGEX`. */
 const CHARACTER_RESTRICTION_REGEX = /^(.+?)\s+only$/
 
-/** Matches gametora's stat-reward bullet. Group 1+2 = current "<count> random stats +<perStat>"; group 3+4 = legacy "+<perStat> to <count> random stats". */
+/** Matches gametora's stat-reward bullet. Current form: "2 random stats +10".
+ *  The legacy "+10 to 2 random stats" wording is also recognised so a re-scrape isn't required to keep older JSON snapshots working.
+ *  Groups 1+2 capture the current form (count, per-stat). Groups 3+4 capture the legacy form (per-stat, count).
+ *  Mirror of `EpithetFilters.STAT_REWARD_REGEX`. */
 const STAT_REWARD_REGEX = /(?:(\d+)\s+random\s+stats?\s*\+(\d+))|(?:\+(\d+)\s+to\s+(\d+)\s+random\s+stats?)/i
 
-/** Matches gametora's hint-reward bullet, e.g. "Reward: Top Pick hint +1". Group 1 = level. */
+/** Matches gametora's hint-reward bullet, e.g. "Reward: Top Pick hint +1" or "Homestretch Haste hint +1". Group 1 = level. */
 const HINT_REWARD_REGEX = /hint\s*\+(\d+)/i
 
-/** True iff the race's name contains one of the COUNTRY_NAMES tokens (Globe-Trotter filter). */
-export const nameContainsCountry = (name: string): boolean => COUNTRY_NAMES.some((c) => name.includes(c))
-
 /**
- * Scenario gate for an epithet. Prefers the structured `scenarios` field, falling back to scanning `bullet_points` for "<X> scenario only".
+ * Extracts scenario restrictions from an epithet's bullet list.
+ * By convention the restriction is the first bullet, but the scan covers every bullet so ordering drift won't silently break the gate.
+ * An empty return means the epithet is universally obtainable. Mirrors `EpithetFilters.scenariosFromBullets` in Kotlin.
  *
  * @param e Epithet entry to inspect.
  * @returns Scenario names referenced by any "<X> scenario only" bullet.
@@ -47,7 +52,9 @@ export const scenariosForEpithet = (e: EpithetEntry): string[] => {
 }
 
 /**
- * Character gate for an epithet. Prefers the structured `characters` field, falling back to scanning `bullet_points` for standalone "<name> only".
+ * Extracts character restrictions from an epithet's bullet list. Gametora prints these as a standalone bullet like "Yaeno Muteki only".
+ * Scenario-restriction bullets ("X scenario only") are excluded so they don't collide with the character regex.
+ * An empty return means the epithet has no character gate. Mirrors `EpithetFilters.charactersFromBullets` in Kotlin.
  *
  * @param e Epithet entry to inspect.
  * @returns Character names referenced by any standalone "<name> only" bullet.
@@ -66,11 +73,13 @@ export const charactersForEpithet = (e: EpithetEntry): string[] => {
 }
 
 /**
- * Parses an epithet's reward bullet into kind + total magnitude.
- * The reward bullet is the last bullet by convention; this scans every bullet so a row whose reward isn't last still works.
+ * Parses an epithet's reward bullet (last by convention) into kind + total magnitude.
+ * Falls back to scanning every bullet so a row whose reward isn't last still works.
+ * Mirrors `EpithetFilters.rewardFromBullets` in Kotlin.
  *
  * @param e Epithet entry to inspect.
- * @returns `{ kind, amount }` where `amount` is `per_stat * stat_count` for stat rewards, the level for hint rewards, and 0 otherwise.
+ * @returns `{ kind: "stat" | "hint" | "unknown"; amount }` where `amount` is `per_stat * stat_count` for stat rewards,
+ *   the level for hint rewards, and 0 otherwise.
  */
 export const epithetReward = (e: EpithetEntry): { kind: "stat" | "hint" | "unknown"; amount: number } => {
     const bullets = e.bullet_points ?? []
@@ -79,6 +88,8 @@ export const epithetReward = (e: EpithetEntry): { kind: "stat" | "hint" | "unkno
     for (const b of ordered) {
         const stat = STAT_REWARD_REGEX.exec(b)
         if (stat) {
+            // Groups 1+2 cover the current "<count> random stats +<perStat>" form; groups
+            // 3+4 cover the legacy "+<perStat> to <count> random stats" form.
             const count = parseInt(stat[1] ?? stat[4] ?? "0", 10)
             const perStat = parseInt(stat[2] ?? stat[3] ?? "0", 10)
             return { kind: "stat", amount: count * perStat }
@@ -89,7 +100,28 @@ export const epithetReward = (e: EpithetEntry): { kind: "stat" | "hint" | "unkno
     return { kind: "unknown", amount: 0 }
 }
 
+/**
+ * True iff the race's name contains one of the `COUNTRY_NAMES` tokens (Globe-Trotter filter).
+ *
+ * @param name The race name to test.
+ * @returns True when the name contains any of the country tokens.
+ */
+export const nameContainsCountry = (name: string): boolean => COUNTRY_NAMES.some((c) => name.includes(c))
+
+/**
+ * True for graded races (G1, G2, G3).
+ *
+ * @param grade The race grade string.
+ * @returns True iff `grade` is "G1", "G2", or "G3".
+ */
 const isGradedRace = (grade: string): boolean => grade === "G1" || grade === "G2" || grade === "G3"
+
+/**
+ * True for OP-tier races and above (graded, OP, FINALE, EX).
+ *
+ * @param grade The race grade string.
+ * @returns True iff `grade` is graded or one of "OP", "FINALE", "EX".
+ */
 const isOpenOrAboveRace = (grade: string): boolean => isGradedRace(grade) || grade === "OP" || grade === "FINALE" || grade === "EX"
 
 /**
@@ -114,9 +146,12 @@ export const isRaceEligible = (race: RaceEntry, aptitudes: AptitudeMap, weights:
 }
 
 /**
- * Returns every epithet whose matcher list references the given race. Mirrors the matcher
- * branches in `Epithet.kt`: `winRace`, `winRaceTimes`, `winAnyOf`, `winAtLeast`, `winCount`.
+ * Returns every epithet whose matcher list references the given race.
+ * Mirrors the matcher branches in `Epithet.kt`: `winRace`, `winRaceTimes`, `winAnyOf`, `winAtLeast`, `winCount`.
  * `epithetAll` / `epithetAnyOf` are dependency matchers and are intentionally skipped here.
+ *
+ * @param race The race to test against every epithet's matcher list.
+ * @returns Epithet entries whose matchers reference `race`.
  */
 export const epithetsForRace = (race: RaceEntry): EpithetEntry[] => {
     const all = epithetsData as unknown as Record<string, EpithetEntry>
@@ -161,14 +196,14 @@ export const epithetsForRace = (race: RaceEntry): EpithetEntry[] => {
 }
 
 /**
- * Computes how much progress a single matcher has accumulated up to and including `upToTurn`,
- * based on the preview's race decisions. Returns null when the matcher type isn't
- * progress-trackable (e.g. `epithetAll` / `epithetAnyOf`). `current` is capped at `required`.
+ * Computes how much progress a single matcher has accumulated up to and including `upToTurn`, based on the preview's race decisions.
+ * Returns null when the matcher type isn't progress-trackable (e.g. `epithetAll` / `epithetAnyOf`). `current` is capped at `required`.
  *
  * @param upToTurn Inclusive upper bound on which turns count toward progress.
  * @param matcher Raw matcher record from `epithets.json`.
  * @param preview Schedule preview that supplies the win history.
- * @param racesByKey Lookup table from race key → race entry.
+ * @param racesByKey Lookup table from race key to race entry.
+ * @returns Progress for the matcher, or null when the matcher type isn't progress-trackable.
  */
 export const matcherProgress = (upToTurn: number, matcher: Record<string, unknown>, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): MatcherProgress | null => {
     const winsUpTo: Array<{ turn: number; race: RaceEntry }> = []
@@ -232,9 +267,16 @@ export const matcherProgress = (upToTurn: number, matcher: Record<string, unknow
 }
 
 /**
- * Aggregate progress across ALL of an epithet's matchers as of `upToTurn`. Sums each matcher's
- * `(current, required)` so multi-condition epithets like Turf Tussler render as "(1/4) → (4/4)"
- * instead of "(1/1)" after just one matcher fires. Returns null when no matchers progress.
+ * Aggregate progress across ALL of an epithet's matchers as of `upToTurn`.
+ * Sums each matcher's `(current, required)` so multi-condition epithets like Turf Tussler render as "(1/4) -> (4/4)"
+ * instead of "(1/1)" after just one matcher fires.
+ * Returns null when no matchers progress.
+ *
+ * @param upToTurn Inclusive upper bound on which turns count toward progress.
+ * @param ep Epithet entry to evaluate.
+ * @param preview Schedule preview that supplies the win history.
+ * @param racesByKey Lookup table from race key to race entry.
+ * @returns Aggregate `(current, required)` across the epithet's matchers, or null when no matchers progress.
  */
 export const epithetProgress = (upToTurn: number, ep: EpithetEntry, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): MatcherProgress | null => {
     let totalCurrent = 0
@@ -353,7 +395,12 @@ export const turnsContributingToEpithet = (ep: EpithetEntry, preview: SchedulePr
 
 /**
  * Aggregate stats for the reference Trackblazer-style summary panel: race count, epithet count,
- * total race stats (BASE_STAT × (1 + raceBonusPct/100)), race SP, epithet stats, and hint count.
+ * total race stats (BASE_STAT * (1 + raceBonusPct/100)), race SP, epithet stats, and hint count.
+ *
+ * @param preview Schedule preview to summarise.
+ * @param weights Solver weights (only `raceBonusPct` is read).
+ * @param racesByKey Lookup table from race key to race entry.
+ * @returns The aggregate {@link PreviewStats}.
  */
 export const computePreviewStats = (preview: SchedulePreview, weights: Pick<WeightsMap, "raceBonusPct">, racesByKey: Record<string, RaceEntry>): PreviewStats => {
     const epithetsAll = epithetsData as unknown as Record<string, EpithetEntry>

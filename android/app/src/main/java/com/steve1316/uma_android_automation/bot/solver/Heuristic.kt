@@ -5,7 +5,7 @@ package com.steve1316.uma_android_automation.bot.solver
  * partial schedules at each step. Each step expands every active beam into one child per legal
  * decision (locked decision, available race, Train, Rest), scores the child, and re-prunes.
  *
- * The heuristic is deterministic — same [SolverState] in, same beams out — provided the candidate
+ * The heuristic is deterministic - same [SolverState] in, same beams out - provided the candidate
  * pool ordering is stable. We rely on `state.racesByTurn` already being deterministically sorted
  * by the race key string when constructed by the wiring layer.
  */
@@ -21,8 +21,7 @@ object Heuristic {
      *
      * @param state Initial solver state. The search plans from `state.currentTurn` to [LAST_TURN].
      * @param beamWidth Maximum number of partial schedules retained per step.
-     * @return Best [Schedule] found, or an empty one when every beam dies (e.g. an unreachable
-     *   forced epithet pruned all candidates).
+     * @return Best [Schedule] found, or an empty one when every beam dies (e.g. an unreachable forced epithet pruned all candidates).
      */
     fun search(state: SolverState, beamWidth: Int = DEFAULT_BEAM_WIDTH): Schedule {
         var beams: List<Beam> = listOf(initialBeam(state))
@@ -47,8 +46,7 @@ object Heuristic {
      * the run left off rather than re-planning the past.
      *
      * @param state Solver state used to seed the initial beam.
-     * @return A [Beam] with empty decisions, the existing history/completions, and a populated
-     *   `consecutiveRaces` count.
+     * @return A [Beam] with empty decisions, the existing history/completions, and a populated `consecutiveRaces` count.
      */
     private fun initialBeam(state: SolverState): Beam =
         Beam(
@@ -63,9 +61,9 @@ object Heuristic {
      * Counts how many consecutive races end at [endTurn] in the existing history. The walk stops
      * at the first non-race turn, so a sequence like turns 60, 61, 63 with `endTurn = 63` returns 1.
      *
-     * @param history Race-win history; only turn numbers are inspected.
+     * @param history Race-win history. Only turn numbers are inspected.
      * @param endTurn Turn at which to start the walk backward (typically `currentTurn - 1`).
-     * @return Number of contiguous race turns ending at [endTurn]; 0 when [endTurn] is < 1 or when
+     * @return Number of contiguous race turns ending at [endTurn]. Returns 0 when [endTurn] is < 1 or when
      *   the immediate prior turn has no race.
      */
     private fun countTrailingRaces(history: List<RaceWin>, endTurn: TurnNumber): Int {
@@ -82,13 +80,13 @@ object Heuristic {
 
     /**
      * Returns child beams for [beam] at [turn]. When [turn] has a manual lock in
-     * [SolverState.lockedDecisions] the only child is the locked decision; otherwise children are
+     * [SolverState.lockedDecisions] the only child is the locked decision. Otherwise children are
      * produced for every eligible unique-win race plus Train and Rest.
      *
      * @param beam Parent beam being expanded.
      * @param turn Turn whose decision is being explored.
      * @param state Solver state providing the candidate pool, locks, and eligibility rules.
-     * @return List of child beams (one per legal decision); never empty in normal operation since
+     * @return List of child beams (one per legal decision). Never empty in normal operation since
      *   Train and Rest are always available.
      */
     private fun expand(beam: Beam, turn: TurnNumber, state: SolverState): List<Beam> {
@@ -112,8 +110,7 @@ object Heuristic {
 
     /**
      * Produces a child beam by applying [decision] at [turn]. Race decisions delegate to
-     * [applyRace]; Train and Rest reset `consecutiveRaces` and add their respective scoring
-     * contributions.
+     * [applyRace]. Train and Rest reset `consecutiveRaces` and add their respective scoring contributions.
      *
      * @param beam Parent beam.
      * @param turn Turn the decision lands on.
@@ -153,8 +150,7 @@ object Heuristic {
      * @param decision Race decision identifying the chosen race by key.
      * @param state Solver state providing the candidate pool, epithets, and scoring weights.
      * @return New [Beam] with the race appended to history and the updated score. If the race
-     *   key cannot be resolved against [state] the beam is returned with the decision recorded
-     *   but no scoring change.
+     *   key cannot be resolved against [state] the beam is returned with the decision recorded but no scoring change.
      */
     private fun applyRace(
         beam: Beam,
@@ -186,8 +182,8 @@ object Heuristic {
         val baseScore = ScoringFunctions.raceValue(race, state.weights)
         // Mirror the reference Trackblazer solver: every epithet completion contributes its
         // reward to the objective. This is what makes G2/G3 races (which net zero on grade-
-        // and-cost alone) competitive — a free epithet reward tips the balance over Train.
-        // Forced epithets are still surfaced via the feasibility check in [keepTopK]; targeted
+        // and-cost alone) competitive - a free epithet reward tips the balance over Train.
+        // Forced epithets are still surfaced via the feasibility check in [keepTopK]. Targeted
         // epithets get an additional weight boost via [Weights.epithetValue].
         val epithetGain =
             newlyCompleted.sumOf { ScoringFunctions.epithetContribution(it, state.weights) }
@@ -205,12 +201,11 @@ object Heuristic {
 
     /**
      * Prunes beams that can no longer satisfy a forced epithet, then sorts by score and keeps
-     * the top [k]. Stable-sorted by score (desc), tiebroken by decision-list size (asc) to keep
-     * ordering deterministic across runs.
+     * the top [k]. Stable-sorted by score (desc), tiebroken by decision-list size (asc) to keep ordering deterministic across runs.
      *
      * @param beams Candidate beams produced by the most recent [expand] step.
      * @param k Maximum number of beams to retain.
-     * @param state Solver state — used for the forced-epithet feasibility check.
+     * @param state Solver state - used for the forced-epithet feasibility check.
      * @return Up to [k] surviving beams, or an empty list when [beams] is empty.
      */
     private fun keepTopK(beams: List<Beam>, k: Int, state: SolverState): List<Beam> {
@@ -227,7 +222,7 @@ object Heuristic {
 
     /**
      * Conservative reachability check: an epithet is considered still completable as long as it
-     * is not flagged dead. The full forward feasibility analysis is intentionally deferred —
+     * is not flagged dead. The full forward feasibility analysis is intentionally deferred -
      * beams that pursue dead-ends are filtered out by the score-based prune in [keepTopK] over time.
      *
      * @param epithetName Epithet to test.
@@ -240,12 +235,11 @@ object Heuristic {
     /**
      * Internal beam representation. Kept private to discourage external mutation.
      *
-     * @property decisions Turn → decision pairs accumulated so far, in turn order.
-     * @property raceHistory All race wins reflected in this beam's score, including the seed
-     *   history from [SolverState.raceHistory].
+     * @property decisions Turn -> decision pairs accumulated so far, in turn order.
+     * @property raceHistory All race wins reflected in this beam's score, including the seed history from [SolverState.raceHistory].
      * @property completedEpithets Epithets the beam projects to complete given [raceHistory].
      * @property consecutiveRaces Number of contiguous race turns ending at the most recent
-     *   decision; reset to 0 by Train/Rest.
+     *   decision. Reset to 0 by Train/Rest.
      * @property score Cumulative beam score: sum of per-turn scoring contributions.
      */
     private data class Beam(

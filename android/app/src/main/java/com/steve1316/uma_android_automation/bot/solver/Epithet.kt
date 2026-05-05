@@ -17,8 +17,7 @@ import com.steve1316.uma_android_automation.types.TrackSurface
  * @property distanceTypes Set of allowed distance types; empty disables the distance check.
  * @property raceTracks Set of allowed race-track names; empty disables the track check.
  * @property nameContains Substring that must appear in the race name; null disables the check.
- * @property nameContainsCountry When true, the race name must contain a country token from
- *   [EpithetFilters.COUNTRY_NAMES].
+ * @property nameContainsCountry When true, the race name must contain a country token from [EpithetFilters.COUNTRY_NAMES].
  */
 data class EpithetFilter(
     val terrain: TrackSurface? = null,
@@ -36,7 +35,7 @@ data class EpithetFilter(
  *
  * The flat list of matchers on an [Epithet] is interpreted as a logical AND: an epithet
  * is completed when every matcher is satisfied. `atClass` is the in-game class year prefix
- * — "Junior", "Classic", or "Senior" — for matchers that gate by class (e.g. "Japan Cup (Classic)").
+ * ("Junior", "Classic", or "Senior") for matchers that gate by class (e.g. "Japan Cup (Classic)").
  */
 sealed class EpithetMatcher {
     /**
@@ -95,16 +94,16 @@ sealed class EpithetMatcher {
 /**
  * Derivation helpers for the slim epithet schema (`name`, `bullet_points`, `matchers`).
  *
- * gametora bullets are the single source of truth for human-facing fields the solver doesn't
+ * GameTora bullets are the single source of truth for human-facing fields the solver doesn't
  * need structured: scenario gating, reward kind, reward magnitude. Each helper here parses
  * one of those derived properties out of the bullet list. The Kotlin and TypeScript layers
- * each implement the same derivation against the same regexes — keep both copies in sync.
+ * each implement the same derivation against the same regexes - keep both copies in sync.
  *
  * Keep [COUNTRY_NAMES] in sync with the TS mirror in `src/pages/SmartRaceSolverSettings/index.tsx`.
  */
 object EpithetFilters {
     /** Mirrors the reference Trackblazer's `COUNTRY_WORDS` exactly. The trailing space on
-     *  `"Japan "` is intentional — without it, every "Japanese …" race (e.g. "Japanese Derby")
+     *  `"Japan "` is intentional - without it, every "Japanese ..." race (e.g. "Japanese Derby")
      *  would also match, which is wrong. */
     val COUNTRY_NAMES: List<String> =
         listOf(
@@ -122,29 +121,29 @@ object EpithetFilters {
      */
     fun nameContainsCountry(name: String): Boolean = COUNTRY_NAMES.any { it in name }
 
-    /** Matches gametora's scenario-restriction bullet like "Trackblazer scenario only" or
+    /** Matches GameTora's scenario-restriction bullet like "Trackblazer scenario only" or
      *  "URA Finale scenario only". Group 1 captures the scenario name verbatim. */
     private val SCENARIO_RESTRICTION_REGEX = Regex("""([A-Za-z][A-Za-z0-9 \-]*?) scenario only""", RegexOption.IGNORE_CASE)
 
-    /** Matches gametora's character-restriction bullet like "Yaeno Muteki only" or
-     *  "Mejiro McQueen only" — the entire bullet is `<character name> only` with no other
+    /** Matches GameTora's character-restriction bullet like "Yaeno Muteki only" or
+     *  "Mejiro McQueen only" - the entire bullet is `<character name> only` with no other
      *  text. Group 1 captures the character name verbatim. The pattern intentionally
      *  rejects bullets containing extra words (e.g. "Win 5 races as a Late Surger only")
-     *  via the `^…$` anchors. Scenario-restriction bullets are also rejected by the
+     *  via the `^...$` anchors. Scenario-restriction bullets are also rejected by the
      *  caller before this regex runs. */
     private val CHARACTER_RESTRICTION_REGEX = Regex("""^(.+?)\s+only$""")
 
-    /** Matches gametora's stat-reward bullet. Current format: "Reward: 2 random stats +10".
+    /** Matches GameTora's stat-reward bullet. Current format: "Reward: 2 random stats +10".
      *  The legacy "+10 to 2 random stats" wording is also recognised so a re-scrape isn't
-     *  required to keep older JSON snapshots working. Group 1 = stat count, Group 2 =
-     *  per-stat amount; the total reward magnitude is the product. */
+     *  required to keep older JSON snapshots working. Group 1 = stat count, Group 2 = per-stat amount.
+     *  The total reward magnitude is the product. */
     private val STAT_REWARD_REGEX =
         Regex(
             """(?:(\d+)\s+random\s+stats?\s*\+(\d+))|(?:\+(\d+)\s+to\s+(\d+)\s+random\s+stats?)""",
             RegexOption.IGNORE_CASE,
         )
 
-    /** Matches gametora's hint-reward bullet, e.g. "Reward: Top Pick hint +1" or
+    /** Matches GameTora's hint-reward bullet, e.g. "Reward: Top Pick hint +1" or
      *  "Homestretch Haste hint +1". Group 1 captures the level. */
     private val HINT_REWARD_REGEX = Regex("""hint\s*\+(\d+)""", RegexOption.IGNORE_CASE)
 
@@ -169,14 +168,18 @@ object EpithetFilters {
         return out
     }
 
-    /** Returns the scenario gate for [epithet]: prefers the structured [Epithet.scenarios]
-     *  field when populated by the scraper, otherwise falls back to parsing [Epithet.bullets]
-     *  via [scenariosFromBullets]. */
+    /**
+     * Returns the scenario gate for [epithet]. Prefers the structured [Epithet.scenarios] field when populated by the scraper,
+     * otherwise falls back to parsing [Epithet.bullets] via [scenariosFromBullets].
+     *
+     * @param epithet The epithet whose scenario gate is being resolved.
+     * @return Scenario names that gate availability of the epithet. Empty when the epithet is universally obtainable.
+     */
     fun scenariosFor(epithet: Epithet): List<String> =
         if (epithet.scenarios.isNotEmpty()) epithet.scenarios else scenariosFromBullets(epithet.bullets)
 
     /**
-     * Extracts character restrictions from an epithet's bullet list — gametora prints
+     * Extracts character restrictions from an epithet's bullet list - GameTora prints
      * these as a standalone bullet like "Yaeno Muteki only". Scenario-restriction bullets
      * (which use the word `scenario`) are excluded so they never collide with the
      * character regex. An empty return means the epithet has no character gate.
@@ -196,9 +199,13 @@ object EpithetFilters {
         return out
     }
 
-    /** Returns the character gate for [epithet]: prefers the structured [Epithet.characters]
-     *  field when populated by the scraper, otherwise falls back to parsing [Epithet.bullets]
-     *  via [charactersFromBullets]. */
+    /**
+     * Returns the character gate for [epithet]. Prefers the structured [Epithet.characters] field when populated by the scraper,
+     * otherwise falls back to parsing [Epithet.bullets] via [charactersFromBullets].
+     *
+     * @param epithet The epithet whose character gate is being resolved.
+     * @return Character names that gate availability of the epithet. Empty when the epithet is available to every character.
+     */
     fun charactersFor(epithet: Epithet): List<String> =
         if (epithet.characters.isNotEmpty()) epithet.characters else charactersFromBullets(epithet.bullets)
 
@@ -208,15 +215,15 @@ object EpithetFilters {
      * Python scraper's old `_derive_reward_fields` and the TS `epithetReward` helper.
      *
      * @param bullets The bullet array from the slim epithet schema.
-     * @return Pair of (`"stat"` | `"hint"` | `"unknown"`, total magnitude). For stat rewards the
-     *   magnitude is `per_stat * stat_count`; for hints it is the level number; otherwise 0.
+     * @return Pair of (`"stat"` | `"hint"` | `"unknown"`, total magnitude). For stat rewards the magnitude is `per_stat * stat_count`.
+     *   For hints it is the level number. Otherwise 0.
      */
     fun rewardFromBullets(bullets: List<String>): Pair<String, Int> {
         if (bullets.isEmpty()) return "unknown" to 0
         val ordered = listOf(bullets.last()) + bullets.dropLast(1)
         for (b in ordered) {
             STAT_REWARD_REGEX.find(b)?.let {
-                // Group 1+2 cover the current "<count> random stats +<perStat>" form; group
+                // Groups 1+2 cover the current "<count> random stats +<perStat>" form. Groups
                 // 3+4 cover the legacy "+<perStat> to <count> random stats" form.
                 val statCount = (it.groupValues[1].ifEmpty { it.groupValues[4] }).toIntOrNull() ?: 0
                 val perStat = (it.groupValues[2].ifEmpty { it.groupValues[3] }).toIntOrNull() ?: 0
@@ -228,7 +235,6 @@ object EpithetFilters {
         }
         return "unknown" to 0
     }
-
 }
 
 /**
@@ -240,13 +246,11 @@ object EpithetFilters {
  * epithet names are all derived at runtime via [EpithetFilters].
  *
  * @property name Display name of the epithet (also the unique key in epithets.json).
- * @property bullets Free-text bullet list from gametora's row, in display order: scenario /
- *   character restriction first when present, condition / qualifier bullets in the middle,
- *   reward bullet last.
+ * @property bullets Free-text bullet list from GameTora's row, in display order: scenario /
+ *   character restriction first when present, condition / qualifier bullets in the middle, reward bullet last.
  * @property scenarios Scenario gate (e.g. `["Trackblazer"]`). Empty means universal.
  *   Authored by the Python scraper from `<X> scenario only` bullets; consumers also fall back
- *   to parsing `bullets` directly via [EpithetFilters.scenariosFromBullets] when this field
- *   is missing.
+ *   to parsing `bullets` directly via [EpithetFilters.scenariosFromBullets] when this field is missing.
  * @property characters Character gate (e.g. `["Yaeno Muteki"]`). Empty means available to
  *   every character. Derived from standalone `<name> only` bullets.
  * @property matchers AND-combined predicates evaluated against the win history.

@@ -9,16 +9,16 @@ import org.ojalgo.optimisation.Variable
  * reference Trackblazer site's `solver-browser.js` GLPK formulation.
  *
  * Decision variables (all binary):
- *  - `x[turn]` — race vs train at each turn from `currentTurn` to LAST_TURN.
- *  - `r[turn][raceKey]` — which specific race is picked. Σ r[turn][*] = x[turn].
- *  - `y[epithet]` — whether the epithet is completed by the end of the schedule.
- *  - `z[turn]` — third-or-later consecutive race indicator (turns currentTurn+2..LAST_TURN).
+ *  - `x[turn]` - race vs train at each turn from `currentTurn` to LAST_TURN.
+ *  - `r[turn][raceKey]` - which specific race is picked. sum(r[turn][*]) = x[turn].
+ *  - `y[epithet]` - whether the epithet is completed by the end of the schedule.
+ *  - `z[turn]` - third-or-later consecutive race indicator (turns currentTurn+2..LAST_TURN).
  *
  * Objective (maximize):
- *   Σ r[turn][race] · raceValue(race)
- *   + Σ y[epithet] · epithetContribution(epithet)
- *   − Σ z[turn] · consecutiveRacePenalty   (zero on Late-Dec turns 23, 47, 71)
- *   − Σ x[summer turn] · summerPenalty
+ *   sum(r[turn][race] * raceValue(race))
+ *   + sum(y[epithet] * epithetContribution(epithet))
+ *   - sum(z[turn] * consecutiveRacePenalty)   (zero on Late-Dec turns 23, 47, 71)
+ *   - sum(x[summer turn] * summerPenalty)
  *
  * Each [EpithetMatcher] becomes one or two linear inequalities tying y[e] to the relevant
  * sum of r-variables and a history-derived constant.
@@ -28,18 +28,18 @@ object MilpSolver {
      *  waived on these turns to match the reference solver's exemption. */
     private val LATE_DEC_FREE_TURNS: Set<TurnNumber> = setOf(23, 47, 71)
 
-    /** Classic + Senior summer race-blocked turns (Early Jul → Late Aug). */
+    /** Classic + Senior summer race-blocked turns (Early Jul -> Late Aug). */
     private val CLASSIC_SENIOR_SUMMER_TURNS: Set<TurnNumber> = setOf(37, 38, 39, 40, 61, 62, 63, 64)
 
-    /** Graded races (G1/G2/G3); used by [EpithetFilter.gradedOnly]. */
+    /** Graded races (G1/G2/G3). Used by [EpithetFilter.gradedOnly]. */
     private val GRADED: Set<RaceGrade> = setOf(RaceGrade.G1, RaceGrade.G2, RaceGrade.G3)
 
-    /** Graded plus Open-class races (G1/G2/G3/OP/Pre-OP); used by [EpithetFilter.gradeAtLeastOpen]. */
+    /** Graded plus Open-class races (G1/G2/G3/OP/Pre-OP). Used by [EpithetFilter.gradeAtLeastOpen]. */
     private val GRADED_OR_OPEN: Set<RaceGrade> =
         setOf(RaceGrade.G1, RaceGrade.G2, RaceGrade.G3, RaceGrade.OP, RaceGrade.PRE_OP)
 
     /**
-     * ojAlgo variable names accept only `[A-Za-z0-9_]`; replace anything else with `_` so that
+     * ojAlgo variable names accept only `[A-Za-z0-9_]`. Replace anything else with `_` so that
      * race keys containing spaces, parentheses, or punctuation produce legal variable names.
      *
      * @param s String to sanitize.
@@ -53,7 +53,7 @@ object MilpSolver {
      * schedule is returned without invoking the solver.
      *
      * @param state Solver state describing aptitudes, races-by-turn, epithets, and weights.
-     * @return Optimal [Schedule] under the modelled objective; an empty schedule on infeasibility
+     * @return Optimal [Schedule] under the modelled objective. Returns an empty schedule on infeasibility
      *   or when there are no remaining turns to plan.
      */
     fun solve(state: SolverState): Schedule {
@@ -77,13 +77,13 @@ object MilpSolver {
                 }
             }
 
-        // x[turn] — 1 if any race is picked.
+        // x[turn] - 1 if any race is picked.
         private val xVars: Map<TurnNumber, Variable> =
             turns.associateWith { t ->
                 model.newVariable("x_$t").binary()
             }
 
-        // r[turn][raceKey] — picks the specific race.
+        // r[turn][raceKey] - picks the specific race.
         private val raceVars: Map<TurnNumber, Map<String, Variable>> =
             turns.associateWith { t ->
                 eligibleByTurn[t].orEmpty().associate { race ->
@@ -91,13 +91,13 @@ object MilpSolver {
                 }
             }
 
-        // y[epithetName] — projected to complete. Dead epithets get no variable (forced to 0).
+        // y[epithetName] - projected to complete. Dead epithets get no variable (forced to 0).
         private val epithetVars: Map<String, Variable> =
             state.epithets
                 .filter { it.name !in state.deadEpithets }
                 .associate { e -> e.name to model.newVariable("y_${sanitize(e.name)}").binary() }
 
-        // z[turn] — third-or-later consecutive race indicator.
+        // z[turn] - third-or-later consecutive race indicator.
         private val zVars: Map<TurnNumber, Variable> =
             turns
                 .filter { t -> (t - 2) in turns }
@@ -106,7 +106,7 @@ object MilpSolver {
         /**
          * Wires every constraint and the objective onto [model] then solves it.
          *
-         * @return Optimal [Schedule] when the model is feasible; an empty schedule otherwise.
+         * @return Optimal [Schedule] when the model is feasible. Returns an empty schedule otherwise.
          */
         fun build(): Schedule {
             wireXrConsistency()
@@ -126,9 +126,8 @@ object MilpSolver {
         }
 
         /**
-         * Ties race-specific picks back to the per-turn race indicator: `Σ r[t][*] − x[t] = 0`.
-         * Turns with no eligible races have `x[t]` clamped to 0 so the solver cannot select a
-         * race there.
+         * Ties race-specific picks back to the per-turn race indicator: `sum(r[t][*]) - x[t] = 0`.
+         * Turns with no eligible races have `x[t]` clamped to 0 so the solver cannot select a race there.
          */
         private fun wireXrConsistency() {
             for (t in turns) {
@@ -153,7 +152,7 @@ object MilpSolver {
 
         /**
          * Applies user-provided manual locks from [SolverState.lockedDecisions]. A Race lock
-         * forces `r[turn][raceKey] = 1` (and transitively `x[turn] = 1`); Train/Rest locks force
+         * forces `r[turn][raceKey] = 1` (and transitively `x[turn] = 1`). Train/Rest locks force
          * `x[turn] = 0`. A Race lock referencing a key that isn't in the eligible pool falls back
          * to forcing `x[turn] = 0` so the lock still suppresses any other race on that turn.
          */
@@ -171,8 +170,7 @@ object MilpSolver {
         }
 
         /**
-         * z[t] ≥ x[t] + x[t-1] + x[t-2] − 2 — pushed to 1 only when all three are 1, since the
-         * objective prefers z=0 (negative weight).
+         * z[t] >= x[t] + x[t-1] + x[t-2] - 2. Pushed to 1 only when all three are 1, since the objective prefers z=0 (negative weight).
          */
         private fun wireConsecutiveRaceIndicators() {
             for ((t, z) in zVars) {
@@ -181,16 +179,15 @@ object MilpSolver {
                 expr.set(xVars[t]!!, -1.0)
                 expr.set(xVars[t - 1]!!, -1.0)
                 expr.set(xVars[t - 2]!!, -1.0)
-                // expr = z − x − x − x ≥ −2
+                // expr = z - x - x - x >= -2
                 expr.lower(-2.0)
             }
         }
 
         /**
          * For every epithet, emits one linear inequality per matcher:
-         * `required · y[epithet] ≤ Σ progress_terms + history_constant`. With y binary, this
-         * forces `y = 1` only when every matcher's running tally (history + future picks) clears
-         * its required threshold.
+         * `required * y[epithet] <= sum(progress_terms) + history_constant`. With y binary, this
+         * forces `y = 1` only when every matcher's running tally (history + future picks) clears its required threshold.
          */
         private fun wireEpithetMatchers() {
             for (epithet in state.epithets) {
@@ -198,7 +195,7 @@ object MilpSolver {
                 for ((idx, matcher) in epithet.matchers.withIndex()) {
                     val (required, terms, constant) = linearise(matcher) ?: continue
                     val expr = model.newExpression("ep_${sanitize(epithet.name)}_$idx")
-                    // required · y − Σ terms ≤ constant
+                    // required * y - sum(terms) <= constant
                     expr.set(y, required.toDouble())
                     for ((variable, coeff) in terms) expr.set(variable, expr.get(variable).toDouble() - coeff)
                     expr.upper(constant)
@@ -208,13 +205,12 @@ object MilpSolver {
 
         /**
          * Encodes prerequisite epithet edges so a child epithet cannot complete unless its
-         * prerequisites do. Prereqs are read from each child's structured matchers — the
-         * legacy `dependsOn` field has been retired now that `EpithetAll` / `EpithetAnyOf`
-         * are the source of truth.
+         * prerequisites do. Prereqs are read from each child's structured matchers - the
+         * legacy `dependsOn` field has been retired now that `EpithetAll` / `EpithetAnyOf` are the source of truth.
          *
          * Each `EpithetAll(names)` adds `y[child] <= y[name]` per name (every prereq is
          * mandatory). Each `EpithetAnyOf(names)` adds the disjunctive `y[child] <= sum y[name]`
-         * so completing any one of the candidates is enough; treating those names individually
+         * so completing any one of the candidates is enough. Treating those names individually
          * as hard prereqs would over-constrain the model.
          */
         private fun wireDependsOn() {
@@ -247,7 +243,7 @@ object MilpSolver {
 
         /**
          * Forces `y[name] = 1` for every epithet in [SolverState.forcedEpithets]. Dead epithets
-         * have no y-variable, so a forced-but-dead entry is silently skipped — that combination
+         * have no y-variable, so a forced-but-dead entry is silently skipped - that combination
          * ends up infeasible only when the dead epithet was load-bearing for the user's plan,
          * which the caller can detect via the empty schedule and surface.
          */
@@ -257,8 +253,8 @@ object MilpSolver {
 
         /**
          * Builds the objective by setting per-variable weights. Each race r-variable gets its
-         * [ScoringFunctions.raceValue] minus the summer penalty when applicable; each epithet
-         * y-variable gets its [ScoringFunctions.epithetContribution]; each consecutive-race
+         * [ScoringFunctions.raceValue] minus the summer penalty when applicable. Each epithet
+         * y-variable gets its [ScoringFunctions.epithetContribution]. Each consecutive-race
          * z-variable gets a negative weight equal to the configured penalty (zero on Late-Dec
          * turns, mirroring the reference solver's exemption).
          */
@@ -287,8 +283,7 @@ object MilpSolver {
          * [Schedule]. Race turns whose r-variables didn't pin a specific race fall back to
          * Train, which can happen when a manual lock forced x=1 against an empty pool.
          *
-         * @param objectiveValue Final objective value reported by ojAlgo, returned as the
-         *   schedule's `totalScore`.
+         * @param objectiveValue Final objective value reported by ojAlgo, returned as the schedule's `totalScore`.
          * @return [Schedule] containing per-turn decisions, projected epithet completions
          *   (including any pre-existing completions from [SolverState.completedEpithets]),
          *   and the objective value as the score.
@@ -322,12 +317,11 @@ object MilpSolver {
         /**
          * Reduces an [EpithetMatcher] to a linear-inequality triple
          * `(required, terms, constantBound)` such that the matcher is satisfied iff
-         * `required · y ≤ Σ coeff·var + constantBound`. The constant absorbs the contribution
+         * `required * y <= sum(coeff*var) + constantBound`. The constant absorbs the contribution
          * of pre-existing race history so the inequality only constrains future picks.
          *
          * For dependency matchers (`epithetAnyOf`, `epithetAll`) referencing dead/missing
-         * epithets we emit an unreachable bound (`required=1, terms=∅, constantBound=-1`) so
-         * `y` is forced to 0.
+         * epithets we emit an unreachable bound (`required=1, terms={}, constantBound=-1`) so `y` is forced to 0.
          *
          * @param matcher Matcher to linearise.
          * @return Triple `(required, terms, constantBound)`, or null when the matcher type has
@@ -378,14 +372,14 @@ object MilpSolver {
                     Triple(matcher.count, terms, historyHits.toDouble())
                 }
                 is EpithetMatcher.EpithetAnyOf -> {
-                    // 1·y[e] ≤ Σ y[name] — at least one of the named epithets must be completed.
+                    // 1*y[e] <= sum(y[name]) - at least one of the named epithets must be completed.
                     val others = matcher.names.mapNotNull { epithetVars[it] }
                     if (others.isEmpty()) return Triple(1, emptyMap(), -1.0) // unreachable
                     val terms = others.associateWith { 1.0 }
                     Triple(1, terms, 0.0)
                 }
                 is EpithetMatcher.EpithetAll -> {
-                    // N·y[e] ≤ Σ y[name] — every prereq must be completed. Any dead prereq
+                    // N*y[e] <= sum(y[name]) - every prereq must be completed. Any dead prereq
                     // makes the AND unsatisfiable, so emit an unreachable bound.
                     val others = matcher.names.mapNotNull { epithetVars[it] }
                     if (others.size != matcher.names.size) return Triple(1, emptyMap(), -1.0)
@@ -397,11 +391,11 @@ object MilpSolver {
 
         /**
          * Collects every r-variable whose underlying race has the given [raceName] (and, when
-         * provided, the matching [atClass] year). Coefficients are 1.0 — duplicates across turns
+         * provided, the matching [atClass] year). Coefficients are 1.0 - duplicates across turns
          * sum, which is what the matcher inequality wants for "win N races named X" semantics.
          *
          * @param raceName Race name to match against [RaceCandidate.name].
-         * @param atClass Optional class-year filter ("Junior", "Classic", "Senior"); null disables.
+         * @param atClass Optional class-year filter ("Junior", "Classic", "Senior"). Null disables the filter.
          * @return Map of r-variable to its coefficient (always 1.0).
          */
         private fun sumRaceVars(raceName: String, atClass: String? = null): Map<Variable, Double> {
@@ -420,8 +414,7 @@ object MilpSolver {
         }
 
         /**
-         * Collects every r-variable whose underlying race satisfies the [filter] predicate.
-         * Used for [EpithetMatcher.WinCount] linearisation.
+         * Collects every r-variable whose underlying race satisfies the [filter] predicate. Used for [EpithetMatcher.WinCount] linearisation.
          *
          * @param filter Filter predicate from a `winCount` matcher.
          * @return Map of r-variable to its coefficient (always 1.0).
@@ -446,7 +439,7 @@ object MilpSolver {
          *
          * @param win Race win from [SolverState.raceHistory].
          * @param filter Filter predicate from a `winCount` matcher.
-         * @return True if the win's underlying race matches; false when the candidate cannot be
+         * @return True if the win's underlying race matches. False when the candidate cannot be
          *   resolved or any field rejects it.
          */
         private fun historyMatchesFilter(win: RaceWin, filter: EpithetFilter): Boolean {
@@ -457,8 +450,7 @@ object MilpSolver {
         /**
          * Predicate equivalent to [EpithetTracker.matchesFilter] but operating directly on a
          * resolved [RaceCandidate] (callers in this class already know the candidate). Kept in
-         * lockstep with the runtime tracker so the solver projects the same completions the
-         * runtime will actually award.
+         * lockstep with the runtime tracker so the solver projects the same completions the runtime will actually award.
          *
          * @param c Race candidate to test.
          * @param f Filter predicate.

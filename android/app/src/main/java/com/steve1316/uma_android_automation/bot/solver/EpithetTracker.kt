@@ -10,7 +10,7 @@ enum class EpithetStatus { COMPLETED, IN_PROGRESS, DEAD, UNTOUCHED }
  *
  * The tracker is the heart of the recovery logic: when a race is lost, the solver re-classifies
  * epithets, marks the newly-unreachable ones as [EpithetStatus.DEAD], and the heuristic re-plans
- * around them. All functions here are deterministic — same state in, same status out.
+ * around them. All functions here are deterministic - same state in, same status out.
  */
 object EpithetTracker {
     /**
@@ -24,13 +24,11 @@ object EpithetTracker {
 
     /**
      * Classifies a single [epithet] against the given [state]. DEAD short-circuits over
-     * COMPLETED/IN_PROGRESS so a lost-prerequisite epithet stays DEAD even if other matchers
-     * would otherwise be satisfied.
+     * COMPLETED/IN_PROGRESS so a lost-prerequisite epithet stays DEAD even if other matchers would otherwise be satisfied.
      *
      * @param epithet Epithet to classify.
      * @param state Solver state providing race history and completed/dead sets.
-     * @return One of [EpithetStatus.DEAD], [EpithetStatus.COMPLETED], [EpithetStatus.IN_PROGRESS],
-     *   or [EpithetStatus.UNTOUCHED].
+     * @return One of [EpithetStatus.DEAD], [EpithetStatus.COMPLETED], [EpithetStatus.IN_PROGRESS], or [EpithetStatus.UNTOUCHED].
      */
     fun classify(epithet: Epithet, state: SolverState): EpithetStatus {
         if (epithet.name in state.deadEpithets) return EpithetStatus.DEAD
@@ -99,7 +97,7 @@ object EpithetTracker {
     }
 
     /**
-     * Continuous 0..1 progress for [matcher]; used by the heuristic to break ties between beams
+     * Continuous 0..1 progress for [matcher]. Used by the heuristic to break ties between beams
      * that have not yet completed an epithet. Capped at 1.0 once satisfied so partial overshoot
      * (e.g. 6 wins toward a 5-win matcher) does not skew tiebreaking.
      *
@@ -149,12 +147,12 @@ object EpithetTracker {
      *
      * @param win The race win whose race attributes should be checked.
      * @param filter The filter predicate from the matcher.
-     * @param state Solver state — used to look up the [RaceCandidate] for [win].
-     * @return True if [win]'s underlying race satisfies every non-null/non-empty field of [filter];
-     *   false if no matching candidate is found or any field rejects it.
+     * @param state Solver state - used to look up the [RaceCandidate] for [win].
+     * @return True if [win]'s underlying race satisfies every non-null/non-empty field of [filter].
+     *   False if no matching candidate is found or any field rejects it.
      */
     private fun matchesFilter(win: RaceWin, filter: EpithetFilter, state: SolverState): Boolean {
-        // RaceWin only carries identity; filter checks need full RaceCandidate fields. Look up
+        // RaceWin only carries identity. Filter checks need full RaceCandidate fields, so look up
         // the candidate pool for the win's turn and find the matching key (or fall back to name).
         val candidate =
             state.racesByTurn[win.turnNumber]

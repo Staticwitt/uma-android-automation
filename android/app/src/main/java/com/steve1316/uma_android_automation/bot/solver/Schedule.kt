@@ -8,23 +8,23 @@ typealias TurnNumber = Int
  *
  * [Train] and [Rest] are catch-all categories that the existing Racing.kt training logic
  * resolves into specific stat trains or recovery actions. The solver only commits to
- * "race race X" vs. "do something not-racing" at the turn granularity — the rest of the
+ * "race race X" vs. "do something not-racing" at the turn granularity - the rest of the
  * bot retains control over which stat to train, when to recover, etc.
  */
 sealed class Decision {
     /**
      * Solver committed to running a specific race this turn.
-     * @property raceKey Unique key into races.json — typically `"<name> (<date>)"`.
+     * @property raceKey Unique key into races.json. Typically `"<name> (<date>)"`.
      */
     data class RaceDecision(val raceKey: String) : Decision()
 
-    /** Solver committed to a non-race "training" turn; concrete stat is chosen by Racing.kt. */
+    /** Solver committed to a non-race "training" turn. Concrete stat is chosen by Racing.kt. */
     object Train : Decision() {
         /** @return The literal string `"Train"`, used by log lines and JSON serialisers. */
         override fun toString(): String = "Train"
     }
 
-    /** Solver committed to resting/recovering this turn; energy modelling is left to Racing.kt. */
+    /** Solver committed to resting/recovering this turn. Energy modelling is left to Racing.kt. */
     object Rest : Decision() {
         /** @return The literal string `"Rest"`. */
         override fun toString(): String = "Rest"
