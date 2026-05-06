@@ -1,5 +1,5 @@
 import { memo, useMemo, useContext, useState, useEffect, useRef, useCallback } from "react"
-import { InteractionManager, View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native"
+import { InteractionManager, View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, ViewStyle } from "react-native"
 import { Divider } from "react-native-paper"
 import { previewSchedule, SchedulePreview, ScheduleEntry, SolverConfigSnapshot } from "../../lib/solver/preview"
 import {
@@ -36,7 +36,9 @@ import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomButton from "../../components/CustomButton"
 import CustomAccordion from "../../components/CustomAccordion"
 import InfoContainer from "../../components/InfoContainer"
+import WarningContainer from "../../components/WarningContainer"
 import { Input } from "../../components/ui/input"
+import { RefreshCw } from "lucide-react-native"
 import racesData from "../../data/races.json"
 import epithetsData from "../../data/epithets.json"
 import characterPresetsData from "../../data/characterPresets.json"
@@ -134,6 +136,43 @@ const EpithetChip = memo(({ epithet, selected, onToggle, styles }: EpithetChipPr
     )
 })
 EpithetChip.displayName = "EpithetChip"
+
+/** Props for `RecalcFab`. */
+interface RecalcFabProps {
+    /** Triggered when the user taps the FAB - typically `runPreview`. */
+    onPress: () => void
+    /** When true the icon is swapped for a spinner and the button is disabled. */
+    loading: boolean
+    /** Style sheet from the parent so the FAB inherits the page's themed colors / sizes. */
+    styles: { recalcFab: ViewStyle; recalcFabButton: ViewStyle; recalcFabLabel: ViewStyle; recalcFabLabelText: object }
+    /** Theme palette - the icon and spinner pull their tint from `colors.background` to contrast the primary fill. */
+    colors: { background: string }
+}
+
+/**
+ * Floating action button shown in the bottom-right corner when the schedule preview is stale. Plays a one-shot
+ * spring scale-in on mount to draw the user's eye, then sits still until tapped or unmounted.
+ *
+ * @param props See `RecalcFabProps`.
+ * @returns Animated FAB containing the recalculate icon (or a spinner while loading).
+ */
+const RecalcFab = memo(({ onPress, loading, styles, colors }: RecalcFabProps) => {
+    const scale = useRef(new Animated.Value(0)).current
+    useEffect(() => {
+        Animated.spring(scale, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }).start()
+    }, [scale])
+    return (
+        <Animated.View style={[styles.recalcFab, { transform: [{ scale }] }]} pointerEvents="box-none">
+            <View style={styles.recalcFabLabel}>
+                <Text style={styles.recalcFabLabelText}>Apply Changes?</Text>
+            </View>
+            <TouchableOpacity style={styles.recalcFabButton} onPress={onPress} disabled={loading} activeOpacity={0.85}>
+                {loading ? <ActivityIndicator size="small" color={colors.background} /> : <RefreshCw size={22} color={colors.background} />}
+            </TouchableOpacity>
+        </Animated.View>
+    )
+})
+RecalcFab.displayName = "RecalcFab"
 
 /**
  * Smart Race Solver settings page. Lets the user configure aptitudes, target/forced epithets,
@@ -727,7 +766,10 @@ const SmartRaceSolverSettings = () => {
                 popoverAltName: { fontSize: 12, fontWeight: "600", color: colors.foreground },
                 popoverAltMeta: { fontSize: 10, color: colors.mutedForeground },
                 popoverHint: { fontSize: 10, color: colors.mutedForeground, fontStyle: "italic", marginTop: 8, textAlign: "center" },
-                recalcFab: { position: "absolute", bottom: 16, right: 16, elevation: 6, zIndex: 10 },
+                recalcFab: { position: "absolute", bottom: 16, right: 16, zIndex: 10, alignItems: "flex-end" },
+                recalcFabLabel: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, marginBottom: 6, elevation: 4 },
+                recalcFabLabelText: { color: colors.cardForeground, fontSize: 12, fontWeight: "600" },
+                recalcFabButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", elevation: 6 },
                 epithetCard: {
                     paddingVertical: 6,
                     paddingHorizontal: 8,
@@ -1372,6 +1414,7 @@ const SmartRaceSolverSettings = () => {
                                             Preview of the schedule the solver would start with. Tap a cell to lock it, delete its pick, or switch to an alternative race. Does not reflect mid-run
                                             dynamic re-planning.
                                         </Text>
+                                        {dirty && <WarningContainer>Settings have changed - the calendar needs to be regenerated. Tap Recalculate to refresh the preview and apply changes.</WarningContainer>}
                                         {previewLoading && (
                                             <View style={{ flexDirection: "row", alignItems: "center" }}>
                                                 <ActivityIndicator size="small" color={colors.primary} />
@@ -1552,13 +1595,7 @@ const SmartRaceSolverSettings = () => {
                     </View>
                 </ScrollView>
             </SearchPageProvider>
-            {(dirty || previewLoading) && (
-                <View style={styles.recalcFab} pointerEvents="box-none">
-                    <CustomButton onPress={runPreview} disabled={previewLoading}>
-                        {previewLoading ? "Recalculating…" : "Recalculate"}
-                    </CustomButton>
-                </View>
-            )}
+            {dirty && <RecalcFab onPress={runPreview} loading={previewLoading} styles={styles} colors={colors} />}
         </View>
     )
 }
