@@ -1067,6 +1067,15 @@ const SmartRaceSolverSettings = () => {
                                                     stop and resume a career mid-run without the solver forgetting what already happened.
                                                 </Text>
                                             </View>
+                                            <View style={styles.infoBlock}>
+                                                <Text style={styles.infoLabel}>Epithets without matchers</Text>
+                                                <Text style={styles.infoDescription}>
+                                                    Some epithets in the data set have no structured matchers in the code - usually because the in-game condition (like "Win your first G1 in Senior
+                                                    class") is difficult to be modeled as a per-race rule. The solver treats these as untouched and never picks races to advance them, so they won't be auto-completed.
+                                                    Adding one to Forced makes every candidate schedule infeasible since the condition can never be satisfied, so leave them out of Forced even if you plan to
+                                                    earn them yourself in-game.
+                                                </Text>
+                                            </View>
                                         </View>
                                     </InfoContainer>
                                 </View>
