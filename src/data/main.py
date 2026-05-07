@@ -2074,15 +2074,15 @@ if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
     start_time = time.time()
 
-    # skill_scraper = SkillScraper()
-    # skill_scraper.start()
+    skill_scraper = SkillScraper()
+    skill_scraper.start()
 
-    # after_race_events = load_after_race_events()
-    # character_scraper = CharacterScraper(after_race_events)
-    # character_scraper.start()
+    after_race_events = load_after_race_events()
+    character_scraper = CharacterScraper(after_race_events)
+    character_scraper.start()
 
-    # support_card_scraper = SupportCardScraper()
-    # support_card_scraper.start()
+    support_card_scraper = SupportCardScraper()
+    support_card_scraper.start()
 
     # Races are static so no need to re-scrape every time.
     # race_scraper = RaceScraper()
@@ -2091,8 +2091,8 @@ if __name__ == "__main__":
     epithet_scraper = EpithetScraper()
     epithet_scraper.start()
 
-    # character_preset_scraper = CharacterPresetScraper()
-    # character_preset_scraper.start()
+    character_preset_scraper = CharacterPresetScraper()
+    character_preset_scraper.start()
 
     end_time = round(time.time() - start_time, 2)
     logging.info(f"Total time for processing all applications: {end_time} seconds or {round(end_time / 60, 2)} minutes.")
