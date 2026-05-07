@@ -872,7 +872,6 @@
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
-                flex: 1;
             }
             .info-left-col, .info-right-col {
                 display: flex;
@@ -1252,6 +1251,262 @@
                     max-width: none !important;
                 }
             }
+
+            /* Race History Calendar (Smart Race Solver). Sits as the rightmost flex child of
+               .dashboard, taking the empty space that .dashboard-info used to absorb via flex:1.
+               max-height matches the dashboard's natural row height so the calendar never
+               stretches the row; overflow scrolls internally. Visuals mirror the React Native
+               Smart Race Solver Settings page; keep palette and sizes in sync. */
+            /* Position-absolute body trick: the section is just the header in normal flow
+               (so it never grows the dashboard row beyond what aptitude / conditions /
+               dashboard-info already make it), then align-self: stretch expands the section
+               to the row's full height and the absolutely-positioned body fills the remaining
+               space below the header with internal scrolling. */
+            .race-history-section {
+                position: relative;
+                padding: 8px 10px;
+                background: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                flex: 1 1 auto;
+                min-width: 0;
+                align-self: stretch;
+                overflow: hidden;
+            }
+
+            /* Hide the panel's content when the Smart Race Solver is disabled. Uses
+               `visibility: hidden` rather than `display: none` so the section keeps occupying its
+               flex slot - that way the other dashboard tiles (aptitudes, conditions, info) do not
+               shift across the row. Kotlin pushes the SRS_STATE message via LogStreamServer at run
+               start; the section keeps this class as its initial state so the empty grid never
+               flashes before the first message arrives. */
+            .race-history-section.srs-disabled {
+                visibility: hidden;
+            }
+
+            .race-history-body {
+                position: absolute;
+                top: 36px;
+                left: 10px;
+                right: 10px;
+                bottom: 8px;
+                overflow-y: auto;
+            }
+
+            .race-history-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .race-history-header-left {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            /* Chevron is mobile-only; on desktop the panel is always expanded and the
+               collapsed class becomes a no-op. */
+            .race-history-chevron {
+                display: none;
+                width: 10px;
+                color: var(--text-secondary);
+                transform: rotate(0deg);
+                transition: transform 0.15s ease;
+            }
+
+            .race-history-section.collapsed .race-history-chevron {
+                transform: rotate(-90deg);
+            }
+
+            .race-history-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--text-primary);
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+            }
+
+            .race-history-turn-badge {
+                font-size: 11px;
+                color: var(--text-secondary);
+                background: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                padding: 2px 8px;
+            }
+
+            .year-cards {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .year-card {
+                padding: 8px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--bg-primary);
+                min-width: 0;
+            }
+
+            .year-card-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: var(--text-primary);
+                margin-bottom: 6px;
+            }
+
+            .calendar-row {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 6px;
+                padding: 4px 0;
+            }
+
+            .calendar-cell-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                min-width: 0;
+            }
+
+            .calendar-cell {
+                position: relative;
+                min-height: 56px;
+                padding: 6px 4px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--bg-secondary);
+                text-align: center;
+                overflow: hidden;
+            }
+
+            .calendar-cell.pre-debut,
+            .calendar-cell.summer-blocked {
+                background: rgba(85, 85, 106, 0.18);
+                border-style: dashed;
+                opacity: 0.6;
+            }
+
+            .calendar-cell-blocked-text {
+                font-size: 10px;
+                font-weight: 600;
+                font-style: italic;
+                color: var(--text-muted);
+            }
+
+            .calendar-cell.win-result {
+                border-color: rgba(34, 197, 94, 0.65);
+                box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+            }
+
+            .calendar-cell.lose-result {
+                border-color: rgba(239, 68, 68, 0.65);
+                box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.35);
+            }
+
+            .calendar-badge {
+                min-width: 30px;
+                height: 18px;
+                padding: 0 4px;
+                margin-bottom: 4px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 700;
+                color: #fff;
+                border-radius: 3px;
+                line-height: 1;
+            }
+
+            .calendar-race-name {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                font-size: 10px;
+                font-weight: 600;
+                color: var(--text-primary);
+                line-height: 1.2;
+                text-align: center;
+                word-break: break-word;
+            }
+
+            .calendar-cell-empty {
+                font-size: 11px;
+                color: var(--text-muted);
+                text-align: center;
+            }
+
+            .calendar-date-label {
+                font-size: 10px;
+                color: var(--text-muted);
+                text-align: center;
+                margin-top: 3px;
+            }
+
+            @media (max-width: 1024px) {
+                /* On mobile the panel sits on its own row below the dashboard, so the desktop
+                   absolute-body trick is unnecessary - put the body back in normal flow so it
+                   contributes to the section's height when expanded and disappears when collapsed. */
+                .race-history-section {
+                    flex: 1 0 100%;
+                    max-height: none;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .race-history-body {
+                    position: static;
+                    top: auto;
+                    left: auto;
+                    right: auto;
+                    bottom: auto;
+                    max-height: 360px;
+                    overflow-y: auto;
+                }
+                .race-history-chevron {
+                    display: inline-block;
+                }
+                .race-history-header {
+                    cursor: pointer;
+                    user-select: none;
+                }
+                .race-history-section.collapsed .race-history-body {
+                    display: none;
+                }
+                /* On mobile the panel takes its own row, so hiding it via `display: none` is fine -
+                   no adjacent tile shifts. Override the desktop `visibility: hidden` rule so the
+                   empty band does not stay reserved on narrow viewports. */
+                .race-history-section.srs-disabled {
+                    display: none;
+                }
+                .year-cards {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .calendar-cell {
+                    min-height: 48px;
+                    padding: 4px 2px;
+                }
+                .calendar-race-name {
+                    font-size: 9px;
+                }
+                .calendar-badge {
+                    min-width: 24px;
+                    height: 14px;
+                    font-size: 8px;
+                }
+            }
         </style>
     </head>
     <body>
@@ -1412,6 +1667,22 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Race History calendar (Smart Race Solver). Sits inside the dashboard row so it
+                 occupies the empty space that .dashboard-info used to consume via flex:1, without
+                 changing the widths or positions of the existing 3 blocks. -->
+            <div id="raceHistorySection" class="race-history-section collapsed srs-disabled">
+                <div class="race-history-header" onclick="toggleRaceHistory()">
+                    <div class="race-history-header-left">
+                        <span class="race-history-chevron">v</span>
+                        <span class="race-history-title">Race History</span>
+                    </div>
+                    <span class="race-history-turn-badge" id="raceHistoryTurnBadge">Turn -</span>
+                </div>
+                <div class="race-history-body">
+                    <div id="raceHistoryYears" class="year-cards"></div>
                 </div>
             </div>
         </div>
@@ -1818,6 +2089,17 @@
                         } catch (e) {
                             console.error("Error parsing history batch:", e)
                         }
+                    } else if (event.data.startsWith("CAL:")) {
+                        // Received a Race History calendar snapshot.
+                        try {
+                            renderCalendar(JSON.parse(event.data.substring(4)))
+                        } catch (e) {
+                            console.error("Error parsing calendar snapshot:", e)
+                        }
+                    } else if (event.data.startsWith("SRS_STATE:")) {
+                        // Smart Race Solver enabled flag pushed by Racing.kt at run start. Toggles
+                        // the .srs-disabled class on the panel so it disappears when SRS is off.
+                        setSmartRaceSolverEnabled(event.data.substring(10) === "true")
                     } else {
                         // Process individual log messages, images or unknown formats.
                         try {
@@ -2363,10 +2645,342 @@
                     }
                 })
 
+                // Reset the Race History calendar so a fresh run starts blank.
+                resetCalendar()
+
                 // Show empty state again.
                 if (emptyState) {
                     emptyState.style.display = "flex"
                 }
+            }
+
+            // ==============================================
+            // Race History Calendar (Smart Race Solver)
+            // ==============================================
+            // Constants and helpers ported from src/lib/solver/constants.ts.
+            // Keep these in sync with that file: GRADE_COLORS, MONTH_LABELS,
+            // YEAR_LABELS, RACE_NAME_ABBREVIATIONS, turnDateLabel, shortenRaceName.
+
+            const CAL_GRADE_COLORS = {
+                G1: "#2563eb",
+                G2: "#ec4899",
+                G3: "#16a34a",
+                OP: "#ca8a04",
+                PRE_OP: "#a16207",
+                MAIDEN: "#6b7280",
+                DEBUT: "#6b7280",
+                FINALE: "#7c3aed",
+                EX: "#7c3aed"
+            }
+
+            const CAL_MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+            const CAL_YEAR_LABELS = [
+                { name: "Junior Year", startTurn: 1 },
+                { name: "Classic Year", startTurn: 25 },
+                { name: "Senior Year", startTurn: 49 }
+            ]
+
+            const CAL_RACE_NAME_ABBREVIATIONS = {
+                "Hanshin Juvenile Fillies": "Hanshin Juv. F.",
+                "Mile Championship": "Mile Champ.",
+                "Takarazuka Kinen": "Takarazuka K.",
+                "Saudi Arabia Royal Cup": "Saudi Arabia P.",
+                "Tokyo Sports Hai Niko Sai Sho": "Tokyo Sports",
+                "Niigata Junior Stakes": "Niigata Jr. S.",
+                "Kokura Junior Stakes": "Kokura Jr. S.",
+                "Sprinters Stakes": "Sprinters S.",
+                "Asahi Hai Futurity Stakes": "Asahi Hai F. S."
+            }
+
+            // Pre-debut turns where racing is unavailable in-game (turns 1..13 of Junior year).
+            const CAL_PRE_DEBUT_LAST_TURN = 13
+
+            /**
+             * Returns "Early Jan" / "Late Jan" / etc. for a 0-based turn-in-year offset.
+             * @param {number} turnInYear 0..23 offset within a class year.
+             */
+            function calTurnDateLabel(turnInYear) {
+                var month = CAL_MONTH_LABELS[Math.floor(turnInYear / 2)]
+                var half = turnInYear % 2 === 0 ? "Early" : "Late"
+                return half + " " + month
+            }
+
+            /**
+             * Shortens a race name for narrow calendar cells: strips the trailing parenthetical
+             * date suffix and applies the abbreviation table for known long names.
+             * @param {string} name The full race name.
+             * @returns {string}
+             */
+            function calShortenRaceName(name) {
+                if (!name) return ""
+                var stripped = name.replace(/\s*\(.*\)\s*$/, "").trim()
+                return CAL_RACE_NAME_ABBREVIATIONS[stripped] || stripped
+            }
+
+            /**
+             * Maps a backend grade string (e.g. "G1", "PRE_OP", "MAIDEN") to the short label
+             * shown inside the colored grade badge. Defaults to the input when unknown.
+             * @param {string} grade
+             */
+            function calGradeLabel(grade) {
+                if (!grade) return ""
+                if (grade === "PRE_OP" || grade === "PRE-OP") return "Pre"
+                if (grade === "FINALE") return "Fin"
+                if (grade === "MAIDEN") return "Mdn"
+                if (grade === "DEBUT") return "Dbt"
+                return grade
+            }
+
+            /**
+             * Returns true when [turn] falls inside one of the in-game summer no-race blocks
+             * (Junior: 37-40, Classic/Senior: 61-64). Mirrors the React Native page's check.
+             */
+            function calIsSummerTurn(turn) {
+                return (turn >= 37 && turn <= 40) || (turn >= 61 && turn <= 64)
+            }
+
+            /**
+             * Toggles the Race History panel collapsed state. Only effective on mobile-width
+             * viewports; the chevron is hidden on desktop so the click is a no-op there.
+             */
+            function toggleRaceHistory() {
+                if (window.innerWidth > 1024) return
+                var section = document.getElementById("raceHistorySection")
+                if (section) section.classList.toggle("collapsed")
+            }
+
+            // Latest snapshot kept for the hover-tooltip lookup. Decisions and results are
+            // indexed by turn number so showRaceCellTooltip is O(1) per hover.
+            var latestCalendarSnapshot = null
+            var latestResultsByTurn = {}
+
+            /**
+             * Renders the Race History calendar from a snapshot pushed by the bot.
+             * Snapshot shape: { currentTurn:int, decisions:{turn->{type,raceKey?,name?,grade?,raceTrack?,terrain?,distanceType?,distanceMeters?,fans?,contributions?}}, results:[{turn,raceKey,name,grade,outcome,...}] }
+             * @param {object|null} snapshot Calendar snapshot JSON, or null to paint the empty grid.
+             */
+            function renderCalendar(snapshot) {
+                snapshot = snapshot || { currentTurn: 1, decisions: {}, results: [] }
+                if (typeof snapshot !== "object") return
+                latestCalendarSnapshot = snapshot
+                latestResultsByTurn = {}
+                var resultsForIndex = Array.isArray(snapshot.results) ? snapshot.results : []
+                for (var ri = 0; ri < resultsForIndex.length; ri++) {
+                    var rr = resultsForIndex[ri]
+                    if (rr && typeof rr.turn === "number") latestResultsByTurn[rr.turn] = rr
+                }
+                var container = document.getElementById("raceHistoryYears")
+                var badgeEl = document.getElementById("raceHistoryTurnBadge")
+                if (!container || !badgeEl) return
+
+                var hasRealSnapshot = typeof snapshot.currentTurn === "number" && (
+                    Object.keys(snapshot.decisions || {}).length > 0 ||
+                    (snapshot.results || []).length > 0
+                )
+                var currentTurn = typeof snapshot.currentTurn === "number" ? snapshot.currentTurn : 1
+                badgeEl.textContent = hasRealSnapshot ? ("Turn " + currentTurn + " / 72") : "Turn -"
+
+                // Index results by turn for O(1) lookup during cell rendering.
+                var resultsByTurn = {}
+                var results = Array.isArray(snapshot.results) ? snapshot.results : []
+                for (var i = 0; i < results.length; i++) {
+                    var r = results[i]
+                    if (r && typeof r.turn === "number") resultsByTurn[r.turn] = r
+                }
+
+                var decisions = snapshot.decisions && typeof snapshot.decisions === "object" ? snapshot.decisions : {}
+
+                var html = ""
+                for (var y = 0; y < CAL_YEAR_LABELS.length; y++) {
+                    var year = CAL_YEAR_LABELS[y]
+                    html += '<div class="year-card">'
+                    html += '<div class="year-card-title">' + year.name + '</div>'
+                    for (var row = 0; row < 6; row++) {
+                        html += '<div class="calendar-row">'
+                        for (var col = 0; col < 4; col++) {
+                            var offset = row * 4 + col
+                            var turn = year.startTurn + offset
+                            html += renderCalendarCell(turn, offset, decisions[String(turn)], resultsByTurn[turn])
+                        }
+                        html += '</div>'
+                    }
+                    html += '</div>'
+                }
+
+                container.innerHTML = html
+            }
+
+            /**
+             * Builds the HTML for a single calendar cell wrapper (cell + date label below).
+             * Past-turn results take precedence over solver decisions so the cell shows what
+             * the trainee actually ran rather than the post-result re-plan.
+             *
+             * @param {number} turn 1..72 turn number.
+             * @param {number} turnInYear 0..23 offset within the class year (drives the date label).
+             * @param {object|undefined} decision The solver decision for this turn.
+             * @param {object|undefined} result The race result for this turn (when one exists).
+             * @returns {string} HTML string for one cell wrapper.
+             */
+            function renderCalendarCell(turn, turnInYear, decision, result) {
+                var classes = ["calendar-cell"]
+                var dateLabel = calTurnDateLabel(turnInYear)
+                var isRace = decision && decision.type === "Race"
+                var isPreDebut = turn <= CAL_PRE_DEBUT_LAST_TURN
+                var isSummerBlocked = !isRace && !result && calIsSummerTurn(turn)
+                var raceSrc = result || (isRace ? decision : null)
+
+                var inner = ""
+                if (raceSrc && (raceSrc.grade || raceSrc.name || raceSrc.raceKey)) {
+                    var grade = raceSrc.grade || ""
+                    var color = CAL_GRADE_COLORS[grade] || "#6b7280"
+                    var badgeText = escapeHtml(calGradeLabel(grade) || "Race")
+                    inner =
+                        '<div class="calendar-badge" style="background:' + color + '">' + badgeText + '</div>' +
+                        '<div class="calendar-race-name">' + escapeHtml(calShortenRaceName(raceSrc.name || raceSrc.raceKey || "")) + '</div>'
+                } else if (isPreDebut || isSummerBlocked) {
+                    classes.push(isPreDebut ? "pre-debut" : "summer-blocked")
+                    inner = '<span class="calendar-cell-blocked-text">' + (isPreDebut ? "Pre-Debut" : "Summer") + '</span>'
+                } else if (decision && decision.type === "Rest") {
+                    inner = '<span class="calendar-cell-empty">Rest</span>'
+                } else {
+                    inner = '<span class="calendar-cell-empty">-</span>'
+                }
+
+                if (result && result.outcome === "WIN") {
+                    classes.push("win-result")
+                } else if (result && result.outcome === "LOSE") {
+                    classes.push("lose-result")
+                }
+
+                // Only race cells (with race details to show) get the hover handlers. Synthetic
+                // display-only cells share the same rich tooltip; showRaceCellTooltip swaps its
+                // epithet section for a "Does not affect solver" notice when src.synthetic is true.
+                var hoverAttrs = ""
+                if (raceSrc) {
+                    hoverAttrs = ' data-turn="' + turn + '"' +
+                        ' onmouseenter="showRaceCellTooltip(event, ' + turn + ')"' +
+                        ' onmousemove="updateTooltipPosition(event)"' +
+                        ' onmouseleave="hideTooltip()"'
+                }
+
+                return '<div class="calendar-cell-wrapper">' +
+                    '<div class="' + classes.join(" ") + '"' + hoverAttrs + '>' + inner + '</div>' +
+                    '<div class="calendar-date-label">' + dateLabel + '</div>' +
+                    '</div>'
+            }
+
+            /**
+             * Resets the Race History calendar back to its empty state. Repaints the empty
+             * grid so the panel keeps its layout without a snapshot.
+             */
+            function resetCalendar() {
+                renderCalendar(null)
+            }
+
+            /**
+             * Toggles whether the Race History panel is shown based on the Smart Race Solver
+             * enabled flag pushed by `Racing.kt` at run start. When SRS is off, the panel is
+             * hidden via the `srs-disabled` CSS class and any cached snapshot is cleared so a
+             * later re-enable starts from a clean slate.
+             *
+             * @param {boolean} enabled True when SRS is enabled for the current run.
+             */
+            function setSmartRaceSolverEnabled(enabled) {
+                var section = document.getElementById("raceHistorySection")
+                if (!section) return
+                if (enabled) {
+                    section.classList.remove("srs-disabled")
+                } else {
+                    section.classList.add("srs-disabled")
+                    resetCalendar()
+                }
+            }
+
+            /**
+             * Title-cases an UPPERCASE enum-style string (e.g. "TURF" -> "Turf", "PRE_OP" -> "Pre-OP").
+             * Mirrors the popover formatting on the React Native Smart Race Solver page.
+             */
+            function calFormatEnum(raw) {
+                if (!raw) return ""
+                if (raw === "PRE_OP" || raw === "PRE-OP") return "Pre-OP"
+                return raw.charAt(0) + raw.slice(1).toLowerCase()
+            }
+
+            /**
+             * Shows the rich Race History hover tooltip for a calendar cell. Mirrors the
+             * popover on the Smart Race Solver page: turn header, race name + meta line,
+             * and the "Progresses these epithets" list with before/after counts and reward.
+             *
+             * @param {MouseEvent} event Hover event used for tooltip positioning.
+             * @param {number} turn 1..72 turn number for the hovered cell.
+             */
+            function showRaceCellTooltip(event, turn) {
+                if (!latestCalendarSnapshot) return
+                var decisions = latestCalendarSnapshot.decisions || {}
+                var decision = decisions[String(turn)]
+                var result = latestResultsByTurn[turn]
+                // Past results take precedence over the (post-result) re-planned decision.
+                var src = result || (decision && decision.type === "Race" ? decision : null)
+                if (!src) return
+
+                var yearOffset = (turn - 1) % 24
+                var yearName = turn <= 24 ? "Junior" : turn <= 48 ? "Classic" : "Senior"
+                var dateLabel = calTurnDateLabel(yearOffset)
+                // Use the same middle dot (U+00B7) the React Native Smart Race Solver
+                // popover uses as a visual separator. Kept as a literal character so the
+                // tooltip layout matches the original calendar exactly.
+                var sep = " · "
+                var title = "T" + turn + sep + yearName + " " + dateLabel
+
+                var parts = []
+                var grade = src.grade ? calFormatEnum(src.grade) : ""
+                if (grade) parts.push(grade)
+                if (src.raceTrack) parts.push(src.raceTrack)
+                if (src.terrain) parts.push(calFormatEnum(src.terrain))
+                if (src.distanceType) {
+                    var dt = calFormatEnum(src.distanceType)
+                    if (src.distanceMeters) dt += " (" + src.distanceMeters + "m)"
+                    parts.push(dt)
+                }
+                if (typeof src.fans === "number") parts.push(formatNumberWithCommas(src.fans) + " fans")
+
+                var content = '<div class="tooltip-row"><span class="tooltip-label" style="font-weight:700">' + escapeHtml(src.name || "") + '</span></div>'
+                if (parts.length > 0) {
+                    content += '<div class="tooltip-row" style="opacity:0.85"><span>' + escapeHtml(parts.join(sep)) + '</span></div>'
+                }
+
+                var contribs = (src.contributions && src.contributions.length > 0)
+                    ? src.contributions
+                    : (decision && decision.contributions ? decision.contributions : [])
+                if (src.synthetic) {
+                    var headerLabel = src.pending ? "Pending - has not run yet" : "Does not affect solver"
+                    content += '<div class="tooltip-section" style="margin-top:6px;font-weight:700">' + escapeHtml(headerLabel) + '</div>'
+                    if (src.pending) {
+                        content += '<div class="tooltip-row" style="opacity:0.85;font-style:italic">' +
+                            escapeHtml("Does not affect solver.") + '</div>'
+                    }
+                } else if (result && result.outcome === "LOSE") {
+                    content += '<div class="tooltip-section" style="margin-top:6px;font-weight:700">No epithet progress (race was lost)</div>'
+                } else if (contribs && contribs.length > 0) {
+                    content += '<div class="tooltip-section" style="margin-top:6px;font-weight:700">Progresses these epithets</div>'
+                    for (var i = 0; i < contribs.length; i++) {
+                        var c = contribs[i]
+                        var prog = "(" + c.beforeCurrent + "/" + c.beforeRequired + " -> " + c.afterCurrent + "/" + c.afterRequired + ") "
+                        var line = "• " + prog + c.name
+                        var conds = Array.isArray(c.conditions) ? c.conditions.filter(function (s) { return s }) : []
+                        if (conds.length > 0) line += " — " + conds.join("; ")
+                        content += '<div class="tooltip-row">' + escapeHtml(line) + '</div>'
+                        var pending = Array.isArray(c.pending) ? c.pending.filter(function (s) { return s }) : []
+                        for (var j = 0; j < pending.length; j++) {
+                            content += '<div class="tooltip-row" style="margin-left:1em;opacity:0.85;font-style:italic">' + escapeHtml("* Still pending: " + pending[j]) + '</div>'
+                        }
+                    }
+                } else {
+                    content += '<div class="tooltip-section" style="margin-top:6px;opacity:0.7;font-style:italic">No tracked epithets advance on this race.</div>'
+                }
+
+                showTooltip(event, title, content)
             }
 
             // ==============================================
@@ -3068,6 +3682,9 @@
             // Initiate the connection and settings when the page loads.
             initFontSize()
             initToolbar()
+            // Paint an empty Race History grid so the panel takes its full layout immediately,
+            // before any CAL: snapshot arrives.
+            renderCalendar(null)
             connect()
         </script>
     </body>

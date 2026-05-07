@@ -7,6 +7,7 @@ import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.ImageUtils.ScaleConfidenceResult
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonCancel
 import com.steve1316.uma_android_automation.components.ButtonCareerEndSkills
@@ -1632,6 +1633,9 @@ abstract class Campaign(game: Game) : Task(game) {
         // Skip if we've already checked the date this turn and no game-advancing action was taken.
         if (!bHasCheckedDateThisTurn) {
             val dateChanged = updateDate()
+            // Once-per-run: log the Smart Race Solver Preview schedule and seed mid-run history
+            // recovery now that the date is known, so it appears in logs before shop/items.
+            SmartRaceSolverIntegration.runStartupHooks(game = game, currentTurn = date.day, scenario = game.scenario)
             if (dateChanged || !trainee.bHasUpdatedStats) {
                 // Reset common daily flags.
                 racing.encounteredRacingPopup = false

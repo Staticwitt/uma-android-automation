@@ -86,6 +86,24 @@ const SCENARIOS: NavScenario[] = [
     { name: "Scenario Overrides Settings", route: "ScenarioOverridesSettings", tapX: 290, tapY: 1065 },
     { name: "Debug Settings", route: "DebugSettings", tapX: 220, tapY: 1153 },
     { name: "LLM Settings", route: "LLMSettings", tapX: 220, tapY: 1227 },
+    // Smart Race Solver lives nested under Racing Settings — tapping the Racing label
+    // navigates instead of expanding, so we tap the chevron at its right edge first to expand
+    // the group, then tap the SRS row that appears at y=820. The toggle target is the master
+    // "Enable Smart Race Solver" checkbox at the top of the page; toggling it off + back on is
+    // the most expensive interaction (unmount → remount of calendar grid) and is what the
+    // earlier baseline reported as ~1.6 s of blocked time. Auto-expanding Racing here shifts
+    // every drawer row below Racing Settings down ~71 px for the rest of the run, which is why
+    // the Skill Plan parent below uses tapY=897 instead of the master baseline of 826.
+    {
+        name: "Smart Race Solver Settings",
+        route: "SmartRaceSolverSettings",
+        expandTapX: 346,
+        expandTapY: 744,
+        tapX: 220,
+        tapY: 820,
+        toggleTapX: 220,
+        toggleTapY: 185,
+    },
     // Sub-nested pages: navigate to the parent first, scroll to the in-page link, then tap. The
     // sub-link y-coords are the on-screen position *after* the configured number of swipe-ups
     // brings the link into view. Calibrated 2026-05-01 on the same emulator as the drawer rows.
@@ -103,7 +121,7 @@ const SCENARIOS: NavScenario[] = [
         name: "Skill Plan Settings",
         route: "SkillSettings",
         tapX: 220,
-        tapY: 826,
+        tapY: 897,
         subRoute: "SkillPlanSettingsSkillPointCheck",
         subScrolls: 4,
         subTapX: 540,
@@ -204,6 +222,11 @@ const SLOW_COMMIT_RE = /\[SLOW-COMMIT\] (\S+) commit took (\d+)ms/
 // `Details` payload carries the real first-commit duration under `duration_ms` — we use that
 // as the sub-route's first-commit metric.
 const COMMIT_DURATION_RE = /\[PERF\] UI - ([A-Za-z]+)_commit: [\d.]+ms \| Details: \{[^}]*"duration_ms":([\d.]+)/
+// SmartRaceSolverSettings emits its preview-solver wall-clock via `console.log` rather than the
+// `[PERF]` channel — the harness picks it up so we can track the bridge round-trip cost over
+// time. Captured during the SRS scenario's nav window because `previewSchedule` auto-fires on
+// first mount when no cached preview exists.
+const PREVIEW_RE = /\[SmartRaceSolver\] previewSchedule:end (\d+)ms/
 
 /**
  * Aggregated parse result of one logcat capture window.
@@ -291,6 +314,12 @@ interface ScenarioResult {
     subTotal: number
     /** Per-phase samples for the sub-route's mount. */
     subPhases: PhaseSample[]
+    /**
+     * Wall-clock duration of the most recent `previewSchedule` call observed in the nav window,
+     * or `null` if the scenario doesn't trigger one. Currently only set for the Smart Race
+     * Solver Settings scenario, where preview auto-fires on first mount.
+     */
+    previewMs: number | null
 }
 
 /**
@@ -353,11 +382,23 @@ const main = async () => {
             await sleep(700)
         }
 
-        const logsPromise = captureLogcat(4000)
+        // SRS auto-fires `previewSchedule` on first mount, which can take up to ~1.5 s after
+        // the first commit; widen the nav window for that scenario only so the `previewSchedule:end`
+        // log lands inside the capture.
+        const navWindowMs = sc.route === "SmartRaceSolverSettings" ? 6000 : 4000
+        const logsPromise = captureLogcat(navWindowMs)
         tapAt(sc.tapX, sc.tapY)
         const navLogs = await logsPromise
 
         const { phases, totals, blocks: navBlocks } = parseSamples(navLogs)
+        let previewMs: number | null = null
+        for (const line of navLogs.split("\n")) {
+            const m = PREVIEW_RE.exec(line)
+            if (m) previewMs = parseInt(m[1], 10)
+        }
+        if (previewMs != null) {
+            console.log(`  preview_ms: ${previewMs}ms (previewSchedule wall-clock)`)
+        }
         const total = totals.get(sc.route) ?? -1
         const routePhases = phases.filter((p) => p.route === sc.route)
 
@@ -455,6 +496,7 @@ const main = async () => {
             subRoute: sc.subRoute ?? null,
             subTotal,
             subPhases,
+            previewMs,
         })
 
         // Reset to a known state by re-launching the activity rather than relying on BACK
@@ -469,7 +511,8 @@ const main = async () => {
     for (const s of summary) {
         const phasePart = s.phases.map((p) => `${p.phase}=${p.ms.toFixed(0)}`).join(" ")
         const togglePart = s.toggleBlockedMs != null ? ` toggle_blocked=${s.toggleBlockedMs}ms` : ""
-        console.log(`  ${s.route.padEnd(28)} total=${s.total}ms ${phasePart}${togglePart}`)
+        const previewPart = s.previewMs != null ? ` preview=${s.previewMs}ms` : ""
+        console.log(`  ${s.route.padEnd(28)} total=${s.total}ms ${phasePart}${togglePart}${previewPart}`)
         if (s.subRoute) {
             const subPhasePart = s.subPhases.map((p) => `${p.phase}=${p.ms.toFixed(0)}`).join(" ")
             console.log(`    └─ ${s.subRoute.padEnd(24)} total=${s.subTotal}ms ${subPhasePart}`)

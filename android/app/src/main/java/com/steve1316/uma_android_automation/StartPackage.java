@@ -7,6 +7,7 @@ import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
 
+import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverModule;
 import com.steve1316.uma_android_automation.llm.LLMChatModule;
 
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class StartPackage implements ReactPackage {
 
         modules.add(new StartModule(reactContext));
         modules.add(new LLMChatModule(reactContext));
+        modules.add(new SmartRaceSolverModule(reactContext));
 
         return modules;
     }

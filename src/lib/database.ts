@@ -105,7 +105,15 @@ export interface DatabaseProfile {
  */
 export class DatabaseManager {
     private DATABASE_NAME = "settings.db"
-    private STRING_ONLY_SETTINGS = ["racingPlan", "racingPlanData", "discordToken", "discordUserID"]
+    private STRING_ONLY_SETTINGS = [
+        "discordToken",
+        "discordUserID",
+        "smartRaceSolverAptitudes",
+        "smartRaceSolverTargetEpithets",
+        "smartRaceSolverForcedEpithets",
+        "smartRaceSolverManualLocks",
+        "smartRaceSolverWeights",
+    ]
     private TABLE_SETTINGS = "settings"
     private TABLE_RACES = "races"
     private TABLE_SKILLS = "skills"

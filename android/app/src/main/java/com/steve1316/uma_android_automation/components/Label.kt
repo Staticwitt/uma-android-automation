@@ -6,6 +6,10 @@
 
 package com.steve1316.uma_android_automation.components
 
+object LabelCongratulations : ComponentInterface {
+    override val template = Template("components/label/congratulations", region = Region.topHalf)
+}
+
 object LabelStatDistance : ComponentInterface {
     override val template = Template("components/label/stat_distance", region = Region.topHalf)
 }
@@ -60,6 +64,10 @@ object LabelSkillListScreenSkillPoints : ComponentInterface {
 
 object LabelScheduledRace : ComponentInterface {
     override val template = Template("components/label/scheduled_race", region = Region.bottomHalf)
+}
+
+object LabelStrategy : ComponentInterface {
+    override val template = Template("components/label/strategy")
 }
 
 object LabelTrainingCannotPerform : ComponentInterface {

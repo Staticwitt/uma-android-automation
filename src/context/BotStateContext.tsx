@@ -2,25 +2,6 @@ import { createContext, useState, useMemo, useCallback, useContext } from "react
 import { startTiming } from "../lib/performanceLogger"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
 
-// Defer parsing the races.json bundle until the racing-plan defaults are first read.
-// This keeps the cold-start path off the main thread until something actually consumes it.
-let _racingDefaultsCache: { plan: string; data: string } | null = null
-const _getRacingDefaults = (): { plan: string; data: string } => {
-    if (_racingDefaultsCache) return _racingDefaultsCache
-    const racesData = require("../data/races.json")
-    _racingDefaultsCache = {
-        plan: JSON.stringify(
-            Object.values(racesData as Record<string, { name: string; date: string }>).map((race, index) => ({
-                raceName: race.name,
-                date: race.date,
-                priority: index,
-            }))
-        ),
-        data: JSON.stringify(racesData),
-    }
-    return _racingDefaultsCache
-}
-
 /**
  * Configuration for an individual skill plan (e.g. preFinals, careerComplete).
  */
@@ -70,24 +51,24 @@ export interface Settings {
         skipSummerTrainingForAgenda: boolean
         selectedUserAgenda: string
         customAgendaTitle: string
-        enableRacingPlan: boolean
-        enableMandatoryRacingPlan: boolean
-        racingPlan: string
-        racingPlanData: string
-        minFansThreshold: number
-        preferredTerrain: string
-        preferredGrades: string[]
-        preferredDistances: string[]
-        lookAheadDays: number
-        smartRacingCheckInterval: number
         juniorYearRaceStrategy: string
         originalRaceStrategy: string
         enablePerDistanceStrategy: boolean
         juniorYearPerDistanceStrategies: Record<string, string>
         originalPerDistanceStrategies: Record<string, string>
-        minimumQualityThreshold: number
-        timeDecayFactor: number
-        improvementThreshold: number
+        // Smart Race Solver — beam-search-based race scheduler driven by epithet completions.
+        // The static bundled assets (`racesData`, `epithetsData`, `characterPresetsData`) are
+        // intentionally NOT in this interface: they're written once at bootstrap by
+        // `populateSolverData` and read directly from SQLite by Kotlin. Round-tripping them
+        // through React state inflated re-renders by ~160 KB and made every toggle re-write the
+        // blobs to SQLite via the auto-save effect.
+        enableSmartRaceSolver: boolean
+        smartRaceSolverCharacterPreset: string
+        smartRaceSolverAptitudes: string
+        smartRaceSolverTargetEpithets: string
+        smartRaceSolverForcedEpithets: string
+        smartRaceSolverManualLocks: string
+        smartRaceSolverWeights: string
     }
 
     // Skill Settings
@@ -257,28 +238,38 @@ export const defaultSettings: Settings = {
         skipSummerTrainingForAgenda: false,
         selectedUserAgenda: "Agenda 1",
         customAgendaTitle: "",
-        enableRacingPlan: false,
-        enableMandatoryRacingPlan: false,
-        get racingPlan() {
-            return _getRacingDefaults().plan
-        },
-        get racingPlanData() {
-            return _getRacingDefaults().data
-        },
-        minFansThreshold: 0,
-        preferredTerrain: "Any",
-        preferredGrades: ["G1", "G2", "G3"],
-        preferredDistances: ["Short", "Mile", "Medium", "Long"],
-        lookAheadDays: 10,
-        smartRacingCheckInterval: 2,
         juniorYearRaceStrategy: "Default",
         originalRaceStrategy: "Default",
         enablePerDistanceStrategy: false,
         juniorYearPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
         originalPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
-        minimumQualityThreshold: 50.0,
-        timeDecayFactor: 0.7,
-        improvementThreshold: 50.0,
+        enableSmartRaceSolver: false,
+        smartRaceSolverCharacterPreset: "Special Week",
+        smartRaceSolverAptitudes: JSON.stringify({
+            Sprint: "F",
+            Mile: "C",
+            Medium: "A",
+            Long: "A",
+            Turf: "A",
+            Dirt: "G",
+        }),
+        smartRaceSolverTargetEpithets: "[]",
+        smartRaceSolverForcedEpithets: "[]",
+        smartRaceSolverManualLocks: "{}",
+        smartRaceSolverWeights: JSON.stringify({
+            raceValue: 1.0,
+            epithetValue: 1.0,
+            statWeight: 1.0,
+            spWeight: 1.0,
+            hintWeight: 8.0,
+            consecutiveRacePenalty: 3.0,
+            summerPenalty: 5.0,
+            raceBonusPct: 50.0,
+            raceCostPct: 100.0,
+            aptitudeThreshold: "C",
+            includeOpAndPreOp: false,
+            allowSummerRacing: false,
+        }),
     },
     skills: {
         enableSkillPointCheck: false,
@@ -644,7 +635,10 @@ export const BotStateProvider = ({ children }: any): React.ReactElement => {
                                 <DebugContext.Provider value={debugValue}>
                                     <DiscordContext.Provider value={discordValue}>
                                         <ChatContext.Provider value={chatValue}>
-                                            <ScenarioOverridesContext.Provider value={scenarioOverridesValue}>{children}</ScenarioOverridesContext.Provider>
+                                            <ScenarioOverridesContext.Provider value={scenarioOverridesValue}>
+                                                <SettingsSnapshotPublisher />
+                                                {children}
+                                            </ScenarioOverridesContext.Provider>
                                         </ChatContext.Provider>
                                     </DiscordContext.Provider>
                                 </DebugContext.Provider>
@@ -680,4 +674,25 @@ export const useSettingsSnapshot = (): Settings => {
         () => ({ general, racing, skills, trainingEvent, misc, training, trainingStatTarget, debug, discord, chat, scenarioOverrides }),
         [general, racing, skills, trainingEvent, misc, training, trainingStatTarget, debug, discord, chat, scenarioOverrides]
     )
+}
+
+/**
+ * Module-level lazy getter for the latest aggregated `Settings` snapshot. Populated by the
+ * mounted `BotStateProvider` (see `useSettingsSnapshotPublisher` below) and read by callers that
+ * only need the value at user-action time (e.g. import / export handlers). Reading it does NOT
+ * subscribe to any context, so call sites don't re-render when slices change.
+ *
+ * Falls back to `defaultSettings` if no provider is mounted (test environments).
+ */
+let _latestSettingsSnapshot: Settings = defaultSettings
+export const getLatestSettingsSnapshot = (): Settings => _latestSettingsSnapshot
+
+/**
+ * Internal: publishes the live snapshot to `_latestSettingsSnapshot` so non-rendering callers
+ * can read it via `getLatestSettingsSnapshot()`. Mounted once inside `BotStateProvider`.
+ */
+const SettingsSnapshotPublisher = (): null => {
+    const snapshot = useSettingsSnapshot()
+    _latestSettingsSnapshot = snapshot
+    return null
 }

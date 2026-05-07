@@ -246,11 +246,32 @@ const MessageLog = () => {
         const mediumTargetsString = `Medium: \n\t\tSpeed: ${settings.trainingStatTarget.trainingMediumStatTarget_speedStatTarget}\t\tStamina: ${settings.trainingStatTarget.trainingMediumStatTarget_staminaStatTarget}\t\tPower: ${settings.trainingStatTarget.trainingMediumStatTarget_powerStatTarget}\n\t\tGuts: ${settings.trainingStatTarget.trainingMediumStatTarget_gutsStatTarget}\t\t\tWit: ${settings.trainingStatTarget.trainingMediumStatTarget_witStatTarget}`
         const longTargetsString = `Long: \n\t\tSpeed: ${settings.trainingStatTarget.trainingLongStatTarget_speedStatTarget}\t\tStamina: ${settings.trainingStatTarget.trainingLongStatTarget_staminaStatTarget}\t\tPower: ${settings.trainingStatTarget.trainingLongStatTarget_powerStatTarget}\n\t\tGuts: ${settings.trainingStatTarget.trainingLongStatTarget_gutsStatTarget}\t\t\tWit: ${settings.trainingStatTarget.trainingLongStatTarget_witStatTarget}`
 
-        // Racing plan settings that is a string of the JSON array.
-        const racingPlanString =
-            settings.racing.racingPlan && settings.racing.racingPlan !== "[]" && typeof settings.racing.racingPlan === "string"
-                ? `${JSON.parse(settings.racing.racingPlan).length} Race(s) Selected`
-                : "None Selected"
+        // Smart Race Solver settings — counts derived from JSON-string fields.
+        const safeJsonLength = (json: string): number => {
+            try {
+                const parsed = JSON.parse(json || "[]")
+                return Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length
+            } catch {
+                return 0
+            }
+        }
+        const smartRaceSolverTargetCount = safeJsonLength(settings.racing.smartRaceSolverTargetEpithets)
+        const smartRaceSolverForcedCount = safeJsonLength(settings.racing.smartRaceSolverForcedEpithets)
+        const smartRaceSolverLockCount = safeJsonLength(settings.racing.smartRaceSolverManualLocks)
+        const smartRaceSolverWeightsObj = (() => {
+            try {
+                return JSON.parse(settings.racing.smartRaceSolverWeights || "{}") as Record<string, number | string>
+            } catch {
+                return {} as Record<string, number | string>
+            }
+        })()
+        const smartRaceSolverAptitudesObj = (() => {
+            try {
+                return JSON.parse(settings.racing.smartRaceSolverAptitudes || "{}") as Record<string, string>
+            } catch {
+                return {} as Record<string, string>
+            }
+        })()
 
         return `🏁 Campaign Selected: ${settings.general.scenario !== "" ? `${settings.general.scenario}` : "Please select one in the Select Campaign option"}
 👤 Profile Selected: ${settings.misc.currentProfileName ? `${settings.misc.currentProfileName}` : "Default Profile"}
@@ -332,21 +353,18 @@ ${longTargetsString}
 🏁 Skip Summer Training for Agenda: ${settings.racing.skipSummerTrainingForAgenda ? "✅" : "❌"}
 🏁 Selected User In-Game Race Agenda: ${settings.racing.selectedUserAgenda}
 🏁 Custom Agenda Title: ${settings.racing.customAgendaTitle || "(none)"}
-🏁 Enable Racing Plan: ${settings.racing.enableRacingPlan ? "✅" : "❌"}
-🏁 Racing Plan is Mandatory: ${settings.racing.enableMandatoryRacingPlan ? "✅" : "❌"}
-🏁 Racing Plan: ${racingPlanString}
-👥 Minimum Fans Threshold: ${settings.racing.minFansThreshold}
-🏃 Preferred Terrain: ${settings.racing.preferredTerrain}
-🏆 Preferred Grades: ${settings.racing.preferredGrades.join(", ")}
-🏃 Preferred Distances: ${settings.racing.preferredDistances.join(", ")}
-📅 Look Ahead Days: ${settings.racing.lookAheadDays} days
-⏰ Smart Racing Check Interval: ${settings.racing.smartRacingCheckInterval} days
 🎯 Per-Distance Strategy: ${settings.racing.enablePerDistanceStrategy ? "Enabled" : "Disabled"}
 🎯 Junior Year Race Strategy: ${settings.racing.enablePerDistanceStrategy ? `[Short: ${settings.racing.juniorYearPerDistanceStrategies?.Short ?? "Default"}, Mile: ${settings.racing.juniorYearPerDistanceStrategies?.Mile ?? "Default"}, Medium: ${settings.racing.juniorYearPerDistanceStrategies?.Medium ?? "Default"}, Long: ${settings.racing.juniorYearPerDistanceStrategies?.Long ?? "Default"}]` : settings.racing.juniorYearRaceStrategy}
 🎯 Classic/Senior Year Race Strategy: ${settings.racing.enablePerDistanceStrategy ? `[Short: ${settings.racing.originalPerDistanceStrategies?.Short ?? "Default"}, Mile: ${settings.racing.originalPerDistanceStrategies?.Mile ?? "Default"}, Medium: ${settings.racing.originalPerDistanceStrategies?.Medium ?? "Default"}, Long: ${settings.racing.originalPerDistanceStrategies?.Long ?? "Default"}]` : settings.racing.originalRaceStrategy}
-📊 Minimum Quality Threshold: ${settings.racing.minimumQualityThreshold}
-⏱️ Time Decay Factor: ${settings.racing.timeDecayFactor}
-📈 Improvement Threshold: ${settings.racing.improvementThreshold}
+
+---------- Smart Race Solver Options ----------
+🤖 Enable Smart Race Solver: ${settings.racing.enableSmartRaceSolver ? "✅" : "❌"}
+🎭 Solver Character Preset: ${settings.racing.smartRaceSolverCharacterPreset || "(none)"}
+🐎 Solver Aptitudes: Spr ${smartRaceSolverAptitudesObj.Sprint ?? "?"}, Mile ${smartRaceSolverAptitudesObj.Mile ?? "?"}, Med ${smartRaceSolverAptitudesObj.Medium ?? "?"}, Lng ${smartRaceSolverAptitudesObj.Long ?? "?"}, Trf ${smartRaceSolverAptitudesObj.Turf ?? "?"}, Drt ${smartRaceSolverAptitudesObj.Dirt ?? "?"}
+⚖️ Solver Weights: race ${smartRaceSolverWeightsObj.raceValue ?? "?"}, epithet ${smartRaceSolverWeightsObj.epithetValue ?? "?"}, hint ${smartRaceSolverWeightsObj.hintWeight ?? "?"}, consec −${smartRaceSolverWeightsObj.consecutiveRacePenalty ?? "?"}, summer −${smartRaceSolverWeightsObj.summerPenalty ?? "?"}, raceBonus ${smartRaceSolverWeightsObj.raceBonusPct ?? "?"}%, raceCost ${smartRaceSolverWeightsObj.raceCostPct ?? "?"}%, threshold ${smartRaceSolverWeightsObj.aptitudeThreshold ?? "?"}, includeOP ${smartRaceSolverWeightsObj.includeOpAndPreOp ? "✅" : "❌"}, summerRacing ${smartRaceSolverWeightsObj.allowSummerRacing ? "✅" : "❌"}
+🎯 Solver Target Epithets: ${smartRaceSolverTargetCount} selected
+🚨 Solver Forced Epithets: ${smartRaceSolverForcedCount} selected
+🔒 Solver Manual Turn Locks: ${smartRaceSolverLockCount} locked turn(s)
 
 ---------- Skill Options ----------
 🔍 Skill Point Check: ${settings.skills.enableSkillPointCheck ? `Stop on ${settings.skills.skillPointCheck} Skill Points or more` : "❌"}
@@ -420,9 +438,9 @@ ${longTargetsString}
     }, [])
 
     // Debounced state for the formatted settings banner. Recomputing the ~30-line template
-    // literal (including `JSON.parse(racingPlan)` and `Object.keys(...)` over each override map)
-    // synchronously on every settings change was making toggles feel sluggish once the user
-    // imported a populated settings file. We now compute it 250ms after the last settings
+    // literal (including `JSON.parse` calls on the smart-race-solver fields and `Object.keys(...)`
+    // over each override map) synchronously on every settings change was making toggles feel
+    // sluggish once the user imported a populated settings file. We now compute it 250ms after the last settings
     // change, off the toggle's render commit. The intro/log path keeps using the previous
     // value until the new one lands; downstream memos bail out via `Object.is`.
     const [formattedSettingsString, setFormattedSettingsString] = useState<string>(() => buildFormattedSettings(settings))

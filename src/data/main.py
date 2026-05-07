@@ -1,4 +1,3 @@
-from deprecated import deprecated
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -9,7 +8,7 @@ import re
 import time
 import logging
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple, Union
 from difflib import SequenceMatcher
 import bisect
 import requests
@@ -217,11 +216,11 @@ def download_image(url: str, out_fp: str):
         with open(out_fp, "wb") as f_out:
             f_out.write(response.content)
     except requests.exceptions.RequestException as exc:
-        print(f"An error occurred when downloading image: {e}")
+        print(f"An error occurred when downloading image: {exc}")
 
 
 def fetch_gametora_manifest_data(manifest_name: str) -> dict:
-    """Fetches data from gametora's JSON manifest.
+    """Fetches data from GameTora's JSON manifest.
 
     Args:
         manifest_name (str): The name of the manifest to fetch data from.
@@ -596,7 +595,7 @@ class SkillScraper(BaseScraper):
                 for div in divs:
                     anchor = div.find_elements(By.TAG_NAME, "a")[-1]
                     skill_name = anchor.text.strip()
-                    # Make sure we use the same special characters as gametora.
+                    # Make sure we use the same special characters as GameTora.
                     skill_name = skill_name.replace("◯", "○")
                     skill_name = skill_name.replace("◎", "◎")
                     # Get rid of any double spaces.
@@ -1076,7 +1075,10 @@ class RaceScraper(BaseScraper):
                     "direction": "Right" if info_map.get("Direction") in ["Clockwise", "Right"] else "Left",
                     "grade": info_map.get("Grade"),
                     "terrain": info_map.get("Terrain"),
-                    "distanceType": info_map.get("Distance (type)"),
+                    # The umamusu wiki labels sprint races as "Short", but the in-game UI
+                    # uses "Sprint" for both the race distance type and the matching aptitude.
+                    # Normalize at scrape time so downstream consumers see one canonical name.
+                    "distanceType": "Sprint" if info_map.get("Distance (type)") == "Short" else info_map.get("Distance (type)"),
                     "distanceMeters": int(info_map.get("Distance (meters)")),
                     "fans": int(
                         dialog_schedule_items[-1]
@@ -1091,7 +1093,7 @@ class RaceScraper(BaseScraper):
                 race_data["turnNumber"] = calculate_turn_number(race_data["date"])
 
                 # Construct the in-game formatted name of the race.
-                distance_type_formatted = "Med" if info_map.get("Distance (type)") == "Medium" else info_map.get("Distance (type)")
+                distance_type_formatted = "Med" if info_map.get("Distance (type)") == "Medium" else race_data["distanceType"]
                 race_data["nameFormatted"] = (
                     f"{race_data['raceTrack']} {race_data['terrain']} {race_data['distanceMeters']}m ({distance_type_formatted}) {race_data['direction']}"
                 )
@@ -1113,22 +1115,984 @@ class RaceScraper(BaseScraper):
         driver.quit()
 
 
+class EpithetScraper(BaseScraper):
+    """Scrapes the epithets/nicknames from GameTora.
+
+    Each epithet's row on GameTora is a free-text bullet list - scenario restriction (when
+    present), conditions, qualifiers, then the reward. The Smart Race Solver stores these
+    bullets verbatim into `bullet_points` and derives every structured property it needs
+    from them at runtime: reward kind/amount, scenario gate, and the AND-list of race-win
+    matchers the solver evaluates. `matchers` are derived here in the scraper via
+    `derive_matchers` so a re-scrape always rebuilds them from current bullet text - no
+    hand-curation step is required.
+    """
+
+    # Fields owned by the scraper.
+    SCRAPED_FIELDS = (
+        "name",
+        "bullet_points",
+        "scenarios",
+        "characters",
+        "matchers",
+    )
+
+    # Regex matching GameTora's `<X> scenario only` bullet. Group 1 captures the scenario.
+    _SCENARIO_RESTRICTION_RE = re.compile(r"([A-Za-z][A-Za-z0-9 \-]*?) scenario only", re.IGNORECASE)
+
+    # Regex matching GameTora's character-restriction bullet, e.g. `Yaeno Muteki only`.
+    # Anchored so bullets with extra words (e.g. "Win 5 races as a Late Surger only")
+    # never qualify. Bullets containing `scenario only` are filtered out by the caller.
+    _CHARACTER_RESTRICTION_RE = re.compile(r"^(.+?)\s+only$")
+
+    # //////////////////////////////////////////////////////////////////////////////////////////////////
+    # //////////////////////////////////////////////////////////////////////////////////////////////////
+    # Bullet -> matcher derivation
+
+    # Number-word lookup so "Win three races..." is treated identically to "Win 3 races...".
+    _NUMBER_WORDS = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    }
+    # "twice" / "three times" / etc. -> numeric times count for `winRaceTimes`.
+    _TIMES_WORDS = {
+        "twice": 2, "three times": 3, "four times": 4,
+        "five times": 5, "six times": 6, "seven times": 7,
+    }
+
+    # Whitelisted descriptor tokens for the `winCount` filter. Anything outside this set
+    # disqualifies the bullet so the parser never produces a partially-correct matcher that
+    # would over-fire (e.g. "Win 5 G1 races with a Mood level of Bad" - the Mood clause is
+    # not representable, so we skip the whole bullet rather than emit a too-broad winCount).
+    _TERRAIN_WORDS = {"dirt": "Dirt", "turf": "Turf"}
+    _GRADE_WORDS = {"g1": "G1", "g2": "G2", "g3": "G3", "op": "OP"}
+    # Includes GameTora's hyphenated forms ("short-distance", "medium-distance",
+    # "long-distance"). "Sprint" / "Mile" / "Medium" / "Long" mirror the Kotlin
+    # `TrackDistance` enum.
+    _DISTANCE_WORDS = {
+        "sprint": "Sprint",
+        "short-distance": "Sprint",
+        "mile": "Mile",
+        "mile-length": "Mile",
+        "medium": "Medium",
+        "medium-distance": "Medium",
+        "long": "Long",
+        "long-distance": "Long",
+    }
+    # Distance shorthand: "core" = Mile + Medium, "non-core" = Sprint + Long. Mirrors
+    # the in-game grouping used by Standard / Non-Standard Distance Leader.
+    _DISTANCE_GROUP_WORDS = {
+        "core": ["Mile", "Medium"],
+        "non-core": ["Sprint", "Long"],
+    }
+
+    # Substrings that, when present in a bullet, mark it as carrying a sub-clause the
+    # parser can't represent. Bullets matching any of these are dropped silently.
+    # `with` / `that have` are intentionally not blanket-blocked - GameTora uses both
+    # for representable filters (e.g. `with 'Junior Stakes' in their name`,
+    # `that are held in either Sapporo or Hakodate`). The dedicated sub-parsers handle
+    # those shapes before the generic block runs.
+    _UNREPRESENTABLE_MARKERS = (
+        " with a difference ", " with a length ", " with a mood ", " with at least ",
+        " while ", " as a ", " as the ", " as most ",
+        " without ", " having ", " before ", " inbetween ", " between ",
+        " inherit ", " place higher ", " trigger ", " buy ",
+        " activate ", " reach ", " earn ", " have ", " be at ", " complete the career",
+        " raise the level", " mood level", " most popular", " single race",
+        " parent ", " parents ", " from a parent", " from parents",
+    )
+
+    # Bullets that begin with these prefixes never describe a race-win condition.
+    _NON_WIN_PREFIXES = (
+        "reach ", "earn ", "have ", "be at ", "inherit ", "complete ", "raise ",
+        "trigger ", "buy ", "activate ", "place ", "finish ", "without ",
+    )
+
+    def __init__(self):
+        super().__init__("https://gametora.com/umamusume/nicknames", "epithets.json")
+
+    def start(self):
+        """Starts the scraping process."""
+        driver = create_chromedriver()
+        driver.get(self.url)
+        time.sleep(5)
+
+        self.handle_cookie_consent(driver)
+
+        scraped = self._extract_epithets(driver)
+        logging.info(f"Scraped {len(scraped)} epithets from {self.url}.")
+
+        # Each scrape regenerates `matchers` from the current bullet text via
+        # `derive_matchers`. This keeps the JSON fully automated - GameTora copy
+        # changes flow into solver matchers on the next re-scrape, and there's no
+        # hand-curation step that can drift. The merge with `self.data` still
+        # passes through any extra fields a future schema may carry.
+        for name, fresh in scraped.items():
+            existing = self.data.get(name, {})
+            merged = {}
+            merged["name"] = fresh.get("name", existing.get("name", name))
+            merged["bullet_points"] = fresh.get("bullet_points", existing.get("bullet_points", []))
+            merged["scenarios"] = self.derive_scenarios(merged["bullet_points"])
+            merged["characters"] = self.derive_characters(merged["bullet_points"])
+            merged["matchers"] = self.derive_matchers(merged["bullet_points"])
+            self.data[name] = merged
+
+        self.save_data()
+        driver.quit()
+
+    @classmethod
+    def derive_scenarios(cls, bullets: List[str]) -> List[str]:
+        """Pulls scenario-restriction names out of the bullet list.
+
+        Each `<X> scenario only` bullet contributes the captured scenario name. An empty
+        list means the epithet is universally obtainable across every scenario. Mirrors
+        `EpithetFilters.scenariosFromBullets` in Kotlin and `scenariosForEpithet` in TS.
+
+        Args:
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
+
+        Returns:
+            Distinct scenario names referenced by any restriction bullet, in order.
+        """
+        out: List[str] = []
+        seen: set = set()
+        for raw in bullets:
+            for m in cls._SCENARIO_RESTRICTION_RE.finditer(raw):
+                name = m.group(1).strip()
+                if name and name not in seen:
+                    seen.add(name)
+                    out.append(name)
+        return out
+
+    @classmethod
+    def derive_characters(cls, bullets: List[str]) -> List[str]:
+        """Pulls character-restriction names out of the bullet list.
+
+        Each standalone `<character name> only` bullet contributes the captured name.
+        Bullets containing `scenario only` are skipped so the two restriction kinds never
+        collide. An empty list means the epithet has no character gate. Mirrors
+        `EpithetFilters.charactersFromBullets` in Kotlin and `charactersForEpithet` in TS.
+
+        Args:
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
+
+        Returns:
+            Distinct character names referenced by any standalone restriction bullet.
+        """
+        out: List[str] = []
+        seen: set = set()
+        for raw in bullets:
+            trimmed = raw.strip().rstrip(".")
+            if "scenario only" in trimmed.lower():
+                continue
+            m = cls._CHARACTER_RESTRICTION_RE.fullmatch(trimmed)
+            if m is None:
+                continue
+            name = m.group(1).strip()
+            if name and name not in seen:
+                seen.add(name)
+                out.append(name)
+        return out
+
+    @classmethod
+    def derive_matchers(cls, bullets: List[str]) -> List[Dict[str, Any]]:
+        """Builds the AND-combined `matchers` list for an epithet from its bullet text.
+
+        Each bullet is run through a strict pattern cascade. Bullets that match a known
+        race-win shape contribute one (or more) structured matcher entries. Everything
+        else is dropped. The conservative approach prevents partially-recognised bullets
+        from over-firing - the solver would rather miss a matcher than mis-complete an
+        epithet that still has unfulfilled conditions.
+
+        Recognised bullet shapes (case-insensitive):
+
+        - `Get [either] the X[, Y, ... [and|or] Z] epithet[s]` -> `epithetAll` /
+          `epithetAnyOf` (the `either` keyword switches to the disjunctive form).
+        - `Win any (N|<word>) of [the] A, B, ... [and|or] Z` -> `winAnyOf` with `count=N`.
+        - `Win [either] the X or [the] Y` -> `winAnyOf` with `count=1`.
+        - `Win [at least|exactly] N <descriptor> races?` where `<descriptor>` is composed
+          only of whitelisted terrain / grade / distance / "graded" tokens -> `winCount`
+          with the corresponding `filter`. The "country's name" idiom maps to
+          `nameContainsCountry: true` for the Globe-Trotter epithet.
+        - `Win the X[, Y, ... [and|or] Z]` -> one `winRace` per name, with `atClass` lifted
+          from any `(Junior|Classic|Senior)` qualifier.
+        - `Win the X (twice|N times)` -> `winRaceTimes`.
+
+        Args:
+            bullets: The epithet's `bullet_points` array as scraped from GameTora.
+
+        Returns:
+            Ordered list of structured matchers. Empty when no bullet matched any
+            recognised shape.
+        """
+        out: List[Dict[str, Any]] = []
+        for raw in bullets:
+            b = raw.strip().rstrip(".")
+            if not b:
+                continue
+            lower = b.lower()
+            # Skip the reward bullet and the scenario-restriction bullet outright.
+            if lower.startswith("reward:"):
+                continue
+            if "scenario only" in lower:
+                continue
+            # Skip bullets carrying sub-clauses we can't represent. Emitting a
+            # partial matcher here would mark the epithet completable on conditions
+            # the user hasn't actually met.
+            if any(marker in (" " + lower + " ") for marker in cls._UNREPRESENTABLE_MARKERS):
+                continue
+            if any(lower.startswith(p) for p in cls._NON_WIN_PREFIXES):
+                continue
+
+            matcher = (
+                cls._parse_get_epithet(b)
+                or cls._parse_win_any_of(b)
+                or cls._parse_win_count_at_tracks(b)
+                or cls._parse_win_count_name_contains(b)
+                or cls._parse_win_count_country_idiom(b)
+                or cls._parse_win_count_grade_open(b)
+                or cls._parse_win_one_per_distance(b)
+                or cls._parse_win_count(b)
+                or cls._parse_win_either_or(b)
+                or cls._parse_win_races(b)
+            )
+            if matcher is None:
+                continue
+            if isinstance(matcher, list):
+                for entry in matcher:
+                    cls._attach_display_label(entry)
+                    out.append(entry)
+            else:
+                cls._attach_display_label(matcher)
+                out.append(matcher)
+        return out
+
+    @classmethod
+    def _attach_display_label(cls, matcher: Dict[str, Any]) -> None:
+        """Stamps `displayLabel` / `displayLabelTemplate` onto `matcher` in place.
+
+        These fields are the canonical condition strings consumed by the React popover, the
+        Race History tooltip in `log_viewer.html`, and the Kotlin win log. Synthesizing them
+        once at scrape time means no runtime layer needs its own filter -> phrase translation,
+        so the three surfaces can no longer drift apart on wording.
+
+        Args:
+            matcher: A matcher dict freshly produced by one of the `_parse_*` helpers. The
+                relevant key is mutated in place. Dependency matchers
+                (`epithetAll`, `epithetAnyOf`) gain neither field.
+        """
+        t = matcher.get("type")
+        if t == "winRace":
+            name = matcher.get("name")
+            if name:
+                matcher["displayLabel"] = f"Win the {name}"
+        elif t == "winRaceTimes":
+            name = matcher.get("name")
+            times = matcher.get("times")
+            if name and times is not None:
+                matcher["displayLabel"] = f"Win the {name} ({times} times)"
+            elif name:
+                matcher["displayLabel"] = f"Win the {name}"
+        elif t in ("winAnyOf", "winAtLeast"):
+            matcher["displayLabelTemplate"] = "Win the {race}"
+        elif t == "winCount":
+            count = matcher.get("count", 1)
+            phrase = cls._describe_filter(matcher.get("filter") or {})
+            if count != 1:
+                phrase = re.sub(r"race$", "races", phrase)
+            matcher["displayLabel"] = f"Win {count} {phrase}"
+
+    @classmethod
+    def _describe_filter(cls, f: Dict[str, Any]) -> str:
+        """Synthesizes the noun phrase describing a `winCount` matcher's filter clause.
+
+        Field order mirrors the Kotlin / TypeScript convention: grade -> OP+ -> graded -> distanceTypes -> terrain -> nameContainsCountry -> nameContains -> raceTracks -> "race".
+        This is the only place in the codebase that turns filter shapes into English; both
+        runtimes consume the result via `displayLabel`.
+
+        Args:
+            f: The filter dict from a `winCount` matcher.
+
+        Returns:
+            A noun phrase like `"G1 Sprint/Mile Turf race"` suitable for prefixing with `"Win N "`.
+        """
+        parts: List[str] = []
+        grade = f.get("grade")
+        if grade:
+            parts.append(grade)
+        if f.get("gradeAtLeastOpen"):
+            parts.append("OP+")
+        if f.get("gradedOnly"):
+            parts.append("graded")
+        dts = f.get("distanceTypes") or []
+        if dts:
+            parts.append("/".join(d[0].upper() + d[1:].lower() for d in dts))
+        terrain = f.get("terrain")
+        if terrain:
+            parts.append(terrain[0].upper() + terrain[1:].lower())
+        if f.get("nameContainsCountry"):
+            parts.append("country-named")
+        nc = f.get("nameContains")
+        if nc:
+            parts.append(f'"{nc}"-named')
+        tracks = f.get("raceTracks") or []
+        if tracks:
+            parts.append("at " + "/".join(tracks))
+        parts.append("race")
+        return " ".join(parts)
+
+    @classmethod
+    def _parse_get_epithet(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Parses `Get [either] the X[, Y[ and|or] Z] epithet[s]` into `epithetAll` / `epithetAnyOf`.
+
+        Args:
+            b: The bullet text to match (already stripped of leading/trailing whitespace and trailing period).
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the prefix.
+        """
+        m = re.match(r"^Get\s+(either\s+)?the\s+(.+?)\s+epithets?$", b, re.IGNORECASE)
+        if not m:
+            return None
+        is_either = bool(m.group(1))
+        names = cls._split_name_list(m.group(2))
+        if not names:
+            return None
+        kind = "epithetAnyOf" if is_either else "epithetAll"
+        return {"type": kind, "names": [n for n, _ in names]}
+
+    @classmethod
+    def _parse_win_any_of(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Parses `Win any (N|<word>) of [the] A, B[, ... [and|or] Z]` into `winAtLeast`.
+
+        GameTora's "any N of" phrasing maps to the distinct-race variant - racing the same horse twice doesn't count for two - so
+        we emit `EpithetMatcher.WinAtLeast` rather than the looser `EpithetMatcher.WinAnyOf` which counts repeats.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(r"^Win\s+any\s+(\d+|[A-Za-z]+)\s+of\s+(?:the\s+)?(.+)$", b, re.IGNORECASE)
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        names = cls._split_name_list(m.group(2))
+        if not names:
+            return None
+        return {"type": "winAtLeast", "names": [n for n, _ in names], "count": count}
+
+    @classmethod
+    def _parse_win_either_or(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Parses `Win [either] the X or [the] Y` into `winAnyOf` with `count=1`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(r"^Win\s+(?:either\s+)?the\s+(.+?)\s+or\s+(?:the\s+)?(.+)$", b, re.IGNORECASE)
+        if not m:
+            return None
+        # Reject if the right side itself contains another " or " - that's a list and
+        # `_split_name_list` would handle it, but only via `_parse_win_any_of` which
+        # has already run. Falling through avoids ambiguity.
+        if " or " in m.group(2):
+            return None
+        a, ac_a = cls._strip_class(m.group(1).strip())
+        b_name, ac_b = cls._strip_class(m.group(2).strip())
+        if not a or not b_name:
+            return None
+        entry: Dict[str, Any] = {"type": "winAnyOf", "names": [a, b_name], "count": 1}
+        if ac_a and ac_a == ac_b:
+            entry["atClass"] = ac_a
+        return entry
+
+    @classmethod
+    def _parse_win_count_name_contains(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Recognises `Win N races with 'X' in their name` (Junior Jewel, Umatastic) and produces a `winCount` with `nameContains: "X"`.
+
+        The single-quoted substring may use either ASCII or curly quotes.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(
+            r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+with\s+['‘’\"“”](.+?)['‘’\"“”]\s+in\s+their\s+name$",
+            b,
+            re.IGNORECASE,
+        )
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        return {"type": "winCount", "count": count, "filter": {"nameContains": m.group(2)}}
+
+    @classmethod
+    def _parse_win_count_grade_open(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Recognises `Win N races of grade Open or higher` (Pro Racer) and produces a `winCount` with `gradeAtLeastOpen: true`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(
+            r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+of\s+grade\s+open\s+or\s+higher$",
+            b,
+            re.IGNORECASE,
+        )
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        return {"type": "winCount", "count": count, "filter": {"gradeAtLeastOpen": True}}
+
+    @classmethod
+    def _parse_win_one_per_distance(cls, b: str) -> Optional[List[Dict[str, Any]]]:
+        """Recognises `Win one [terrain] D1, D2[, ... and Dn] race` (Dirt Dancer, Turf Tussler).
+
+        Emits a separate `winCount` per distance with `count=1`, each carrying the shared terrain filter when present. Returning a list
+        lets `derive_matchers` flatten them into the AND list.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            A list of matcher dicts (one per distance), or None when `b` doesn't match the shape.
+        """
+        m = re.match(r"^Win\s+one\s+(.+?)\s+races?$", b, re.IGNORECASE)
+        if not m:
+            return None
+        descriptor = m.group(1)
+        # Normalise " and " / " or " into commas to make tokenisation order-free.
+        normalised = re.sub(r"\s+(?:and|or)\s+", ", ", descriptor, flags=re.IGNORECASE)
+        tokens = [t.strip() for t in normalised.split(",") if t.strip()]
+        # First word may be a terrain ("dirt"/"turf"), shared across the per-distance
+        # matchers. The remaining tokens must each map to a single distance type.
+        terrain: Optional[str] = None
+        if tokens and tokens[0].lower().split()[0] in cls._TERRAIN_WORDS:
+            head = tokens[0].lower().split()
+            terrain = cls._TERRAIN_WORDS[head[0]]
+            # Strip the terrain word out of the first token so the rest of it (e.g.
+            # "short-distance" in "dirt short-distance") survives as a distance.
+            rest = " ".join(head[1:]).strip()
+            if rest:
+                tokens[0] = rest
+            else:
+                tokens.pop(0)
+        # Every remaining token must resolve to one distance. If even one fails, we
+        # skip the bullet rather than emit a partial set.
+        distances: List[str] = []
+        for t in tokens:
+            d = cls._DISTANCE_WORDS.get(t.lower())
+            if d is None:
+                return None
+            distances.append(d)
+        if not distances:
+            return None
+        out: List[Dict[str, Any]] = []
+        for d in distances:
+            f: Dict[str, Any] = {"distanceTypes": [d]}
+            if terrain:
+                f["terrain"] = terrain
+            out.append({"type": "winCount", "count": 1, "filter": f})
+        return out
+
+    @classmethod
+    def _parse_win_count_country_idiom(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Recognises GameTora's Globe-Trotter wording, `Win N races which include a country's name in their name`.
+
+        Produces a `winCount` with the `nameContainsCountry` filter - the only filter shape that doesn't fit the token-based
+        descriptor parser.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(
+            r"^Win\s+(\d+|[A-Za-z]+)\s+races?\s+which\s+include\s+a\s+country['’]?s?\s+name",
+            b,
+            re.IGNORECASE,
+        )
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        return {"type": "winCount", "count": count, "filter": {"nameContainsCountry": True}}
+
+    @classmethod
+    def _parse_win_count_at_tracks(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Recognises `Win N <descriptor> races (that are )?held in/at <track list>` and produces a `winCount` with `raceTracks`.
+
+        Any `gradedOnly` flag picked up from the descriptor is preserved. Used by the Hokkaido Hotshot / Kanto Conqueror /
+        Tohoku Top Dog / Kokura Constable / West Japan Whiz / Kyushu / Pro Racer epithets, which all describe their
+        location filter this way.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(
+            r"^Win\s+(?:at\s+least\s+|exactly\s+)?(\d+|[A-Za-z]+)\s+(.+?)\s+races?\s+(?:that\s+are\s+)?held\s+(?:in|at|on)\s+(?:either\s+)?(.+)$",
+            b,
+            re.IGNORECASE,
+        )
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        descriptor = m.group(2).strip()
+        filt = cls._parse_filter(descriptor) or {}
+        if filt is None:
+            return None
+        track_list = cls._split_name_list(m.group(3))
+        if not track_list:
+            return None
+        filt["raceTracks"] = [name for name, _ in track_list]
+        return {"type": "winCount", "count": count, "filter": filt}
+
+    @classmethod
+    def _parse_win_count(cls, b: str) -> Optional[Dict[str, Any]]:
+        """Parses `Win [at least|exactly] N <descriptor> races?` into `winCount`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            The matcher dict, or None when `b` doesn't match the shape.
+        """
+        m = re.match(
+            r"^Win\s+(?:at\s+least\s+|exactly\s+)?(\d+|[A-Za-z]+)\s+(.+?)\s+races?$",
+            b,
+            re.IGNORECASE,
+        )
+        if not m:
+            return None
+        count = cls._parse_count_word(m.group(1))
+        if count is None:
+            return None
+        descriptor = m.group(2).strip()
+        # "races which include a country's name in their name" - the only special-case
+        # idiom on GameTora that maps to the structured `nameContainsCountry` filter.
+        if "country" in descriptor.lower() and "name" in descriptor.lower():
+            return {"type": "winCount", "count": count, "filter": {"nameContainsCountry": True}}
+        filt = cls._parse_filter(descriptor)
+        if filt is None:
+            return None
+        return {"type": "winCount", "count": count, "filter": filt}
+
+    @classmethod
+    def _parse_win_races(cls, b: str) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
+        """Parses `Win the X[, Y, ... [and] Z] [twice|N times]` into one or more `winRace` entries.
+
+        Returns a single `winRaceTimes` entry when the bullet ends in a repeat qualifier. The leading `the` is required
+        so race-count bullets (`Win 3 graded races that are held in either Sapporo or Hakodate`) don't accidentally
+        split on their internal `or`.
+
+        Args:
+            b: The bullet text to match.
+
+        Returns:
+            A single `winRaceTimes` dict, a list of `winRace` dicts, or None when `b` doesn't match the shape.
+        """
+        # Detect a trailing repeat qualifier: " twice" / " three times" / etc.
+        repeat: Optional[int] = None
+        body = b
+        for phrase, n in cls._TIMES_WORDS.items():
+            suffix = f" {phrase}"
+            if body.lower().endswith(suffix):
+                repeat = n
+                body = body[: -len(suffix)].rstrip()
+                break
+
+        m = re.match(r"^Win\s+the\s+(.+)$", body, re.IGNORECASE)
+        if not m:
+            return None
+        names = cls._split_name_list(m.group(1))
+        if not names:
+            return None
+
+        if repeat is not None:
+            if len(names) != 1:
+                # Ambiguous: "Win the A, B and C twice" - skip rather than guess.
+                return None
+            name, atclass = names[0]
+            entry: Dict[str, Any] = {"type": "winRaceTimes", "name": name, "times": repeat}
+            if atclass:
+                entry["atClass"] = atclass
+            return entry
+
+        out: List[Dict[str, Any]] = []
+        for name, atclass in names:
+            entry = {"type": "winRace", "name": name}
+            if atclass:
+                entry["atClass"] = atclass
+            out.append(entry)
+        return out
+
+    @classmethod
+    def _parse_filter(cls, descriptor: str) -> Optional[Dict[str, Any]]:
+        """Translates a `winCount` descriptor like `dirt G1` or `non-core distance` into a filter dict.
+
+        Returns None when the descriptor contains a token that doesn't map to a whitelisted filter key - that's the
+        safety guard that prevents partial matchers.
+
+        Args:
+            descriptor: The descriptor portion of the bullet (between count and `races?`).
+
+        Returns:
+            A filter dict, or None when any token in `descriptor` is unrecognised.
+        """
+        f: Dict[str, Any] = {}
+        # The "distance" suffix in "core distance" / "non-core distance" is grammatical
+        # filler - drop it so the group token resolves cleanly.
+        cleaned = re.sub(r"\bdistance\b", " ", descriptor, flags=re.IGNORECASE)
+        for token in cleaned.split():
+            tl = token.lower().rstrip(",")
+            if not tl:
+                continue
+            if tl in cls._TERRAIN_WORDS:
+                f["terrain"] = cls._TERRAIN_WORDS[tl]
+            elif tl in cls._GRADE_WORDS:
+                f["grade"] = cls._GRADE_WORDS[tl]
+            elif tl in cls._DISTANCE_WORDS:
+                f.setdefault("distanceTypes", []).append(cls._DISTANCE_WORDS[tl])
+            elif tl in cls._DISTANCE_GROUP_WORDS:
+                # "core" / "non-core" expand to a fixed multi-distance set.
+                f.setdefault("distanceTypes", []).extend(cls._DISTANCE_GROUP_WORDS[tl])
+            elif tl == "graded":
+                f["gradedOnly"] = True
+            else:
+                # Any unknown token disqualifies the entire bullet - bail rather than
+                # produce a partially-correct filter that would over-fire.
+                return None
+        return f
+
+    @classmethod
+    def _parse_count_word(cls, raw: str) -> Optional[int]:
+        """Returns the integer for `raw` (digit string or English number word).
+
+        Args:
+            raw: A digit string (e.g. "3") or English number word (e.g. "three").
+
+        Returns:
+            The integer value, or None when `raw` is neither a digit string nor a known number word.
+        """
+        s = raw.lower().strip()
+        if s.isdigit():
+            return int(s)
+        return cls._NUMBER_WORDS.get(s)
+
+    @classmethod
+    def _split_name_list(cls, s: str) -> List[Tuple[str, Optional[str]]]:
+        """Splits a comma/`and`/`or`-separated race or epithet list.
+
+        Any `(Junior|Classic|Senior)` class qualifier is stripped into the second tuple element.
+
+        Args:
+            s: The list string (e.g. `"Tokyo Yushun (Classic), Arima Kinen and Japan Cup"`).
+
+        Returns:
+            A list of `(name, atClass)` tuples in input order; `atClass` is None when no class qualifier was present.
+        """
+        s = s.strip().rstrip(".")
+        # Replace " and " / " or " with commas before splitting so the list reads
+        # uniformly. Avoid splitting inside parens (e.g. "Tokyo Yushun (Japanese
+        # Derby)") by temporarily masking them.
+        masked = re.sub(r"\(([^)]*)\)", lambda m: "(" + m.group(1).replace(",", "\x00").replace(" and ", "\x01").replace(" or ", "\x02") + ")", s)
+        # Replace top-level " and "/" or " with commas.
+        masked = re.sub(r"\s+(?:and|or)\s+", ", ", masked, flags=re.IGNORECASE)
+        parts = [p.strip() for p in masked.split(",") if p.strip()]
+        out: List[Tuple[str, Optional[str]]] = []
+        for p in parts:
+            # Restore masked separators inside parens.
+            p = p.replace("\x00", ",").replace("\x01", " and ").replace("\x02", " or ")
+            # Drop a leading "the " from items like "the Hanshin Juvenile Fillies".
+            p = re.sub(r"^the\s+", "", p, flags=re.IGNORECASE)
+            name, atclass = cls._strip_class(p)
+            if not name:
+                continue
+            out.append((name, atclass))
+        return out
+
+    @classmethod
+    def _strip_class(cls, name: str) -> Tuple[str, Optional[str]]:
+        """Splits a trailing `(Junior|Classic|Senior)` qualifier off `name`.
+
+        Other parenthesised suffixes (e.g. `Tokyo Yushun (Japanese Derby)`) are left intact.
+
+        Args:
+            name: A race-name candidate that may carry a trailing class qualifier.
+
+        Returns:
+            A `(name, atClass)` tuple where `atClass` is the capitalised class name when present, otherwise None.
+        """
+        m = re.match(r"^(.+?)\s+\((Junior|Classic|Senior)\)$", name, re.IGNORECASE)
+        if m:
+            return m.group(1).strip(), m.group(2).capitalize()
+        return name.strip(), None
+
+    def _extract_epithets(self, driver: webdriver.Chrome) -> Dict[str, Dict[str, Any]]:
+        """Extracts epithet rows from the GameTora nicknames page.
+
+        As of 2026-05, each row uses CSS-module classes prefixed `titles_nickname_row`,
+        with the name in a `titles_nickname_name` block (containing a `<b>` element) and
+        the bullet list in a `titles_nickname_desc` block as a `<ul><li>` list. The reward
+        is the last `<li>` and is prefixed with "Reward: " when present. We capture every
+        bullet verbatim - downstream parsers strip the "Reward: " prefix and handle
+        reward/scenario derivation.
+
+        Args:
+            driver: An active Selenium webdriver positioned on the nicknames page.
+
+        Returns:
+            Dict keyed by epithet name with `name` and `bullet_points` populated.
+        """
+        results: Dict[str, Dict[str, Any]] = {}
+
+        # The nicknames list renders as repeated `titles_nickname_row` blocks. Selector substrings
+        # may need updating if GameTora reshuffles their CSS modules.
+        rows = driver.find_elements(By.XPATH, "//div[contains(@class, 'titles_nickname_row')]")
+
+        for row in rows:
+            try:
+                name_el = row.find_element(By.XPATH, ".//*[contains(@class, 'titles_nickname_name')]//b")
+                name = name_el.text.strip()
+                if not name:
+                    continue
+
+                bullet_points = self._extract_bullets(row)
+
+                results[name] = {
+                    "name": name,
+                    "bullet_points": bullet_points,
+                }
+            except NoSuchElementException as e:
+                logging.warning(f"Skipping epithet row due to missing element: {e}")
+                continue
+
+        return results
+
+    @staticmethod
+    def _extract_bullets(row: WebElement) -> List[str]:
+        """Extracts every `<li>` element from a row's `titles_nickname_desc` block.
+
+        Returns the bullets verbatim in GameTora's display order: scenario restriction first
+        when present, conditions/qualifiers middle, the "Reward: ..." bullet last. Each
+        bullet is normalized for whitespace. The "Reward: " prefix (when present) is
+        preserved so downstream parsers can locate the reward bullet by prefix.
+
+        Args:
+            row: The nickname row element from GameTora.
+
+        Returns:
+            Ordered list of bullet strings as they appear on the page. Empty if the row had
+            no bullet-shaped children.
+        """
+        try:
+            elements = row.find_elements(By.XPATH, ".//*[contains(@class, 'titles_nickname_desc')]//li")
+        except NoSuchElementException:
+            return []
+        out: List[str] = []
+        for el in elements:
+            text = " ".join(el.text.split())
+            if not text:
+                continue
+            out.append(text)
+        return out
+
+
+class CharacterPresetScraper(BaseScraper):
+    """Scrapes per-character distance and surface aptitudes for the Smart Race Solver.
+
+    Each character page on GameTora has a "Track aptitude" panel with six grade letters
+    (Sprint, Mile, Medium, Long, Turf, Dirt). The Smart Race Solver feeds these into its
+    aptitude eligibility filter, so they need to stay in sync with what's in the game.
+
+    Output schema (one entry per character) matches `src/data/characterPresets.json`:
+
+        {
+            "<character name>": {
+                "name": "<character name>",
+                "distanceAptitudes": { "Sprint": "F", "Mile": "C", "Medium": "A", "Long": "C" },
+                "surfaceAptitudes": { "Turf": "A", "Dirt": "G" }
+            }
+        }
+    """
+
+    DISTANCE_KEYS = ("Sprint", "Mile", "Medium", "Long")
+    SURFACE_KEYS = ("Turf", "Dirt")
+    VALID_GRADES = ("S", "A", "B", "C", "D", "E", "F", "G")
+
+    def __init__(self):
+        super().__init__("https://gametora.com/umamusume/characters", "characterPresets.json")
+
+    def _load_released_en_names(self) -> Optional[set]:
+        """Fetches the GameTora characters manifest and returns the set of EN-playable names.
+
+        GameTora ships a static JSON dataset at `data/umamusume/characters.<hash>.json`. Each entry has a `playable_en` flag
+        indicating whether the character is on the EN/global server. Returns None on any failure so the caller can fall back
+        to scraping every character page (the legacy behaviour) without crashing.
+
+        Returns:
+            The set of EN-playable character names, or None when the manifest fetch or parse fails.
+        """
+        try:
+            manifest = requests.get(GAMETORA_MANIFESTS_URL, timeout=15).json()
+            char_hash = manifest.get("characters")
+            if not char_hash:
+                return None
+            url = f"{GAMETORA_MANIFEST_DATA_BASE_URL}/characters.{char_hash}.json"
+            chars = requests.get(url, timeout=20).json()
+            return set(c["en_name"] for c in chars if c.get("playable_en") and c.get("en_name"))
+        except Exception as e:
+            logging.warning(f"Failed to fetch released-EN character list from manifest: {e}")
+            return None
+
+    def start(self):
+        """Walks every released-EN character page and extracts the aptitude grades."""
+        driver = create_chromedriver()
+        driver.get(self.url)
+        time.sleep(5)
+
+        self.handle_cookie_consent(driver)
+        self._sort_by_value(driver, "implemented")
+
+        try:
+            character_grid = driver.find_element(By.XPATH, "//div[contains(@class, 'characters_page_character_list')]")
+        except NoSuchElementException:
+            character_grid = driver.find_element(By.XPATH, "//div[contains(@class, 'sc-dc9ce0a6-0')]")
+
+        all_links = character_grid.find_elements(By.CSS_SELECTOR, "a[href^='/umamusume/characters/']")
+        character_links = [item.get_attribute("href") for item in all_links if item.is_displayed()]
+
+        # Filter to only characters that are playable on the EN/global server. Without this,
+        # the scraper produces presets for ~150 characters including JP-only / unreleased ones
+        # that the user can never actually pick in their game.
+        released_en = self._load_released_en_names()
+        if released_en is not None:
+            logging.info(f"Loaded {len(released_en)} EN-playable character names from manifest.")
+
+        if IS_DELTA:
+            character_links = character_links[:DELTA_BACKLOG_COUNT]
+            logging.info(f"Delta scrape: limiting to first {DELTA_BACKLOG_COUNT} characters.")
+
+        logging.info(f"Found {len(character_links)} character pages to scan for aptitudes.")
+
+        for i, link in enumerate(character_links):
+            logging.info(f"[{i + 1}/{len(character_links)}] Scraping aptitudes from {link}")
+            try:
+                driver.get(link)
+                time.sleep(2)
+
+                name = driver.find_element(By.XPATH, "//main//h1").text
+                name = name.replace("(Original)", "").strip()
+                name = re.sub(r"\s*\(.*?\)", "", name).strip()
+                if not name:
+                    continue
+
+                if released_en is not None and name not in released_en:
+                    logging.info(f"Skipping {name}: not playable on EN server.")
+                    continue
+
+                aptitudes = self._extract_aptitudes(driver)
+                if aptitudes is None:
+                    logging.warning(f"Skipping {name}: aptitude panel not found.")
+                    continue
+
+                self.data[name] = {
+                    "name": name,
+                    "distanceAptitudes": {k: aptitudes.get(k, "G") for k in self.DISTANCE_KEYS},
+                    "surfaceAptitudes": {k: aptitudes.get(k, "G") for k in self.SURFACE_KEYS},
+                }
+            except NoSuchElementException as e:
+                logging.warning(f"Skipping character at {link}: {e}")
+                continue
+
+        self.save_data()
+        driver.quit()
+
+    def _extract_aptitudes(self, driver: webdriver.Chrome) -> Optional[Dict[str, str]]:
+        """Pulls the six grade letters from the character's aptitude panel.
+
+        GameTora renders aptitudes as a grid of label/value pairs. The labels are the
+        keys in `DISTANCE_KEYS` and `SURFACE_KEYS`. We tolerate selector drift by trying
+        a couple of class fragments before giving up.
+
+        Args:
+            driver: An active Selenium webdriver positioned on a character page.
+
+        Returns:
+            Dict mapping each label to a one-letter grade. Returns `None` when the panel
+            isn't found at all so the caller can skip cleanly.
+        """
+        candidates = (
+            "//div[contains(@class, 'character_aptitude') or contains(@class, 'aptitude_grid')]",
+            "//section[.//*[contains(text(),'Track aptitude')]]",
+        )
+        panel = None
+        for xpath in candidates:
+            els = driver.find_elements(By.XPATH, xpath)
+            if els:
+                panel = els[0]
+                break
+        if panel is None:
+            return None
+
+        out: Dict[str, str] = {}
+        for label in self.DISTANCE_KEYS + self.SURFACE_KEYS:
+            try:
+                cell = panel.find_element(
+                    By.XPATH,
+                    f".//*[normalize-space(text())='{label}']/following::*[contains(@class,'aptitude') or contains(@class,'grade')][1]",
+                )
+                grade = (cell.text or "").strip().upper()
+                if grade in self.VALID_GRADES:
+                    out[label] = grade
+            except NoSuchElementException:
+                continue
+        return out if out else None
+
+
 if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
     start_time = time.time()
 
-    skill_scraper = SkillScraper()
-    skill_scraper.start()
+    # skill_scraper = SkillScraper()
+    # skill_scraper.start()
 
-    after_race_events = load_after_race_events()
-    character_scraper = CharacterScraper(after_race_events)
-    character_scraper.start()
+    # after_race_events = load_after_race_events()
+    # character_scraper = CharacterScraper(after_race_events)
+    # character_scraper.start()
 
-    support_card_scraper = SupportCardScraper()
-    support_card_scraper.start()
+    # support_card_scraper = SupportCardScraper()
+    # support_card_scraper.start()
 
-    race_scraper = RaceScraper()
-    race_scraper.start()
+    # Races are static so no need to re-scrape every time.
+    # race_scraper = RaceScraper()
+    # race_scraper.start()
+
+    epithet_scraper = EpithetScraper()
+    epithet_scraper.start()
+
+    # character_preset_scraper = CharacterPresetScraper()
+    # character_preset_scraper.start()
 
     end_time = round(time.time() - start_time, 2)
     logging.info(f"Total time for processing all applications: {end_time} seconds or {round(end_time / 60, 2)} minutes.")

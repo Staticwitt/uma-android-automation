@@ -1177,7 +1177,10 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
         // This acts as an early exit from training analysis to speed up training.
         var failureChance: Int = game.imageUtils.findTrainingFailureChance(tries = 3)
         if (failureChance == -1 && !singleTraining) {
-            MessageLog.w(TAG, "[WARN] analyzeTrainings:: First failure chance detection failed all attempts. Attempting recovery by backing out to the Main screen and re-entering the Training screen.")
+            MessageLog.w(
+                TAG,
+                "[WARN] analyzeTrainings:: First failure chance detection failed all attempts. Attempting recovery by backing out to the Main screen and re-entering the Training screen.",
+            )
             failureChance = recoverAndRetryFailureChance()
         }
         if (failureChance == -1) {
