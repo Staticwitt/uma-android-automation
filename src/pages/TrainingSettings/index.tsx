@@ -109,6 +109,8 @@ const TrainingSettings = () => {
         riskyTrainingMaxFailureChance,
         trainWitDuringFinale,
         enablePrioritizeSkillHints,
+        enableTrainingLevelWeighting,
+        disableStatTargets,
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
     } = trainingSettings
@@ -650,6 +652,17 @@ const TrainingSettings = () => {
 
                                 <View style={styles.section}>
                                     <CustomCheckbox
+                                        checked={enableTrainingLevelWeighting}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enableTrainingLevelWeighting", checked)}
+                                        label="Weight Score by Training Level"
+                                        description="When enabled (Year 2+), the bot reads each training's level (1-5) via OCR and boosts the score for trainings whose stat sits in the top 3 of your Stat Prioritization list. Helps the bot stick with stats you've invested in. OCR is skipped during Pre-Debut, Junior, and Summer."
+                                        className="my-2"
+                                        searchId="enable-training-level-weighting"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
                                         checked={mustRestBeforeSummer}
                                         onCheckedChange={(checked) => updateTrainingSetting("mustRestBeforeSummer", checked)}
                                         label="Must Rest before Summer"
@@ -736,8 +749,19 @@ const TrainingSettings = () => {
                                     </Text>
                                 </View>
 
-                                {/* Stat Target Settings */}
                                 <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={disableStatTargets}
+                                        onCheckedChange={(checked) => updateTrainingSetting("disableStatTargets", checked)}
+                                        label="Disable Stat Targets"
+                                        description="When enabled, all per-distance stat targets below are ignored. Every stat is treated as having a target equal to the in-game stat cap (1200), so the bot will keep pushing your top priority stats even after they would normally be considered 'done.' Useful when you want strict adherence to your Stat Prioritization list."
+                                        className="my-2"
+                                        searchId="disable-stat-targets"
+                                    />
+                                </View>
+
+                                {/* Stat Target Settings */}
+                                <View style={[styles.section, disableStatTargets && { opacity: 0.5, pointerEvents: "none" }]}>
                                     <CustomTitle
                                         title="Stat Targets by Distance"
                                         description="Set target values for each stat based on race distance. These stat targets are derived from past Champion Meetings. The bot will prioritize training stats that are below these targets."

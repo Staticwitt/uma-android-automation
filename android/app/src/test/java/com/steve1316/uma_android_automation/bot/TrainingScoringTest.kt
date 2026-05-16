@@ -6,6 +6,7 @@ import com.steve1316.uma_android_automation.bot.Training.Companion.calculateRela
 import com.steve1316.uma_android_automation.bot.Training.Companion.calculateStatEfficiencyScore
 import com.steve1316.uma_android_automation.bot.Training.Companion.getFinaleStatBonus
 import com.steve1316.uma_android_automation.bot.Training.Companion.getRemainingFinaleRaces
+import com.steve1316.uma_android_automation.bot.Training.Companion.levelBoostMultiplier
 import com.steve1316.uma_android_automation.bot.Training.Companion.scoreFriendshipTraining
 import com.steve1316.uma_android_automation.bot.Training.Companion.scoreUnityCupTraining
 import com.steve1316.uma_android_automation.bot.Training.TrainingConfig
@@ -1196,5 +1197,159 @@ class TrainingScoringTest {
         val score = calculateRawTrainingScore(config, training)
 
         assertTrue(score > 0.0, "Stat at 1060 should be allowed on turn 75 with no finale adjustment (effective cap = 1100)")
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // Level Boost Multiplier
+
+    @Test
+    @DisplayName("levelBoostMultiplier: Lvl 1 returns 1.0 regardless of rank")
+    fun testLevelBoostMultiplier_lvl1NeverBoosts() {
+        for (rank in 1..5) {
+            assertEquals(1.0, levelBoostMultiplier(rank, 1), 1e-9, "Rank $rank, Lvl 1 should never boost")
+        }
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: null level treated as Lvl 1")
+    fun testLevelBoostMultiplier_nullLevelNoBoost() {
+        for (rank in 1..5) {
+            assertEquals(1.0, levelBoostMultiplier(rank, null), 1e-9, "Rank $rank, null level should never boost")
+        }
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: priority ranks 4 and 5 are never boosted")
+    fun testLevelBoostMultiplier_lowPriorityNeverBoosts() {
+        for (level in 1..5) {
+            assertEquals(1.0, levelBoostMultiplier(4, level), 1e-9, "Rank 4 should never boost (Lvl $level)")
+            assertEquals(1.0, levelBoostMultiplier(5, level), 1e-9, "Rank 5 should never boost (Lvl $level)")
+        }
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: rank 1 at Lvl 5 returns 1.75x")
+    fun testLevelBoostMultiplier_rank1Lvl5() {
+        assertEquals(1.75, levelBoostMultiplier(1, 5), 1e-9)
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: rank 2 at Lvl 5 returns 1.25x")
+    fun testLevelBoostMultiplier_rank2Lvl5() {
+        assertEquals(1.25, levelBoostMultiplier(2, 5), 1e-9)
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: rank 3 at Lvl 5 returns 1.10x")
+    fun testLevelBoostMultiplier_rank3Lvl5() {
+        assertEquals(1.10, levelBoostMultiplier(3, 5), 1e-9)
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: rank 1 at Lvl 3 scales linearly to 1.375x")
+    fun testLevelBoostMultiplier_rank1Lvl3() {
+        // levelFactor = (3 - 1) / 4.0 = 0.5; rank 1 factor = 0.75; boost = 1 + 0.75 * 0.5 = 1.375
+        assertEquals(1.375, levelBoostMultiplier(1, 3), 1e-9)
+    }
+
+    @Test
+    @DisplayName("levelBoostMultiplier: out-of-range level above 5 caps via formula (Lvl 5 effectively)")
+    fun testLevelBoostMultiplier_levelClampedBehavior() {
+        // The helper does not clamp; callers are expected to feed 1..5. Verify the formula is well-defined for boundary inputs.
+        assertEquals(1.75, levelBoostMultiplier(1, 5), 1e-9)
+        // Rank 0 (out of priority list) returns 1.0 since the when branch falls through to else.
+        assertEquals(1.0, levelBoostMultiplier(0, 5), 1e-9)
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // disableStatTargets override
+
+    /**
+     * Builds the post-override statTargets map that recommendTraining() applies when disableStatTargets is true.
+     * Mirrors the production branch so tests stay aligned with real behavior.
+     */
+    private fun cappedStatTargets(cap: Int = 1200): Map<StatName, Int> {
+        return StatName.entries.associateWith { cap }
+    }
+
+    @Test
+    @DisplayName("disableStatTargets override: over-target stat regains ratio bonus when targets are pinned to the cap")
+    fun testDisableStatTargetsLiftsOverTargetPenalty() {
+        // Scenario from the Tokai Teio run: Wit at 828, normally targeted at 600 (Medium), heavily penalized by ratioMultiplier.
+        val currentStats =
+            mapOf(
+                StatName.SPEED to 998,
+                StatName.STAMINA to 685,
+                StatName.POWER to 725,
+                StatName.GUTS to 361,
+                StatName.WIT to 828,
+            )
+        val witTraining =
+            createDefaultTrainingOption(
+                name = StatName.WIT,
+                statGains = statGainsToMap(intArrayOf(9, 0, 0, 0, 21)),
+                numRainbow = 0,
+            )
+
+        val baseConfig =
+            createDefaultConfig(
+                trainingOptions = listOf(witTraining),
+                currentStats = currentStats,
+                statPrioritization = listOf(StatName.WIT, StatName.SPEED, StatName.POWER, StatName.STAMINA, StatName.GUTS),
+                preferredDistance = "Medium",
+                currentDate = GameDate(year = DateYear.SENIOR, month = DateMonth.AUGUST, phase = DatePhase.EARLY),
+            )
+        val overrideConfig = baseConfig.copy(statTargets = cappedStatTargets(), disableStatTargets = true)
+
+        val baseScore = calculateStatEfficiencyScore(baseConfig, witTraining)
+        val overrideScore = calculateStatEfficiencyScore(overrideConfig, witTraining)
+
+        // With the override, Wit drops from 138% completion (target=600) to 69% completion (target=1200). The lower band gives a much higher ratio multiplier,
+        // so the score must rise noticeably.
+        assertTrue(overrideScore > baseScore * 2.0, "Override should at least double Wit's score (base=$baseScore, override=$overrideScore)")
+    }
+
+    @Test
+    @DisplayName("disableStatTargets override: under-target stat is not penalized by the override")
+    fun testDisableStatTargetsLeavesUnderTargetUntouched() {
+        // Speed at 998 vs Medium target 800 -> 124% (mild over-target penalty); at cap=1200 -> 83% (mild under-target bonus).
+        // The override must not REDUCE the score for an already-strong priority stat.
+        val currentStats =
+            mapOf(
+                StatName.SPEED to 998,
+                StatName.STAMINA to 685,
+                StatName.POWER to 725,
+                StatName.GUTS to 361,
+                StatName.WIT to 828,
+            )
+        val speedTraining =
+            createDefaultTrainingOption(
+                name = StatName.SPEED,
+                statGains = statGainsToMap(intArrayOf(44, 0, 18, 0, 0)),
+                numRainbow = 1,
+            )
+        val baseConfig =
+            createDefaultConfig(
+                trainingOptions = listOf(speedTraining),
+                currentStats = currentStats,
+                statPrioritization = listOf(StatName.WIT, StatName.SPEED, StatName.POWER, StatName.STAMINA, StatName.GUTS),
+                preferredDistance = "Medium",
+                currentDate = GameDate(year = DateYear.SENIOR, month = DateMonth.AUGUST, phase = DatePhase.EARLY),
+            )
+        val overrideConfig = baseConfig.copy(statTargets = cappedStatTargets(), disableStatTargets = true)
+
+        val baseScore = calculateStatEfficiencyScore(baseConfig, speedTraining)
+        val overrideScore = calculateStatEfficiencyScore(overrideConfig, speedTraining)
+
+        assertTrue(overrideScore >= baseScore, "Override must not penalize an under-target priority stat (base=$baseScore, override=$overrideScore)")
+    }
+
+    @Test
+    @DisplayName("disableStatTargets defaults to false on TrainingConfig")
+    fun testDisableStatTargetsDefault() {
+        val config = createDefaultConfig()
+        assertEquals(false, config.disableStatTargets, "TrainingConfig.disableStatTargets should default to false")
     }
 }

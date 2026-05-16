@@ -126,6 +126,8 @@ export interface Settings {
         riskyTrainingMaxFailureChance: number
         trainWitDuringFinale: boolean
         enablePrioritizeSkillHints: boolean
+        enableTrainingLevelWeighting: boolean
+        disableStatTargets: boolean
         enableTrainingAnalysisValidation: boolean
         enableYoloStatDetection: boolean
         classicMilestonePercent: number
@@ -383,6 +385,8 @@ export const defaultSettings: Settings = {
         riskyTrainingMaxFailureChance: 30,
         trainWitDuringFinale: false,
         enablePrioritizeSkillHints: false,
+        enableTrainingLevelWeighting: true,
+        disableStatTargets: false,
         enableTrainingAnalysisValidation: false,
         enableYoloStatDetection: false,
         classicMilestonePercent: 33,
