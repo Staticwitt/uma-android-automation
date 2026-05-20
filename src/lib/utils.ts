@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx"
+import * as Clipboard from "expo-clipboard"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -19,4 +20,12 @@ export function shallowArrayEqual<T>(a: readonly T[] | undefined | null, b: read
         if (a[i] !== b[i]) return false
     }
     return true
+}
+
+/**
+ * Copy text to the clipboard.
+ * @param text The text to copy.
+ */
+export async function copyToClipboard(text: string): Promise<void> {
+    await Clipboard.setStringAsync(text)
 }
