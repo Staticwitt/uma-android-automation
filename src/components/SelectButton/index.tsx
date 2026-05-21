@@ -4,7 +4,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { Option, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, NativeSelectScrollView } from "../ui/select"
 import { Separator } from "../ui/separator"
 import CustomButton from "../CustomButton"
-import { Ionicons } from "@expo/vector-icons"
+import Ionicons from "@react-native-vector-icons/ionicons"
 import * as SelectPrimitive from "@rn-primitives/select"
 
 /**

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect } from "react"
 import { View, Text, StyleSheet, Pressable, ViewStyle, TextInput, Animated, Keyboard, ScrollView } from "react-native"
 import { useNavigation, DrawerActions } from "@react-navigation/native"
-import { Ionicons } from "@expo/vector-icons"
+import Ionicons from "@react-native-vector-icons/ionicons"
 import { useTheme } from "../../context/ThemeContext"
 import { useSearchRegistry } from "../../context/SearchRegistryContext"
 import { Portal } from "@rn-primitives/portal"
