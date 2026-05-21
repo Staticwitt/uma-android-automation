@@ -1079,6 +1079,13 @@ class Trackblazer(game: Game) : Campaign(game) {
                     "off"
                 },
             )
+            .add("Energy Item Reserve", energyItemReserveCount)
+            .add("Cupcake Reserve", cupcakeReserveCount)
+            .add("Master Hammer Finale Reserve", masterHammerFinaleReserve)
+            .add("Artisan Hammer Min Stock G3", artisanMinStockForG3)
+            .add("Artisan Hammer Min Stock G2", artisanMinStockForG2)
+            .add("Glow Stick Final-Day Reserve", glowStickFinalReserve)
+            .add("Glow Stick Min Fans", glowStickMinFans)
 
     override fun gatherDecisionExtraState(): Map<String, String> =
         mapOf(
