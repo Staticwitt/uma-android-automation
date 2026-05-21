@@ -209,6 +209,27 @@ class Trackblazer(game: Game) : Campaign(game) {
     /** Threshold for energy level to use energy items. */
     private var energyThresholdToUseEnergyItems: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerEnergyThreshold", 40)
 
+    /** Number of energy items (lowest-tier first across `energyItemConservationOrder`) held back as the emergency-race-recovery reserve. 0 = no reserve. */
+    private val energyItemReserveCount: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerEnergyItemReserve", 1)
+
+    /** Number of cupcakes (Plain preferred over Berry Sweet) held back so Royal Kale Juice's mood penalty can be offset. 0 = no reserve. */
+    private val cupcakeReserveCount: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerCupcakeReserve", 1)
+
+    /** Number of Master Cleat Hammers held back for the Finale days (73-75). 0 = no reserve, spend freely on G1/G2 races. */
+    private val masterHammerFinaleReserve: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerMasterHammerFinaleReserve", 2)
+
+    /** Minimum Artisan Cleat Hammer stock required before the bot will spend one on a G3 race. 0 = always allowed when stock > 0. */
+    private val artisanMinStockForG3: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerArtisanHammerMinStockForG3", 3)
+
+    /** Minimum Artisan Cleat Hammer stock required before the bot will spend one on a G2 race. 0 = always allowed when stock > 0. G1 is always allowed. */
+    private val artisanMinStockForG2: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerArtisanHammerMinStockForG2", 2)
+
+    /** Number of Glow Sticks held back for Day 75 (the Final). 0 = no reserve. */
+    private val glowStickFinalReserve: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerGlowStickFinalReserve", 1)
+
+    /** Minimum projected fan gain on a race before a Glow Stick is used. 0 = use on any race. */
+    private val glowStickMinFans: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerGlowStickMinFans", 20000)
+
     /** Whether the Reset Whistle forces training. */
     private val whistleForcesTraining: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "trackblazerWhistleForcesTraining", true)
 
@@ -1038,11 +1059,21 @@ class Trackblazer(game: Game) : Campaign(game) {
         }
     }
 
-    override fun gatherDecisionInventory(): Map<String, Int> {
-        // Only the items that drive Trackblazer's decision tree this turn. Energy items are aggregated under their displayable name.
-        val keys = listOf("Good-Luck Charm", "Empowering Megaphone", "Motivating Megaphone", "Coaching Megaphone", "Reset Whistle", "Royal Kale Juice", "Berry Sweet Cupcake", "Plain Cupcake")
-        val snapshot = mutableMapOf<String, Int>()
-        keys.forEach { name -> snapshot[name] = currentInventory[name] ?: 0 }
+    override fun gatherDecisionInventory(): Map<String, Map<String, Int>> {
+        // Only the items that drive Trackblazer's decision tree this turn. Grouped by category so the Decision Report renders related items together.
+        val groups =
+            linkedMapOf(
+                "Charms & Whistles" to listOf("Good-Luck Charm", "Reset Whistle"),
+                "Megaphones" to listOf("Empowering Megaphone", "Motivating Megaphone", "Coaching Megaphone"),
+                "Cupcakes & Heals" to listOf("Berry Sweet Cupcake", "Plain Cupcake", "Royal Kale Juice"),
+                "Race Items" to listOf("Artisan Cleat Hammer", "Master Cleat Hammer", "Glow Sticks"),
+            )
+        val snapshot = linkedMapOf<String, Map<String, Int>>()
+        groups.forEach { (group, keys) ->
+            val items = linkedMapOf<String, Int>()
+            keys.forEach { name -> items[name] = currentInventory[name] ?: 0 }
+            snapshot[group] = items
+        }
         return snapshot
     }
 
@@ -1065,7 +1096,14 @@ class Trackblazer(game: Game) : Campaign(game) {
                     "off"
                 },
             )
+            .add("Energy Item Reserve", energyItemReserveCount)
+            .add("Cupcake Reserve", cupcakeReserveCount)
             .add("Race Item Conservation Start Turn", raceItemConservationStartDay)
+            .add("Master Hammer Finale Reserve", masterHammerFinaleReserve)
+            .add("Artisan Hammer Min Stock G3", artisanMinStockForG3)
+            .add("Artisan Hammer Min Stock G2", artisanMinStockForG2)
+            .add("Glow Stick Final-Day Reserve", glowStickFinalReserve)
+            .add("Glow Stick Min Fans", glowStickMinFans)
 
     override fun gatherDecisionExtraState(): Map<String, String> =
         mapOf(
@@ -2076,8 +2114,8 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Conservation thresholds activate at `raceItemConservationStartDay` (Turn 65, right after Senior Year Summer training). Before that, the bot uses race items freely.
         val conservationActive = date.day >= raceItemConservationStartDay
 
-        // Always reserve 2 master hammers for the finale (days 73-75)
-        val spareMasterHammers = (masterHammerCount - 2).coerceAtLeast(0)
+        // Reserve `masterHammerFinaleReserve` master hammers for the finale (days 73-75). Pre-finale days only spend the surplus above that reserve.
+        val spareMasterHammers = (masterHammerCount - masterHammerFinaleReserve).coerceAtLeast(0)
 
         // Master Hammer Logic
         val canUseMasterHammer =
@@ -2087,32 +2125,30 @@ class Trackblazer(game: Game) : Campaign(game) {
                     masterHammerCount > 0 && (grade == RaceGrade.G1 || grade == RaceGrade.G2)
                 }
                 date.day < 73 -> {
-                    // Mid-game conservation: only use spare masters beyond the 2 reserved for the finale.
+                    // Mid-game conservation: only use spare masters beyond the finale reserve.
                     spareMasterHammers > 0 && (grade == RaceGrade.G1 || grade == RaceGrade.G2)
                 }
                 else -> {
-                    // Finale: ration the reserve so we still have enough for remaining finale days.
+                    // Finale: ration the reserve so we still have enough for remaining finale days. Reserve count caps the per-day allowance.
                     val remainingFinaleDays = listOf(73, 74, 75).count { it >= date.day }
-                    val hasEnough = masterHammerCount > remainingFinaleDays.coerceAtMost(masterHammerCount - 1).coerceAtLeast(0)
+                    val effectiveReserve = remainingFinaleDays.coerceAtMost(masterHammerCount - 1).coerceAtLeast(0)
+                    val hasEnough = masterHammerCount > effectiveReserve
                     hasEnough && grade == RaceGrade.G1
                 }
             }
 
-        // Artisan Hammer Logic
-        // Stock floors only apply from Turn `raceItemConservationStartDay` onward; before that, any G1/G2/G3 race burns a hammer when stock > 0.
-        // Mid-game grade priority: G1 > G2 > G3, with G3 only allowed if 3+ artisan hammers.
+        // Artisan Hammer Logic. User-configured per-grade stock floors apply only from Turn `raceItemConservationStartDay` onward:
+        // - G3 requires `artisanMinStockForG3` (default 3) units before the bot will spend one.
+        // - G2 requires `artisanMinStockForG2` (default 2) units before the bot will spend one.
+        // - G1 only requires at least 1 in stock. Threshold of 0 means "always allowed (as long as stock > 0)".
         val canUseArtisanHammer =
-            if (!conservationActive) {
-                artisanHammerCount > 0 && (grade == RaceGrade.G1 || grade == RaceGrade.G2 || grade == RaceGrade.G3)
-            } else if (artisanHammerCount >= 3) {
-                true
-            } else if (artisanHammerCount >= 2) {
-                grade == RaceGrade.G1 || grade == RaceGrade.G2
-            } else if (artisanHammerCount == 1) {
-                grade == RaceGrade.G1
-            } else {
-                false
-            }
+            artisanHammerCount > 0 &&
+                when (grade) {
+                    RaceGrade.G1 -> true
+                    RaceGrade.G2 -> !conservationActive || artisanHammerCount >= maxOf(1, artisanMinStockForG2)
+                    RaceGrade.G3 -> !conservationActive || artisanHammerCount >= maxOf(1, artisanMinStockForG3)
+                    else -> false
+                }
 
         // Master takes priority at the finale since it provides a higher bonus (35% vs 20%).
         val hammerToUse =
@@ -2130,22 +2166,11 @@ class Trackblazer(game: Game) : Campaign(game) {
                 }
             }
 
-        // Glow Sticks Logic
-        // The 20,000 fan floor applies at all times. The "reserve 1 stick" rule only applies from Turn `raceItemConservationStartDay` onward.
-        val useGlowSticks =
-            if (!conservationActive) {
-                // Pre-conservation: spend on any race meeting the 20,000 fan floor, no reserve.
-                fans >= 20000 && glowSticksCount > 0
-            } else if (date.day >= 73) {
-                // Reserve 1 stick for Day 75 (the Final).
-                val reserveForFinals = if (date.day < 75) 1 else 0
-                fans >= 20000 && glowSticksCount > reserveForFinals
-            } else if (fans >= 30000) {
-                // Use the last stick. Shops refresh when the Finales start so there is a chance for another Glow Stick to buy.
-                glowSticksCount > 0
-            } else {
-                fans >= 20000 && glowSticksCount > 1
-            }
+        // Glow Sticks Logic. User-configured controls:
+        // - `glowStickFinalReserve` holds N sticks back for Day 75 (the Final). Pre-Day-75 races only spend the surplus. Only honored from Turn `raceItemConservationStartDay` onward.
+        // - `glowStickMinFans` is the per-race fan floor. Applies at all times (pre-conservation, mid-game, and finale).
+        val effectiveReserve = if (conservationActive && date.day < 75) glowStickFinalReserve else 0
+        val useGlowSticks = fans >= glowStickMinFans && glowSticksCount > effectiveReserve
 
         if (hammerToUse != null || useGlowSticks) {
             MessageLog.i(TAG, "[TRACKBLAZER] Suitable race items found in inventory (Hammer: $hammerToUse, Glow Sticks: $useGlowSticks). Opening Training Items dialog.")
@@ -2514,14 +2539,12 @@ class Trackblazer(game: Game) : Campaign(game) {
 
         // Energy Items Check.
         if (!charmBeingUsedThisTurn && passStartEnergy <= energyThresholdToUseEnergyItems && shopList.energyItemNames.contains(itemName)) {
-            // Conservation: always keep the last unit of the lowest-level energy item for emergency race recovery.
-            if (!bForceUseReservedItem) {
-                val conserveItem = energyItemConservationOrder.firstOrNull { (nextInventory[it] ?: 0) > 0 }
-                if (conserveItem == itemName && (nextInventory[itemName] ?: 0) <= 1) {
-                    MessageLog.i(TAG, "[TRACKBLAZER] Conserving last $itemName for emergency race recovery.")
-                    decisionTracer.recordItemDecision(itemName, DecisionTracer.ItemVerdict.CONSERVED, "Last unit reserved for emergency race recovery")
-                    return null
-                }
+            // Conservation: hold back up to `energyItemReserveCount` units across the conservation order (lowest-tier first) for emergency race recovery.
+            val reservedHere = reservedEnergyUnitsFor(itemName, nextInventory)
+            if (reservedHere > 0 && (nextInventory[itemName] ?: 0) <= reservedHere) {
+                MessageLog.i(TAG, "[TRACKBLAZER] Conserving $itemName for emergency race recovery (reserve floor: $energyItemReserveCount).")
+                decisionTracer.recordItemDecision(itemName, DecisionTracer.ItemVerdict.CONSERVED, "Within emergency reserve floor of $energyItemReserveCount")
+                return null
             }
 
             if (isBestEnergyItemToUse(trainee, itemName, nextInventory, remainingItemsOfInterest)) {
@@ -2564,17 +2587,20 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Mood Items Check.
         val shouldUseMoodItem = trainee.mood <= Mood.NORMAL && trainee.energy < 70
         if (shouldUseMoodItem && (itemName == "Berry Sweet Cupcake" || itemName == "Plain Cupcake")) {
-            // Conservation: always keep at least 1 cupcake in case Royal Kale Juice is purchased later.
-            // Prefer conserving Plain Cupcake (+1 mood) since Kale Juice is -1 mood and we can avoid waste from Berry Sweet (+2).
-            val plainCount = nextInventory["Plain Cupcake"] ?: 0
-            val berryCount = nextInventory["Berry Sweet Cupcake"] ?: 0
-            val shouldConserve =
-                (itemName == "Plain Cupcake" && plainCount <= 1) ||
-                    (itemName == "Berry Sweet Cupcake" && berryCount <= 1 && plainCount == 0)
-            if (shouldConserve) {
-                MessageLog.i(TAG, "[TRACKBLAZER] Conserving last $itemName for potential Royal Kale Juice usage.")
-                decisionTracer.recordItemDecision(itemName, DecisionTracer.ItemVerdict.CONSERVED, "Last unit reserved for potential Royal Kale Juice synergy")
-                return null
+            // Conservation: hold back `cupcakeReserveCount` cupcakes (Plain preferred) so Royal Kale Juice's -1 mood penalty can be offset.
+            // Plain (+1 mood) is preferred for the reserve because Berry Sweet (+2 mood) would overshoot when paired with Kale Juice.
+            if (cupcakeReserveCount > 0) {
+                val plainCount = nextInventory["Plain Cupcake"] ?: 0
+                val berryCount = nextInventory["Berry Sweet Cupcake"] ?: 0
+                val totalCupcakes = plainCount + berryCount
+                val shouldConserve =
+                    (itemName == "Plain Cupcake" && plainCount <= cupcakeReserveCount) ||
+                        (itemName == "Berry Sweet Cupcake" && totalCupcakes <= cupcakeReserveCount && plainCount == 0)
+                if (shouldConserve) {
+                    MessageLog.i(TAG, "[TRACKBLAZER] Conserving $itemName for potential Royal Kale Juice usage (reserve floor: $cupcakeReserveCount).")
+                    decisionTracer.recordItemDecision(itemName, DecisionTracer.ItemVerdict.CONSERVED, "Within Kale Juice synergy reserve of $cupcakeReserveCount")
+                    return null
+                }
             }
 
             // Very simple inline mood: use the first one seen if energy is low.
@@ -2644,6 +2670,27 @@ class Trackblazer(game: Game) : Campaign(game) {
     }
 
     /**
+     * Returns how many units of `itemName` are currently being held back as part of the energy reserve floor.
+     * Reserves are allocated across `energyItemConservationOrder` lowest-tier-first up to `energyItemReserveCount` total units.
+     *
+     * @param itemName The energy item name to inspect.
+     * @param inventory The inventory snapshot to evaluate against.
+     * @return The number of units of `itemName` that are reserved (0 if `itemName` is not in the order, the reserve is disabled, or the higher-priority tiers already absorbed the full budget).
+     */
+    private fun reservedEnergyUnitsFor(itemName: String, inventory: Map<String, Int>): Int {
+        if (bForceUseReservedItem || energyItemReserveCount <= 0) return 0
+        var remaining = energyItemReserveCount
+        for (name in energyItemConservationOrder) {
+            if (remaining <= 0) break
+            val count = inventory[name] ?: 0
+            val reservedHere = minOf(count, remaining)
+            if (name == itemName) return reservedHere
+            remaining -= reservedHere
+        }
+        return 0
+    }
+
+    /**
      * Returns the energy item name currently being conserved as the last-resort emergency-race-recovery stash.
      *
      * Mirrors the conservation logic inside `isBestEnergyItemToUse` so the dialog-open gate predicts the same outcome the dialog scan would reach.
@@ -2652,7 +2699,7 @@ class Trackblazer(game: Game) : Campaign(game) {
      * @return The conserved item name, or `null` if conservation is bypassed or no conservable item is in inventory.
      */
     private fun getConservedEnergyItem(inventory: Map<String, Int>): String? {
-        if (bForceUseReservedItem) return null
+        if (bForceUseReservedItem || energyItemReserveCount <= 0) return null
         return energyItemConservationOrder.firstOrNull { (inventory[it] ?: 0) > 0 }
     }
 
@@ -2865,23 +2912,17 @@ class Trackblazer(game: Game) : Campaign(game) {
         }
 
         // Collect all available energy items from this scan pass.
-        // Always reserve one unit of the lowest-tier item for emergency race recovery, unless force-override is active.
+        // Subtract any units that fall inside the user-configured emergency reserve (lowest-tier first across `energyItemConservationOrder`).
         val availableEnergyItems = mutableListOf<Int>()
-        val conserveItem = if (!bForceUseReservedItem) energyItemConservationOrder.firstOrNull { (nextInventory[it] ?: 0) > 0 } else null
         remainingItemsOfInterest.forEach { name ->
             val gain = energyGains[name]
             if (gain != null) {
                 // If this is Kale Juice, only include it if it's usable.
                 if (name == "Royal Kale Juice" && !isKaleJuiceUsable) return@forEach
 
-                var count = (nextInventory[name] ?: 0)
-
-                // Exclude one unit of the conserved item from the greedy pool.
-                if (name == conserveItem && count > 0) {
-                    count--
-                }
-
-                repeat(count) { availableEnergyItems.add(gain) }
+                val rawCount = nextInventory[name] ?: 0
+                val available = (rawCount - reservedEnergyUnitsFor(name, nextInventory)).coerceAtLeast(0)
+                repeat(available) { availableEnergyItems.add(gain) }
             }
         }
 

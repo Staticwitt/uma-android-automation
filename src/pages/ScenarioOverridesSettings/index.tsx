@@ -136,6 +136,28 @@ const ScenarioOverridesSettings = () => {
                     justifyContent: "space-between",
                     alignItems: "center",
                 },
+                conservationSectionHeader: {
+                    fontSize: 18,
+                    fontWeight: "600",
+                    color: colors.foreground,
+                    marginTop: 8,
+                    marginBottom: 4,
+                },
+                conservationSectionIntro: {
+                    fontSize: 13,
+                    color: colors.foreground,
+                    opacity: 0.7,
+                    marginBottom: 12,
+                },
+                conservationCategoryLabel: {
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: colors.foreground,
+                    opacity: 0.65,
+                    letterSpacing: 0.8,
+                    marginTop: 16,
+                    marginBottom: 8,
+                },
             }),
         [colors]
     )
@@ -524,6 +546,149 @@ const ScenarioOverridesSettings = () => {
                                                             </ScrollView>
                                                         </View>
                                                     </View>
+                                                </View>
+
+                                                <Divider style={{ marginVertical: 16 }} />
+
+                                                <Text style={styles.conservationSectionHeader}>Item Conservation</Text>
+                                                <Text style={styles.conservationSectionIntro}>
+                                                    Controls how aggressively the bot saves items for high-value turns. Set any threshold to 0 to disable that conservation rule and use items freely.
+                                                </Text>
+
+                                                <Text style={styles.conservationCategoryLabel}>ENERGY</Text>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-energy-item-reserve"
+                                                        value={scenarioOverrides.trackblazerEnergyItemReserve}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerEnergyItemReserve}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerEnergyItemReserve", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerEnergyItemReserve", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Energy Item Emergency Reserve"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Number of energy items (lowest-tier first) to keep reserved for emergency race recovery when energy hits 1% or below with 3+ consecutive races."
+                                                    />
+                                                </View>
+
+                                                <Text style={styles.conservationCategoryLabel}>MOOD</Text>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-cupcake-reserve"
+                                                        value={scenarioOverrides.trackblazerCupcakeReserve}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerCupcakeReserve}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerCupcakeReserve", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerCupcakeReserve", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Cupcake Reserve for Kale Juice Synergy"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Number of cupcakes (Plain preferred) to keep so the mood penalty from Royal Kale Juice can be offset."
+                                                    />
+                                                </View>
+
+                                                <Text style={styles.conservationCategoryLabel}>RACE ITEMS</Text>
+                                                <Text style={styles.conservationSectionIntro}>
+                                                    Reserves and stock floors below take effect starting Turn 65 (right after Senior Year Summer training). Before Turn 65, the bot uses Hammers freely
+                                                    on every race it takes. The Glow Stick Min Fans floor is the only race-item threshold that applies before Turn 65.
+                                                </Text>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-master-hammer-finale-reserve"
+                                                        value={scenarioOverrides.trackblazerMasterHammerFinaleReserve}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerMasterHammerFinaleReserve}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerMasterHammerFinaleReserve", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerMasterHammerFinaleReserve", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Master Cleat Hammer Finale Reserve"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Master Cleat Hammers held back for the Finale days (73-75). Pre-finale days only spend the surplus above this reserve, and only on G1/G2 races."
+                                                    />
+                                                </View>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-artisan-hammer-min-stock-for-g3"
+                                                        value={scenarioOverrides.trackblazerArtisanHammerMinStockForG3}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerArtisanHammerMinStockForG3}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerArtisanHammerMinStockForG3", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerArtisanHammerMinStockForG3", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Artisan Hammer Min Stock for G3"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Minimum Artisan Cleat Hammer inventory before the bot is allowed to spend one on a G3 race."
+                                                    />
+                                                </View>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-artisan-hammer-min-stock-for-g2"
+                                                        value={scenarioOverrides.trackblazerArtisanHammerMinStockForG2}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerArtisanHammerMinStockForG2}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerArtisanHammerMinStockForG2", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerArtisanHammerMinStockForG2", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Artisan Hammer Min Stock for G2"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Minimum Artisan Cleat Hammer inventory before the bot is allowed to spend one on a G2 race. G1 is always allowed."
+                                                    />
+                                                </View>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-glow-stick-final-reserve"
+                                                        value={scenarioOverrides.trackblazerGlowStickFinalReserve}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerGlowStickFinalReserve}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerGlowStickFinalReserve", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerGlowStickFinalReserve", value)}
+                                                        min={0}
+                                                        max={3}
+                                                        step={1}
+                                                        label="Glow Stick Final-Day Reserve"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Glow Sticks held back for Day 75 (the Final). Pre-final-day races only spend sticks above this reserve."
+                                                    />
+                                                </View>
+
+                                                <View style={styles.section}>
+                                                    <CustomSlider
+                                                        searchId="trackblazer-glow-stick-min-fans"
+                                                        value={scenarioOverrides.trackblazerGlowStickMinFans}
+                                                        placeholder={defaultSettings.scenarioOverrides.trackblazerGlowStickMinFans}
+                                                        onValueChange={(value) => updateOverrideSetting("trackblazerGlowStickMinFans", value)}
+                                                        onSlidingComplete={(value) => updateOverrideSetting("trackblazerGlowStickMinFans", value)}
+                                                        min={0}
+                                                        max={30000}
+                                                        step={1000}
+                                                        label="Glow Stick Minimum Fans"
+                                                        labelUnit=""
+                                                        showValue={true}
+                                                        showLabels={true}
+                                                        description="Minimum projected fan gain on a race before the bot uses a Glow Stick on it. Applies on standard and finale days."
+                                                    />
                                                 </View>
                                             </>
                                         ),
