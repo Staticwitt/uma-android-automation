@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react"
-import { View, Text, StyleSheet, Pressable, Modal, TextInput, ScrollView, ViewStyle } from "react-native"
+import { View, Text, StyleSheet, Pressable, TextInput, ScrollView, ViewStyle } from "react-native"
+import { GlassModal } from "../ui/glass-modal"
 import { useTheme } from "../../context/ThemeContext"
 import CustomCheckbox from "../CustomCheckbox"
 import CustomButton from "../CustomButton"
@@ -233,12 +234,6 @@ const MultiSelector: React.FC<MultiSelectorProps> = ({
                     opacity: 0.5,
                     fontStyle: "italic",
                 },
-                modalOverlay: {
-                    flex: 1,
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    justifyContent: "center",
-                    alignItems: "center",
-                },
                 modalContent: {
                     backgroundColor: colors.surface,
                     borderRadius: 16,
@@ -339,11 +334,9 @@ const MultiSelector: React.FC<MultiSelectorProps> = ({
             </View>
 
             {/* Modal for individual selection */}
-            <Modal animationType="slide" transparent={true} visible={modalVisible && !selectAll} onRequestClose={() => setModalVisible(false)}>
-                <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-                    <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-                        {/* Modal Header */}
-                        <View style={styles.modalHeader}>
+            <GlassModal visible={modalVisible && !selectAll} onRequestClose={() => setModalVisible(false)} contentStyle={styles.modalContent}>
+                {/* Modal Header */}
+                <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>{title}</Text>
                             <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)} android_ripple={{ color: colors.ripple, foreground: true }}>
                                 <X size={24} color={colors.text} />
@@ -395,9 +388,7 @@ const MultiSelector: React.FC<MultiSelectorProps> = ({
                                 Select All
                             </CustomButton>
                         </View>
-                    </Pressable>
-                </Pressable>
-            </Modal>
+            </GlassModal>
         </View>
     )
 }
