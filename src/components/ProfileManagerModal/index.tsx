@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react"
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal as RNModal } from "react-native"
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../CustomButton"
+import { GlassModal } from "../ui/glass-modal"
 import { Input } from "../ui/input"
 import { useProfileManager } from "../../hooks/useProfileManager"
 import { Settings } from "../../context/BotStateContext"
@@ -121,12 +122,6 @@ const ProfileManagerModal: React.FC<ProfileManagerModalProps> = ({
     const styles = useMemo(
         () =>
             StyleSheet.create({
-                modal: {
-                    flex: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    backgroundColor: "rgba(70, 70, 70, 0.5)",
-                },
                 /**
                  * The main content area of the modal.
                  * Using maxHeight: "80%" ensures it stays on screen on all devices.
@@ -388,10 +383,8 @@ const ProfileManagerModal: React.FC<ProfileManagerModalProps> = ({
 
     return (
         <>
-            <RNModal visible={visible && !showDeleteDialog} transparent={true} animationType="fade" onRequestClose={onClose}>
-                <Pressable style={styles.modal} onPress={onClose}>
-                    <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
-                        <View style={styles.header}>
+            <GlassModal visible={visible && !showDeleteDialog} onRequestClose={onClose} contentStyle={styles.modalContent}>
+                <View style={styles.header}>
                             <Text style={styles.title}>Manage Profiles</Text>
                             <Pressable style={styles.closeButton} onPress={onClose} android_ripple={{ color: colors.ripple, foreground: true }}>
                                 <X size={24} color={colors.text} />
@@ -502,33 +495,27 @@ const ProfileManagerModal: React.FC<ProfileManagerModalProps> = ({
                                 />
                             )}
                         </ScrollView>
-                    </Pressable>
-                </Pressable>
-            </RNModal>
+            </GlassModal>
 
             {/* Delete dialog */}
-            <RNModal visible={showDeleteDialog} transparent={true} animationType="fade" onRequestClose={handleDeleteCancel} statusBarTranslucent={true}>
-                <View style={[styles.modal, { zIndex: 10000 }]}>
-                    <View style={[styles.modalContent, { maxWidth: "85%" }]}>
-                        <View style={styles.header}>
-                            <Text style={styles.title}>Delete Profile</Text>
-                            {/* Close button */}
-                            <Pressable style={styles.closeButton} onPress={handleDeleteCancel} android_ripple={{ color: colors.ripple, foreground: true }}>
-                                <X size={24} color={colors.text} />
-                            </Pressable>
-                        </View>
-                        <Text style={{ color: colors.text, marginBottom: 20 }}>Are you sure you want to delete this profile? This action cannot be undone.</Text>
-                        <View style={styles.buttonRow}>
-                            <CustomButton onPress={handleDeleteCancel} variant="outline">
-                                Cancel
-                            </CustomButton>
-                            <CustomButton onPress={handleDeleteConfirm} variant="destructive">
-                                Delete
-                            </CustomButton>
-                        </View>
-                    </View>
+            <GlassModal visible={showDeleteDialog} onRequestClose={handleDeleteCancel} contentStyle={[styles.modalContent, { maxWidth: "85%" }]} dismissOnBackdropPress={false}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Delete Profile</Text>
+                    {/* Close button */}
+                    <Pressable style={styles.closeButton} onPress={handleDeleteCancel} android_ripple={{ color: colors.ripple, foreground: true }}>
+                        <X size={24} color={colors.text} />
+                    </Pressable>
                 </View>
-            </RNModal>
+                <Text style={{ color: colors.text, marginBottom: 20 }}>Are you sure you want to delete this profile? This action cannot be undone.</Text>
+                <View style={styles.buttonRow}>
+                    <CustomButton onPress={handleDeleteCancel} variant="outline">
+                        Cancel
+                    </CustomButton>
+                    <CustomButton onPress={handleDeleteConfirm} variant="destructive">
+                        Delete
+                    </CustomButton>
+                </View>
+            </GlassModal>
         </>
     )
 }
