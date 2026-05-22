@@ -7,9 +7,7 @@ import { TrainingContext, GeneralMiscContext, BotMetaContext, defaultSettings, S
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
 import CustomCheckbox from "../../components/CustomCheckbox"
-import CustomTitle from "../../components/CustomTitle"
 import DraggablePriorityList from "../../components/DraggablePriorityList"
-import CustomAccordion from "../../components/CustomAccordion"
 import CustomSelect from "../../components/CustomSelect"
 import ProfileSelector from "../../components/ProfileSelector"
 import { useSettings } from "../../context/SettingsContext"
@@ -22,6 +20,9 @@ import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { shallowArrayEqual } from "../../lib/utils"
 import WarningContainer from "../../components/WarningContainer"
+import { Section } from "../../components/ui/section"
+import { TYPE } from "../../lib/type"
+import { SPACING } from "../../lib/spacing"
 
 /**
  * The Training Settings page.
@@ -771,21 +772,21 @@ const TrainingSettings = () => {
 
                                 {/* Stat Target Settings */}
                                 <View style={[styles.section, disableStatTargets && { opacity: 0.5, pointerEvents: "none" }]}>
-                                    <CustomTitle
+                                    <SearchableItem
+                                        id="stat-targets-by-distance"
                                         title="Stat Targets by Distance"
                                         description="Set target values for each stat based on race distance. These stat targets are derived from past Champion Meetings. The bot will prioritize training stats that are below these targets."
-                                        searchId="stat-targets-by-distance"
-                                    />
+                                    >
+                                        <Text style={[TYPE.body, { color: colors.text, marginBottom: SPACING.xs }]}>Stat Targets by Distance</Text>
+                                        <Text style={[TYPE.caption, { color: colors.textMuted, marginBottom: SPACING.md }]}>
+                                            Set target values for each stat based on race distance. These stat targets are derived from past Champion Meetings. The bot will prioritize training stats
+                                            that are below these targets.
+                                        </Text>
+                                    </SearchableItem>
 
-                                    {/* Distance Stat Targets Accordion */}
-                                    <CustomAccordion
-                                        type="single"
-                                        sections={[
-                                            {
-                                                value: "sprint",
-                                                title: "Sprint Distance",
-                                                children: (
-                                                    <>
+                                    {/* Distance Stat Targets - one collapsible Section per distance. */}
+                                    <Section label="Sprint Distance" collapsible defaultOpen={false}>
+                                        <View style={{ padding: SPACING.md }}>
                                                         <CustomSlider
                                                             value={trainingStatTargetSettings.trainingSprintStatTarget_speedStatTarget}
                                                             placeholder={defaultSettings.trainingStatTarget.trainingSprintStatTarget_speedStatTarget}
@@ -846,14 +847,11 @@ const TrainingSettings = () => {
                                                             showValue={true}
                                                             showLabels={true}
                                                         />
-                                                    </>
-                                                ),
-                                            },
-                                            {
-                                                value: "mile",
-                                                title: "Mile Distance",
-                                                children: (
-                                                    <>
+                                                        </View>
+                                                    </Section>
+
+                                                    <Section label="Mile Distance" collapsible defaultOpen={false}>
+                                                        <View style={{ padding: SPACING.md }}>
                                                         <CustomSlider
                                                             placeholder={defaultSettings.trainingStatTarget.trainingMileStatTarget_speedStatTarget}
                                                             value={trainingStatTargetSettings.trainingMileStatTarget_speedStatTarget}
@@ -914,14 +912,11 @@ const TrainingSettings = () => {
                                                             showValue={true}
                                                             showLabels={true}
                                                         />
-                                                    </>
-                                                ),
-                                            },
-                                            {
-                                                value: "medium",
-                                                title: "Medium Distance",
-                                                children: (
-                                                    <>
+                                                        </View>
+                                                    </Section>
+
+                                                    <Section label="Medium Distance" collapsible defaultOpen={false}>
+                                                        <View style={{ padding: SPACING.md }}>
                                                         <CustomSlider
                                                             placeholder={defaultSettings.trainingStatTarget.trainingMediumStatTarget_speedStatTarget}
                                                             value={trainingStatTargetSettings.trainingMediumStatTarget_speedStatTarget}
@@ -982,14 +977,11 @@ const TrainingSettings = () => {
                                                             showValue={true}
                                                             showLabels={true}
                                                         />
-                                                    </>
-                                                ),
-                                            },
-                                            {
-                                                value: "long",
-                                                title: "Long Distance",
-                                                children: (
-                                                    <>
+                                                        </View>
+                                                    </Section>
+
+                                                    <Section label="Long Distance" collapsible defaultOpen={false}>
+                                                        <View style={{ padding: SPACING.md }}>
                                                         <CustomSlider
                                                             placeholder={defaultSettings.trainingStatTarget.trainingLongStatTarget_speedStatTarget}
                                                             value={trainingStatTargetSettings.trainingLongStatTarget_speedStatTarget}
@@ -1050,26 +1042,26 @@ const TrainingSettings = () => {
                                                             showValue={true}
                                                             showLabels={true}
                                                         />
-                                                    </>
-                                                ),
-                                            },
-                                        ]}
-                                    />
+                                                        </View>
+                                                    </Section>
                                 </View>
 
                                 {/* Training Year Milestone Targets */}
                                 <View style={styles.section}>
-                                    <CustomTitle
+                                    <SearchableItem
+                                        id="training-year-milestone-targets"
                                         title="Training Year Milestone Targets"
-                                        description={
-                                            `Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years.\n\n` +
-                                            `The bot will target a scaled percentage of your stat targets prior to the Senior Year, ` +
-                                            `ramping up to the full stat targets by the Finale. For example, with milestone targets of 33% / 66%, a Speed ` +
-                                            `target of 1200 becomes ~396 in Junior Year and ~792 in Classic Year. This optimizes early-career statlines for better starting race results.\n\n` +
-                                            `Set both sliders to 100% to disable milestone pacing and always target the full statline.`
-                                        }
-                                        searchId="training-year-milestone-targets"
-                                    />
+                                        description="Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years."
+                                    >
+                                        <Text style={[TYPE.body, { color: colors.text, marginBottom: SPACING.xs }]}>Training Year Milestone Targets</Text>
+                                        <Text style={[TYPE.caption, { color: colors.textMuted, marginBottom: SPACING.md }]}>
+                                            Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years.{"\n\n"}
+                                            The bot will target a scaled percentage of your stat targets prior to the Senior Year, ramping up to the full stat targets by the Finale. For example, with
+                                            milestone targets of 33% / 66%, a Speed target of 1200 becomes ~396 in Junior Year and ~792 in Classic Year. This optimizes early-career statlines for
+                                            better starting race results.{"\n\n"}
+                                            Set both sliders to 100% to disable milestone pacing and always target the full statline.
+                                        </Text>
+                                    </SearchableItem>
                                     <SearchableItem
                                         id="classic-milestone-percent"
                                         title="End of Junior Year Milestone"

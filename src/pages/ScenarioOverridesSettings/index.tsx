@@ -7,13 +7,15 @@ import { ScenarioOverridesContext, BotMetaContext, GeneralMiscContext, Settings 
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSlider from "../../components/CustomSlider"
 import CustomCheckbox from "../../components/CustomCheckbox"
-import CustomAccordion from "../../components/CustomAccordion"
 import CustomButton from "../../components/CustomButton"
 import PageHeader from "../../components/PageHeader"
 import { Input } from "../../components/ui/input"
 import { CircleCheckBig, Trash2 } from "lucide-react-native"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import trackblazerIcons from "./icons"
+import { Section } from "../../components/ui/section"
+import { TYPE } from "../../lib/type"
+import { SPACING } from "../../lib/spacing"
 
 /**
  * Maps a settings searchId prefix to the accordion section value it lives under.
@@ -149,15 +151,6 @@ const ScenarioOverridesSettings = () => {
                     opacity: 0.7,
                     marginBottom: 12,
                 },
-                conservationCategoryLabel: {
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: colors.text,
-                    opacity: 0.65,
-                    letterSpacing: 0.8,
-                    marginTop: 16,
-                    marginBottom: 8,
-                },
             }),
         [colors]
     )
@@ -176,15 +169,8 @@ const ScenarioOverridesSettings = () => {
                     <PageHeader title="Scenario Overrides Settings" />
                     <View className="m-1">
                         {showBody && (
-                            <CustomAccordion
-                                type="single"
-                                defaultValue={accordionDefaultValue}
-                                sections={[
-                                    {
-                                        value: "trackblazer",
-                                        title: "Trackblazer Overrides",
-                                        children: (
-                                            <>
+                            <Section label="Trackblazer Overrides" collapsible defaultOpen={accordionDefaultValue.includes("trackblazer")}>
+                                <View style={{ padding: SPACING.md }}>
                                                 <Text style={styles.accordionDescription}>Specific overrides for the Trackblazer scenario.</Text>
 
                                                 <View style={styles.section}>
@@ -498,7 +484,8 @@ const ScenarioOverridesSettings = () => {
                                                         <View style={{ flex: 1 }}>
                                                             <Text style={{ fontSize: 16, color: colors.text }}>Items to Exclude from Shop</Text>
                                                             <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }}>
-                                                                Selected {scenarioOverrides.trackblazerExcludedItems.length} / {Object.keys(trackblazerIcons).length} items
+                                                                Selected <Text style={[TYPE.monoValue, { color: colors.text }]}>{scenarioOverrides.trackblazerExcludedItems.length}</Text> /{" "}
+                                                                <Text style={[TYPE.monoValue, { color: colors.text }]}>{Object.keys(trackblazerIcons).length}</Text> items
                                                             </Text>
                                                         </View>
                                                         <View style={{ flexDirection: "row", gap: 8 }}>
@@ -561,7 +548,7 @@ const ScenarioOverridesSettings = () => {
                                                     Controls how aggressively the bot saves items for high-value turns. Set any threshold to 0 to disable that conservation rule and use items freely.
                                                 </Text>
 
-                                                <Text style={styles.conservationCategoryLabel}>ENERGY</Text>
+                                                <Text style={[TYPE.monoLabel, { color: colors.textMuted, marginTop: SPACING.lg, marginBottom: SPACING.sm }]}>ENERGY</Text>
 
                                                 <View style={styles.section}>
                                                     <CustomSlider
@@ -581,7 +568,7 @@ const ScenarioOverridesSettings = () => {
                                                     />
                                                 </View>
 
-                                                <Text style={styles.conservationCategoryLabel}>MOOD</Text>
+                                                <Text style={[TYPE.monoLabel, { color: colors.textMuted, marginTop: SPACING.lg, marginBottom: SPACING.sm }]}>MOOD</Text>
 
                                                 <View style={styles.section}>
                                                     <CustomSlider
@@ -601,7 +588,7 @@ const ScenarioOverridesSettings = () => {
                                                     />
                                                 </View>
 
-                                                <Text style={styles.conservationCategoryLabel}>RACE ITEMS</Text>
+                                                <Text style={[TYPE.monoLabel, { color: colors.textMuted, marginTop: SPACING.lg, marginBottom: SPACING.sm }]}>RACE ITEMS</Text>
                                                 <Text style={styles.conservationSectionIntro}>
                                                     Reserves and stock floors below take effect starting Turn 65 (right after Senior Year Summer training). Before Turn 65, the bot uses Hammers freely
                                                     on every race it takes. The Glow Stick Min Fans floor is the only race-item threshold that applies before Turn 65.
@@ -696,11 +683,8 @@ const ScenarioOverridesSettings = () => {
                                                         description="Minimum projected fan gain on a race before the bot uses a Glow Stick on it. Applies on standard and finale days."
                                                     />
                                                 </View>
-                                            </>
-                                        ),
-                                    },
-                                ]}
-                            />
+                                </View>
+                            </Section>
                         )}
                     </View>
                 </ScrollView>
