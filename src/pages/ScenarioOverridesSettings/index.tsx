@@ -116,19 +116,19 @@ const ScenarioOverridesSettings = () => {
                     flexDirection: "column",
                     justifyContent: "center",
                     margin: 10,
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.bg,
                 },
                 section: {
                     marginBottom: 8,
                 },
                 accordionDescription: {
                     fontSize: 14,
-                    color: colors.foreground,
+                    color: colors.text,
                     opacity: 0.7,
                     marginBottom: 12,
                 },
                 itemContainer: {
-                    backgroundColor: colors.card,
+                    backgroundColor: colors.surface,
                     padding: 12,
                     borderRadius: 8,
                     marginBottom: 8,
@@ -139,20 +139,20 @@ const ScenarioOverridesSettings = () => {
                 conservationSectionHeader: {
                     fontSize: 18,
                     fontWeight: "600",
-                    color: colors.foreground,
+                    color: colors.text,
                     marginTop: 8,
                     marginBottom: 4,
                 },
                 conservationSectionIntro: {
                     fontSize: 13,
-                    color: colors.foreground,
+                    color: colors.text,
                     opacity: 0.7,
                     marginBottom: 12,
                 },
                 conservationCategoryLabel: {
                     fontSize: 12,
                     fontWeight: "700",
-                    color: colors.foreground,
+                    color: colors.text,
                     opacity: 0.65,
                     letterSpacing: 0.8,
                     marginTop: 16,
@@ -330,8 +330,8 @@ const ScenarioOverridesSettings = () => {
                                                 </View>
 
                                                 <View style={styles.section}>
-                                                    <Text style={{ fontSize: 16, color: colors.foreground, marginBottom: 8 }}>Race Grades to check Shop Afterwards</Text>
-                                                    <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginBottom: 12 }}>
+                                                    <Text style={{ fontSize: 16, color: colors.text, marginBottom: 8 }}>Race Grades to check Shop Afterwards</Text>
+                                                    <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>
                                                         Select which race grades should trigger a shop check after the race in the Trackblazer scenario.
                                                     </Text>
                                                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -346,7 +346,7 @@ const ScenarioOverridesSettings = () => {
                                                                         marginRight: 8,
                                                                         marginBottom: 8,
                                                                         overflow: "hidden",
-                                                                        backgroundColor: selected ? colors.primary : colors.card,
+                                                                        backgroundColor: selected ? colors.brand : colors.surface,
                                                                     }}
                                                                     onPress={() => {
                                                                         const currentGrades = scenarioOverrides.trackblazerShopCheckGrades
@@ -361,7 +361,7 @@ const ScenarioOverridesSettings = () => {
                                                                     }}
                                                                     android_ripple={{ color: selected ? colors.rippleInverse : colors.ripple, foreground: true }}
                                                                 >
-                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.background : colors.foreground }}>{grade}</Text>
+                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.onBrand : colors.text }}>{grade}</Text>
                                                                 </Pressable>
                                                             )
                                                         })}
@@ -369,8 +369,8 @@ const ScenarioOverridesSettings = () => {
                                                 </View>
 
                                                 <View style={styles.section}>
-                                                    <Text style={{ fontSize: 16, color: colors.foreground, marginBottom: 8 }}>Race Grades to use Race Retries on</Text>
-                                                    <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginBottom: 12 }}>
+                                                    <Text style={{ fontSize: 16, color: colors.text, marginBottom: 8 }}>Race Grades to use Race Retries on</Text>
+                                                    <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>
                                                         Select which race grades should allow using a Race Retry in the Trackblazer scenario.
                                                     </Text>
                                                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -385,7 +385,7 @@ const ScenarioOverridesSettings = () => {
                                                                         marginRight: 8,
                                                                         marginBottom: 8,
                                                                         overflow: "hidden",
-                                                                        backgroundColor: selected ? colors.primary : colors.card,
+                                                                        backgroundColor: selected ? colors.brand : colors.surface,
                                                                     }}
                                                                     onPress={() => {
                                                                         const currentGrades = scenarioOverrides.trackblazerRetryRacesBeforeFinalGrades
@@ -400,7 +400,7 @@ const ScenarioOverridesSettings = () => {
                                                                     }}
                                                                     android_ripple={{ color: selected ? colors.rippleInverse : colors.ripple, foreground: true }}
                                                                 >
-                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.background : colors.foreground }}>{grade}</Text>
+                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.onBrand : colors.text }}>{grade}</Text>
                                                                 </Pressable>
                                                             )
                                                         })}
@@ -408,8 +408,8 @@ const ScenarioOverridesSettings = () => {
                                                 </View>
 
                                                 <View style={styles.section}>
-                                                    <Text style={{ fontSize: 16, color: colors.foreground, marginBottom: 8 }}>Preferred Track Distances</Text>
-                                                    <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginBottom: 12 }}>
+                                                    <Text style={{ fontSize: 16, color: colors.text, marginBottom: 8 }}>Preferred Track Distances</Text>
+                                                    <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>
                                                         Select preferred track distances for extra race selection. Matching races will be prioritized. Leave empty for no preference.
                                                     </Text>
                                                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -424,7 +424,7 @@ const ScenarioOverridesSettings = () => {
                                                                         marginRight: 8,
                                                                         marginBottom: 8,
                                                                         overflow: "hidden",
-                                                                        backgroundColor: selected ? colors.primary : colors.card,
+                                                                        backgroundColor: selected ? colors.brand : colors.surface,
                                                                     }}
                                                                     onPress={() => {
                                                                         const current = scenarioOverrides.trackblazerPreferredDistances
@@ -439,7 +439,7 @@ const ScenarioOverridesSettings = () => {
                                                                     }}
                                                                     android_ripple={{ color: selected ? colors.rippleInverse : colors.ripple, foreground: true }}
                                                                 >
-                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.background : colors.foreground }}>{distance}</Text>
+                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.onBrand : colors.text }}>{distance}</Text>
                                                                 </Pressable>
                                                             )
                                                         })}
@@ -447,8 +447,8 @@ const ScenarioOverridesSettings = () => {
                                                 </View>
 
                                                 <View style={styles.section}>
-                                                    <Text style={{ fontSize: 16, color: colors.foreground, marginBottom: 8 }}>Preferred Track Surfaces</Text>
-                                                    <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginBottom: 12 }}>
+                                                    <Text style={{ fontSize: 16, color: colors.text, marginBottom: 8 }}>Preferred Track Surfaces</Text>
+                                                    <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>
                                                         Select preferred track surfaces for extra race selection. Matching races will be prioritized. Leave empty for no preference.
                                                     </Text>
                                                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
@@ -463,7 +463,7 @@ const ScenarioOverridesSettings = () => {
                                                                         marginRight: 8,
                                                                         marginBottom: 8,
                                                                         overflow: "hidden",
-                                                                        backgroundColor: selected ? colors.primary : colors.card,
+                                                                        backgroundColor: selected ? colors.brand : colors.surface,
                                                                     }}
                                                                     onPress={() => {
                                                                         const current = scenarioOverrides.trackblazerPreferredSurfaces
@@ -478,7 +478,7 @@ const ScenarioOverridesSettings = () => {
                                                                     }}
                                                                     android_ripple={{ color: selected ? colors.rippleInverse : colors.ripple, foreground: true }}
                                                                 >
-                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.background : colors.foreground }}>{surface}</Text>
+                                                                    <Text style={{ fontSize: 14, fontWeight: "600", color: selected ? colors.onBrand : colors.text }}>{surface}</Text>
                                                                 </Pressable>
                                                             )
                                                         })}
@@ -490,19 +490,19 @@ const ScenarioOverridesSettings = () => {
                                                 <View style={styles.section}>
                                                     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 12 }}>
                                                         <View style={{ flex: 1 }}>
-                                                            <Text style={{ fontSize: 16, color: colors.foreground }}>Items to Exclude from Shop</Text>
-                                                            <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }}>
+                                                            <Text style={{ fontSize: 16, color: colors.text }}>Items to Exclude from Shop</Text>
+                                                            <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }}>
                                                                 Selected {scenarioOverrides.trackblazerExcludedItems.length} / {Object.keys(trackblazerIcons).length} items
                                                             </Text>
                                                         </View>
                                                         <View style={{ flexDirection: "row", gap: 8 }}>
-                                                            <CustomButton icon={<Trash2 size={16} color={colors.foreground} />} onPress={() => updateOverrideSetting("trackblazerExcludedItems", [])}>
+                                                            <CustomButton icon={<Trash2 size={16} color={colors.text} />} onPress={() => updateOverrideSetting("trackblazerExcludedItems", [])}>
                                                                 Clear
                                                             </CustomButton>
                                                         </View>
                                                     </View>
 
-                                                    <Text style={{ fontSize: 14, color: colors.foreground, opacity: 0.7, marginBottom: 12 }}>
+                                                    <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>
                                                         Select items that the bot will never purchase from the shop in the Trackblazer scenario.
                                                     </Text>
 
@@ -510,12 +510,12 @@ const ScenarioOverridesSettings = () => {
                                                         <Input
                                                             style={{
                                                                 borderWidth: 1,
-                                                                borderColor: colors.border,
+                                                                borderColor: colors.borderHair,
                                                                 borderRadius: 8,
                                                                 padding: 12,
                                                                 fontSize: 16,
-                                                                color: colors.foreground,
-                                                                backgroundColor: colors.background,
+                                                                color: colors.text,
+                                                                backgroundColor: colors.bg,
                                                                 marginBottom: 12,
                                                             }}
                                                             value={searchQuery}
@@ -534,8 +534,8 @@ const ScenarioOverridesSettings = () => {
                                                                         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
                                                                             <Image source={trackblazerIcons[itemName].icon} style={{ width: 48, height: 48, marginRight: 8 }} />
                                                                             <View style={{ flex: 1 }}>
-                                                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>{itemName}</Text>
-                                                                                <Text style={{ fontSize: 12, color: colors.foreground, opacity: 0.6, marginTop: 2 }}>
+                                                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>{itemName}</Text>
+                                                                                <Text style={{ fontSize: 12, color: colors.text, opacity: 0.6, marginTop: 2 }}>
                                                                                     {trackblazerIcons[itemName].description}
                                                                                 </Text>
                                                                             </View>

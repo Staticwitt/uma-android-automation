@@ -284,7 +284,7 @@ const TrainingSettings = () => {
                     flexDirection: "column",
                     justifyContent: "center",
                     margin: 10,
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.bg,
                 },
                 section: {
                     marginBottom: 24,
@@ -297,12 +297,12 @@ const TrainingSettings = () => {
                 },
                 label: {
                     fontSize: 16,
-                    color: colors.foreground,
+                    color: colors.text,
                     flex: 1,
                 },
                 pressableText: {
                     fontSize: 16,
-                    color: colors.primary,
+                    color: colors.brand,
                     textDecorationLine: "underline",
                 },
                 modal: {
@@ -312,7 +312,7 @@ const TrainingSettings = () => {
                     backgroundColor: "rgba(70, 70, 70, 0.5)",
                 },
                 modalContent: {
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.surface,
                     borderRadius: 12,
                     padding: 20,
                     width: Dimensions.get("window").width * 0.85,
@@ -327,14 +327,14 @@ const TrainingSettings = () => {
                 modalTitle: {
                     fontSize: 20,
                     fontWeight: "bold",
-                    color: colors.foreground,
+                    color: colors.text,
                 },
                 closeButton: {
                     padding: 8,
                 },
                 closeText: {
                     fontSize: 18,
-                    color: colors.primary,
+                    color: colors.brand,
                 },
                 buttonRow: {
                     flexDirection: "row",
@@ -409,7 +409,7 @@ const TrainingSettings = () => {
                         <Text style={styles.label}>{title}</Text>
                         <Text style={styles.pressableText}>{selectedStats.length === 0 ? "None" : selectedStats.join(", ")}</Text>
                     </View>
-                    {description && <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>{description}</Text>}
+                    {description && <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>{description}</Text>}
                 </Pressable>
 
                 <Modal visible={modalVisible} transparent={true} animationType="fade" onRequestClose={() => setModalVisible(false)}>
@@ -752,7 +752,7 @@ const TrainingSettings = () => {
                                             searchDescription="Set the preferred race distance for training targets."
                                         />
                                     </View>
-                                    <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
                                         Set the preferred race distance for training targets. "Auto" will automatically determine based on character aptitudes reading from left to right (S {">"} A
                                         priority).
                                         {"\n\n"}
@@ -1091,7 +1091,7 @@ const TrainingSettings = () => {
                                             showLabels={true}
                                         />
                                     </SearchableItem>
-                                    <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
                                         The bot will aim for this % of your stat targets during Junior Year. Default: 33%.
                                     </Text>
                                 </View>
@@ -1115,7 +1115,7 @@ const TrainingSettings = () => {
                                             showLabels={true}
                                         />
                                     </SearchableItem>
-                                    <Text style={[styles.label, { fontSize: 14, color: colors.foreground, opacity: 0.7, marginTop: 4 }]}>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
                                         The bot will aim for this % of your stat targets during Classic Year. Default: 66%.
                                     </Text>
                                 </View>

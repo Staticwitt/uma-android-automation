@@ -401,7 +401,7 @@ const TrainingEventSettings = () => {
                     flexDirection: "column",
                     justifyContent: "center",
                     margin: 10,
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.bg,
                 },
                 section: {
                     marginBottom: 24,
@@ -412,8 +412,8 @@ const TrainingEventSettings = () => {
                     borderRadius: 8,
                     borderWidth: 1,
                     marginBottom: 10,
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borderHair,
                 },
                 overrideCardHeader: {
                     flexDirection: "row",
@@ -423,13 +423,13 @@ const TrainingEventSettings = () => {
                 },
                 overrideCharacterName: {
                     fontSize: 12,
-                    color: colors.lightlyMuted,
+                    color: colors.textMuted,
                     marginBottom: 4,
                 },
                 overrideEventName: {
                     fontSize: 16,
                     fontWeight: "600",
-                    color: colors.foreground,
+                    color: colors.text,
                 },
                 removeButton: {
                     padding: 4,
@@ -438,16 +438,16 @@ const TrainingEventSettings = () => {
                     marginTop: 8,
                     paddingTop: 8,
                     borderTopWidth: 1,
-                    borderTopColor: colors.border,
+                    borderTopColor: colors.borderHair,
                 },
                 overrideOptionLabel: {
                     fontSize: 12,
-                    color: colors.lightlyMuted,
+                    color: colors.textMuted,
                     marginBottom: 4,
                 },
                 overrideOptionText: {
                     fontSize: 14,
-                    color: colors.foreground,
+                    color: colors.text,
                 },
                 modalOverlay: {
                     flex: 1,
@@ -456,7 +456,7 @@ const TrainingEventSettings = () => {
                     alignItems: "center",
                 },
                 modalContent: {
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.surface,
                     borderRadius: 16,
                     padding: 20,
                     width: Dimensions.get("window").width * 0.9,
@@ -473,7 +473,7 @@ const TrainingEventSettings = () => {
                 modalTitle: {
                     fontSize: 20,
                     fontWeight: "bold",
-                    color: colors.foreground,
+                    color: colors.text,
                 },
                 closeButton: {
                     padding: 8,
@@ -481,9 +481,9 @@ const TrainingEventSettings = () => {
                 searchContainer: {
                     flexDirection: "row",
                     alignItems: "center",
-                    backgroundColor: colors.card,
+                    backgroundColor: colors.surface,
                     borderWidth: 1,
-                    borderColor: colors.border,
+                    borderColor: colors.borderHair,
                     borderRadius: 8,
                     paddingHorizontal: 12,
                     marginBottom: 20,
@@ -491,7 +491,7 @@ const TrainingEventSettings = () => {
                 searchInput: {
                     flex: 1,
                     paddingVertical: 12,
-                    color: colors.foreground,
+                    color: colors.text,
                     fontSize: 12,
                     backgroundColor: "transparent",
                 },
@@ -509,8 +509,8 @@ const TrainingEventSettings = () => {
                     borderRadius: 8,
                     borderWidth: 1,
                     marginBottom: 10,
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borderHair,
                 },
                 eventItemHeader: {
                     flexDirection: "row",
@@ -519,24 +519,24 @@ const TrainingEventSettings = () => {
                 },
                 eventItemCharacterName: {
                     fontSize: 12,
-                    color: colors.lightlyMuted,
+                    color: colors.textMuted,
                     marginBottom: 4,
                 },
                 eventItemEventName: {
                     fontSize: 16,
                     fontWeight: "600",
-                    color: colors.foreground,
+                    color: colors.text,
                     flex: 1,
                 },
                 optionSelectContainer: {
                     marginTop: 12,
                     paddingTop: 12,
                     borderTopWidth: 1,
-                    borderTopColor: colors.border,
+                    borderTopColor: colors.borderHair,
                 },
                 optionSelectLabel: {
                     fontSize: 14,
-                    color: colors.foreground,
+                    color: colors.text,
                     marginBottom: 8,
                     fontWeight: "600",
                 },
@@ -546,22 +546,22 @@ const TrainingEventSettings = () => {
                     borderRadius: 6,
                     marginBottom: 8,
                     borderWidth: 1,
-                    borderColor: colors.border,
+                    borderColor: colors.borderHair,
                 },
                 optionButtonSelected: {
-                    backgroundColor: colors.primary,
-                    borderColor: colors.primary,
+                    backgroundColor: colors.brand,
+                    borderColor: colors.brand,
                 },
                 optionButtonText: {
                     fontSize: 14,
-                    color: colors.foreground,
+                    color: colors.text,
                 },
                 optionButtonTextSelected: {
-                    color: colors.primaryForeground,
+                    color: colors.onBrand,
                 },
                 noResults: {
                     textAlign: "center",
-                    color: colors.foreground,
+                    color: colors.text,
                     opacity: 0.6,
                     padding: 20,
                 },
@@ -641,7 +641,7 @@ const TrainingEventSettings = () => {
 
                         {currentOverrides.length > 0 && (
                             <View style={styles.section}>
-                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Current Overrides ({currentOverrides.length})</Text>
+                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Current Overrides ({currentOverrides.length})</Text>
                                 {currentOverrides.map((override) => {
                                     const event = allEvents.find((e) => e.key === override.key)
                                     return (
@@ -698,7 +698,7 @@ const TrainingEventSettings = () => {
                                     children: (
                                         <View>
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Resolutions (Classic Year)</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>New Year's Resolutions (Classic Year)</Text>
                                                 <CustomSelect
                                                     options={newYearResolutionsOptions}
                                                     value={specialEventOverrides["New Year's Resolutions"]?.selectedOption || "Option 2: Energy +20"}
@@ -709,7 +709,7 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>New Year's Shrine Visit (Senior Year)</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>New Year's Shrine Visit (Senior Year)</Text>
                                                 <CustomSelect
                                                     options={newYearShrineVisitOptions}
                                                     value={specialEventOverrides["New Year's Shrine Visit"]?.selectedOption || "Option 1: Energy +30"}
@@ -727,7 +727,7 @@ const TrainingEventSettings = () => {
                                     children: (
                                         <View>
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Victory!</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Victory!</Text>
                                                 <CustomSelect
                                                     options={victoryOptions}
                                                     value={specialEventOverrides["Victory!"]?.selectedOption || "Option 2: Energy -5 and random stat gain"}
@@ -745,7 +745,7 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Solid Showing</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Solid Showing</Text>
                                                 <CustomSelect
                                                     options={solidShowingOptions}
                                                     value={specialEventOverrides["Solid Showing"]?.selectedOption || "Option 2: Energy -5/-20 and random stat gain"}
@@ -763,7 +763,7 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Defeat</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Defeat</Text>
                                                 <CustomSelect
                                                     options={defeatOptions}
                                                     value={specialEventOverrides["Defeat"]?.selectedOption || "Option 1: Energy -25 and random stat gain"}
@@ -788,7 +788,7 @@ const TrainingEventSettings = () => {
                                     children: (
                                         <View>
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Get Well Soon!</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Get Well Soon!</Text>
                                                 <CustomSelect
                                                     options={getWellSoonOptions}
                                                     value={specialEventOverrides["Get Well Soon!"]?.selectedOption || "Option 2: (Random) Mood -1 / Stat decrease / Get Practice Poor negative status"}
@@ -799,7 +799,7 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Don't Overdo It!</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Don't Overdo It!</Text>
                                                 <CustomSelect
                                                     options={dontOverdoItOptions}
                                                     value={
@@ -819,7 +819,7 @@ const TrainingEventSettings = () => {
                                     children: (
                                         <View>
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Extra Training</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Extra Training</Text>
                                                 <CustomSelect
                                                     options={extraTrainingOptions}
                                                     value={specialEventOverrides["Extra Training"]?.selectedOption || "Option 2: Energy +5"}
@@ -830,8 +830,8 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>Acupuncture (Just an Acupuncturist, No Worries! ☆)</Text>
-                                                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8 }}>Acupuncture (Just an Acupuncturist, No Worries! ☆)</Text>
+                                                <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 12 }}>
                                                     Select your preferred option for the Acupuncture event. Note: Options 1-4 have a 70%/55%/30%/15% chance to fail, while Option 5 will always succeed.
                                                 </Text>
                                                 <CustomSelect
@@ -844,7 +844,7 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>Etsuko's Exhaustive Coverage</Text>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 12 }}>Etsuko's Exhaustive Coverage</Text>
                                                 <CustomSelect
                                                     options={etsukoOptions}
                                                     value={specialEventOverrides["Etsuko's Exhaustive Coverage"]?.selectedOption || "Option 2: Energy Down / Gain skill points"}
@@ -855,8 +855,8 @@ const TrainingEventSettings = () => {
                                             </View>
 
                                             <View style={styles.section}>
-                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>A Team at Last (Unity Cup)</Text>
-                                                <Text style={{ fontSize: 14, color: colors.mutedForeground, marginBottom: 12 }}>
+                                                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8 }}>A Team at Last (Unity Cup)</Text>
+                                                <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 12 }}>
                                                     Select your preferred team name for Unity Cup (must be available via your chosen trainee or supports). The available options depend on which
                                                     characters you have bonded with. "Default" will always select the first option.
                                                 </Text>
@@ -884,22 +884,22 @@ const TrainingEventSettings = () => {
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Select Event Override</Text>
                             <Pressable style={styles.closeButton} onPress={() => setEventOverrideModalVisible(false)} android_ripple={{ color: colors.ripple, foreground: true }}>
-                                <X size={24} color={colors.foreground} />
+                                <X size={24} color={colors.text} />
                             </Pressable>
                         </View>
 
                         <View style={styles.searchContainer}>
-                            <Search size={20} color={colors.foreground} />
+                            <Search size={20} color={colors.text} />
                             <TextInput
                                 style={styles.searchInput}
                                 placeholder="Search by character/support or event name..."
-                                placeholderTextColor={colors.mutedForeground}
+                                placeholderTextColor={colors.textMuted}
                                 value={eventOverrideSearchQuery}
                                 onChangeText={setEventOverrideSearchQuery}
                             />
                             {eventOverrideSearchQuery.length > 0 && (
                                 <Pressable style={styles.clearSearchButton} onPress={() => setEventOverrideSearchQuery("")} android_ripple={{ color: colors.ripple, foreground: true }}>
-                                    <X size={16} color={colors.foreground} />
+                                    <X size={16} color={colors.text} />
                                 </Pressable>
                             )}
                         </View>
@@ -954,7 +954,7 @@ const TrainingEventSettings = () => {
                                     setEventOverrideModalVisible(true)
                                 }}
                             >
-                                <X size={24} color={colors.foreground} />
+                                <X size={24} color={colors.text} />
                             </Pressable>
                         </View>
 
