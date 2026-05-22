@@ -15,6 +15,7 @@ import * as verifier from "../../lib/chat/groundingVerifier"
 import { loadChatTuning, trimToCap, type ChatTuning } from "../../lib/chat/chatSettings"
 import { ACTIVE_MODEL_SETTING, resolveActiveModel } from "../../lib/chat/activeModel"
 import { isEmbedderReady } from "../../lib/chat/embedder"
+import { TYPE } from "../../lib/type"
 
 const HISTORY_CATEGORY = "chat"
 const HISTORY_KEY = "questionHistory"
@@ -272,8 +273,8 @@ const Chat = () => {
                     marginBottom: 12,
                     backgroundColor: colors.surface,
                 },
-                modeLabel: { fontSize: 11, color: colors.textMuted, marginTop: 8, fontStyle: "italic" },
-                sectionLabel: { fontSize: 15, fontWeight: "600", color: colors.text, marginTop: 10, marginBottom: 6 },
+                modeLabel: { ...TYPE.caption, fontSize: 11, color: colors.textMuted, marginTop: 8, fontStyle: "italic" },
+                sectionLabel: { ...TYPE.monoLabel, color: colors.textMuted, marginTop: 10, marginBottom: 6 },
                 resultCard: {
                     borderWidth: 1,
                     borderColor: colors.borderHair,
@@ -282,8 +283,8 @@ const Chat = () => {
                     marginBottom: 8,
                     backgroundColor: colors.surface,
                 },
-                resultHeading: { fontWeight: "600", color: colors.text, marginBottom: 4 },
-                resultMeta: { fontSize: 11, color: colors.textMuted, marginBottom: 6 },
+                resultHeading: { ...TYPE.body, fontWeight: "600", color: colors.text, marginBottom: 4 },
+                resultMeta: { ...TYPE.caption, fontSize: 11, color: colors.textMuted, marginBottom: 6 },
                 codeBlock: {
                     fontFamily: "monospace",
                     fontSize: 12,
@@ -292,10 +293,10 @@ const Chat = () => {
                     borderRadius: 6,
                     padding: 8,
                 },
-                emptyText: { color: colors.textMuted, textAlign: "center", marginTop: 20, paddingHorizontal: 20 },
-                disclaimer: { fontSize: 11, color: colors.textMuted, marginTop: 4, marginBottom: 8, fontStyle: "italic" },
-                modelStatus: { fontSize: 12, color: colors.text },
-                modelStatusInactive: { fontSize: 12, color: colors.textMuted, fontStyle: "italic", marginBottom: 8 },
+                emptyText: { ...TYPE.body, color: colors.textMuted, textAlign: "center", marginTop: 20, paddingHorizontal: 20 },
+                disclaimer: { ...TYPE.caption, fontSize: 11, color: colors.textMuted, marginTop: 4, marginBottom: 8, fontStyle: "italic" },
+                modelStatus: { ...TYPE.caption, color: colors.text },
+                modelStatusInactive: { ...TYPE.caption, color: colors.textMuted, fontStyle: "italic", marginBottom: 8 },
                 modelSelectorRow: { flexDirection: "row" as const, alignItems: "center" as const, gap: 8, marginBottom: 8 },
                 embedderCta: {
                     borderWidth: 1,
@@ -305,12 +306,12 @@ const Chat = () => {
                     marginVertical: 12,
                     backgroundColor: colors.surface,
                 },
-                embedderCtaTitle: { color: colors.text, fontSize: 14, fontWeight: "600" as const, marginBottom: 4 },
-                embedderCtaBody: { color: colors.textMuted, fontSize: 13, lineHeight: 18 },
+                embedderCtaTitle: { ...TYPE.body, color: colors.text, fontWeight: "600" as const, marginBottom: 4 },
+                embedderCtaBody: { ...TYPE.body, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
                 modelSelectorControl: { flex: 1 },
                 historyHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, marginBottom: 6 },
-                historyTitle: { fontSize: 12, fontWeight: "600", color: colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
-                historyClear: { fontSize: 11, color: colors.textMuted, textDecorationLine: "underline" },
+                historyTitle: { ...TYPE.monoLabel, color: colors.textMuted },
+                historyClear: { ...TYPE.caption, fontSize: 11, color: colors.textMuted, textDecorationLine: "underline" },
                 historyChip: {
                     borderWidth: 1,
                     borderColor: colors.borderHair,
@@ -322,9 +323,9 @@ const Chat = () => {
                     backgroundColor: colors.surface,
                     overflow: "hidden",
                 },
-                historyChipText: { color: colors.text, fontSize: 12 },
+                historyChipText: { ...TYPE.caption, color: colors.text },
                 historyChipRow: { flexDirection: "row", flexWrap: "wrap" },
-                streamingNotice: { fontSize: 11, color: colors.textMuted, marginBottom: 4, fontStyle: "italic" },
+                streamingNotice: { ...TYPE.caption, fontSize: 11, color: colors.textMuted, marginBottom: 4, fontStyle: "italic" },
             }),
         [colors]
     )
