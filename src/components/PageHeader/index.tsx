@@ -21,6 +21,8 @@ interface PageHeaderProps {
     centerComponent?: React.ReactNode
     /** Optional right-side component to render (e.g., `ThemeToggle`). */
     rightComponent?: React.ReactNode
+    /** When true, the search icon is rendered on the right side of the header alongside `rightComponent` instead of on the left next to the hamburger + home buttons. Default: false. */
+    searchOnRight?: boolean
     /** Optional additional styles for the header container. */
     style?: ViewStyle
 }
@@ -83,9 +85,10 @@ const HighlightedText = ({ text, query, style, highlightColor }: { text: string;
  * @param leftComponent Optional React node to display on the left side of the header.
  * @param centerComponent Optional React node to display in the center of the header.
  * @param rightComponent Optional React node to display in the right side of the header.
+ * @param searchOnRight When true, the search icon moves to the right side next to `rightComponent`.
  * @param style Optional custom style for the header container.
  */
-const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponent, centerComponent, rightComponent, style }: PageHeaderProps) => {
+const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponent, centerComponent, rightComponent, searchOnRight = false, style }: PageHeaderProps) => {
     const { colors } = useTheme()
     const navigation = useNavigation()
     const route = useRoute()
@@ -336,8 +339,8 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
                         </Pressable>
                     )}
 
-                    {/* Search button */}
-                    {!isSearching && (
+                    {/* Search button (left placement) */}
+                    {!isSearching && !searchOnRight && (
                         <Pressable onPress={handleSearchToggle} style={styles.homeButton} android_ripple={{ color: colors.ripple, foreground: true }}>
                             <Ionicons name="search" size={24} color={colors.text} />
                         </Pressable>
@@ -372,8 +375,17 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
                 {/* Center component */}
                 {!isSearching && centerComponent && <View style={styles.headerCenter}>{centerComponent}</View>}
 
-                {/* Right component */}
-                {!isSearching && rightComponent && <View style={styles.headerRight}>{rightComponent}</View>}
+                {/* Right side: optional search button (when `searchOnRight` is set) followed by the right component. */}
+                {!isSearching && (searchOnRight || rightComponent) && (
+                    <View style={styles.headerRight}>
+                        {searchOnRight && (
+                            <Pressable onPress={handleSearchToggle} style={styles.homeButton} android_ripple={{ color: colors.ripple, foreground: true }}>
+                                <Ionicons name="search" size={24} color={colors.text} />
+                            </Pressable>
+                        )}
+                        {rightComponent}
+                    </View>
+                )}
             </View>
 
             {/* Fading Overlay for Search Results */}

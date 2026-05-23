@@ -14,6 +14,7 @@ import CustomButton from "../../components/CustomButton"
 import PageHeader from "../../components/PageHeader"
 import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
+import { Switch } from "../../components/ui/switch"
 import { Separator } from "../../components/ui/separator"
 import WarningContainer from "../../components/WarningContainer"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
@@ -191,32 +192,39 @@ const Settings = () => {
             <View style={{ marginTop: 16 }}>
                 <Separator style={{ marginVertical: 16 }} />
 
-                <View style={{ marginBottom: SPACING.lg }}>
-                    <Text style={[TYPE.h2, { color: colors.text }]}>Misc Settings</Text>
-                    <Text style={[TYPE.caption, { color: colors.textMuted, marginTop: 2 }]}>General settings for the bot that don't fit into the other categories.</Text>
-                </View>
+                <Section label="RUN BEHAVIOR">
+                    <SearchableItem id="settings-stop-before-finals" title="Stop before Finals" description="Pause to buy skills before the final races">
+                        <Row
+                            title="Stop before Finals"
+                            description="Pause to buy skills before the final races."
+                            right={<Switch checked={general.enableStopBeforeFinals} onCheckedChange={(checked) => updateGeneral({ enableStopBeforeFinals: checked })} />}
+                        />
+                    </SearchableItem>
 
-                <CustomCheckbox
-                    searchId="settings-stop-before-finals"
-                    checked={general.enableStopBeforeFinals}
-                    onCheckedChange={(checked) => {
-                        updateGeneral({ enableStopBeforeFinals: checked })
-                    }}
-                    label="Stop before Finals"
-                    description="Stops the bot on turn 72 so you can purchase skills before the final races."
-                    className="mt-4"
-                />
+                    <SearchableItem id="settings-stop-at-date" title="Stop at Date" description="Stop on one or more specified dates">
+                        <Row
+                            title="Stop at Date"
+                            description="Stop the bot on one or more specified dates. The bot stops at the earliest matching date it reaches."
+                            right={<Switch checked={general.enableStopAtDate} onCheckedChange={(checked) => updateGeneral({ enableStopAtDate: checked })} />}
+                        />
+                    </SearchableItem>
 
-                <CustomCheckbox
-                    searchId="settings-stop-at-date"
-                    checked={general.enableStopAtDate}
-                    onCheckedChange={(checked) => {
-                        updateGeneral({ enableStopAtDate: checked })
-                    }}
-                    label="Stop at Date"
-                    description="Stops the bot on one or more specified dates. The bot will stop at the earliest matching date it reaches."
-                    className="mt-4"
-                />
+                    <SearchableItem id="settings-crane-game-attempt" title="Enable Crane Game Attempt" description="Attempt to complete the crane game instead of stopping">
+                        <Row
+                            title="Enable Crane Game Attempt"
+                            description="When enabled, the bot attempts to complete the crane game. By default, the bot stops when it is detected."
+                            right={<Switch checked={general.enableCraneGameAttempt} onCheckedChange={(checked) => updateGeneral({ enableCraneGameAttempt: checked })} />}
+                        />
+                    </SearchableItem>
+
+                    <SearchableItem id="settings-enable-settings-display" title="Enable Settings Display in Message Log" description="Show current bot configuration in the message log">
+                        <Row
+                            title="Enable Settings Display in Message Log"
+                            description="Shows current bot configuration settings at the top of the message log."
+                            right={<Switch checked={misc.enableSettingsDisplay} onCheckedChange={(checked) => updateMisc({ enableSettingsDisplay: checked })} />}
+                        />
+                    </SearchableItem>
+                </Section>
 
                 {general.enableStopAtDate && (
                     <SearchableItem id="settings-stop-at-date" title="Target Dates" description="Stops the bot on the specified dates." style={{ marginLeft: 16, marginTop: 8 }}>
@@ -418,7 +426,7 @@ const Settings = () => {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ flexGrow: 1 }}
                 >
-                    <PageHeader title="Settings" rightComponent={<ThemeToggle />} />
+                    <PageHeader title="Settings" searchOnRight rightComponent={<ThemeToggle />} />
                     <View className="m-1">
                         {renderNavigationSections()}
                         {showHeavySections && renderMiscSettings()}
