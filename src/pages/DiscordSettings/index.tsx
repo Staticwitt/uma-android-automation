@@ -124,7 +124,7 @@ const DiscordSettings = () => {
         [colors, isDark]
     )
 
-    const steps: WizardStep[] = [
+    const steps: WizardStep[] = useMemo(() => [
         {
             n: 1,
             title: "Create a Discord bot",
@@ -203,7 +203,7 @@ const DiscordSettings = () => {
                 </View>
             ),
         },
-    ]
+    ], [styles, colors, enableDiscordNotifications, discordToken, discordUserID, canTest, isTesting, testResult, handleTestConnection, updateDiscordSetting])
 
     return (
         <View style={styles.root}>
