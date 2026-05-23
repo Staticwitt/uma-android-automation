@@ -186,9 +186,6 @@ const DebugSettings = () => {
                     margin: 10,
                     backgroundColor: colors.bg,
                 },
-                infoBlock: {
-                    marginTop: 12,
-                },
                 infoLabel: {
                     fontWeight: "bold",
                     color: colors.text,
