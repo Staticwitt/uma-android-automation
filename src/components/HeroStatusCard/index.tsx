@@ -18,7 +18,7 @@ export interface HeroStatusCardProps {
     campaign: string
     /** Active profile name (e.g. "Default"). */
     profile: string
-    /** Optional secondary line (e.g. "Last run - 2h ago - 5 races"). */
+    /** Optional secondary line (e.g. "Last run · 2h ago · 5 races"). */
     metaLine?: string
     /** Mascot image source. */
     mascot: ImageSourcePropType
@@ -77,7 +77,7 @@ const HeroStatusCard: React.FC<HeroStatusCardProps> = ({ status, campaign, profi
                 <View style={styles.body}>
                     <Text style={styles.statusPill}>{`● ${STATUS_LABEL[status]}`}</Text>
                     <Text style={styles.campaign}>
-                        {campaign} - {profile}
+                        {campaign} · {profile}
                     </Text>
                     {metaLine ? <Text style={styles.meta}>{metaLine}</Text> : null}
                 </View>
