@@ -35,6 +35,9 @@ const STATUS_LABEL: Record<HeroStatus, string> = {
     error: "Error",
 }
 
+const BULLET = "●" // BLACK CIRCLE
+const SEPARATOR = "·" // MIDDLE DOT
+
 /**
  * Home dashboard hero card: mascot, status pill, campaign + profile, primary Start CTA.
  * @param status Current bot status.
@@ -75,13 +78,13 @@ const HeroStatusCard: React.FC<HeroStatusCardProps> = ({ status, campaign, profi
             <View style={styles.row}>
                 <Image source={mascot} style={styles.mascot} />
                 <View style={styles.body}>
-                    <Text style={styles.statusPill}>{`● ${STATUS_LABEL[status]}`}</Text>
+                    <Text style={styles.statusPill}>{`${BULLET} ${STATUS_LABEL[status]}`}</Text>
                     <Text style={styles.campaign}>
-                        {campaign} · {profile}
+                        {campaign} {SEPARATOR} {profile}
                     </Text>
                     {metaLine ? <Text style={styles.meta}>{metaLine}</Text> : null}
                 </View>
-                <CustomButton variant="primary" size="sm" onPress={onStart} isLoading={false} disabled={startDisabled}>
+                <CustomButton variant="primary" size="sm" onPress={onStart} disabled={startDisabled}>
                     Start
                 </CustomButton>
             </View>
