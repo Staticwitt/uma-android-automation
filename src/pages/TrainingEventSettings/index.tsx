@@ -263,7 +263,7 @@ const TrainingEventSettings = () => {
         return availableEvents.filter((event) => {
             return event.characterOrSupport.toLowerCase().includes(query) || event.eventName.toLowerCase().includes(query)
         })
-    }, [allEvents, eventOverrideSearchQuery, characterEventOverrides, supportEventOverrides])
+    }, [allEvents, eventOverrideSearchQuery, characterEventOverrides, supportEventOverrides, scenarioEventOverrides])
 
     /**
      * Add or update an event override for a specific character or support event.
