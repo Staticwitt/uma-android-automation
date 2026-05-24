@@ -28,8 +28,8 @@ export const GlassModal = ({ visible, onRequestClose, children, contentStyle, di
     return (
         <Modal transparent visible={visible} animationType="fade" onRequestClose={onRequestClose} statusBarTranslucent>
             <Pressable style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.glassBackdrop }} onPress={dismissOnBackdropPress ? onRequestClose : undefined}>
-                <GlassSurface intensity={40} style={{ borderRadius: 16, overflow: "hidden", maxWidth: "90%", maxHeight: "85%" }}>
-                    <Pressable onPress={(e) => e.stopPropagation()} style={contentStyle}>
+                <GlassSurface intensity={40} style={{ borderRadius: 16, overflow: "hidden", width: "90%", maxWidth: 560, maxHeight: "90%", backgroundColor: colors.surface }}>
+                    <Pressable onPress={(e) => e.stopPropagation()} style={[{ width: "100%" }, contentStyle]}>
                         {children}
                     </Pressable>
                 </GlassSurface>
