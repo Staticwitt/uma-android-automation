@@ -1,11 +1,12 @@
 import React, { useMemo, useContext, useEffect, useState, useRef, useCallback } from "react"
-import { View, Text, ScrollView, StyleSheet, Pressable, InteractionManager, LayoutAnimation } from "react-native"
-import { SheetModal } from "../../components/ui/sheet-modal"
+import { View, Text, ScrollView, StyleSheet, Pressable, Dimensions, InteractionManager } from "react-native"
+import { GlassModal } from "../../components/ui/glass-modal"
 import { Snackbar } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
 import { TrainingContext, GeneralMiscContext, BotMetaContext, defaultSettings, Settings } from "../../context/BotStateContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
+import CustomCheckbox from "../../components/CustomCheckbox"
 import DraggablePriorityList from "../../components/DraggablePriorityList"
 import CustomSelect from "../../components/CustomSelect"
 import ProfileSelector from "../../components/ProfileSelector"
@@ -24,10 +25,6 @@ import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
-import { RADII } from "../../lib/radii"
-import { MOTION } from "../../lib/motion"
-import { ROW_PADDING_Y } from "../../lib/density"
-import Ionicons from "@react-native-vector-icons/ionicons"
 
 /**
  * The Training Settings page.
@@ -48,16 +45,6 @@ const TrainingSettings = () => {
     const [eventChoicePrioritizationModalVisible, setEventChoicePrioritizationModalVisible] = useState(false)
     const [summerTrainingPrioritizationModalVisible, setSummerTrainingPrioritizationModalVisible] = useState(false)
     const [sparkStatTargetModalVisible, setSparkStatTargetModalVisible] = useState(false)
-    const [distanceOpen, setDistanceOpen] = useState<{ sprint: boolean; mile: boolean; medium: boolean; long: boolean }>({
-        sprint: false,
-        mile: false,
-        medium: false,
-        long: false,
-    })
-    const toggleDistance = useCallback((key: "sprint" | "mile" | "medium" | "long") => {
-        LayoutAnimation.configureNext(LayoutAnimation.create(MOTION.duration.base, "easeInEaseOut", "opacity"))
-        setDistanceOpen((prev) => ({ ...prev, [key]: !prev[key] }))
-    }, [])
     const [snackbarVisible, setSnackbarVisible] = useState(false)
     const [snackbarMessage, setSnackbarMessage] = useState("")
 
@@ -322,98 +309,36 @@ const TrainingSettings = () => {
                     color: colors.brand,
                     textDecorationLine: "underline",
                 },
-                modalHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-                modalTitleMono: { ...TYPE.monoLabel, color: colors.text, fontSize: 13, letterSpacing: 1.5 },
-                modalCloseChip: {
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    overflow: "hidden",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: colors.surfaceRaised,
-                    borderWidth: 1,
-                    borderColor: colors.borderHair,
+                modalContent: {
+                    backgroundColor: colors.surface,
+                    borderRadius: 12,
+                    padding: 20,
+                    width: Dimensions.get("window").width * 0.85,
+                    maxHeight: Dimensions.get("window").height * 0.7,
                 },
-                modalBodyList: { gap: SPACING.xs },
-                modalCheckRow: {
+                modalHeader: {
                     flexDirection: "row",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: SPACING.sm,
-                    paddingHorizontal: SPACING.sm,
-                    paddingVertical: SPACING.sm,
-                    borderRadius: RADII.md,
-                    backgroundColor: colors.surfaceRaised,
-                    borderWidth: 1,
-                    borderColor: colors.borderHair,
-                    overflow: "hidden",
+                    marginBottom: 20,
                 },
-                modalCheckRowActive: { borderColor: colors.brandBorder, backgroundColor: colors.brandSubtle },
-                modalCheckBox: {
-                    width: 18,
-                    height: 18,
-                    borderRadius: RADII.sm,
-                    borderWidth: 1.5,
-                    borderColor: colors.borderHair,
-                    alignItems: "center",
-                    justifyContent: "center",
+                modalTitle: {
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    color: colors.text,
                 },
-                modalCheckBoxActive: { borderColor: colors.brand, backgroundColor: colors.brand },
-                modalCheckLabel: { ...TYPE.body, color: colors.text, flex: 1 },
-                modalFooterRow: { flexDirection: "row", gap: SPACING.sm },
-                modalFooterBtn: {
-                    flex: 1,
-                    paddingVertical: SPACING.sm,
-                    borderRadius: RADII.md,
-                    borderWidth: 1,
-                    borderColor: colors.borderHair,
-                    alignItems: "center",
-                    overflow: "hidden",
+                closeButton: {
+                    padding: 8,
                 },
-                modalFooterBtnDanger: { borderColor: colors.destructive },
-                modalFooterBtnText: { ...TYPE.body, color: colors.text, fontWeight: "600" as const },
-                modalFooterBtnTextDanger: { color: colors.destructive },
-                selectorRow: {
-                    paddingHorizontal: SPACING.md,
-                    paddingVertical: SPACING.md,
-                    gap: SPACING.sm,
+                closeText: {
+                    fontSize: 18,
+                    color: colors.brand,
                 },
-                selectorHeader: {
+                buttonRow: {
                     flexDirection: "row",
-                    alignItems: "flex-start",
-                    gap: SPACING.sm,
+                    justifyContent: "space-between",
+                    marginTop: 20,
                 },
-                selectorTitle: { ...TYPE.body, color: colors.text, fontWeight: "600" as const },
-                selectorDescription: { ...TYPE.caption, color: colors.textMuted, marginTop: 2 },
-                selectorEmpty: { ...TYPE.caption, color: colors.textMuted, fontStyle: "italic" as const },
-                selectorChips: {
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: 6,
-                },
-                selectorChip: {
-                    backgroundColor: colors.brandSubtle,
-                    borderWidth: 1,
-                    borderColor: colors.brandBorder,
-                    borderRadius: RADII.pill,
-                    paddingHorizontal: SPACING.sm,
-                    paddingVertical: 2,
-                },
-                selectorChipText: { ...TYPE.caption, color: colors.brand, fontWeight: "600" as const },
-                sliderShell: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
-                metaText: { ...TYPE.caption, color: colors.textMuted, paddingHorizontal: SPACING.md, paddingTop: SPACING.xs, paddingBottom: SPACING.md },
-                groupHeader: { paddingHorizontal: SPACING.md, paddingTop: SPACING.md, paddingBottom: SPACING.xs },
-                groupHeaderTitle: { ...TYPE.body, color: colors.text, fontWeight: "600" as const },
-                groupHeaderDescription: { ...TYPE.caption, color: colors.textMuted, marginTop: 2 },
-                distanceRow: {
-                    flexDirection: "row" as const,
-                    alignItems: "center" as const,
-                    paddingVertical: ROW_PADDING_Y,
-                    paddingHorizontal: SPACING.lg,
-                    gap: SPACING.md,
-                },
-                distanceRowTitle: { ...TYPE.body, color: colors.text, fontWeight: "500" as const, flex: 1 },
-                distanceBody: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm },
             }),
         [colors]
     )
@@ -476,72 +401,23 @@ const TrainingSettings = () => {
         id?: string
     ) => {
         const content = (
-            <View>
-                <Pressable style={styles.selectorRow} onPress={() => setModalVisible(true)} android_ripple={{ color: colors.ripple, foreground: true }}>
-                    <View style={styles.selectorHeader}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.selectorTitle}>{title}</Text>
-                            {description ? <Text style={styles.selectorDescription}>{description}</Text> : null}
-                        </View>
-                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            <View style={styles.section}>
+                <Pressable onPress={() => setModalVisible(true)} android_ripple={{ color: colors.ripple, foreground: true }}>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>{title}</Text>
+                        <Text style={styles.pressableText}>{selectedStats.length === 0 ? "None" : selectedStats.join(", ")}</Text>
                     </View>
-                    {selectedStats.length === 0 ? (
-                        <Text style={styles.selectorEmpty}>None</Text>
-                    ) : (
-                        <View style={styles.selectorChips}>
-                            {selectedStats.map((stat) => (
-                                <View key={stat} style={styles.selectorChip}>
-                                    <Text style={styles.selectorChipText}>{stat}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                    {description && <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>{description}</Text>}
                 </Pressable>
 
-                <SheetModal
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                    header={
-                        <View style={styles.modalHeaderRow}>
-                            <Text style={styles.modalTitleMono}>{title.toUpperCase()}</Text>
-                            <Pressable
-                                style={styles.modalCloseChip}
-                                onPress={() => setModalVisible(false)}
-                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                accessibilityLabel="Close"
-                            >
-                                <Ionicons name="close" size={18} color={colors.text} />
-                            </Pressable>
-                        </View>
-                    }
-                    footer={
-                        <View style={styles.modalFooterRow}>
-                            <Pressable
-                                onPress={() => {
-                                    if (mode === "priority") {
-                                        setSelectedStats(defaultSettings.training.statPrioritization)
-                                        setModalVisible(false)
-                                    } else {
-                                        clearAll(setSelectedStats)
-                                    }
-                                }}
-                                style={[styles.modalFooterBtn, styles.modalFooterBtnDanger]}
-                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                accessibilityRole="button"
-                            >
-                                <Text style={[styles.modalFooterBtnText, styles.modalFooterBtnTextDanger]}>Clear All</Text>
-                            </Pressable>
-                            <Pressable
-                                onPress={() => selectAll(setSelectedStats, selectedStats)}
-                                style={styles.modalFooterBtn}
-                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                accessibilityRole="button"
-                            >
-                                <Text style={styles.modalFooterBtnText}>Select All</Text>
-                            </Pressable>
-                        </View>
-                    }
-                >
+                <GlassModal visible={modalVisible} onRequestClose={() => setModalVisible(false)} contentStyle={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>{title}</Text>
+                        <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)} android_ripple={{ color: colors.ripple, foreground: true }}>
+                            <Text style={styles.closeText}>✕</Text>
+                        </Pressable>
+                    </View>
+
                     {mode === "priority" ? (
                         <DraggablePriorityList
                             items={defaultSettings.training.statPrioritization.map((stat) => ({
@@ -551,32 +427,37 @@ const TrainingSettings = () => {
                             selectedItems={selectedStats}
                             onSelectionChange={setSelectedStats}
                             onOrderChange={(orderedItems) => {
+                                // Update the order when items are reordered.
                                 setSelectedStats(orderedItems)
                             }}
                         />
                     ) : (
-                        <View style={styles.modalBodyList}>
-                            {defaultSettings.training.statPrioritization.map((stat) => {
-                                const checked = selectedStats.includes(stat)
-                                return (
-                                    <Pressable
-                                        key={stat}
-                                        onPress={() => toggleStat(stat, selectedStats, setSelectedStats)}
-                                        style={[styles.modalCheckRow, checked && styles.modalCheckRowActive]}
-                                        android_ripple={{ color: colors.ripple, foreground: true }}
-                                        accessibilityRole="checkbox"
-                                        accessibilityState={{ checked }}
-                                    >
-                                        <View style={[styles.modalCheckBox, checked && styles.modalCheckBoxActive]}>
-                                            {checked ? <Ionicons name="checkmark" size={14} color={colors.onBrand} /> : null}
-                                        </View>
-                                        <Text style={styles.modalCheckLabel}>{stat}</Text>
-                                    </Pressable>
-                                )
-                            })}
-                        </View>
+                        defaultSettings.training.statPrioritization.map((stat) => (
+                            <CustomCheckbox key={stat} checked={selectedStats.includes(stat)} onCheckedChange={() => toggleStat(stat, selectedStats, setSelectedStats)} label={stat} className="my-2" />
+                        ))
                     )}
-                </SheetModal>
+
+                    <View style={styles.buttonRow}>
+                        <CustomButton
+                            onPress={() => {
+                                if (mode === "priority") {
+                                    // For prioritization, reset to default and dismiss modal.
+                                    setSelectedStats(defaultSettings.training.statPrioritization)
+                                    setModalVisible(false)
+                                } else {
+                                    // For blacklist, just clear the list.
+                                    clearAll(setSelectedStats)
+                                }
+                            }}
+                            variant="destructive"
+                        >
+                            Clear All
+                        </CustomButton>
+                        <CustomButton onPress={() => selectAll(setSelectedStats, selectedStats)} variant="outline">
+                            Select All
+                        </CustomButton>
+                    </View>
+                </GlassModal>
             </View>
         )
 
@@ -674,23 +555,6 @@ const TrainingSettings = () => {
                                 </Section>
 
                                 <Section label="Behavior">
-                                    <View style={styles.sliderShell}>
-                                        <CustomSlider
-                                            value={maximumFailureChance}
-                                            placeholder={defaultSettings.training.maximumFailureChance}
-                                            onValueChange={(value) => updateTrainingSetting("maximumFailureChance", value)}
-                                            min={5}
-                                            max={95}
-                                            step={5}
-                                            label="Set Maximum Failure Chance"
-                                            labelUnit="%"
-                                            showValue={true}
-                                            showLabels={true}
-                                            description="Set the maximum acceptable failure chance for training sessions. Training with higher failure rates will be avoided."
-                                            searchId="maximum-failure-chance"
-                                        />
-                                    </View>
-
                                     <SearchableItem
                                         id="disable-training-on-maxed-stats"
                                         title="Disable Training on Maxed Stats"
@@ -714,242 +578,224 @@ const TrainingSettings = () => {
                                             right={<Switch checked={enableRiskyTraining} onCheckedChange={(checked) => updateTrainingSetting("enableRiskyTraining", checked)} />}
                                         />
                                     </SearchableItem>
-                                    {enableRiskyTraining && (
-                                        <View style={styles.sliderShell}>
-                                            <CustomSlider
-                                                value={riskyTrainingMinStatGain || defaultSettings.training.riskyTrainingMinStatGain}
-                                                placeholder={defaultSettings.training.riskyTrainingMinStatGain}
-                                                onValueChange={(value) => updateTrainingSetting("riskyTrainingMinStatGain", value)}
-                                                min={20}
-                                                max={100}
-                                                step={5}
-                                                label="Minimum Main Stat Gain Threshold"
-                                                labelUnit=""
-                                                showValue={true}
-                                                showLabels={true}
-                                                description="When a training's main stat gain meets or exceeds this value, it will be considered for risky training."
-                                                searchId="risky-training-min-stat-gain"
-                                                parentId="enable-riskier-training"
-                                            />
-                                        </View>
-                                    )}
-                                    {enableRiskyTraining && (
-                                        <View style={styles.sliderShell}>
-                                            <CustomSlider
-                                                value={riskyTrainingMaxFailureChance || defaultSettings.training.riskyTrainingMaxFailureChance}
-                                                placeholder={defaultSettings.training.riskyTrainingMaxFailureChance}
-                                                onValueChange={(value) => updateTrainingSetting("riskyTrainingMaxFailureChance", value)}
-                                                min={5}
-                                                max={95}
-                                                step={5}
-                                                label="Risky Training Maximum Failure Chance"
-                                                labelUnit="%"
-                                                showValue={true}
-                                                showLabels={true}
-                                                description="Set the maximum acceptable failure chance for risky training sessions with high main stat gains."
-                                                searchId="risky-training-max-failure-chance"
-                                                parentId="enable-riskier-training"
-                                            />
-                                        </View>
-                                    )}
-
-                                    <SearchableItem
-                                        id="enable-prioritize-skill-hints"
-                                        title="Prioritize Skill Hints"
-                                        description="When enabled, the bot will prioritize acquiring skill hints, bypassing stat prioritization and blacklist, while still being constrained by the failure chance thresholds."
-                                    >
-                                        <Row
-                                            title="Prioritize Skill Hints"
-                                            description="Bypass stat priorities to chase skill hints."
-                                            right={<Switch checked={enablePrioritizeSkillHints} onCheckedChange={(checked) => updateTrainingSetting("enablePrioritizeSkillHints", checked)} />}
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="must-rest-before-summer"
-                                        title="Must Rest before Summer"
-                                        description="Optimizes June Late Phase in Classic and Senior Years for Summer Training. If Energy < 70%, it will Rest. If Energy >= 70% and Mood < Great, it will recover Mood. If Energy >= 70% and Mood is Great, it will train Wit."
-                                    >
-                                        <Row
-                                            title="Must Rest before Summer"
-                                            description="Optimize June late phase for summer training."
-                                            right={<Switch checked={mustRestBeforeSummer} onCheckedChange={(checked) => updateTrainingSetting("mustRestBeforeSummer", checked)} />}
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="train-wit-during-finale"
-                                        title="Train Wit During Finale"
-                                        description="When enabled, the bot will train Wit during URA finale turns (73, 74, 75) instead of recovering energy or mood, even if the failure chance is high."
-                                    >
-                                        <Row
-                                            title="Train Wit During Finale"
-                                            description="Use URA finale turns (73-75) to train Wit."
-                                            right={<Switch checked={trainWitDuringFinale} onCheckedChange={(checked) => updateTrainingSetting("trainWitDuringFinale", checked)} />}
-                                        />
-                                    </SearchableItem>
                                 </Section>
 
-                                <Section label="Sparks">
-                                    {renderStatSelector(
-                                        "Focus on Sparks",
-                                        sparkStatTargetItems,
-                                        (value) => setSparkStatTargetItems(value),
-                                        sparkStatTargetModalVisible,
-                                        setSparkStatTargetModalVisible,
-                                        "Select which stats should receive priority to get to at least 600 to get the best chance to receive 3* sparks.",
-                                        "checkbox",
-                                        "focus-on-sparks"
-                                    )}
+                                <Section label="Limits">
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            value={maximumFailureChance}
+                                            placeholder={defaultSettings.training.maximumFailureChance}
+                                            onValueChange={(value) => updateTrainingSetting("maximumFailureChance", value)}
+                                            min={5}
+                                            max={95}
+                                            step={5}
+                                            label="Set Maximum Failure Chance"
+                                            labelUnit="%"
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Set the maximum acceptable failure chance for training sessions. Training with higher failure rates will be avoided."
+                                            searchId="maximum-failure-chance"
+                                        />
+                                    </View>
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            value={riskyTrainingMinStatGain || defaultSettings.training.riskyTrainingMinStatGain}
+                                            placeholder={defaultSettings.training.riskyTrainingMinStatGain}
+                                            onValueChange={(value) => updateTrainingSetting("riskyTrainingMinStatGain", value)}
+                                            min={20}
+                                            max={100}
+                                            step={5}
+                                            label="Minimum Main Stat Gain Threshold"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="When a training's main stat gain meets or exceeds this value, it will be considered for risky training."
+                                            searchId="risky-training-min-stat-gain"
+                                            searchCondition={enableRiskyTraining}
+                                            parentId="enable-riskier-training"
+                                        />
+                                    </View>
                                 </Section>
 
-                                <Section label="Scoring">
-                                    <SearchableItem
-                                        id="enable-training-level-weighting"
-                                        title="Weight Score by Training Level"
-                                        description="When enabled (Year 2+), the bot reads each training's level (1-5) via OCR and boosts the score for trainings whose stat sits in the top 3 of your Stat Prioritization list. Helps the bot stick with stats you've invested in. OCR is skipped during Pre-Debut, Junior, and Summer."
-                                    >
-                                        <Row
-                                            title="Weight Score by Training Level"
-                                            description="Boost score for top-3 stat trainings (Year 2+)."
-                                            right={
-                                                <Switch
-                                                    checked={enableTrainingLevelWeighting}
-                                                    onCheckedChange={(checked) => updateTrainingSetting("enableTrainingLevelWeighting", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="enable-rainbow-training-bonus"
-                                        title="Enable Rainbow Training Bonus"
-                                        description="When enabled (Year 2+), rainbow trainings receive a significant bonus to their score, making them more likely to be selected. This is highly dependent on device configuration and may result in false positives."
-                                    >
-                                        <Row
-                                            title="Rainbow Training Bonus"
-                                            description="Big score boost for rainbow trainings (Year 2+)."
-                                            right={
-                                                <Switch
-                                                    checked={enableRainbowTrainingBonus}
-                                                    onCheckedChange={(checked) => updateTrainingSetting("enableRainbowTrainingBonus", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="enable-prioritize-near-max-friendship"
-                                        title="Prioritize Near-Max Friendship Bars"
-                                        description="When enabled (Year 2+), trainings with multiple green/blue friendship bars close to maxing receive an anticipatory rainbow multiplier (up to 1.6x), helping the bot favor them so the bars cross into orange and unlock rainbow training on later turns. Does not stack with the actual rainbow bonus."
-                                    >
-                                        <Row
-                                            title="Near-Max Friendship Boost"
-                                            description="Anticipatory bonus to push bars into rainbow."
-                                            right={
-                                                <Switch
-                                                    checked={enablePrioritizeNearMaxFriendship}
-                                                    onCheckedChange={(checked) => updateTrainingSetting("enablePrioritizeNearMaxFriendship", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
-                                </Section>
+                                <View style={styles.section}>
+                                    <CustomSlider
+                                        value={riskyTrainingMaxFailureChance || defaultSettings.training.riskyTrainingMaxFailureChance}
+                                        placeholder={defaultSettings.training.riskyTrainingMaxFailureChance}
+                                        onValueChange={(value) => updateTrainingSetting("riskyTrainingMaxFailureChance", value)}
+                                        min={5}
+                                        max={95}
+                                        step={5}
+                                        label="Risky Training Maximum Failure Chance"
+                                        labelUnit="%"
+                                        showValue={true}
+                                        showLabels={true}
+                                        description="Set the maximum acceptable failure chance for risky training sessions with high main stat gains."
+                                        searchId="risky-training-max-failure-chance"
+                                        searchCondition={enableRiskyTraining}
+                                        parentId="enable-riskier-training"
+                                    />
+                                </View>
 
-                                <Section label="Detection">
-                                    <SearchableItem
-                                        id="enable-training-analysis-validation"
-                                        title="Enable Training Analysis Validation"
-                                        description="When enabled, the bot will validate the current selected stat during training analysis. This helps prevent the bot from accidentally training a stat during analysis at the cost of a significant increase in scenario completion time."
-                                    >
-                                        <Row
-                                            title="Training Analysis Validation"
-                                            description="Validate selected stat during analysis (slower)."
-                                            right={
-                                                <Switch
-                                                    checked={enableTrainingAnalysisValidation}
-                                                    onCheckedChange={(checked) => updateTrainingSetting("enableTrainingAnalysisValidation", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="enable-yolo-stat-detection"
-                                        title="Enable YOLO Stat Detection"
-                                        description="When enabled, the bot will use a custom YOLOv8 model for high-precision stat gain detection. This replaces the standard OCR/Template matching for stat gains."
-                                    >
-                                        <Row
-                                            title="YOLO Stat Detection"
-                                            description="Use a YOLOv8 model instead of OCR for stat gains."
-                                            right={<Switch checked={enableYoloStatDetection} onCheckedChange={(checked) => updateTrainingSetting("enableYoloStatDetection", checked)} />}
-                                        />
-                                    </SearchableItem>
-                                </Section>
-                                {enableTrainingAnalysisValidation && (
-                                    <WarningContainer style={{ marginTop: -SPACING.md, marginBottom: SPACING.lg }}>
-                                        Warning: Enabling Training Analysis Validation prevents accidental trainings at the cost of significantly slower scenario completion.
-                                    </WarningContainer>
+                                {renderStatSelector(
+                                    "Focus on Sparks",
+                                    sparkStatTargetItems,
+                                    (value) => setSparkStatTargetItems(value),
+                                    sparkStatTargetModalVisible,
+                                    setSparkStatTargetModalVisible,
+                                    "Select which stats should receive priority to get to at least 600 to get the best chance to receive 3* sparks.",
+                                    "checkbox",
+                                    "focus-on-sparks"
                                 )}
 
-                                <Section label="Distance">
-                                    <SearchableItem
-                                        id="preferred-distance-override"
-                                        title="Preferred Distance Override"
-                                        description="Set the preferred race distance for training targets. Auto picks based on character aptitudes."
-                                    >
-                                        <Row
-                                            title="Preferred Distance"
-                                            description="Auto picks from aptitudes; override to lock a distance."
-                                            right={
-                                                <CustomSelect
-                                                    value={preferredDistanceOverride}
-                                                    onValueChange={(value) => updateTrainingSetting("preferredDistanceOverride", value)}
-                                                    options={[
-                                                        { label: "Auto", value: "Auto" },
-                                                        { label: "Sprint", value: "Sprint" },
-                                                        { label: "Mile", value: "Mile" },
-                                                        { label: "Medium", value: "Medium" },
-                                                        { label: "Long", value: "Long" },
-                                                    ]}
-                                                    placeholder="Select distance"
-                                                    width={140}
-                                                />
-                                            }
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enablePrioritizeSkillHints}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enablePrioritizeSkillHints", checked)}
+                                        label="Prioritize Skill Hints"
+                                        description="When enabled, the bot will prioritize acquiring skill hints, bypassing stat prioritization and blacklist, while still being constrained by the failure chance thresholds."
+                                        className="my-2"
+                                        searchId="enable-prioritize-skill-hints"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enableTrainingLevelWeighting}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enableTrainingLevelWeighting", checked)}
+                                        label="Weight Score by Training Level"
+                                        description="When enabled (Year 2+), the bot reads each training's level (1-5) via OCR and boosts the score for trainings whose stat sits in the top 3 of your Stat Prioritization list. Helps the bot stick with stats you've invested in. OCR is skipped during Pre-Debut, Junior, and Summer."
+                                        className="my-2"
+                                        searchId="enable-training-level-weighting"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={mustRestBeforeSummer}
+                                        onCheckedChange={(checked) => updateTrainingSetting("mustRestBeforeSummer", checked)}
+                                        label="Must Rest before Summer"
+                                        description="Optimizes June Late Phase in Classic and Senior Years for Summer Training. If Energy < 70%, it will Rest. If Energy >= 70% and Mood < Great, it will recover Mood. If Energy >= 70% and Mood is Great, it will train Wit."
+                                        className="my-2"
+                                        searchId="must-rest-before-summer"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={trainWitDuringFinale}
+                                        onCheckedChange={(checked) => updateTrainingSetting("trainWitDuringFinale", checked)}
+                                        label="Train Wit During Finale"
+                                        description="When enabled, the bot will train Wit during URA finale turns (73, 74, 75) instead of recovering energy or mood, even if the failure chance is high."
+                                        className="my-2"
+                                        searchId="train-wit-during-finale"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enableRainbowTrainingBonus}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enableRainbowTrainingBonus", checked)}
+                                        label="Enable Rainbow Training Bonus"
+                                        description="When enabled (Year 2+), rainbow trainings receive a significant bonus to their score, making them more likely to be selected. This is highly dependent on device configuration and may result in false positives."
+                                        className="my-2"
+                                        searchId="enable-rainbow-training-bonus"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enablePrioritizeNearMaxFriendship}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enablePrioritizeNearMaxFriendship", checked)}
+                                        label="Prioritize Near-Max Friendship Bars"
+                                        description="When enabled (Year 2+), trainings with multiple green/blue friendship bars close to maxing receive an anticipatory rainbow multiplier (up to 1.6x), helping the bot favor them so the bars cross into orange and unlock rainbow training on later turns. Does not stack with the actual rainbow bonus."
+                                        className="my-2"
+                                        searchId="enable-prioritize-near-max-friendship"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enableTrainingAnalysisValidation}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enableTrainingAnalysisValidation", checked)}
+                                        label="Enable Training Analysis Validation"
+                                        description="When enabled, the bot will validate the current selected stat during training analysis. This helps prevent the bot from accidentally training a stat during analysis at the cost of a significant increase in scenario completion time."
+                                        className="my-2"
+                                        searchId="enable-training-analysis-validation"
+                                    />
+                                    {enableTrainingAnalysisValidation && (
+                                        <WarningContainer style={{ marginTop: 0 }}>
+                                            ⚠️ Warning: Enabling this option will prevent accidental trainings at the cost of a significant increase in the time it takes to complete a scenario.
+                                        </WarningContainer>
+                                    )}
+                                </View>
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={enableYoloStatDetection}
+                                        onCheckedChange={(checked) => updateTrainingSetting("enableYoloStatDetection", checked)}
+                                        label="Enable YOLO Stat Detection"
+                                        description="When enabled, the bot will use a custom YOLOv8 model for high-precision stat gain detection. This replaces the standard OCR/Template matching for stat gains."
+                                        className="my-2"
+                                        searchId="enable-yolo-stat-detection"
+                                    />
+                                </View>
+
+                                <View style={styles.section}>
+                                    <View style={styles.row}>
+                                        <Text style={styles.label}>Preferred Distance Override</Text>
+                                        <CustomSelect
+                                            value={preferredDistanceOverride}
+                                            onValueChange={(value) => updateTrainingSetting("preferredDistanceOverride", value)}
+                                            options={[
+                                                { label: "Auto", value: "Auto" },
+                                                { label: "Sprint", value: "Sprint" },
+                                                { label: "Mile", value: "Mile" },
+                                                { label: "Medium", value: "Medium" },
+                                                { label: "Long", value: "Long" },
+                                            ]}
+                                            placeholder="Select distance"
+                                            width={200}
+                                            searchId="preferred-distance-override"
+                                            searchTitle="Preferred Distance Override"
+                                            searchDescription="Set the preferred race distance for training targets."
                                         />
-                                    </SearchableItem>
-                                    <SearchableItem
-                                        id="disable-stat-targets"
-                                        title="Disable Stat Targets"
+                                    </View>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
+                                        Set the preferred race distance for training targets. "Auto" will automatically determine based on character aptitudes reading from left to right (S {">"} A
+                                        priority).
+                                        {"\n\n"}
+                                        For example, if Gold Ship has an aptitude of A for both Medium and Long, Auto will use Medium as the preferred distance. Whereas if Medium is A and Long is S,
+                                        then Auto will instead use Long as the preferred distance.
+                                    </Text>
+                                </View>
+
+                                <View style={styles.section}>
+                                    <CustomCheckbox
+                                        checked={disableStatTargets}
+                                        onCheckedChange={(checked) => updateTrainingSetting("disableStatTargets", checked)}
+                                        label="Disable Stat Targets"
                                         description="When enabled, all per-distance stat targets below are ignored. Every stat is treated as having a target equal to the in-game stat cap (1200), so the bot will keep pushing your top priority stats even after they would normally be considered 'done.' Useful when you want strict adherence to your Stat Prioritization list."
+                                        className="my-2"
+                                        searchId="disable-stat-targets"
+                                    />
+                                </View>
+
+                                {/* Stat Target Settings */}
+                                <View style={[styles.section, disableStatTargets && { opacity: 0.5, pointerEvents: "none" }]}>
+                                    <SearchableItem
+                                        id="stat-targets-by-distance"
+                                        title="Stat Targets by Distance"
+                                        description="Set target values for each stat based on race distance. These stat targets are derived from past Champion Meetings. The bot will prioritize training stats that are below these targets."
                                     >
-                                        <Row
-                                            title="Disable Stat Targets"
-                                            description="Ignore per-distance targets; treat everything as cap."
-                                            right={<Switch checked={disableStatTargets} onCheckedChange={(checked) => updateTrainingSetting("disableStatTargets", checked)} />}
-                                        />
+                                        <Text style={[TYPE.body, { color: colors.text, marginBottom: SPACING.xs }]}>Stat Targets by Distance</Text>
+                                        <Text style={[TYPE.caption, { color: colors.textMuted, marginBottom: SPACING.md }]}>
+                                            Set target values for each stat based on race distance. These stat targets are derived from past Champion Meetings. The bot will prioritize training stats
+                                            that are below these targets.
+                                        </Text>
                                     </SearchableItem>
 
-                                    {/* Per-distance stat targets stay nested inside the Distance section so the whole distance domain reads as one block. */}
-                                    <View style={disableStatTargets ? { opacity: 0.5 } : undefined} pointerEvents={disableStatTargets ? "none" : "auto"}>
-                                        <SearchableItem id="stat-targets-by-distance" title="Stat Targets by Distance" description="Set target values for each stat based on race distance.">
-                                            <View style={{ paddingHorizontal: SPACING.md, paddingTop: SPACING.md, paddingBottom: SPACING.xs }}>
-                                                <Text style={[TYPE.body, { color: colors.text, fontWeight: "600" as const }]}>Stat Targets by Distance</Text>
-                                                <Text style={[TYPE.caption, { color: colors.textMuted, marginTop: 2 }]}>
-                                                    Per-distance stat targets are derived from past Champion Meetings. The bot prioritizes training stats below these targets.
-                                                </Text>
-                                            </View>
-                                        </SearchableItem>
-
-                                        {/* Distance Stat Targets - bare collapsible Sections so they sit inside the parent Distance card without nested borders. */}
-                                        <View>
-                                            <Pressable
-                                                onPress={() => toggleDistance("sprint")}
-                                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                                style={styles.distanceRow}
-                                                accessibilityRole="button"
-                                                accessibilityState={{ expanded: distanceOpen.sprint }}
-                                            >
-                                                <Text style={styles.distanceRowTitle}>Sprint Distance</Text>
-                                                <Ionicons name={distanceOpen.sprint ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
-                                            </Pressable>
-                                            {distanceOpen.sprint && (
-                                                <View style={styles.distanceBody}>
+                                    {/* Distance Stat Targets - one collapsible Section per distance. */}
+                                    <Section label="Sprint Distance" collapsible defaultOpen={false}>
+                                        <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
                                                 value={trainingStatTargetSettings.trainingSprintStatTarget_speedStatTarget}
                                                 placeholder={defaultSettings.trainingStatTarget.trainingSprintStatTarget_speedStatTarget}
@@ -1010,23 +856,11 @@ const TrainingSettings = () => {
                                                 showValue={true}
                                                 showLabels={true}
                                             />
-                                                </View>
-                                            )}
                                         </View>
+                                    </Section>
 
-                                        <View>
-                                            <Pressable
-                                                onPress={() => toggleDistance("mile")}
-                                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                                style={styles.distanceRow}
-                                                accessibilityRole="button"
-                                                accessibilityState={{ expanded: distanceOpen.mile }}
-                                            >
-                                                <Text style={styles.distanceRowTitle}>Mile Distance</Text>
-                                                <Ionicons name={distanceOpen.mile ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
-                                            </Pressable>
-                                            {distanceOpen.mile && (
-                                                <View style={styles.distanceBody}>
+                                    <Section label="Mile Distance" collapsible defaultOpen={false}>
+                                        <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
                                                 placeholder={defaultSettings.trainingStatTarget.trainingMileStatTarget_speedStatTarget}
                                                 value={trainingStatTargetSettings.trainingMileStatTarget_speedStatTarget}
@@ -1087,23 +921,11 @@ const TrainingSettings = () => {
                                                 showValue={true}
                                                 showLabels={true}
                                             />
-                                                </View>
-                                            )}
                                         </View>
+                                    </Section>
 
-                                        <View>
-                                            <Pressable
-                                                onPress={() => toggleDistance("medium")}
-                                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                                style={styles.distanceRow}
-                                                accessibilityRole="button"
-                                                accessibilityState={{ expanded: distanceOpen.medium }}
-                                            >
-                                                <Text style={styles.distanceRowTitle}>Medium Distance</Text>
-                                                <Ionicons name={distanceOpen.medium ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
-                                            </Pressable>
-                                            {distanceOpen.medium && (
-                                                <View style={styles.distanceBody}>
+                                    <Section label="Medium Distance" collapsible defaultOpen={false}>
+                                        <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
                                                 placeholder={defaultSettings.trainingStatTarget.trainingMediumStatTarget_speedStatTarget}
                                                 value={trainingStatTargetSettings.trainingMediumStatTarget_speedStatTarget}
@@ -1164,23 +986,11 @@ const TrainingSettings = () => {
                                                 showValue={true}
                                                 showLabels={true}
                                             />
-                                                </View>
-                                            )}
                                         </View>
+                                    </Section>
 
-                                        <View>
-                                            <Pressable
-                                                onPress={() => toggleDistance("long")}
-                                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                                style={styles.distanceRow}
-                                                accessibilityRole="button"
-                                                accessibilityState={{ expanded: distanceOpen.long }}
-                                            >
-                                                <Text style={styles.distanceRowTitle}>Long Distance</Text>
-                                                <Ionicons name={distanceOpen.long ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
-                                            </Pressable>
-                                            {distanceOpen.long && (
-                                                <View style={styles.distanceBody}>
+                                    <Section label="Long Distance" collapsible defaultOpen={false}>
+                                        <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
                                                 placeholder={defaultSettings.trainingStatTarget.trainingLongStatTarget_speedStatTarget}
                                                 value={trainingStatTargetSettings.trainingLongStatTarget_speedStatTarget}
@@ -1241,71 +1051,72 @@ const TrainingSettings = () => {
                                                 showValue={true}
                                                 showLabels={true}
                                             />
-                                                </View>
-                                            )}
                                         </View>
-                                    </View>
-                                </Section>
+                                    </Section>
+                                </View>
 
-                                {/* Training Year Milestone Targets - intro + first slider live in one child wrapper so no divider/gap sits between them. */}
-                                <Section label="Year Milestones">
-                                    <View>
-                                        <SearchableItem
-                                            id="training-year-milestone-targets"
-                                            title="Training Year Milestone Targets"
-                                            description="Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years."
-                                        >
-                                            <View style={styles.groupHeader}>
-                                                <Text style={styles.groupHeaderTitle}>Year Milestone Pacing</Text>
-                                                <Text style={styles.groupHeaderDescription}>
-                                                    Targets a scaled percentage of your stat targets before Senior Year, ramping up to 100% by the Finale. Set both sliders to 100% to disable milestone pacing.
-                                                </Text>
-                                            </View>
-                                        </SearchableItem>
-                                        <View style={[styles.sliderShell, { paddingTop: 0 }]}>
-                                            <SearchableItem
-                                                id="classic-milestone-percent"
-                                                title="End of Junior Year Milestone"
-                                                description="Percentage of the primary stat targets to aim for by the end of Junior Year."
-                                            >
-                                                <CustomSlider
-                                                    value={trainingSettings.classicMilestonePercent}
-                                                    placeholder={defaultSettings.training.classicMilestonePercent}
-                                                    onValueChange={(value) => updateTrainingSetting("classicMilestonePercent", value)}
-                                                    min={0}
-                                                    max={100}
-                                                    step={1}
-                                                    label="End of Junior Year Milestone"
-                                                    labelUnit="%"
-                                                    showValue={true}
-                                                    showLabels={true}
-                                                    description="Default: 33%. Higher values push the bot harder in Junior Year."
-                                                />
-                                            </SearchableItem>
-                                        </View>
-                                    </View>
-                                    <View style={styles.sliderShell}>
-                                        <SearchableItem
-                                            id="senior-milestone-percent"
-                                            title="End of Classic Year Milestone"
-                                            description="Percentage of the primary stat targets to aim for by the end of Classic Year."
-                                        >
-                                            <CustomSlider
-                                                value={trainingSettings.seniorMilestonePercent}
-                                                placeholder={defaultSettings.training.seniorMilestonePercent}
-                                                onValueChange={(value) => updateTrainingSetting("seniorMilestonePercent", value)}
-                                                min={0}
-                                                max={100}
-                                                step={1}
-                                                label="End of Classic Year Milestone"
-                                                labelUnit="%"
-                                                showValue={true}
-                                                showLabels={true}
-                                                description="Default: 66%. Higher values push the bot harder in Classic Year."
-                                            />
-                                        </SearchableItem>
-                                    </View>
-                                </Section>
+                                {/* Training Year Milestone Targets */}
+                                <View style={styles.section}>
+                                    <SearchableItem
+                                        id="training-year-milestone-targets"
+                                        title="Training Year Milestone Targets"
+                                        description="Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years."
+                                    >
+                                        <Text style={[TYPE.body, { color: colors.text, marginBottom: SPACING.xs }]}>Training Year Milestone Targets</Text>
+                                        <Text style={[TYPE.caption, { color: colors.textMuted, marginBottom: SPACING.md }]}>
+                                            Controls how aggressively the bot paces stat training during the Pre-Debut, Junior and Classic Years.{"\n\n"}
+                                            The bot will target a scaled percentage of your stat targets prior to the Senior Year, ramping up to the full stat targets by the Finale. For example, with
+                                            milestone targets of 33% / 66%, a Speed target of 1200 becomes ~396 in Junior Year and ~792 in Classic Year. This optimizes early-career statlines for
+                                            better starting race results.{"\n\n"}
+                                            Set both sliders to 100% to disable milestone pacing and always target the full statline.
+                                        </Text>
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="classic-milestone-percent"
+                                        title="End of Junior Year Milestone"
+                                        description="Percentage of the primary stat targets to aim for by the end of Junior Year."
+                                    >
+                                        <CustomSlider
+                                            value={trainingSettings.classicMilestonePercent}
+                                            placeholder={defaultSettings.training.classicMilestonePercent}
+                                            onValueChange={(value) => updateTrainingSetting("classicMilestonePercent", value)}
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            label="End of Junior Year Milestone"
+                                            labelUnit="%"
+                                            showValue={true}
+                                            showLabels={true}
+                                        />
+                                    </SearchableItem>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
+                                        The bot will aim for this % of your stat targets during Junior Year. Default: 33%.
+                                    </Text>
+                                </View>
+
+                                <View style={styles.section}>
+                                    <SearchableItem
+                                        id="senior-milestone-percent"
+                                        title="End of Classic Year Milestone"
+                                        description="Percentage of the primary stat targets to aim for by the end of Classic Year."
+                                    >
+                                        <CustomSlider
+                                            value={trainingSettings.seniorMilestonePercent}
+                                            placeholder={defaultSettings.training.seniorMilestonePercent}
+                                            onValueChange={(value) => updateTrainingSetting("seniorMilestonePercent", value)}
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            label="End of Classic Year Milestone"
+                                            labelUnit="%"
+                                            showValue={true}
+                                            showLabels={true}
+                                        />
+                                    </SearchableItem>
+                                    <Text style={[styles.label, { fontSize: 14, color: colors.text, opacity: 0.7, marginTop: 4 }]}>
+                                        The bot will aim for this % of your stat targets during Classic Year. Default: 66%.
+                                    </Text>
+                                </View>
                             </>
                         )}
                     </View>
