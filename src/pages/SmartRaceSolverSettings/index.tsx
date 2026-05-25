@@ -55,6 +55,7 @@ import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
+import { RADII } from "../../lib/radii"
 
 // Stringify the bundled JSON once at module load so we don't pay the serialisation cost on every debounced preview call.
 const RACES_DATA_JSON = JSON.stringify(racesData)
@@ -691,6 +692,68 @@ const SmartRaceSolverSettings = () => {
                     fontFamily: "monospace",
                     paddingVertical: 4,
                 },
+                specCard: {
+                    backgroundColor: colors.surfaceRaised,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    borderRadius: RADII.md,
+                    overflow: "hidden",
+                    marginTop: SPACING.sm,
+                },
+                specRow: { flexDirection: "row" as const, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, gap: SPACING.md, alignItems: "flex-start" as const },
+                specRowDivider: { borderTopWidth: 1, borderTopColor: colors.borderHair },
+                specLabel: { ...TYPE.monoLabel, color: colors.textMuted, width: 84, paddingTop: 2 },
+                specValue: { ...TYPE.monoValue, color: colors.text, flex: 1, flexWrap: "wrap" as const },
+                specValueMuted: { ...TYPE.monoValue, color: colors.textMuted, flex: 1, fontStyle: "italic" as const },
+                aptCellRow: { flexDirection: "row" as const, flex: 1, gap: 6, flexWrap: "wrap" as const },
+                aptCell: {
+                    minWidth: 44,
+                    paddingHorizontal: 6,
+                    paddingVertical: 4,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    borderRadius: RADII.sm,
+                    backgroundColor: colors.surface,
+                    alignItems: "center" as const,
+                },
+                aptCellLabel: { ...TYPE.monoLabel, color: colors.textMuted, fontSize: 9 },
+                aptCellValue: { ...TYPE.monoValue, color: colors.text, fontSize: 14, marginTop: 1 },
+                aptCellHighlighted: { borderColor: colors.brand, backgroundColor: colors.brandSubtle },
+                aptCellHighlightedValue: { color: colors.brand },
+                chipList: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 4, flex: 1 },
+                chipPill: {
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 2,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    borderRadius: RADII.pill,
+                },
+                chipPillText: { ...TYPE.monoValue, color: colors.text, fontSize: 11 },
+                weightGrid: { flex: 1, flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 6 },
+                weightCell: {
+                    minWidth: "30%" as const,
+                    flexGrow: 1,
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 4,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    borderRadius: RADII.sm,
+                    flexDirection: "row" as const,
+                    justifyContent: "space-between" as const,
+                    alignItems: "center" as const,
+                    gap: SPACING.xs,
+                },
+                weightKey: { ...TYPE.monoLabel, color: colors.textMuted, fontSize: 9 },
+                weightVal: { ...TYPE.monoValue, color: colors.text, fontSize: 12 },
+                countBadge: {
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 1,
+                    backgroundColor: colors.brand,
+                    borderRadius: RADII.pill,
+                },
+                countBadgeText: { ...TYPE.monoLabel, color: colors.onBrand, fontSize: 9 },
                 yearCard: {
                     marginVertical: 8,
                     padding: 12,
@@ -1727,30 +1790,113 @@ const SmartRaceSolverSettings = () => {
                                 >
                                     <View style={sectionsDisabledStyle}>
                                         <Text style={styles.sectionTitle}>Configuration Summary</Text>
-                                        <Text style={styles.summary}>Preset: {smartRaceSolverCharacterPreset || "(none)"}</Text>
-                                        <Text style={styles.summary}>
-                                            Aptitudes: Spr {aptitudes.Sprint} · Mil {aptitudes.Mile} · Med {aptitudes.Medium} · Lng {aptitudes.Long} · Trf {aptitudes.Turf} · Drt {aptitudes.Dirt}
-                                        </Text>
-                                        <Text style={styles.summary}>Threshold: {weights.aptitudeThreshold}</Text>
-                                        <Text style={styles.summary}>
-                                            Targets ({targetEpithets.length}): {targetEpithets.join(", ") || "(none)"}
-                                        </Text>
-                                        <Text style={styles.summary}>
-                                            Forced ({forcedEpithets.length}): {forcedEpithets.join(", ") || "(none)"}
-                                        </Text>
-                                        <Text style={styles.summary}>
-                                            Locks ({Object.keys(manualLocks).length}):{" "}
-                                            {Object.keys(manualLocks).length === 0
-                                                ? "(none)"
-                                                : Object.entries(manualLocks)
-                                                      .map(([t, r]) => `T${t}→${r}`)
-                                                      .join(" · ")}
-                                        </Text>
-                                        <Text style={styles.summary}>Mode: {OPTIMIZE_MODE_LABELS[currentOptimizeMode]}</Text>
-                                        <Text style={styles.summary}>
-                                            Weights: race {weights.raceValue}, epithet {weights.epithetValue}, fans {weights.fanWeight}, hint {weights.hintWeight}, consec -
-                                            {weights.consecutiveRacePenalty}, summer -{weights.summerPenalty}, raceBonus {weights.raceBonusPct}%, raceCost {weights.raceCostPct}%
-                                        </Text>
+                                        <View style={styles.specCard}>
+                                            <View style={styles.specRow}>
+                                                <Text style={styles.specLabel}>Preset</Text>
+                                                <Text style={smartRaceSolverCharacterPreset ? styles.specValue : styles.specValueMuted}>{smartRaceSolverCharacterPreset || "(none)"}</Text>
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Mode</Text>
+                                                <Text style={styles.specValue}>{OPTIMIZE_MODE_LABELS[currentOptimizeMode]}</Text>
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Aptitudes</Text>
+                                                <View style={styles.aptCellRow}>
+                                                    {(
+                                                        [
+                                                            { key: "SPR", val: aptitudes.Sprint },
+                                                            { key: "MIL", val: aptitudes.Mile },
+                                                            { key: "MED", val: aptitudes.Medium },
+                                                            { key: "LNG", val: aptitudes.Long },
+                                                            { key: "TRF", val: aptitudes.Turf },
+                                                            { key: "DRT", val: aptitudes.Dirt },
+                                                        ] as const
+                                                    ).map((a) => (
+                                                        <View key={a.key} style={styles.aptCell}>
+                                                            <Text style={styles.aptCellLabel}>{a.key}</Text>
+                                                            <Text style={styles.aptCellValue}>{a.val}</Text>
+                                                        </View>
+                                                    ))}
+                                                    <View style={[styles.aptCell, styles.aptCellHighlighted]}>
+                                                        <Text style={styles.aptCellLabel}>MIN</Text>
+                                                        <Text style={[styles.aptCellValue, styles.aptCellHighlightedValue]}>{weights.aptitudeThreshold}</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Targets</Text>
+                                                {targetEpithets.length === 0 ? (
+                                                    <Text style={styles.specValueMuted}>(none)</Text>
+                                                ) : (
+                                                    <View style={styles.chipList}>
+                                                        <View style={styles.countBadge}>
+                                                            <Text style={styles.countBadgeText}>{targetEpithets.length}</Text>
+                                                        </View>
+                                                        {targetEpithets.map((e) => (
+                                                            <View key={e} style={styles.chipPill}>
+                                                                <Text style={styles.chipPillText}>{e}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Forced</Text>
+                                                {forcedEpithets.length === 0 ? (
+                                                    <Text style={styles.specValueMuted}>(none)</Text>
+                                                ) : (
+                                                    <View style={styles.chipList}>
+                                                        <View style={styles.countBadge}>
+                                                            <Text style={styles.countBadgeText}>{forcedEpithets.length}</Text>
+                                                        </View>
+                                                        {forcedEpithets.map((e) => (
+                                                            <View key={e} style={styles.chipPill}>
+                                                                <Text style={styles.chipPillText}>{e}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Locks</Text>
+                                                {Object.keys(manualLocks).length === 0 ? (
+                                                    <Text style={styles.specValueMuted}>(none)</Text>
+                                                ) : (
+                                                    <View style={styles.chipList}>
+                                                        <View style={styles.countBadge}>
+                                                            <Text style={styles.countBadgeText}>{Object.keys(manualLocks).length}</Text>
+                                                        </View>
+                                                        {Object.entries(manualLocks).map(([t, r]) => (
+                                                            <View key={t} style={styles.chipPill}>
+                                                                <Text style={styles.chipPillText}>{`T${t} → ${r}`}</Text>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <View style={[styles.specRow, styles.specRowDivider]}>
+                                                <Text style={styles.specLabel}>Weights</Text>
+                                                <View style={styles.weightGrid}>
+                                                    {(
+                                                        [
+                                                            { key: "RACE", val: `${weights.raceValue}` },
+                                                            { key: "EPITHET", val: `${weights.epithetValue}` },
+                                                            { key: "FANS", val: `${weights.fanWeight}` },
+                                                            { key: "HINT", val: `${weights.hintWeight}` },
+                                                            { key: "CONSEC", val: `-${weights.consecutiveRacePenalty}` },
+                                                            { key: "SUMMER", val: `-${weights.summerPenalty}` },
+                                                            { key: "RACE BONUS", val: `${weights.raceBonusPct}%` },
+                                                            { key: "RACE COST", val: `${weights.raceCostPct}%` },
+                                                        ] as const
+                                                    ).map((w) => (
+                                                        <View key={w.key} style={styles.weightCell}>
+                                                            <Text style={styles.weightKey}>{w.key}</Text>
+                                                            <Text style={styles.weightVal}>{w.val}</Text>
+                                                        </View>
+                                                    ))}
+                                                </View>
+                                            </View>
+                                        </View>
                                     </View>
                                 </SearchableItem>
                             </>
