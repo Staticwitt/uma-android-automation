@@ -77,6 +77,7 @@ function MainDrawer() {
             screenOptions={{
                 headerShown: false,
                 drawerType: "front",
+                swipeEdgeWidth: 0,
                 drawerStyle: {
                     width: 280,
                     backgroundColor: colors.card,
