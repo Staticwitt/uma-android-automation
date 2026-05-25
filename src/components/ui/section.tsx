@@ -44,7 +44,7 @@ export const Section = ({ label, children, collapsible = false, defaultOpen = tr
     const cardStyle = bare ? undefined : { backgroundColor: colors.surface, borderRadius: RADII.lg, borderWidth: 1, borderColor: colors.borderHair, overflow: "hidden" as const }
 
     return (
-        <View style={[{ marginBottom: bare ? 0 : SPACING.lg }, style]}>
+        <View style={[{ marginTop: SPACING.sm, marginBottom: bare ? 0 : collapsible && !open ? SPACING.xs : SPACING.lg }, style]}>
             {collapsible ? (
                 <Pressable onPress={toggle} android_ripple={{ color: colors.ripple, foreground: false }} hitSlop={6}>
                     <SectionLabel label={label} right={chevronIcon} />
