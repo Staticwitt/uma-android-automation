@@ -35,7 +35,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, GeneralMiscContext, defaultSettings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
-import CustomCheckbox from "../../components/CustomCheckbox"
 import CustomButton from "../../components/CustomButton"
 import InfoContainer from "../../components/InfoContainer"
 import WarningContainer from "../../components/WarningContainer"
@@ -1251,20 +1250,24 @@ const SmartRaceSolverSettings = () => {
 
                                         <Divider style={{ marginVertical: 16 }} />
 
-                                        <CustomCheckbox
-                                            label="Include OP / Pre-OP races"
-                                            description="By default the solver picks only G1/G2/G3 races. Enable this to also consider OP and Pre-OP races. Useful for weaker characters (e.g. Haru Urara) who can't qualify for many graded races; OP races contribute much less to stats but at least give the solver something to schedule."
-                                            checked={weights.includeOpAndPreOp}
-                                            onCheckedChange={(checked) => updateWeight("includeOpAndPreOp", checked)}
-                                            style={{ marginTop: 8 }}
-                                        />
-                                        <CustomCheckbox
-                                            label="Allow racing during Summer (Classic / Senior)"
-                                            description="By default the Summer training camp turns (Early Jul → Late Aug) in Classic and Senior years are blocked from racing. Enable this to let the solver schedule races in those 4 turns each year — useful when a key epithet race lands in summer."
-                                            checked={weights.allowSummerRacing}
-                                            onCheckedChange={(checked) => updateWeight("allowSummerRacing", checked)}
-                                            style={{ marginTop: 8 }}
-                                        />
+                                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: SPACING.sm, gap: SPACING.md }}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[TYPE.body, { color: colors.text, fontWeight: "600" as const }]}>Include OP / Pre-OP races</Text>
+                                                <Text style={[TYPE.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                                                    By default the solver picks only G1/G2/G3 races. Enable this to also consider OP and Pre-OP races. Useful for weaker characters (e.g. Haru Urara) who can't qualify for many graded races; OP races contribute much less to stats but at least give the solver something to schedule.
+                                                </Text>
+                                            </View>
+                                            <Switch checked={weights.includeOpAndPreOp} onCheckedChange={(checked) => updateWeight("includeOpAndPreOp", checked)} />
+                                        </View>
+                                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: SPACING.sm, gap: SPACING.md }}>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={[TYPE.body, { color: colors.text, fontWeight: "600" as const }]}>Allow racing during Summer (Classic / Senior)</Text>
+                                                <Text style={[TYPE.caption, { color: colors.textMuted, marginTop: 2 }]}>
+                                                    By default the Summer training camp turns (Early Jul → Late Aug) in Classic and Senior years are blocked from racing. Enable this to let the solver schedule races in those 4 turns each year - useful when a key epithet race lands in summer.
+                                                </Text>
+                                            </View>
+                                            <Switch checked={weights.allowSummerRacing} onCheckedChange={(checked) => updateWeight("allowSummerRacing", checked)} />
+                                        </View>
                                     </View>
                                 </SearchableItem>
 
