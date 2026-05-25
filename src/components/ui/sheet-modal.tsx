@@ -43,7 +43,8 @@ const SheetModalImpl = ({ visible, onRequestClose, header, children, footer, hei
     const styles = useMemo(
         () =>
             StyleSheet.create({
-                backdrop: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.glassBackdrop },
+                root: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.glassBackdrop },
+                backdrop: StyleSheet.absoluteFill as object,
                 card: {
                     width: "92%",
                     maxWidth: 560,
@@ -63,15 +64,16 @@ const SheetModalImpl = ({ visible, onRequestClose, header, children, footer, hei
     )
     return (
         <Modal transparent visible={visible} animationType="fade" onRequestClose={onRequestClose} statusBarTranslucent>
-            <Pressable style={styles.backdrop} onPress={dismissOnBackdropPress ? onRequestClose : undefined}>
-                <Pressable onPress={(e) => e.stopPropagation()} style={styles.card}>
+            <View style={styles.root}>
+                <Pressable style={styles.backdrop} onPress={dismissOnBackdropPress ? onRequestClose : undefined} />
+                <View style={styles.card}>
                     <View style={styles.header}>{header}</View>
                     <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
                         {children}
                     </ScrollView>
                     {footer != null ? <View style={styles.footer}>{footer}</View> : null}
-                </Pressable>
-            </Pressable>
+                </View>
+            </View>
         </Modal>
     )
 }
