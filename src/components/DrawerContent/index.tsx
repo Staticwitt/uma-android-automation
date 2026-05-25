@@ -181,6 +181,8 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                     paddingVertical: SPACING.xs + 2,
                     marginRight: SPACING.sm,
                     overflow: "hidden",
+                    maxWidth: 90,
+                    flexShrink: 0,
                 },
                 recentChipText: {
                     ...TYPE.caption,
@@ -471,13 +473,15 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
                 </View>
 
                 {visibleRecent.length > 0 && (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.recentStrip} contentContainerStyle={{ alignItems: "center" }}>
+                    <View style={[styles.recentStrip, { flexDirection: "row", alignItems: "center" }]}>
                         {visibleRecent.map((route) => (
                             <Pressable key={route} style={styles.recentChip} android_ripple={{ color: colors.ripple, foreground: true }} onPress={() => handleNavigation(route)}>
-                                <Text style={styles.recentChipText}>{ROUTE_LABELS[route]}</Text>
+                                <Text style={styles.recentChipText} numberOfLines={1} ellipsizeMode="tail">
+                                    {ROUTE_LABELS[route]}
+                                </Text>
                             </Pressable>
                         ))}
-                    </ScrollView>
+                    </View>
                 )}
 
                 {SECTIONS.map((section) => (
