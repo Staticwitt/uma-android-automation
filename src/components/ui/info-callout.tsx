@@ -15,6 +15,8 @@ export interface InfoCalloutProps {
     children: React.ReactNode
     /** Whether the callout starts expanded. Defaults to false. */
     defaultExpanded?: boolean
+    /** Optional leading icon node. Defaults to a brand-colored info-circle. Pass `null` to hide. */
+    icon?: React.ReactNode | null
     /** Optional container style. */
     style?: StyleProp<ViewStyle>
 }
@@ -27,7 +29,7 @@ export interface InfoCalloutProps {
  * @param style Optional container style.
  * @returns A collapsible row that shows the title in a header and toggles its body content visibility on tap.
  */
-const InfoCallout: React.FC<InfoCalloutProps> = ({ title, children, defaultExpanded = false, style }) => {
+const InfoCallout: React.FC<InfoCalloutProps> = ({ title, children, defaultExpanded = false, icon, style }) => {
     const { colors } = useTheme()
     const [expanded, setExpanded] = useState(defaultExpanded)
     const onPress = useCallback(() => {
@@ -40,14 +42,14 @@ const InfoCallout: React.FC<InfoCalloutProps> = ({ title, children, defaultExpan
                 container: { backgroundColor: colors.surface, borderLeftWidth: 2, borderLeftColor: colors.brand, borderRadius: RADII.sm, overflow: "hidden" },
                 header: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md },
                 title: { ...TYPE.body, color: colors.text, flex: 1 },
-                body: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md },
+                body: { paddingHorizontal: SPACING.md, paddingTop: SPACING.sm, paddingBottom: SPACING.md },
             }),
         [colors]
     )
     return (
         <View style={[styles.container, style]}>
             <Pressable onPress={onPress} style={styles.header} accessibilityRole="button" accessibilityState={{ expanded }} android_ripple={{ color: colors.ripple, foreground: true }}>
-                <Ionicons name="information-circle-outline" size={16} color={colors.brand} />
+                {icon === undefined ? <Ionicons name="information-circle-outline" size={16} color={colors.brand} /> : icon}
                 <Text style={styles.title}>{title}</Text>
                 <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
             </Pressable>
