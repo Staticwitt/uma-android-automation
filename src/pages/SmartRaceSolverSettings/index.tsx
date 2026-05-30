@@ -47,7 +47,7 @@ import SearchableItem from "../../components/SearchableItem"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { AptitudeRow, EpithetChip } from "./components/Helpers"
 import { GlassFab } from "../../components/ui/glass-fab"
-import { RefreshCw } from "lucide-react-native"
+import { RefreshCw, Trash2 } from "lucide-react-native"
 import { Section } from "../../components/ui/section"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
@@ -593,7 +593,7 @@ const SmartRaceSolverSettings = () => {
             StyleSheet.create({
                 root: { flex: 1, flexDirection: "column", margin: 10, backgroundColor: colors.bg },
                 sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text, marginBottom: 6 },
-                description: { fontSize: 13, color: colors.textMuted, marginBottom: 8 },
+                description: { fontSize: 13, color: colors.textMuted, marginBottom: SPACING.md },
                 infoBlock: { marginTop: 12 },
                 infoLabel: { fontWeight: "bold", color: colors.text, fontSize: 14, lineHeight: 22, includeFontPadding: false },
                 infoDescription: { fontSize: 14, color: colors.text, opacity: 0.7, lineHeight: 22, includeFontPadding: false, marginTop: 2 },
@@ -1375,9 +1375,18 @@ const SmartRaceSolverSettings = () => {
                                             description="Epithets the solver actively pursues. Selecting one biases the schedule toward completing it."
                                         >
                                             <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
-                                                <Text style={styles.sectionTitle}>
-                                                    Target Epithets (<Text style={[TYPE.monoValue, { color: colors.text }]}>{targetEpithets.length}</Text> selected)
-                                                </Text>
+                                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: SPACING.sm, gap: SPACING.sm }}>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Target Epithets</Text>
+                                                        <Text style={{ ...TYPE.caption, color: colors.textMuted, lineHeight: 18 }}>
+                                                            Selected <Text style={[TYPE.monoValue, { color: colors.text }]}>{targetEpithets.length}</Text> /{" "}
+                                                            <Text style={[TYPE.monoValue, { color: colors.text }]}>{filteredEpithets.length}</Text> epithets
+                                                        </Text>
+                                                    </View>
+                                                    <CustomButton icon={<Trash2 size={16} color={colors.text} />} onPress={() => updateRacingSetting("smartRaceSolverTargetEpithets", "[]")}>
+                                                        Clear
+                                                    </CustomButton>
+                                                </View>
                                                 <Text style={styles.description}>Epithets the solver actively pursues. Selecting one biases the schedule toward completing it.</Text>
                                                 <Input style={styles.input} value={epithetSearch} onChangeText={setEpithetSearch} placeholder={`Search ${allEpithets.length} epithets…`} />
                                                 <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -1397,9 +1406,18 @@ const SmartRaceSolverSettings = () => {
                                             description="Epithets the solver MUST complete. If completion becomes impossible (for example a needed race was already lost), the solver stops planning. Use sparingly - each forced epithet narrows what the solver can pick."
                                         >
                                             <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
-                                                <Text style={styles.sectionTitle}>
-                                                    Forced Epithets (<Text style={[TYPE.monoValue, { color: colors.text }]}>{forcedEpithets.length}</Text> selected)
-                                                </Text>
+                                                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: SPACING.sm, gap: SPACING.sm }}>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Forced Epithets</Text>
+                                                        <Text style={{ ...TYPE.caption, color: colors.textMuted, lineHeight: 18 }}>
+                                                            Selected <Text style={[TYPE.monoValue, { color: colors.text }]}>{forcedEpithets.length}</Text> /{" "}
+                                                            <Text style={[TYPE.monoValue, { color: colors.text }]}>{filteredForcedEpithets.length}</Text> epithets
+                                                        </Text>
+                                                    </View>
+                                                    <CustomButton icon={<Trash2 size={16} color={colors.text} />} onPress={() => updateRacingSetting("smartRaceSolverForcedEpithets", "[]")}>
+                                                        Clear
+                                                    </CustomButton>
+                                                </View>
                                                 <Text style={styles.description}>
                                                     Epithets the solver MUST complete. If completion becomes impossible (for example a needed race was already lost), the solver stops planning. Use
                                                     sparingly - each forced epithet narrows what the solver can pick.
