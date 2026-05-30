@@ -7,6 +7,7 @@ import { useSearchRegistry } from "../../context/SearchRegistryContext"
 import { Portal } from "@rn-primitives/portal"
 import { circularPress } from "../../lib/pressSurface"
 import { StickyPageHeader } from "../ui/sticky-page-header"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 interface PageHeaderProps {
     /** The title to display in the header. */
@@ -89,9 +90,14 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
     const { colors } = useTheme()
     const navigation = useNavigation()
     const route = useRoute()
+    const insets = useSafeAreaInsets()
 
     const [isSearching, setIsSearching] = useState(false)
     const [searchQuery, setSearchQuery] = useState("")
+    // Measured rendered height of the entire `StickyPageHeader`, captured via `onLayout`. The search-results overlay uses
+    // this to position its top edge flush with the bottom of the header. Default 60 (~content row + paddingVertical) is a
+    // sensible first-paint value before the layout measurement runs.
+    const [headerHeight, setHeaderHeight] = useState(60)
     const searchInputRef = useRef<TextInput>(null)
     const fadeAnim = useRef(new Animated.Value(0)).current
     const lastOpenSearchToken = useRef<number | null>(null)
@@ -332,7 +338,7 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
     )
 
     return (
-        <StickyPageHeader style={[{ zIndex: isSearching ? 100 : 1 }, style]}>
+        <StickyPageHeader style={[{ zIndex: isSearching ? 100 : 1 }, style]} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
             <View style={styles.header}>
                 <View style={[styles.headerLeft, { flex: 1, minWidth: 0 }]}>
                     {/* Hamburger menu button */}
@@ -400,7 +406,7 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
             {isSearching && searchQuery.length > 0 && (
                 <Portal name="search-results">
                     <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }} pointerEvents="box-none">
-                        <Animated.View style={[styles.overlay, { opacity: fadeAnim, top: 80 }]}>
+                        <Animated.View style={[styles.overlay, { opacity: fadeAnim, top: insets.top + headerHeight }]}>
                             {/* Search results list */}
                             <ScrollView keyboardShouldPersistTaps="handled" style={styles.resultList} contentContainerStyle={{ paddingBottom: 100 }}>
                                 {filteredResults.length > 0 ? (
