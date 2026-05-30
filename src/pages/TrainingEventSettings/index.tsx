@@ -583,13 +583,7 @@ const TrainingEventSettings = () => {
         <View style={styles.root}>
             <SearchPageProvider page="TrainingEventSettings" scrollViewRef={scrollViewRef}>
                 <PageHeader title="Training Event Settings" />
-                <ScrollView
-                    ref={scrollViewRef}
-                    nestedScrollEnabled={true}
-                    showsVerticalScrollIndicator={false}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ flexGrow: 1 }}
-                >
+                <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         <Section label="General">
                             <SearchableItem
@@ -606,7 +600,7 @@ const TrainingEventSettings = () => {
                         </Section>
 
                         <Section label="OCR Recognition Settings">
-                            <View style={{ padding: SPACING.md }}>
+                            <View style={{ padding: SPACING.md, paddingBottom: 0 }}>
                                 <SearchableItem
                                     id="ocr-recognition-settings"
                                     title="OCR Recognition Settings"
@@ -616,19 +610,21 @@ const TrainingEventSettings = () => {
                                         Configure settings for detecting and recognizing Training Event titles using OCR. These settings only affect the Training Event recognition process.
                                     </Text>
                                 </SearchableItem>
+                            </View>
 
-                                <SearchableItem
-                                    id="automatic-ocr-retry-training"
+                            <SearchableItem
+                                id="automatic-ocr-retry-training"
+                                title="Enable Automatic OCR Retry for Training Events"
+                                description="When enabled, the bot will automatically retry OCR detection with adjusted settings if the initial attempt for a training event title fails or has low confidence."
+                            >
+                                <Row
                                     title="Enable Automatic OCR Retry for Training Events"
                                     description="When enabled, the bot will automatically retry OCR detection with adjusted settings if the initial attempt for a training event title fails or has low confidence."
-                                >
-                                    <Row
-                                        title="Enable Automatic OCR Retry for Training Events"
-                                        description="When enabled, the bot will automatically retry OCR detection with adjusted settings if the initial attempt for a training event title fails or has low confidence."
-                                        right={<Switch checked={enableAutomaticOCRRetry} onCheckedChange={(checked) => updateTrainingEventSetting("enableAutomaticOCRRetry", checked)} />}
-                                    />
-                                </SearchableItem>
+                                    right={<Switch checked={enableAutomaticOCRRetry} onCheckedChange={(checked) => updateTrainingEventSetting("enableAutomaticOCRRetry", checked)} />}
+                                />
+                            </SearchableItem>
 
+                            <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
                                     searchId="ocr-confidence-training"
                                     label="OCR Confidence for Training Events"
@@ -640,21 +636,20 @@ const TrainingEventSettings = () => {
                                     onValueChange={(value: number) => updateTrainingEventSetting("ocrConfidence", value)}
                                     showValue={true}
                                     showLabels={true}
-                                    className="my-2"
                                 />
+                            </View>
 
-                                <SearchableItem
-                                    id="hide-ocr-comparison-results-training"
+                            <SearchableItem
+                                id="hide-ocr-comparison-results-training"
+                                title="Hide OCR String Comparison Results"
+                                description="If enabled, the bot will suppress detailed logging of individual string similarity scores during training event detection to keep the logs cleaner."
+                            >
+                                <Row
                                     title="Hide OCR String Comparison Results"
                                     description="If enabled, the bot will suppress detailed logging of individual string similarity scores during training event detection to keep the logs cleaner."
-                                >
-                                    <Row
-                                        title="Hide OCR String Comparison Results"
-                                        description="If enabled, the bot will suppress detailed logging of individual string similarity scores during training event detection to keep the logs cleaner."
-                                        right={<Switch checked={enableHideOCRComparisonResults} onCheckedChange={(checked) => updateTrainingEventSetting("enableHideOCRComparisonResults", checked)} />}
-                                    />
-                                </SearchableItem>
-                            </View>
+                                    right={<Switch checked={enableHideOCRComparisonResults} onCheckedChange={(checked) => updateTrainingEventSetting("enableHideOCRComparisonResults", checked)} />}
+                                />
+                            </SearchableItem>
                         </Section>
 
                         <Section label="Training Event Option Overrides">
@@ -742,7 +737,7 @@ const TrainingEventSettings = () => {
                                 title="Special Event Overrides"
                                 description="Override the bot's normal stat prioritization for specific training events. These settings bypass the standard weight calculation system."
                             >
-                                <View style={{ paddingHorizontal: SPACING.md, paddingTop: SPACING.md, paddingBottom: SPACING.xs }}>
+                                <View style={{ padding: SPACING.md }}>
                                     <Text style={[TYPE.caption, { color: colors.textMuted }]}>
                                         Override the bot's normal stat prioritization for specific training events. These settings bypass the standard weight calculation system.
                                     </Text>
@@ -964,8 +959,8 @@ const TrainingEventSettings = () => {
                                         <View style={styles.section}>
                                             <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8 }}>A Team at Last (Unity Cup)</Text>
                                             <Text style={{ fontSize: 14, color: colors.textMuted, marginBottom: 12 }}>
-                                                Select your preferred team name for Unity Cup (must be available via your chosen trainee or supports). The available options depend on which characters you have
-                                                bonded with. "Default" will always select the first option.
+                                                Select your preferred team name for Unity Cup (must be available via your chosen trainee or supports). The available options depend on which characters
+                                                you have bonded with. "Default" will always select the first option.
                                             </Text>
                                             <CustomSelect
                                                 options={aTeamAtLastOptions}
@@ -1033,7 +1028,10 @@ const TrainingEventSettings = () => {
                             <Text style={styles.noResults}>
                                 {allEvents.length === 0
                                     ? "No events available. Please select characters and/or support cards in the sections below to see their events."
-                                    : filteredEvents.length === 0 && (Object.keys(characterEventOverrides || {}).length > 0 || Object.keys(supportEventOverrides || {}).length > 0 || Object.keys(scenarioEventOverrides || {}).length > 0)
+                                    : filteredEvents.length === 0 &&
+                                        (Object.keys(characterEventOverrides || {}).length > 0 ||
+                                            Object.keys(supportEventOverrides || {}).length > 0 ||
+                                            Object.keys(scenarioEventOverrides || {}).length > 0)
                                       ? "All available events have been overridden. Remove an override to add it again."
                                       : "No events match your search. Try a different search term."}
                             </Text>
