@@ -65,6 +65,7 @@ const ImportSettingsPreview = () => {
                 content: {
                     flex: 1,
                     padding: 12,
+                    marginBottom: SPACING.md,
                 },
                 description: {
                     fontSize: 13,
