@@ -218,6 +218,42 @@ const searchConfig: SearchOption[] = [
         description: "Preview which training the bot would pick for a hypothetical scenario.",
         page: "TrainingSettings",
     },
+    {
+        id: "training-scoring-priority-multiplier",
+        title: "Priority Multiplier",
+        description: "Tune how much priority order influences scoring.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "training-scoring-ratio-curve",
+        title: "Ratio Curve",
+        description: "Adjust the ratio bucket thresholds and values that drive stat-efficiency scoring.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "training-scoring-composition-weights",
+        title: "Composition Weights",
+        description: "Adjust how stat efficiency, relationships, and misc contribute to the final score.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "training-scoring-main-stat-bonuses",
+        title: "Main Stat Bonuses",
+        description: "Adjust the per-stat gain thresholds that trigger the main-stat bonus.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "training-scoring-level-boost",
+        title: "Level Boost",
+        description: "Adjust how training facility level amplifies the primary stat contribution.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "training-scoring-misc",
+        title: "Misc Scoring",
+        description: "Tune rainbow, anticipatory, energy, and other misc scoring multipliers.",
+        page: "TrainingSettings",
+    },
     // ============================================================
     // Training Event Settings
     // ============================================================
