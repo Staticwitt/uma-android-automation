@@ -1,8 +1,8 @@
 // src/components/TrainingScoringAdvanced/StickySandboxButton.tsx
 import React from "react"
-import { View, StyleSheet, Text } from "react-native"
-import { Button } from "../ui/button"
-import { TYPE } from "../../lib/type"
+import { FlaskConical } from "lucide-react-native"
+import { GlassFab } from "../ui/glass-fab"
+import { useTheme } from "../../context/ThemeContext"
 import { SPACING } from "../../lib/spacing"
 
 /** Props for `StickySandboxButton`. */
@@ -12,33 +12,19 @@ export interface StickySandboxButtonProps {
 }
 
 /**
- * Floating "Open scoring sandbox" button pinned to the bottom of its parent. Mounted as a sibling of the
- * page's main `ScrollView` so absolute positioning can pin it relative to the page container, not the
- * scrollable content.
+ * Floating circular FAB pinned to the bottom-right of the viewport. Opens the scoring sandbox modal.
  *
  * @param props See `StickySandboxButtonProps`.
- * @returns A centered button anchored to the bottom edge of the viewport.
+ * @returns A 56x56 `GlassFab` with a flask icon, absolutely positioned.
  */
 export function StickySandboxButton({ onPress }: StickySandboxButtonProps): React.ReactElement {
+    const { colors } = useTheme()
     return (
-        <View style={styles.container} pointerEvents="box-none">
-            <Button onPress={onPress} variant="default" size="default">
-                <Text style={[TYPE.body, styles.label]}>Open scoring sandbox</Text>
-            </Button>
-        </View>
+        <GlassFab
+            onPress={onPress}
+            accessibilityLabel="Open scoring sandbox"
+            icon={<FlaskConical size={22} color={colors.brand} />}
+            style={{ position: "absolute", right: SPACING.lg, bottom: SPACING.lg }}
+        />
     )
 }
-
-const styles = StyleSheet.create({
-    container: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: SPACING.lg,
-        alignItems: "center",
-    },
-    label: {
-        color: "white",
-        fontWeight: "600",
-    },
-})
