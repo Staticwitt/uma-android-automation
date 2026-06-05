@@ -7,9 +7,10 @@ import TabStrip from "../ui/tab-strip"
 import { TrainingContext } from "../../context/BotStateContext"
 import type { Settings } from "../../context/BotStateContext"
 import { SCORING_CONSTANTS_CATALOG, CatalogGroup } from "../../lib/training/scoringConstantsCatalog"
+import { FormulaCard } from "./FormulaCard"
 import { PriorityTab } from "./PriorityTab"
 import { RatioTab } from "./RatioTab"
-import { CompositionTab } from "./CompositionTab"
+import { WeightTab } from "./WeightTab"
 import { BonusesTab } from "./BonusesTab"
 import { LevelTab } from "./LevelTab"
 import { MiscTab } from "./MiscTab"
@@ -20,14 +21,36 @@ export interface TrainingScoringAdvancedProps {
     onExpandedChange?: (expanded: boolean) => void
 }
 
+/** Props for `OpenStateProbe`. */
+interface OpenStateProbeProps {
+    /** Notifies the parent when the surrounding `Section` body mounts (open) and unmounts (closed). */
+    onChange?: (expanded: boolean) => void
+}
+
 const TAB_ITEMS: { key: CatalogGroup; label: string }[] = [
     { key: "priority", label: "Priority" },
     { key: "ratio", label: "Ratio" },
-    { key: "composition", label: "Composition" },
-    { key: "bonuses", label: "Bonuses" },
+    { key: "weight", label: "Weight" },
+    { key: "bonuses", label: "Bonus" },
     { key: "level", label: "Level" },
     { key: "misc", label: "Misc" },
 ]
+
+/**
+ * Invisible probe used to detect the open state of the surrounding uncontrolled `Section`. Because `Section`
+ * only renders its children while open, the probe's mount and unmount lifecycle perfectly mirrors the section's
+ * expand and collapse transitions.
+ *
+ * @param props See `OpenStateProbeProps`.
+ * @returns A zero-size view.
+ */
+function OpenStateProbe({ onChange }: OpenStateProbeProps): React.ReactElement {
+    useEffect(() => {
+        onChange?.(true)
+        return () => onChange?.(false)
+    }, [onChange])
+    return <View />
+}
 
 /**
  * Collapsible "Advanced" section that exposes all `SCORING_CONSTANTS_CATALOG` tuning sliders grouped into six tabs.
@@ -72,39 +95,18 @@ export function TrainingScoringAdvanced({ onExpandedChange }: TrainingScoringAdv
     )
 
     return (
-        <Section label="Advanced" collapsible defaultOpen={false}>
-            <View style={{ padding: SPACING.md, gap: SPACING.md }}>
+        <Section label="Advanced" collapsible defaultOpen={false} style={{ marginBottom: SPACING.xl }}>
+            <View style={{ padding: SPACING.lg, gap: SPACING.md }}>
+                <FormulaCard />
                 <OpenStateProbe onChange={onExpandedChange} />
                 <TabStrip items={TAB_ITEMS} activeKey={activeTab} onChange={(k) => setActiveTab(k as CatalogGroup)} />
                 {activeTab === "priority" && <PriorityTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("priority")} />}
                 {activeTab === "ratio" && <RatioTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("ratio")} />}
-                {activeTab === "composition" && <CompositionTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("composition")} />}
+                {activeTab === "weight" && <WeightTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("weight")} />}
                 {activeTab === "bonuses" && <BonusesTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("bonuses")} />}
                 {activeTab === "level" && <LevelTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("level")} />}
                 {activeTab === "misc" && <MiscTab values={values} onChange={handleChange} onResetTab={() => handleResetTab("misc")} />}
             </View>
         </Section>
     )
-}
-
-/** Props for `OpenStateProbe`. */
-interface OpenStateProbeProps {
-    /** Notifies the parent when the surrounding `Section` body mounts (open) and unmounts (closed). */
-    onChange?: (expanded: boolean) => void
-}
-
-/**
- * Invisible probe used to detect the open state of the surrounding uncontrolled `Section`. Because `Section`
- * only renders its children while open, the probe's mount and unmount lifecycle perfectly mirrors the section's
- * expand and collapse transitions.
- *
- * @param props See `OpenStateProbeProps`.
- * @returns A zero-size view.
- */
-function OpenStateProbe({ onChange }: OpenStateProbeProps): React.ReactElement {
-    useEffect(() => {
-        onChange?.(true)
-        return () => onChange?.(false)
-    }, [onChange])
-    return <View />
 }

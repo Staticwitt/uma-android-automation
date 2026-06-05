@@ -2,8 +2,9 @@
 import React from "react"
 import { ScrollView } from "react-native"
 import { SCORING_CONSTANTS_CATALOG } from "../../lib/training/scoringConstantsCatalog"
+import { FormulaEcho } from "./FormulaEcho"
 import { MultiplierSlider } from "./MultiplierSlider"
-import { TabFooter } from "./TabFooter"
+import { TabHeader } from "./TabHeader"
 import { propagateMonotonic } from "./monotonicGroup"
 
 const ENTRIES = SCORING_CONSTANTS_CATALOG.filter((e) => e.group === "ratio")
@@ -32,10 +33,14 @@ export function RatioTab({ values, onChange, onResetTab }: RatioTabProps): React
 
     return (
         <ScrollView>
+            <TabHeader
+                description="Multipliers applied to each stat based on how close it is to its target (current / target stat). Bucket boundaries are fixed at 15%, 30%, 45%, 60%, 75%, and 90% - only the per-bucket multipliers are tunable. Higher multiplier = bot trains stats in that bucket more aggressively. Values stay monotonic when you drag."
+                onReset={onResetTab}
+            />
+            <FormulaEcho text="Ratio = step( completion% , buckets [15,30,45,60,75,90]  -> [m1..m7] )" />
             {ENTRIES.map((entry) => (
                 <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => handleChange(entry.key, v)} />
             ))}
-            <TabFooter entries={ENTRIES} values={values} onResetTab={onResetTab} />
         </ScrollView>
     )
 }

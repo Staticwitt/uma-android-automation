@@ -2,8 +2,9 @@
 import React from "react"
 import { ScrollView } from "react-native"
 import { SCORING_CONSTANTS_CATALOG } from "../../lib/training/scoringConstantsCatalog"
+import { FormulaEcho } from "./FormulaEcho"
 import { MultiplierSlider } from "./MultiplierSlider"
-import { TabFooter } from "./TabFooter"
+import { TabHeader } from "./TabHeader"
 
 const ENTRIES = SCORING_CONSTANTS_CATALOG.filter((e) => e.group === "level")
 
@@ -18,7 +19,7 @@ export interface LevelTabProps {
 }
 
 /**
- * Level tab body: renders one `MultiplierSlider` per Level-group catalog entry plus a `TabFooter`.
+ * Level tab body: renders a top header plus one `MultiplierSlider` per Level-group catalog entry.
  *
  * @param props See `LevelTabProps`.
  * @returns The Level tab content.
@@ -26,10 +27,11 @@ export interface LevelTabProps {
 export function LevelTab({ values, onChange, onResetTab }: LevelTabProps): React.ReactElement {
     return (
         <ScrollView>
+            <TabHeader description="Tune how much the training facility's level (1-5) amplifies its primary-stat contribution." onReset={onResetTab} />
+            <FormulaEcho text="Level = levelBoost(rank, trainingLevel) when training-level weighting is on" />
             {ENTRIES.map((entry) => (
                 <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
             ))}
-            <TabFooter entries={ENTRIES} values={values} onResetTab={onResetTab} />
         </ScrollView>
     )
 }

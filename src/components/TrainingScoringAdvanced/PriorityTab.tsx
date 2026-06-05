@@ -2,8 +2,9 @@
 import React from "react"
 import { ScrollView } from "react-native"
 import { SCORING_CONSTANTS_CATALOG } from "../../lib/training/scoringConstantsCatalog"
+import { FormulaEcho } from "./FormulaEcho"
 import { MultiplierSlider } from "./MultiplierSlider"
-import { TabFooter } from "./TabFooter"
+import { TabHeader } from "./TabHeader"
 
 const ENTRIES = SCORING_CONSTANTS_CATALOG.filter((e) => e.group === "priority")
 
@@ -18,7 +19,7 @@ export interface PriorityTabProps {
 }
 
 /**
- * Priority tab body: renders one `MultiplierSlider` per Priority-group catalog entry plus a `TabFooter`.
+ * Priority tab body: renders a top header plus one `MultiplierSlider` per Priority-group catalog entry.
  *
  * @param props See `PriorityTabProps`.
  * @returns The Priority tab content.
@@ -26,10 +27,11 @@ export interface PriorityTabProps {
 export function PriorityTab({ values, onChange, onResetTab }: PriorityTabProps): React.ReactElement {
     return (
         <ScrollView>
+            <TabHeader description="Adjust how much priority order influences which training the bot picks." onReset={onResetTab} />
+            <FormulaEcho text="Priority = 1 + priorityCoefficient x (listLength - rank)" />
             {ENTRIES.map((entry) => (
                 <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
             ))}
-            <TabFooter entries={ENTRIES} values={values} onResetTab={onResetTab} />
         </ScrollView>
     )
 }

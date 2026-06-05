@@ -2,8 +2,9 @@
 import React from "react"
 import { ScrollView } from "react-native"
 import { SCORING_CONSTANTS_CATALOG } from "../../lib/training/scoringConstantsCatalog"
+import { FormulaEcho } from "./FormulaEcho"
 import { MultiplierSlider } from "./MultiplierSlider"
-import { TabFooter } from "./TabFooter"
+import { TabHeader } from "./TabHeader"
 
 const ENTRIES = SCORING_CONSTANTS_CATALOG.filter((e) => e.group === "bonuses")
 
@@ -18,7 +19,7 @@ export interface BonusesTabProps {
 }
 
 /**
- * Bonuses tab body: renders one `MultiplierSlider` per Bonuses-group catalog entry plus a `TabFooter`.
+ * Bonuses tab body: renders a top header plus one `MultiplierSlider` per Bonuses-group catalog entry.
  *
  * @param props See `BonusesTabProps`.
  * @returns The Bonuses tab content.
@@ -26,10 +27,11 @@ export interface BonusesTabProps {
 export function BonusesTab({ values, onChange, onResetTab }: BonusesTabProps): React.ReactElement {
     return (
         <ScrollView>
+            <TabHeader description="Per-stat thresholds for the main-stat bonus that fires when a training gives a big chunk of its own stat." onReset={onResetTab} />
+            <FormulaEcho text="MainStatBonus = bonusMagnitude when statGain >= per-stat threshold, else 1" />
             {ENTRIES.map((entry) => (
                 <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
             ))}
-            <TabFooter entries={ENTRIES} values={values} onResetTab={onResetTab} />
         </ScrollView>
     )
 }
