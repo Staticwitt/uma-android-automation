@@ -30,7 +30,7 @@ export function PriorityTab({ values, onChange, onResetTab }: PriorityTabProps):
             <TabHeader description="Adjust how much priority order influences which training the bot picks." onReset={onResetTab} />
             <FormulaEcho text="Priority = 1 + priorityCoefficient x (listLength - rank)" />
             {ENTRIES.map((entry) => (
-                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
+                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={onChange} />
             ))}
         </ScrollView>
     )

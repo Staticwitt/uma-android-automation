@@ -30,7 +30,7 @@ export function BonusesTab({ values, onChange, onResetTab }: BonusesTabProps): R
             <TabHeader description="Per-stat thresholds for the main-stat bonus that fires when a training gives a big chunk of its own stat." onReset={onResetTab} />
             <FormulaEcho text="MainStatBonus = bonusMagnitude when statGain >= per-stat threshold, else 1" />
             {ENTRIES.map((entry) => (
-                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
+                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={onChange} />
             ))}
         </ScrollView>
     )

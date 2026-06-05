@@ -30,7 +30,7 @@ export function LevelTab({ values, onChange, onResetTab }: LevelTabProps): React
             <TabHeader description="Tune how much the training facility's level (1-5) amplifies its primary-stat contribution." onReset={onResetTab} />
             <FormulaEcho text="Level = levelBoost(rank, trainingLevel) when training-level weighting is on" />
             {ENTRIES.map((entry) => (
-                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} />
+                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={onChange} />
             ))}
         </ScrollView>
     )

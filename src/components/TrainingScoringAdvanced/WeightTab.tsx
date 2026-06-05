@@ -1,5 +1,5 @@
 // src/components/TrainingScoringAdvanced/WeightTab.tsx
-import React from "react"
+import React, { useCallback, useEffect, useRef } from "react"
 import { ScrollView } from "react-native"
 import { SCORING_CONSTANTS_CATALOG } from "../../lib/training/scoringConstantsCatalog"
 import { FormulaEcho } from "./FormulaEcho"
@@ -65,23 +65,25 @@ function normalizeWeights(values: Record<string, number>, settledKey: string, se
  * @returns The Weight tab content.
  */
 export function WeightTab({ values, onChange, onResetTab }: WeightTabProps): React.ReactElement {
-    function handleSlidingComplete(key: string, finalValue: number) {
-        const normalized = normalizeWeights(values, key, finalValue)
-        for (const [k, v] of normalized) onChange(k, v)
-    }
+    // Track the latest values map via a ref so `handleSlidingComplete` can stay a stable callback. With `values` in the dep array the callback ref would change on every settings update, cascading re-renders into every memoized `MultiplierSlider`.
+    const valuesRef = useRef(values)
+    useEffect(() => {
+        valuesRef.current = values
+    }, [values])
+    const handleSlidingComplete = useCallback(
+        (key: string, finalValue: number) => {
+            const normalized = normalizeWeights(valuesRef.current, key, finalValue)
+            for (const [k, v] of normalized) onChange(k, v)
+        },
+        [onChange]
+    )
 
     return (
         <ScrollView>
             <TabHeader description="How much each scoring component (stat efficiency, relationships, misc) contributes to the final score. The weights are normalized to 1.0." onReset={onResetTab} />
             <FormulaEcho text="wS, wR, wM (composition weights in the top formula)" />
             {ENTRIES.map((entry) => (
-                <MultiplierSlider
-                    key={entry.key}
-                    entry={entry}
-                    value={values[entry.key] ?? entry.defaultValue}
-                    onChange={(v) => onChange(entry.key, v)}
-                    onSlidingComplete={(v) => handleSlidingComplete(entry.key, v)}
-                />
+                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={onChange} onSlidingComplete={handleSlidingComplete} />
             ))}
         </ScrollView>
     )

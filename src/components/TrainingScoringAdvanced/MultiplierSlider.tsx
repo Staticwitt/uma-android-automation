@@ -1,5 +1,5 @@
 // src/components/TrainingScoringAdvanced/MultiplierSlider.tsx
-import React from "react"
+import React, { useCallback } from "react"
 import { View, Text, StyleSheet } from "react-native"
 import { ScoringConstantEntry } from "../../lib/training/scoringConstantsCatalog"
 import { useTheme } from "../../context/ThemeContext"
@@ -35,10 +35,10 @@ export interface MultiplierSliderProps {
     entry: ScoringConstantEntry
     /** Current value from settings. */
     value: number
-    /** Called with the next value as the user drags the slider. */
-    onChange: (next: number) => void
-    /** Called with the final value once the user lifts their finger from the slider. */
-    onSlidingComplete?: (next: number) => void
+    /** Called with `(entry.key, value)` as the user drags the slider. The key is threaded through so the parent can use one stable callback for every slider instead of an inline arrow per row, which lets us wrap this component in `React.memo`. */
+    onChange: (key: string, next: number) => void
+    /** Called with `(entry.key, value)` once the user lifts their finger from the slider. */
+    onSlidingComplete?: (key: string, next: number) => void
     /** When true, the slider becomes fully non-interactive (no drag, no tap-to-edit). The chip and label still render. */
     disabled?: boolean
 }
@@ -63,9 +63,12 @@ function formatValue(value: number, step: number): string {
  * @param props See `MultiplierSliderProps`.
  * @returns A single slider row in the Advanced section.
  */
-export function MultiplierSlider({ entry, value, onChange, onSlidingComplete, disabled }: MultiplierSliderProps): React.ReactElement {
+function MultiplierSliderImpl({ entry, value, onChange, onSlidingComplete, disabled }: MultiplierSliderProps): React.ReactElement {
     const { colors } = useTheme()
     const isOverridden = value !== entry.defaultValue
+
+    const handleChange = useCallback((v: number) => onChange(entry.key, v), [onChange, entry.key])
+    const handleSlidingComplete = useCallback((v: number) => onSlidingComplete?.(entry.key, v), [onSlidingComplete, entry.key])
 
     const chipStyle = {
         backgroundColor: isOverridden ? colors.warningSubtle : colors.muted,
@@ -85,8 +88,8 @@ export function MultiplierSlider({ entry, value, onChange, onSlidingComplete, di
             </View>
             <CustomSlider
                 value={value}
-                onValueChange={onChange}
-                onSlidingComplete={onSlidingComplete}
+                onValueChange={handleChange}
+                onSlidingComplete={onSlidingComplete ? handleSlidingComplete : undefined}
                 min={entry.min}
                 max={entry.max}
                 step={entry.step}
@@ -97,3 +100,5 @@ export function MultiplierSlider({ entry, value, onChange, onSlidingComplete, di
         </View>
     )
 }
+
+export const MultiplierSlider = React.memo(MultiplierSliderImpl)

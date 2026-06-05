@@ -90,7 +90,7 @@ export function MiscTab({ values, onChange, onResetTab }: MiscTabProps): React.R
                         <Section label={SUBGROUP_LABELS[subgroup] + labelSuffix} bare noDividers>
                             <FormulaEcho text={SUBGROUP_SUBTITLES[subgroup]} />
                             {entries.map((entry) => (
-                                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={(v) => onChange(entry.key, v)} disabled={disabled} />
+                                <MultiplierSlider key={entry.key} entry={entry} value={values[entry.key] ?? entry.defaultValue} onChange={onChange} disabled={disabled} />
                             ))}
                         </Section>
                     </View>
