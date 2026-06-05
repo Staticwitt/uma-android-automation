@@ -32,7 +32,7 @@ export interface TrainingScoringSandboxProps {
  * @param props See `TrainingScoringSandboxProps`.
  * @returns A `SheetModal` containing the sandbox UI.
  */
-export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandboxProps): React.ReactElement {
+export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandboxProps): React.ReactElement | null {
     const { colors } = useTheme()
     const { training } = useContext(TrainingContext)
     const { general } = useContext(GeneralMiscContext)
@@ -58,9 +58,13 @@ export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandbox
         return () => clearTimeout(handle)
     }, [scenario])
 
-    const constants = useMemo(() => scoringConstantsFromSettings(training as unknown as Record<string, unknown>), [training])
-    const settingsInputs = useMemo(
-        () => ({
+    // Skip every scoring computation while the modal is closed. The sandbox is mounted by `TrainingSettings` for the entire lifetime of the page, so without this gate every
+    // settings tweak in the Advanced section would re-run `scoringConstantsFromSettings` + `scenarioToScoring` + 5x `calculateRawTrainingScore`. The early return below avoids
+    // mounting the SheetModal/Modal tree entirely when closed, while leaving the persistence effects above (hydrate-on-mount, debounced save) unaffected.
+    const computed = useMemo(() => {
+        if (!open) return null
+        const constants = scoringConstantsFromSettings(training as unknown as Record<string, unknown>)
+        const settingsInputs = {
             statPrioritization: training.statPrioritization,
             summerTrainingStatPriority: training.summerTrainingStatPriority,
             trainingBlacklist: training.trainingBlacklist,
@@ -71,29 +75,21 @@ export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandbox
             enableTrainingLevelWeighting: training.enableTrainingLevelWeighting,
             disableStatTargets: training.disableStatTargets,
             enablePrioritizeNearMaxFriendship: training.enablePrioritizeNearMaxFriendship,
-        }),
-        [training, general.scenario]
-    )
-    const { config, trainings } = useMemo(() => scenarioToScoring(scenario, constants, settingsInputs), [scenario, constants, settingsInputs])
-
-    const scoresByTraining = useMemo(() => {
-        const out: Partial<Record<StatName, number>> = {}
-        for (const t of trainings) out[t.name] = calculateRawTrainingScore(config, t)
-        return out as Record<StatName, number>
-    }, [config, trainings])
-
-    const winnerTraining = useMemo(() => {
-        let best: StatName = StatName.SPEED
+        }
+        const { config, trainings } = scenarioToScoring(scenario, constants, settingsInputs)
+        const scoresByTraining = {} as Record<StatName, number>
+        for (const t of trainings) scoresByTraining[t.name] = calculateRawTrainingScore(config, t)
+        let winnerTraining: StatName = StatName.SPEED
         let bestScore = -Infinity
         for (const t of ALL_STAT_NAMES) {
             const s = scoresByTraining[t]
             if (s > bestScore) {
                 bestScore = s
-                best = t
+                winnerTraining = t
             }
         }
-        return best
-    }, [scoresByTraining])
+        return { scoresByTraining, winnerTraining }
+    }, [open, training, general.scenario, scenario])
 
     const styles = useMemo(
         () =>
@@ -140,6 +136,9 @@ export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandbox
             }),
         [colors]
     )
+
+    if (!computed) return null
+    const { scoresByTraining, winnerTraining } = computed
 
     const header = (
         <View style={styles.headerRow}>
