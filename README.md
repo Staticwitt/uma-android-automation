@@ -145,11 +145,14 @@ This project is separated into a React Native frontend configured via Expo and a
 > Without the ONNX model file, the YOLO stat detection feature will not work. Template matching will still function as a fallback.
 
 4. The project utilizes Expo. Run `yarn install` from the root directory to install frontend dependencies.
+    - Cloud agents can run `yarn setup:cloud` to regenerate the local `uma-scoring` Kotlin/JS package and install dependencies in one step.
+    - If the shared scoring Kotlin code changes, run `yarn build:scoring` before TypeScript checks so `node_modules/uma-scoring` points at the latest generated package.
 5. The dev environment is ready. Run `yarn start` or `npx expo start` to run the Metro HTTP server.
 6. To ensure code consistency, developers should format and lint the codebase using the following commands:
     - `yarn format`: Formats both TypeScript/TSX files (via **Prettier**) and Kotlin files (via **Ktlint**).
     - `yarn format:tsx`: Formats only TypeScript and TSX files using **Prettier**.
     - `yarn format:kt`: Formats only Kotlin files using **Ktlint** (following settings in [android/.editorconfig](./android/.editorconfig)).
+    - `yarn typecheck`: Runs TypeScript checks.
 7. To test Android builds, execute `yarn android` to compile and install the application directly on your device. Use `yarn build` for release APK generation.
 
 > [!NOTE]

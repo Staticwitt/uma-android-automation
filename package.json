@@ -11,6 +11,7 @@
         "clean": "cd android && ./gradlew --stop && ./gradlew clean",
         "build:debug": "cd android && ./gradlew assembleDebug",
         "build:debug:clean": "cd android && ./gradlew --stop && ./gradlew clean && ./gradlew assembleDebug",
+        "setup:cloud": "yarn build:scoring && yarn install --frozen-lockfile",
         "lint": "expo lint",
         "format": "yarn format:tsx && yarn format:kt",
         "format:tsx": "prettier --write \"**/*.tsx\"",
@@ -20,8 +21,9 @@
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
         "test:kt": "cd android && ./gradlew test",
+        "typecheck": "tsc --noEmit --pretty false",
         "build:doc-index": "tsx scripts/build-doc-index.ts",
-        "build:scoring": "cd android && ./gradlew :scoring-shared:jsNodeProductionLibraryDistribution",
+        "build:scoring": "cd android && ./gradlew --settings-file scoring-settings.gradle :scoring-shared:jsNodeProductionLibraryDistribution",
         "perf:nav": "tsx scripts/perf-nav-test.ts"
     },
     "dependencies": {
@@ -103,6 +105,7 @@
         "eslint-config-expo": "~56.0.4",
         "jest": "~29.7.0",
         "jest-expo": "~56.0.4",
+        "node-gyp": "11.5.0",
         "onnxruntime-node": "^1.24.3",
         "prettier": "^3.8.1",
         "prompts": "^2.4.2",

@@ -1,0 +1,13 @@
+{
+  "name": "uma-scoring",
+  "version": "1.0.0",
+  "main": "uma-scoring.js",
+  "types": "uma-scoring.d.ts",
+  "devDependencies": {
+    "typescript": "5.5.4"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

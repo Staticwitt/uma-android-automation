@@ -1,0 +1,2 @@
+// Minimal root build for generating the Kotlin/JS `uma-scoring` package without
+// configuring the Android app or requiring an Android SDK.

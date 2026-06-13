@@ -1,0 +1,21 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'uma-scoring-standalone'
+rootProject.buildFileName = 'scoring-root.gradle'
+
+include ':scoring-shared'
+project(':scoring-shared').projectDir = file('scoring-shared')

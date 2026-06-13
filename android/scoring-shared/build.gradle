@@ -2,6 +2,16 @@
 //   - jvm target: consumed by :app for the on-device bot scoring loop.
 //   - js  target: emitted as `uma-scoring` for the React Native sandbox preview.
 // The module has no Android, JVM-only, or Node-only dependencies; everything lives in commonMain.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0'
+    }
+}
+
 apply plugin: 'org.jetbrains.kotlin.multiplatform'
 
 group = 'com.steve1316.uma_scoring'
