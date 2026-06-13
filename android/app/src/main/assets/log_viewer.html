@@ -211,6 +211,180 @@
                 background: #000;
             }
 
+            .trainer-view {
+                overflow-y: auto;
+                padding: 20px;
+                background:
+                    radial-gradient(circle at top left, rgba(108, 140, 255, 0.12), transparent 32rem),
+                    var(--bg-primary);
+            }
+
+            .trainer-grid {
+                display: grid;
+                grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+                gap: 20px;
+                max-width: 1180px;
+                width: 100%;
+                margin: 0 auto;
+            }
+
+            .trainer-card {
+                background: rgba(18, 18, 26, 0.92);
+                border: 1px solid var(--border-color);
+                border-radius: 14px;
+                padding: 18px;
+                box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+            }
+
+            .trainer-card h2,
+            .trainer-card h3 {
+                margin-bottom: 8px;
+            }
+
+            .trainer-card h2 {
+                font-size: 22px;
+            }
+
+            .trainer-card h3 {
+                font-size: 15px;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                color: var(--text-secondary);
+            }
+
+            .trainer-muted {
+                color: var(--text-secondary);
+                line-height: 1.55;
+                font-size: 13px;
+            }
+
+            .trainer-status-row {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                margin: 16px 0;
+            }
+
+            .trainer-status-pill {
+                border: 1px solid var(--border-color);
+                background: var(--bg-tertiary);
+                border-radius: 12px;
+                padding: 12px;
+            }
+
+            .trainer-status-label {
+                color: var(--text-muted);
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                margin-bottom: 4px;
+            }
+
+            .trainer-status-value {
+                color: var(--text-primary);
+                font-weight: 700;
+                word-break: break-word;
+            }
+
+            .trainer-actions {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+            }
+
+            .trainer-button {
+                border: none;
+                border-radius: 10px;
+                padding: 10px 16px;
+                font-weight: 700;
+                cursor: pointer;
+                color: white;
+                background: var(--accent-gradient);
+                transition: transform var(--transition), opacity var(--transition);
+            }
+
+            .trainer-button:hover {
+                transform: translateY(-1px);
+                opacity: 0.92;
+            }
+
+            .trainer-button.secondary {
+                background: var(--bg-hover);
+                color: var(--text-primary);
+                border: 1px solid var(--border-accent);
+            }
+
+            .trainer-button.danger {
+                background: linear-gradient(135deg, #ef4444, #f97316);
+            }
+
+            .trainer-form {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 14px;
+            }
+
+            .trainer-field {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .trainer-field.full {
+                grid-column: 1 / -1;
+            }
+
+            .trainer-field label {
+                color: var(--text-secondary);
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+            }
+
+            .trainer-field input,
+            .trainer-field select {
+                background: var(--bg-primary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                padding: 10px 12px;
+                font-family: var(--font-sans);
+                font-size: 14px;
+                outline: none;
+            }
+
+            .trainer-field input:focus,
+            .trainer-field select:focus {
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 2px rgba(108, 140, 255, 0.16);
+            }
+
+            .trainer-check-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 12px;
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                background: var(--bg-primary);
+            }
+
+            .trainer-check-row input {
+                width: auto;
+                accent-color: var(--accent-blue);
+            }
+
+            .trainer-log {
+                min-height: 38px;
+                margin-top: 14px;
+                color: var(--text-secondary);
+                font-family: var(--font-mono);
+                font-size: 12px;
+                white-space: pre-wrap;
+            }
+
             .image-info {
                 padding: 8px 12px;
                 font-size: 11px;
@@ -1491,6 +1665,9 @@
                 .year-cards {
                     grid-template-columns: 1fr;
                 }
+                .trainer-grid {
+                    grid-template-columns: 1fr;
+                }
             }
 
             @media (max-width: 768px) {
@@ -1505,6 +1682,10 @@
                     min-width: 24px;
                     height: 14px;
                     font-size: 8px;
+                }
+                .trainer-form,
+                .trainer-status-row {
+                    grid-template-columns: 1fr;
                 }
             }
 
@@ -1691,6 +1872,7 @@
         <!-- Tabs -->
         <nav class="tab-nav">
             <button id="logsTabBtn" class="tab-btn active" onclick="switchTab('logs')">Logs & Dashboard</button>
+            <button id="trainerTabBtn" class="tab-btn" onclick="switchTab('trainer')">Auto Trainer</button>
             <button id="imagesTabBtn" class="tab-btn" onclick="switchTab('images')">Debug Images</button>
             <button id="logFilesTabBtn" class="tab-btn" onclick="switchTab('logFiles')">Log Files</button>
         </nav>
@@ -1935,6 +2117,102 @@
             </div>
             <div id="imageGrid" class="image-grid">
                 <!-- Image cards will be injected here. -->
+            </div>
+        </div>
+
+        <!-- Auto Trainer View -->
+        <div id="trainerView" class="tab-view trainer-view">
+            <div class="trainer-grid">
+                <section class="trainer-card">
+                    <h2>Web Auto Trainer</h2>
+                    <p class="trainer-muted">
+                        Control Uma Android Automation from this browser while the Android app remains responsible for permissions, MediaProjection, and Accessibility gestures.
+                        If Android shows a screen-capture prompt, approve it on the device or emulator.
+                    </p>
+
+                    <div class="trainer-status-row">
+                        <div class="trainer-status-pill">
+                            <div class="trainer-status-label">Bot</div>
+                            <div id="trainerRunning" class="trainer-status-value">Unknown</div>
+                        </div>
+                        <div class="trainer-status-pill">
+                            <div class="trainer-status-label">Device</div>
+                            <div id="trainerDevice" class="trainer-status-value">-</div>
+                        </div>
+                        <div class="trainer-status-pill">
+                            <div class="trainer-status-label">Browser Clients</div>
+                            <div id="trainerClients" class="trainer-status-value">-</div>
+                        </div>
+                        <div class="trainer-status-pill">
+                            <div class="trainer-status-label">Scenario</div>
+                            <div id="trainerScenarioStatus" class="trainer-status-value">-</div>
+                        </div>
+                    </div>
+
+                    <div class="trainer-actions">
+                        <button class="trainer-button" onclick="trainerStart()">Start Auto Trainer</button>
+                        <button class="trainer-button danger" onclick="trainerStop()">Stop</button>
+                        <button class="trainer-button secondary" onclick="trainerLoadStatus()">Refresh Status</button>
+                    </div>
+                    <div id="trainerMessage" class="trainer-log"></div>
+                </section>
+
+                <section class="trainer-card">
+                    <h3>Run Configuration</h3>
+                    <p class="trainer-muted" style="margin-bottom: 14px;">
+                        These fields write directly to the same SQLite settings used by the Android app. Save before starting if you changed a value.
+                    </p>
+                    <div class="trainer-form">
+                        <div class="trainer-field">
+                            <label for="trainerScenario">Scenario</label>
+                            <select id="trainerScenario">
+                                <option value="URA Finale">URA Finale</option>
+                                <option value="Unity Cup">Unity Cup</option>
+                                <option value="Trackblazer">Trackblazer</option>
+                            </select>
+                        </div>
+                        <div class="trainer-field">
+                            <label for="trainerFailureChance">Max Failure Chance</label>
+                            <input id="trainerFailureChance" type="number" min="0" max="100" step="1" />
+                        </div>
+                        <div class="trainer-field">
+                            <label for="trainerWaitDelay">Wait Delay</label>
+                            <input id="trainerWaitDelay" type="number" min="0" max="10" step="0.1" />
+                        </div>
+                        <div class="trainer-field">
+                            <label for="trainerDialogWaitDelay">Dialog Wait Delay</label>
+                            <input id="trainerDialogWaitDelay" type="number" min="0" max="10" step="0.1" />
+                        </div>
+                        <div class="trainer-field full">
+                            <label for="trainerPriority">Stat Priority</label>
+                            <input id="trainerPriority" type="text" placeholder="Speed, Stamina, Power, Guts, Wit" />
+                        </div>
+                        <div class="trainer-field full">
+                            <label for="trainerBlacklist">Training Blacklist</label>
+                            <input id="trainerBlacklist" type="text" placeholder="Comma-separated stats to skip" />
+                        </div>
+                        <label class="trainer-check-row">
+                            <input id="trainerRainbow" type="checkbox" />
+                            Enable rainbow training bonus
+                        </label>
+                        <label class="trainer-check-row">
+                            <input id="trainerSkillHints" type="checkbox" />
+                            Prioritize skill hints
+                        </label>
+                        <label class="trainer-check-row">
+                            <input id="trainerRisky" type="checkbox" />
+                            Allow risky training
+                        </label>
+                        <label class="trainer-check-row">
+                            <input id="trainerRemoteLogs" type="checkbox" />
+                            Keep Remote Log Viewer enabled
+                        </label>
+                    </div>
+                    <div class="trainer-actions">
+                        <button class="trainer-button" onclick="trainerSaveSettings()">Save Settings</button>
+                        <button class="trainer-button secondary" onclick="trainerLoadStatus()">Reload From Device</button>
+                    </div>
+                </section>
             </div>
         </div>
 
@@ -3776,16 +4054,18 @@
 
             /**
              * Switches between different view tabs.
-             * @param {string} tabID - The ID of the tab to switch to ('logs', 'images', or 'logFiles').
+             * @param {string} tabID - The ID of the tab to switch to ('logs', 'trainer', 'images', or 'logFiles').
              */
             function switchTab(tabID) {
                 // Update buttons.
                 document.getElementById("logsTabBtn").classList.toggle("active", tabID === "logs")
+                document.getElementById("trainerTabBtn").classList.toggle("active", tabID === "trainer")
                 document.getElementById("imagesTabBtn").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesTabBtn").classList.toggle("active", tabID === "logFiles")
 
                 // Update views.
                 document.getElementById("logsView").classList.toggle("active", tabID === "logs")
+                document.getElementById("trainerView").classList.toggle("active", tabID === "trainer")
                 document.getElementById("imagesView").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesView").classList.toggle("active", tabID === "logFiles")
 
@@ -3797,6 +4077,9 @@
                 if (tabID === "logFiles" && !window.__logFilesLoaded) {
                     loadLogFiles()
                     window.__logFilesLoaded = true
+                }
+                if (tabID === "trainer") {
+                    trainerLoadStatus()
                 }
             }
 
@@ -4066,6 +4349,148 @@
                 document.getElementById("logFileModalBody").textContent = ""
             }
 
+            // ==============================================
+            // Web Auto Trainer
+            // ==============================================
+
+            const DEFAULT_TRAINER_SETTINGS = {
+                general: {
+                    scenario: "URA Finale",
+                    waitDelay: 0.5,
+                    dialogWaitDelay: 0.5
+                },
+                training: {
+                    statPrioritization: ["Speed", "Stamina", "Power", "Guts", "Wit"],
+                    trainingBlacklist: [],
+                    maximumFailureChance: 20,
+                    enableRainbowTrainingBonus: true,
+                    enablePrioritizeSkillHints: false,
+                    enableRiskyTraining: false
+                },
+                debug: {
+                    enableRemoteLogViewer: true
+                }
+            }
+
+            function trainerSetMessage(message) {
+                document.getElementById("trainerMessage").textContent = message || ""
+            }
+
+            function trainerArrayFromInput(value) {
+                return String(value || "")
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter(Boolean)
+            }
+
+            function trainerNumberFromInput(id, fallback) {
+                const value = Number(document.getElementById(id).value)
+                return Number.isFinite(value) ? value : fallback
+            }
+
+            function trainerApplySettings(settings) {
+                const merged = {
+                    general: Object.assign({}, DEFAULT_TRAINER_SETTINGS.general, settings.general || {}),
+                    training: Object.assign({}, DEFAULT_TRAINER_SETTINGS.training, settings.training || {}),
+                    debug: Object.assign({}, DEFAULT_TRAINER_SETTINGS.debug, settings.debug || {})
+                }
+
+                document.getElementById("trainerScenario").value = merged.general.scenario || "URA Finale"
+                document.getElementById("trainerFailureChance").value = merged.training.maximumFailureChance ?? 20
+                document.getElementById("trainerWaitDelay").value = merged.general.waitDelay ?? 0.5
+                document.getElementById("trainerDialogWaitDelay").value = merged.general.dialogWaitDelay ?? 0.5
+                document.getElementById("trainerPriority").value = Array.isArray(merged.training.statPrioritization) ? merged.training.statPrioritization.join(", ") : DEFAULT_TRAINER_SETTINGS.training.statPrioritization.join(", ")
+                document.getElementById("trainerBlacklist").value = Array.isArray(merged.training.trainingBlacklist) ? merged.training.trainingBlacklist.join(", ") : ""
+                document.getElementById("trainerRainbow").checked = merged.training.enableRainbowTrainingBonus !== false
+                document.getElementById("trainerSkillHints").checked = merged.training.enablePrioritizeSkillHints === true
+                document.getElementById("trainerRisky").checked = merged.training.enableRiskyTraining === true
+                document.getElementById("trainerRemoteLogs").checked = merged.debug.enableRemoteLogViewer !== false
+                document.getElementById("trainerScenarioStatus").textContent = merged.general.scenario || "-"
+            }
+
+            function trainerCollectSettings() {
+                return {
+                    general: {
+                        scenario: document.getElementById("trainerScenario").value,
+                        waitDelay: trainerNumberFromInput("trainerWaitDelay", 0.5),
+                        dialogWaitDelay: trainerNumberFromInput("trainerDialogWaitDelay", 0.5)
+                    },
+                    training: {
+                        statPrioritization: trainerArrayFromInput(document.getElementById("trainerPriority").value),
+                        trainingBlacklist: trainerArrayFromInput(document.getElementById("trainerBlacklist").value),
+                        maximumFailureChance: trainerNumberFromInput("trainerFailureChance", 20),
+                        enableRainbowTrainingBonus: document.getElementById("trainerRainbow").checked,
+                        enablePrioritizeSkillHints: document.getElementById("trainerSkillHints").checked,
+                        enableRiskyTraining: document.getElementById("trainerRisky").checked
+                    },
+                    debug: {
+                        enableRemoteLogViewer: document.getElementById("trainerRemoteLogs").checked
+                    }
+                }
+            }
+
+            async function trainerLoadStatus() {
+                try {
+                    const res = await fetch("/trainer/status")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const status = await res.json()
+                    document.getElementById("trainerRunning").textContent = status.running ? "Running" : "Stopped"
+                    document.getElementById("trainerDevice").textContent = status.deviceIp ? `${status.deviceIp}:${status.serverPort}` : "-"
+                    document.getElementById("trainerClients").textContent = String(status.clients ?? "-")
+                    trainerApplySettings(status.settings || {})
+                    trainerSetMessage(`Last status refresh: ${new Date().toLocaleTimeString()}`)
+                } catch (err) {
+                    trainerSetMessage(`Failed to load trainer status: ${err.message}`)
+                }
+            }
+
+            async function trainerPost(path, payload) {
+                const res = await fetch(path, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: payload ? JSON.stringify(payload) : "{}"
+                })
+                let body = {}
+                try {
+                    body = await res.json()
+                } catch (_) {}
+                if (!res.ok) throw new Error(body.error || body.message || `HTTP ${res.status}`)
+                return body
+            }
+
+            async function trainerSaveSettings() {
+                trainerSetMessage("Saving trainer settings...")
+                try {
+                    const result = await trainerPost("/trainer/settings", { settings: trainerCollectSettings() })
+                    trainerApplySettings(result.settings || trainerCollectSettings())
+                    trainerSetMessage(`Saved ${result.updated || 0} settings. Start when the Android device is ready.`)
+                } catch (err) {
+                    trainerSetMessage(`Failed to save settings: ${err.message}`)
+                }
+            }
+
+            async function trainerStart() {
+                trainerSetMessage("Requesting start on Android device...")
+                try {
+                    const result = await trainerPost("/trainer/start")
+                    trainerSetMessage(result.message || "Start requested.")
+                    setTimeout(trainerLoadStatus, 1000)
+                } catch (err) {
+                    trainerSetMessage(`Failed to start: ${err.message}`)
+                }
+            }
+
+            async function trainerStop() {
+                trainerSetMessage("Requesting stop on Android device...")
+                try {
+                    const result = await trainerPost("/trainer/stop")
+                    trainerSetMessage(result.message || "Stop requested.")
+                    setTimeout(trainerLoadStatus, 1000)
+                } catch (err) {
+                    trainerSetMessage(`Failed to stop: ${err.message}`)
+                }
+            }
+
             // Close the log file modal when clicking the dimmed backdrop (but not the inner content).
             document.getElementById("logFileModal").addEventListener("click", function(e) {
                 if (e.target === this) closeLogFileModal()
@@ -4077,6 +4502,8 @@
             // Paint an empty Race History grid so the panel takes its full layout immediately,
             // before any CAL: snapshot arrives.
             renderCalendar(null)
+            trainerLoadStatus()
+            setInterval(trainerLoadStatus, 5000)
             connect()
         </script>
     </body>

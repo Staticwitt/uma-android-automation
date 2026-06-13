@@ -1,5 +1,569 @@
 package com.steve1316.uma_android_automation.utils
 
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import android.graphics.BitmapFactory
+import android.net.wifi.WifiManager
+import android.text.format.Formatter
+import android.util.Base64
+import android.util.Log
+import com.steve1316.automation_library.events.JSEvent
+import com.steve1316.automation_library.utils.BotService
+import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.StartModule
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.ApplicationEngine
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondFile
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.runBlocking
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.net.NetworkInterface
+import java.text.SimpleDateFormat
+import java.util.Collections
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Embedded browser server for the Remote Log Viewer and Web Auto Trainer.
+ *
+ * The React Native app enables this server from Debug Settings. Once started, it serves
+ * `assets/log_viewer.html`, streams MessageLog bridge events over a WebSocket, and exposes
+ * browser-safe control endpoints under `/trainer`.
+ */
+object LogStreamServer {
+    private const val TAG = "[${MainActivity.loggerTag}]LogStreamServer"
+    private const val MAX_HISTORY = 2000
+    private const val HISTORY_BATCH_SIZE = 100
+    private const val LOG_VIEWER_ASSET = "log_viewer.html"
+
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
+    private val clients = ConcurrentHashMap.newKeySet<io.ktor.server.websocket.DefaultWebSocketServerSession>()
+    private val history = Collections.synchronizedList(mutableListOf<JSONObject>())
+    private val serverLock = Any()
+
+    @Volatile
+    private var server: ApplicationEngine? = null
+
+    @Volatile
+    private var appContext: Context? = null
+
+    @Volatile
+    private var port: Int = 9000
+
+    @Volatile
+    private var startedAtMs: Long = 0
+
+    @Volatile
+    private var latestCalendarSnapshot: String? = null
+
+    @Volatile
+    private var smartRaceSolverEnabled: Boolean = false
+
+    /** Starts or reuses the embedded HTTP/WebSocket server. */
+    fun start(context: Context, requestedPort: Int = 9000) {
+        synchronized(serverLock) {
+            appContext = context.applicationContext
+            port = requestedPort
+
+            if (server != null) {
+                Log.d(TAG, "start:: server already running on port $port")
+                return
+            }
+
+            ensureSettingsHelper()
+            if (!EventBus.getDefault().isRegistered(this)) {
+                EventBus.getDefault().register(this)
+            }
+
+            server =
+                embeddedServer(CIO, host = "0.0.0.0", port = port) {
+                    install(WebSockets)
+                    routing {
+                        get("/") {
+                            call.respondBytes(readAsset(LOG_VIEWER_ASSET), ContentType.Text.Html)
+                        }
+                        get("/health") {
+                            call.respondText("""{"ok":true}""", ContentType.Application.Json)
+                        }
+                        get("/trainer/status") {
+                            call.respondText(buildStatusJson().toString(), ContentType.Application.Json)
+                        }
+                        post("/trainer/start") {
+                            val accepted = StartModule.requestStartFromWeb()
+                            val response =
+                                JSONObject()
+                                    .put("ok", accepted)
+                                    .put("message", if (accepted) "Start requested on Android device." else "StartModule is not ready. Open the Android app once, then retry.")
+                                    .put("running", BotService.isRunning)
+                            call.respondText(response.toString(), ContentType.Application.Json, if (accepted) HttpStatusCode.Accepted else HttpStatusCode.ServiceUnavailable)
+                        }
+                        post("/trainer/stop") {
+                            val accepted = StartModule.requestStopFromWeb()
+                            val response =
+                                JSONObject()
+                                    .put("ok", accepted)
+                                    .put("message", if (accepted) "Stop requested on Android device." else "StartModule is not ready. Open the Android app once, then retry.")
+                                    .put("running", BotService.isRunning)
+                            call.respondText(response.toString(), ContentType.Application.Json, if (accepted) HttpStatusCode.Accepted else HttpStatusCode.ServiceUnavailable)
+                        }
+                        post("/trainer/settings") {
+                            val body = call.receiveText()
+                            val result = saveSettingsFromPayload(body)
+                            call.respondText(result.toString(), ContentType.Application.Json, if (result.optBoolean("ok")) HttpStatusCode.OK else HttpStatusCode.BadRequest)
+                        }
+                        get("/logs/download") {
+                            val text = historySnapshot().joinToString("\n") { toPlainLogLine(it) }
+                            call.response.headers.append(HttpHeaders.ContentDisposition, "attachment; filename=\"uaa-log-${System.currentTimeMillis()}.txt\"")
+                            call.respondText(text, ContentType.Text.Plain)
+                        }
+                        get("/logs/files") {
+                            call.respondText(buildLogFilesIndex().toString(), ContentType.Application.Json)
+                        }
+                        get("/logs/files/{name}") {
+                            val name = call.parameters["name"].orEmpty()
+                            val file = resolveLogFile(name)
+                            if (file == null) {
+                                call.respondText("Not found", ContentType.Text.Plain, HttpStatusCode.NotFound)
+                            } else {
+                                if (call.request.queryParameters["download"] == "1") {
+                                    call.response.headers.append(HttpHeaders.ContentDisposition, "attachment; filename=\"${file.name}\"")
+                                }
+                                call.respondFile(file)
+                            }
+                        }
+                        webSocket("/") {
+                            clients.add(this)
+                            try {
+                                sendHistory(this)
+                                latestCalendarSnapshot?.let { send(Frame.Text("CAL:$it")) }
+                                send(Frame.Text("SRS_STATE:$smartRaceSolverEnabled"))
+                                incoming.consumeEach { frame ->
+                                    if (frame is Frame.Text) {
+                                        handleClientCommand(this, frame.readText())
+                                    }
+                                }
+                            } finally {
+                                clients.remove(this)
+                            }
+                        }
+                    }
+                }.start(wait = false)
+
+            startedAtMs = System.currentTimeMillis()
+            Log.i(TAG, "start:: Remote Log Viewer and Web Auto Trainer listening on ${getDeviceIpAddress(context)}:$port")
+        }
+    }
+
+    /** Stops the embedded server. This is intentionally not called on each run stop so browser clients can remain connected. */
+    fun stop() {
+        synchronized(serverLock) {
+            server?.stop(1000, 2000)
+            server = null
+            if (EventBus.getDefault().isRegistered(this)) {
+                EventBus.getDefault().unregister(this)
+            }
+            clients.clear()
+        }
+    }
+
+    /** Clears the live history at the start of a new automation run and tells browsers to reset their dashboards. */
+    fun resetMute() {
+        persistCurrentHistory()
+        synchronized(history) {
+            history.clear()
+        }
+        broadcastRaw("CMD:CLEAR")
+    }
+
+    /** Broadcasts a Smart Race Solver calendar snapshot to all connected browsers. */
+    fun broadcastCalendarSnapshot(json: String) {
+        latestCalendarSnapshot = json
+        broadcastRaw("CAL:$json")
+    }
+
+    /** Broadcasts whether the Smart Race Solver dashboard panel should be shown. */
+    fun broadcastSmartRaceSolverEnabled(enabled: Boolean) {
+        smartRaceSolverEnabled = enabled
+        broadcastRaw("SRS_STATE:$enabled")
+    }
+
+    /** Returns the device LAN IP address displayed to the user in-app. */
+    fun getDeviceIpAddress(context: Context): String {
+        try {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val address = wifiManager?.connectionInfo?.ipAddress ?: 0
+            if (address != 0) return Formatter.formatIpAddress(address)
+        } catch (e: Exception) {
+            Log.w(TAG, "getDeviceIpAddress:: Wi-Fi lookup failed: ${e.message}")
+        }
+
+        return try {
+            NetworkInterface.getNetworkInterfaces().toList()
+                .flatMap { it.inetAddresses.toList() }
+                .firstOrNull { !it.isLoopbackAddress && it.hostAddress?.contains(":") == false }
+                ?.hostAddress ?: "127.0.0.1"
+        } catch (_: Exception) {
+            "127.0.0.1"
+        }
+    }
+
+    /** Receives React Native bridge log events and forwards them to browser clients. */
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    fun onJSEvent(event: JSEvent) {
+        if (event.isInternal) return
+        val parsed = parseLogEvent(event.eventName, event.message)
+        appendHistory(parsed)
+        broadcastRaw(parsed.toString())
+    }
+
+    private fun readAsset(name: String): ByteArray {
+        val context = appContext ?: throw IllegalStateException("LogStreamServer has no Context")
+        return context.assets.open(name).use { it.readBytes() }
+    }
+
+    private fun buildStatusJson(): JSONObject {
+        val context = appContext
+        val status =
+            JSONObject()
+                .put("running", BotService.isRunning)
+                .put("serverPort", port)
+                .put("startedAt", startedAtMs)
+                .put("clients", clients.size)
+                .put("historyCount", history.size)
+                .put("smartRaceSolverEnabled", smartRaceSolverEnabled)
+
+        if (context != null) {
+            status.put("deviceIp", getDeviceIpAddress(context))
+            status.put("settings", loadSettingsSnapshot())
+        }
+
+        return status
+    }
+
+    private fun saveSettingsFromPayload(body: String): JSONObject {
+        val context = appContext ?: return JSONObject().put("ok", false).put("error", "Server context is not initialized.")
+        return try {
+            val payload = JSONObject(body.ifBlank { "{}" })
+            val settings = if (payload.has("settings")) payload.getJSONObject("settings") else payload
+            val rows = mutableListOf<Triple<String, String, String>>()
+
+            val categories = settings.keys()
+            while (categories.hasNext()) {
+                val category = categories.next()
+                val categoryObject = settings.optJSONObject(category) ?: continue
+                val keys = categoryObject.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    rows.add(Triple(category, key, serializeSettingValue(categoryObject.get(key))))
+                }
+            }
+
+            if (rows.isEmpty()) {
+                return JSONObject().put("ok", false).put("error", "No settings were supplied.")
+            }
+
+            writeSettingsRows(context, rows)
+            ensureSettingsHelper()
+            JSONObject().put("ok", true).put("updated", rows.lengthAsJson()).put("settings", loadSettingsSnapshot())
+        } catch (e: Exception) {
+            Log.w(TAG, "saveSettingsFromPayload:: failed: ${e.message}")
+            JSONObject().put("ok", false).put("error", e.message ?: "Invalid settings payload.")
+        }
+    }
+
+    private fun writeSettingsRows(context: Context, rows: List<Triple<String, String, String>>) {
+        val dbFile = File(context.filesDir, "SQLite/settings.db")
+        dbFile.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(dbFile, null).use { db ->
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(category, key)
+                )
+                """.trimIndent(),
+            )
+            db.beginTransaction()
+            try {
+                rows.forEach { (category, key, value) ->
+                    db.execSQL(
+                        "INSERT OR REPLACE INTO settings (category, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                        arrayOf(category, key, value),
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+    }
+
+    private fun loadSettingsSnapshot(): JSONObject {
+        val context = appContext ?: return JSONObject()
+        val dbFile = File(context.filesDir, "SQLite/settings.db")
+        if (!dbFile.exists()) return JSONObject()
+
+        val out = JSONObject()
+        try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.rawQuery("SELECT category, key, value FROM settings ORDER BY category, key", null).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        val key = cursor.getString(1)
+                        val value = cursor.getString(2)
+                        val categoryObject = out.optJSONObject(category) ?: JSONObject().also { out.put(category, it) }
+                        categoryObject.put(key, deserializeSettingValue(value))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "loadSettingsSnapshot:: failed: ${e.message}")
+        }
+        return out
+    }
+
+    private fun serializeSettingValue(value: Any?): String =
+        when (value) {
+            null, JSONObject.NULL -> ""
+            is JSONObject, is JSONArray -> value.toString()
+            is Boolean, is Number -> value.toString()
+            else -> value.toString()
+        }
+
+    private fun deserializeSettingValue(value: String): Any {
+        val trimmed = value.trim()
+        if (trimmed.equals("true", ignoreCase = true)) return true
+        if (trimmed.equals("false", ignoreCase = true)) return false
+        trimmed.toIntOrNull()?.let { return it }
+        trimmed.toDoubleOrNull()?.let { return it }
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) return JSONObject(trimmed)
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) return JSONArray(trimmed)
+        return value
+    }
+
+    private fun parseLogEvent(eventName: String, message: String): JSONObject {
+        val level = detectLevel(eventName, message)
+        return JSONObject()
+            .put("timestamp", dateFormatter.format(Date()))
+            .put("level", level)
+            .put("message", message)
+            .also { enrichStructuredFields(it, message) }
+    }
+
+    private fun detectLevel(eventName: String, message: String): String {
+        val upper = "$eventName $message".uppercase(Locale.US)
+        return when {
+            "[ERROR]" in upper || " ERROR" in upper -> "ERROR"
+            "[WARN]" in upper || " WARN" in upper -> "WARN"
+            "[DEBUG]" in upper || " DEBUG" in upper -> "DEBUG"
+            "[VERBOSE]" in upper || " VERBOSE" in upper -> "VERBOSE"
+            else -> "INFO"
+        }
+    }
+
+    private fun enrichStructuredFields(json: JSONObject, message: String) {
+        detectAction(message)?.let { json.put("action", it) }
+
+        Regex("""Training level for (Speed|Stamina|Power|Guts|Wit).*?(\d)""", RegexOption.IGNORE_CASE)
+            .find(message)
+            ?.let {
+                json.put(
+                    "trainingLevel",
+                    JSONObject()
+                        .put("stat", it.groupValues[1].replaceFirstChar { c -> c.uppercase(Locale.US) })
+                        .put("level", it.groupValues[2].toInt()),
+                )
+            }
+
+        Regex("""(?:Turn|Day)\s*[:=]\s*(\d+)""", RegexOption.IGNORE_CASE)
+            .find(message)
+            ?.let { json.put("dateInfo", JSONObject().put("turn", it.groupValues[1])) }
+    }
+
+    private fun detectAction(message: String): String? {
+        val lower = message.lowercase(Locale.US)
+        val training = listOf("Speed", "Stamina", "Power", "Guts", "Wit").firstOrNull { lower.contains("selecting ${it.lowercase(Locale.US)}") || lower.contains("${it.lowercase(Locale.US)} training") }
+        if (training != null) return "training:$training"
+
+        return when {
+            "start racing" in lower || "running race" in lower || "race day" in lower -> "race"
+            "rest" in lower || "recover energy" in lower -> "energy:Rest"
+            "recreation" in lower || "mood" in lower -> "mood:Standard"
+            "injury" in lower || "failed training" in lower -> "injury"
+            else -> null
+        }
+    }
+
+    private fun appendHistory(parsed: JSONObject) {
+        synchronized(history) {
+            history.add(parsed)
+            while (history.size > MAX_HISTORY) history.removeAt(0)
+        }
+    }
+
+    private fun historySnapshot(): List<JSONObject> =
+        synchronized(history) {
+            history.toList()
+        }
+
+    private fun toPlainLogLine(json: JSONObject): String {
+        val timestamp = json.optString("timestamp")
+        val level = json.optString("level", "INFO")
+        val message = json.optString("message")
+        return "$timestamp [$level] $message"
+    }
+
+    private suspend fun sendHistory(session: io.ktor.server.websocket.DefaultWebSocketServerSession) {
+        val snapshot = historySnapshot()
+        snapshot.chunked(HISTORY_BATCH_SIZE).forEach { batch ->
+            val array = JSONArray()
+            batch.forEach { array.put(it) }
+            session.send(Frame.Text("HB:${array}"))
+        }
+        session.send(Frame.Text("HISTORY_DONE"))
+    }
+
+    private fun broadcastRaw(text: String) {
+        val stale = mutableListOf<io.ktor.server.websocket.DefaultWebSocketServerSession>()
+        clients.forEach { client ->
+            try {
+                runBlocking {
+                    client.send(Frame.Text(text))
+                }
+            } catch (_: Exception) {
+                stale.add(client)
+            }
+        }
+        stale.forEach { clients.remove(it) }
+    }
+
+    private suspend fun handleClientCommand(session: io.ktor.server.websocket.DefaultWebSocketServerSession, command: String) {
+        when (command) {
+            "CMD:REFRESH_IMAGES" -> sendDebugImages(session)
+        }
+    }
+
+    private suspend fun sendDebugImages(session: io.ktor.server.websocket.DefaultWebSocketServerSession) {
+        collectDebugImages().forEach { file ->
+            try {
+                val bytes = file.readBytes()
+                val data = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                val payload =
+                    JSONObject()
+                        .put("type", "image")
+                        .put("name", file.name)
+                        .put("data", data)
+                session.send(Frame.Text(payload.toString()))
+            } catch (e: Exception) {
+                Log.w(TAG, "sendDebugImages:: failed for ${file.name}: ${e.message}")
+            }
+        }
+        session.send(Frame.Text(JSONObject().put("type", "image_batch_done").toString()))
+    }
+
+    private fun collectDebugImages(): List<File> {
+        val context = appContext ?: return emptyList()
+        val roots =
+            listOfNotNull(
+                context.getExternalFilesDir(null),
+                context.filesDir,
+                context.cacheDir,
+            )
+
+        return roots
+            .flatMap { root -> root.walkTopDown().maxDepth(4).filter { it.isFile }.toList() }
+            .filter { file ->
+                val name = file.name.lowercase(Locale.US)
+                (name.endsWith(".png") || name.endsWith(".jpg") || name.endsWith(".jpeg")) &&
+                    (name.startsWith("debug") || name.contains("training") || name.contains("race"))
+            }
+            .sortedByDescending { it.lastModified() }
+            .take(80)
+    }
+
+    private fun buildLogFilesIndex(): JSONObject {
+        val files = listLogFiles()
+        val array = JSONArray()
+        files.forEach { file ->
+            array.put(
+                JSONObject()
+                    .put("name", file.name)
+                    .put("size", file.length())
+                    .put("modified", file.lastModified()),
+            )
+        }
+        return JSONObject()
+            .put("files", array)
+            .put("count", files.size)
+            .put("totalSize", files.sumOf { it.length() })
+    }
+
+    private fun listLogFiles(): List<File> {
+        val dir = logsDir()
+        return dir.listFiles { file -> file.isFile && file.extension.equals("txt", ignoreCase = true) }
+            ?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
+    }
+
+    private fun resolveLogFile(name: String): File? {
+        if (name.contains("/") || name.contains("\\") || name == "." || name == "..") return null
+        val file = File(logsDir(), name)
+        return if (file.isFile) file else null
+    }
+
+    private fun logsDir(): File {
+        val context = appContext ?: throw IllegalStateException("LogStreamServer has no Context")
+        return File(context.filesDir, "web-trainer-logs").also { it.mkdirs() }
+    }
+
+    private fun persistCurrentHistory() {
+        val snapshot = historySnapshot()
+        if (snapshot.isEmpty()) return
+        try {
+            val file = File(logsDir(), "uaa-${SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())}.txt")
+            file.writeText(snapshot.joinToString("\n") { toPlainLogLine(it) })
+        } catch (e: Exception) {
+            Log.w(TAG, "persistCurrentHistory:: failed: ${e.message}")
+        }
+    }
+
+    private fun ensureSettingsHelper() {
+        val context = appContext ?: return
+        if (!SettingsHelper.isAvailable()) {
+            SettingsHelper.initialize(context)
+        }
+    }
+
+    private fun <T> List<T>.lengthAsJson(): Int = size
+}
+package com.steve1316.uma_android_automation.utils
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
