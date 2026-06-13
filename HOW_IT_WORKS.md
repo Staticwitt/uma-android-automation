@@ -438,7 +438,7 @@ The bot determines if extra races should be run via `checkEligibilityToStartExtr
 - **In-Game Race Agenda:** Follows the agenda set within the game itself.
 - **Fan Farming:** Enters races based on a configurable interval (`daysToRunExtraRaces`).
 - **Smart Racing / Look-Ahead:** Checks upcoming turns for higher-quality races and may defer racing to a better opportunity.
-- **Smart Race Solver:** From Classic year onward, the optional [Smart Race Solver](#12-smart-race-solver) can take over extra-race scheduling — see Section 12. When it's enabled with `enableFarmingFans` on and `enableForceRacing` off, the solver decides which turns are race turns and which races are picked, and the legacy fan-farming and look-ahead heuristics step aside. When the solver picks `Train` for a turn, the **legacy extra-race fallback is suppressed entirely** — the bot will not enter a race that the solver did not plan, even if the older fan-farming heuristic would have triggered.
+- **Smart Race Solver:** From Classic year onward, the optional [Smart Race Solver](#12-smart-race-solver) can take over extra-race scheduling — see Section 12. When it's enabled with `enableForceRacing` off, the solver decides which turns are race turns and which races are picked, and the legacy fan-farming and look-ahead heuristics step aside. When the solver picks `Train` for a turn, the **legacy extra-race fallback is suppressed entirely** — the bot will not enter a race that the solver did not plan, even if the older fan-farming heuristic would have triggered.
 
 > [!IMPORTANT]
 > **Trackblazer** bypasses smart racing logic entirely and races as aggressively as possible, only stopping for summer, finals, or when the consecutive race limit is reached.
@@ -1163,7 +1163,6 @@ An optimization-based race scheduler that replaces the older Smart Racing Plan. 
 
 The solver is **opt-in** via the `enableSmartRaceSolver` setting on the Racing Settings page. It only takes over extra-race selection when:
 
-- `enableFarmingFans` is on (the bot is allowed to enter extra races at all),
 - `enableForceRacing` is off (the user hasn't asked the bot to race every turn unconditionally),
 - and the campaign is past Junior year (the solver plans from Classic onward; Junior racing follows the existing maiden-race / mandatory-race path).
 
@@ -1173,7 +1172,10 @@ The solver is **opt-in** via the `enableSmartRaceSolver` setting on the Racing S
 > [!NOTE]
 > **Manual race locks are honored at runtime.** The Settings UI lets the user pin a specific race or `TRAIN_LOCK_SENTINEL` to a calendar cell. Earlier builds applied these locks to the preview render but not to the live solve loop — the bot would happily race a different race on the locked turn. The peek path now consults the locked schedule directly, so any cell the user pinned is respected during the actual run.
 
-When all three hold, [Racing.kt](android/app/src/main/java/com/steve1316/uma_android_automation/bot/Racing.kt) calls `SmartRaceSolverIntegration.peekRaceKeyForTurn()` to ask "is there a race planned for the current turn, and if so, which one?" The answer steers both extra-racing eligibility and the race-list scan inside Trackblazer's `findSuitableRace()`.
+When these hold, [Racing.kt](android/app/src/main/java/com/steve1316/uma_android_automation/bot/Racing.kt) calls `SmartRaceSolverIntegration.peekRaceKeyForTurn()` to ask "is there a race planned for the current turn, and if so, which one?" The answer steers both extra-racing eligibility and the race-list scan inside Trackblazer's `findSuitableRace()`.
+
+> [!TIP]
+> **Parent Farming Mode.** Racing Settings includes a parent-farming preset for unattended inheritance runs. Enabling it turns on Smart Race Solver, keeps Force Racing and the in-game race agenda off, enables the fan-farming fallback, applies the "Fans + Epitaphs" solver mode with a lower per-race cost and lighter consecutive-race penalty, allows career completion after mandatory-race failure, relaxes stat targets, and prioritizes skill hints. Character presets, aptitudes, target/forced epithets, and manual locks remain user-controlled in Smart Race Solver Settings.
 
 > [!IMPORTANT]
 > **Trackblazer integration.** Trackblazer's `decideNextAction()` consults `peekDecisionForTurn()` *before* the existing flowchart in [Section 11.1](#111-overview-and-flow-differences). When the solver has picked `Race`, the turn defers to the racing flow; when it picks `Train`, the legacy fan-farming heuristic is bypassed so the turn really is a training turn.
