@@ -87,7 +87,7 @@ class SmartRaceSolverTest {
             )
 
         val schedule = SmartRaceSolver.solve(st)
-        assertEquals(targetRace.key, (schedule.decisions[30] as Decision.Race).raceKey)
+        assertEquals(targetRace.key, (schedule.decisions[30] as Decision.RaceDecision).raceKey)
         assertTrue("Target Epithet" in schedule.projectedEpithets)
     }
 
