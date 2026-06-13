@@ -24,6 +24,8 @@ export interface SolverConfigSnapshot {
         raceValue: number
         /** Multiplier applied to epithet stat rewards. */
         epithetValue: number
+        /** Extra multiplier applied only to selected target epithets. */
+        targetEpithetMultiplier: number
         /** Per-stat-point weight in the scoring function. */
         statWeight: number
         /** Per-SP-point weight in the scoring function. */

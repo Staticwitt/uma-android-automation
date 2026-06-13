@@ -864,6 +864,7 @@ object SmartRaceSolverIntegration {
         return Weights(
             raceValue = obj.optDouble("raceValue", 1.0),
             epithetValue = obj.optDouble("epithetValue", 1.0),
+            targetEpithetMultiplier = obj.optDouble("targetEpithetMultiplier", 3.0),
             statWeight = obj.optDouble("statWeight", 1.0),
             spWeight = obj.optDouble("spWeight", 1.0),
             hintWeight = obj.optDouble("hintWeight", 8.0),

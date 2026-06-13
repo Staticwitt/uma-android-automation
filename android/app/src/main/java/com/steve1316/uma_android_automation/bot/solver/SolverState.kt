@@ -74,6 +74,7 @@ data class Aptitudes(
  *
  * @property raceValue Multiplier applied to the per-race net (gross - cost) value.
  * @property epithetValue Multiplier applied to every epithet completion's reward.
+ * @property targetEpithetMultiplier Extra multiplier applied only to selected target epithets.
  * @property statWeight Coefficient on the stat component of gross race reward and cost baseline.
  * @property spWeight Coefficient on the skill-point component of gross race reward and cost baseline.
  * @property hintWeight Score awarded per completed hint-reward epithet.
@@ -92,6 +93,7 @@ data class Aptitudes(
 data class Weights(
     val raceValue: Double = 1.0,
     val epithetValue: Double = 1.0,
+    val targetEpithetMultiplier: Double = 3.0,
     val statWeight: Double = 1.0,
     val spWeight: Double = 1.0,
     val hintWeight: Double = 8.0,

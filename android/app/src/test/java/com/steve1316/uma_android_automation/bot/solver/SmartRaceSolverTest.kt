@@ -71,6 +71,27 @@ class SmartRaceSolverTest {
     }
 
     @Test
+    fun targetEpithetBreaksSameTurnTie() {
+        val genericRace = race("Generic Stakes", 30)
+        val targetRace = race("Target Stakes", 30)
+        val generic = epithet("Generic Epithet", listOf(EpithetMatcher.WinRace("Generic Stakes")))
+        val target = epithet("Target Epithet", listOf(EpithetMatcher.WinRace("Target Stakes")))
+
+        val st =
+            state(
+                currentTurn = 30,
+                races = listOf(genericRace, targetRace),
+                epithets = listOf(generic, target),
+                targetEpithets = setOf("Target Epithet"),
+                weights = Weights(targetEpithetMultiplier = 4.0),
+            )
+
+        val schedule = SmartRaceSolver.solve(st)
+        assertEquals(targetRace.key, (schedule.decisions[30] as Decision.Race).raceKey)
+        assertTrue("Target Epithet" in schedule.projectedEpithets)
+    }
+
+    @Test
     fun reSolveAfterLossDropsBlockedEpithet() {
         // Initial state: two reachable epithets, both feasible.
         val r1 = race("Race A", 30)

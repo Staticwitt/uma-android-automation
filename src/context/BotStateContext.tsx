@@ -279,6 +279,7 @@ export const defaultSettings: Settings = {
         smartRaceSolverWeights: JSON.stringify({
             raceValue: 1.0,
             epithetValue: 1.0,
+            targetEpithetMultiplier: 3.0,
             statWeight: 1.0,
             spWeight: 1.0,
             hintWeight: 8.0,

@@ -1240,8 +1240,9 @@ The [Smart Race Solver Settings page](src/pages/SmartRaceSolverSettings/) lets t
 
 - Pick a **character preset** (sourced from [src/data/characterPresets.json](src/data/characterPresets.json)). Selecting one seeds the six aptitude rows (Sprint / Mile / Medium / Long / Turf / Dirt) — the user can still hand-edit individual cells.
 - Pick **target epithets** (the solver gets a bonus for completing them) and **forced epithets** (hard-locked — schedules that don't complete them are discarded). Empty-matcher epithets are flagged with a red dot and skipped by the solver.
+- Apply **Parent Goal Presets** to quickly add common parent-farming targets such as G1 / fan parents, Triple Crown, Triple Tiara, dirt, mile / sprint, and skill-hint goals. Presets preserve existing picks and tune the target-epithet multiplier so selected targets outscore incidental epithets.
 - Set **per-turn manual locks** — pin a specific race or `TRAIN_LOCK_SENTINEL` onto a calendar cell to override the solver for that turn.
-- Tune the **weights bundle** (`raceValue`, `epithetValue`, `statWeight`, `spWeight`, `hintWeight`, `consecutiveRacePenalty`, `summerPenalty`, `raceBonusPct`, `raceCostPct`, `aptitudeThreshold`, `includeOpAndPreOp`, `allowSummerRacing`).
+- Tune the **weights bundle** (`raceValue`, `epithetValue`, `targetEpithetMultiplier`, `statWeight`, `spWeight`, `hintWeight`, `consecutiveRacePenalty`, `summerPenalty`, `raceBonusPct`, `raceCostPct`, `aptitudeThreshold`, `includeOpAndPreOp`, `allowSummerRacing`).
 
 After every meaningful change the page debounces a `SmartRaceSolverModule.previewSchedule()` call into Kotlin (see [src/lib/solver/preview.ts](src/lib/solver/preview.ts)) and renders the returned `SchedulePreview` onto a 72-cell calendar. Each cell shows the picked race name, grade badge, and epithet progression for that turn; a popover gives the full per-matcher condition labels and pending prerequisites. A floating Recalculate FAB and a stale-preview warning surface when the inputs have changed but the calendar hasn't refreshed yet.
 

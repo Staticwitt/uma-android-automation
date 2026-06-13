@@ -72,6 +72,8 @@ export interface WeightsMap {
     raceValue: number
     /** Multiplier applied to epithet stat rewards. */
     epithetValue: number
+    /** Extra multiplier applied only to selected target epithets. */
+    targetEpithetMultiplier: number
     /** Per-stat-point weight in the scoring function. */
     statWeight: number
     /** Per-SP-point weight in the scoring function. */
@@ -158,6 +160,7 @@ export const DEFAULT_APTITUDES: AptitudeMap = { Sprint: "A", Mile: "A", Medium: 
 export const DEFAULT_WEIGHTS: WeightsMap = {
     raceValue: 1.0,
     epithetValue: 1.0,
+    targetEpithetMultiplier: 3.0,
     statWeight: 1.0,
     spWeight: 1.0,
     hintWeight: 8.0,

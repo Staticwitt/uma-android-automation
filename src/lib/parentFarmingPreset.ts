@@ -10,6 +10,7 @@ export const PARENT_FARMING_MODE_SUMMARY = "Enables Smart Race Solver, fan-weigh
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
     ...OPTIMIZE_MODE_PRESETS.FANS_EPITAPH,
+    targetEpithetMultiplier: 4.0,
     consecutiveRacePenalty: 2.0,
     raceCostPct: 75.0,
     includeOpAndPreOp: false,

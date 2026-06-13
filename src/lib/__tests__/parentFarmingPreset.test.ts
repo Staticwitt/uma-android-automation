@@ -23,6 +23,7 @@ const createSettings = (): Settings =>
             smartRaceSolverWeights: JSON.stringify({
                 raceValue: 1,
                 epithetValue: 1,
+                targetEpithetMultiplier: 3,
                 statWeight: 1,
                 spWeight: 1,
                 hintWeight: 8,
@@ -78,6 +79,7 @@ describe("parentFarmingPreset", () => {
         expect(result.racing.smartRaceSolverManualLocks).toBe(JSON.stringify({ "31": "Tokyo Yushun (Japanese Derby)" }))
 
         expect(weights.fanWeight).toBe(1.0e-3)
+        expect(weights.targetEpithetMultiplier).toBe(4)
         expect(weights.raceCostPct).toBe(75)
         expect(weights.consecutiveRacePenalty).toBe(2)
         expect(weights.hintWeight).toBe(12)
