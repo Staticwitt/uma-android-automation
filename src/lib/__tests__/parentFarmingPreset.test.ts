@@ -1,11 +1,55 @@
-import { defaultSettings, type Settings } from "../../context/BotStateContext"
+import type { Settings } from "../../context/BotStateContext"
 import { applyParentFarmingPreset, disableParentFarmingMode } from "../parentFarmingPreset"
 
-const cloneDefaults = (): Settings => JSON.parse(JSON.stringify(defaultSettings))
+const createSettings = (): Settings =>
+    ({
+        general: {
+            enableStopBeforeFinals: true,
+        },
+        racing: {
+            enableParentFarmingMode: false,
+            enableFarmingFans: false,
+            ignoreConsecutiveRaceWarning: false,
+            daysToRunExtraRaces: 5,
+            enableCompleteCareerOnFailure: false,
+            enableForceRacing: true,
+            enableUserInGameRaceAgenda: true,
+            enableSmartRaceSolver: false,
+            smartRaceSolverCharacterPreset: "Special Week",
+            smartRaceSolverAptitudes: "{}",
+            smartRaceSolverTargetEpithets: "[]",
+            smartRaceSolverForcedEpithets: "[]",
+            smartRaceSolverManualLocks: "{}",
+            smartRaceSolverWeights: JSON.stringify({
+                raceValue: 1,
+                epithetValue: 1,
+                statWeight: 1,
+                spWeight: 1,
+                hintWeight: 8,
+                consecutiveRacePenalty: 3,
+                summerPenalty: 5,
+                raceBonusPct: 50,
+                raceCostPct: 100,
+                fanWeight: 0,
+                aptitudeThreshold: "C",
+                includeOpAndPreOp: false,
+                allowSummerRacing: false,
+            }),
+        },
+        skills: {
+            enableSkillPointCheck: true,
+        },
+        training: {
+            maximumFailureChance: 20,
+            preferredDistanceOverride: "Default",
+            enablePrioritizeSkillHints: false,
+            disableStatTargets: false,
+        },
+    }) as Settings
 
 describe("parentFarmingPreset", () => {
     it("applies parent-farming settings while preserving solver choices", () => {
-        const settings = cloneDefaults()
+        const settings = createSettings()
         settings.racing.smartRaceSolverCharacterPreset = "Oguri Cap"
         settings.racing.smartRaceSolverTargetEpithets = JSON.stringify(["Globe-Trotter"])
         settings.racing.smartRaceSolverForcedEpithets = JSON.stringify(["Triple Crown"])
@@ -48,7 +92,7 @@ describe("parentFarmingPreset", () => {
     })
 
     it("only clears the mode marker when disabled", () => {
-        const applied = applyParentFarmingPreset(cloneDefaults())
+        const applied = applyParentFarmingPreset(createSettings())
         const result = disableParentFarmingMode(applied)
 
         expect(result.racing.enableParentFarmingMode).toBe(false)
