@@ -97,6 +97,15 @@ This project is purely for educational purposes to learn about Android automatio
 4. Filter the logs by typing `package:com.steve1316.uma_android_automation [UAA]` or just `[UAA]` in the search box to see only the logs from this app.
 5. Run the app - you'll now see all of its logs appear in real-time as it runs.
 
+## Web Auto Trainer
+
+When `Remote Log Viewer` is enabled in Debug Settings, the same browser page also includes an `Auto Trainer` tab.
+
+1. Start the app on your Android device or emulator and enable `Remote Log Viewer`.
+2. Open the displayed `http://<device-ip>:<port>` address from a browser on the same network.
+3. Use the `Auto Trainer` tab to review status, edit core run settings, save them to the app's SQLite settings store, and request Start/Stop.
+4. If Android displays a MediaProjection prompt after a web Start request, approve it on the device or emulator.
+
 ## To set the phone's resolution to 1080p (faster and more accurate)
 
 > [!NOTE]

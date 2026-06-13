@@ -5,6 +5,8 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityManager
@@ -48,6 +50,25 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
         private val TAG = "[${MainActivity.loggerTag}]StartModule"
         private var reactContext: ReactApplicationContext? = null
         private var emitter: DeviceEventManagerModule.RCTDeviceEventEmitter? = null
+        private var activeModule: StartModule? = null
+
+        /** Starts automation from the embedded web trainer while preserving the native permission flow. */
+        fun requestStartFromWeb(): Boolean {
+            val module = activeModule ?: return false
+            Handler(Looper.getMainLooper()).post {
+                module.start()
+            }
+            return true
+        }
+
+        /** Stops automation from the embedded web trainer via the same path as the in-app Stop button. */
+        fun requestStopFromWeb(): Boolean {
+            val module = activeModule ?: return false
+            Handler(Looper.getMainLooper()).post {
+                module.stop()
+            }
+            return true
+        }
     }
 
     private val context: Context = reactContext.applicationContext
@@ -55,6 +76,7 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
 
     init {
         StartModule.reactContext = reactContext
+        StartModule.activeModule = this
         StartModule.reactContext?.addActivityEventListener(this)
         Log.d(TAG, "StartModule is now initialized.")
     }

@@ -2,6 +2,7 @@ package com.steve1316.uma_android_automation.utils
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.wifi.WifiManager
@@ -9,7 +10,10 @@ import android.util.Base64
 import android.util.Log
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.events.JSEvent
+import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.StartModule
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -19,9 +23,11 @@ import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.server.websocket.WebSockets
@@ -68,6 +74,10 @@ object LogStreamServer {
 
     /** Application context for accessing assets and system services. */
     private var applicationContext: Context? = null
+
+    /** Port currently used by the embedded server, reported to the web trainer status API. */
+    @Volatile
+    private var serverPort: Int = 9000
 
     /** Whether the log streaming server is currently running. */
     @Volatile
@@ -947,6 +957,134 @@ object LogStreamServer {
         }
     }
 
+    /** Builds the JSON payload used by the browser Auto Trainer status panel. */
+    private fun buildTrainerStatus(context: Context): JSONObject {
+        return JSONObject().apply {
+            put("running", BotService.isRunning)
+            put("serverPort", serverPort)
+            put("deviceIp", getDeviceIpAddress(context))
+            put("clients", clients.size)
+            put("historyCount", synchronized(bufferLock) { messageBuffer.size })
+            put("smartRaceSolverEnabled", latestSmartRaceSolverEnabled ?: false)
+            put("settings", loadSettingsSnapshot(context))
+        }
+    }
+
+    /** Saves a nested settings JSON payload into Expo SQLite's category/key/value table. */
+    private fun saveTrainerSettings(context: Context, body: String): JSONObject {
+        return try {
+            val payload = JSONObject(body.ifBlank { "{}" })
+            val settings = if (payload.has("settings")) payload.getJSONObject("settings") else payload
+            val rows = mutableListOf<Triple<String, String, String>>()
+
+            val categories = settings.keys()
+            while (categories.hasNext()) {
+                val category = categories.next()
+                val categoryObject = settings.optJSONObject(category) ?: continue
+                val keys = categoryObject.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    rows.add(Triple(category, key, serializeSettingValue(categoryObject.get(key))))
+                }
+            }
+
+            if (rows.isEmpty()) {
+                return JSONObject().put("ok", false).put("error", "No settings were supplied.")
+            }
+
+            writeSettingsRows(context, rows)
+            if (!SettingsHelper.isAvailable()) {
+                SettingsHelper.initialize(context)
+            }
+
+            JSONObject()
+                .put("ok", true)
+                .put("updated", rows.size)
+                .put("settings", loadSettingsSnapshot(context))
+        } catch (e: Exception) {
+            Log.w(TAG, "[WARN] saveTrainerSettings:: Failed to save trainer settings: ${e.message}")
+            JSONObject().put("ok", false).put("error", e.message ?: "Invalid settings payload.")
+        }
+    }
+
+    /** Writes settings rows using the same table schema as src/lib/database.ts. */
+    private fun writeSettingsRows(context: Context, rows: List<Triple<String, String, String>>) {
+        val dbFile = File(context.filesDir, "SQLite/settings.db")
+        dbFile.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(dbFile, null).use { db ->
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(category, key)
+                )
+                """.trimIndent(),
+            )
+
+            db.beginTransaction()
+            try {
+                rows.forEach { (category, key, value) ->
+                    db.execSQL(
+                        "INSERT OR REPLACE INTO settings (category, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                        arrayOf(category, key, value),
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+    }
+
+    /** Loads all persisted settings into a nested JSON object for browser hydration. */
+    private fun loadSettingsSnapshot(context: Context): JSONObject {
+        val dbFile = File(context.filesDir, "SQLite/settings.db")
+        if (!dbFile.exists()) return JSONObject()
+
+        val out = JSONObject()
+        try {
+            SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                db.rawQuery("SELECT category, key, value FROM settings ORDER BY category, key", null).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val category = cursor.getString(0)
+                        val key = cursor.getString(1)
+                        val value = cursor.getString(2)
+                        val categoryObject = out.optJSONObject(category) ?: JSONObject().also { out.put(category, it) }
+                        categoryObject.put(key, deserializeSettingValue(value))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "[WARN] loadSettingsSnapshot:: Failed to load settings: ${e.message}")
+        }
+        return out
+    }
+
+    /** Mirrors the React Native serializer: strings are raw, everything else is JSON-like text. */
+    private fun serializeSettingValue(value: Any?): String =
+        when (value) {
+            null, JSONObject.NULL -> ""
+            is JSONObject, is JSONArray -> value.toString()
+            is Boolean, is Number -> value.toString()
+            else -> value.toString()
+        }
+
+    /** Best-effort browser-friendly deserializer for values persisted as strings. */
+    private fun deserializeSettingValue(value: String): Any {
+        val trimmed = value.trim()
+        if (trimmed.equals("true", ignoreCase = true)) return true
+        if (trimmed.equals("false", ignoreCase = true)) return false
+        trimmed.toIntOrNull()?.let { return it }
+        trimmed.toDoubleOrNull()?.let { return it }
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) return JSONObject(trimmed)
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) return JSONArray(trimmed)
+        return value
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -965,6 +1103,7 @@ object LogStreamServer {
 
         try {
             applicationContext = context.applicationContext
+            serverPort = port
             serverScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
             actionChannel = Channel(Channel.UNLIMITED)
 
@@ -1015,6 +1154,50 @@ object LogStreamServer {
                         // Provide a health check endpoint for monitoring the server status.
                         get("/health") {
                             call.respondText("""{"status":"ok"}""", ContentType.Application.Json)
+                        }
+
+                        // Browser-based Auto Trainer status and control endpoints.
+                        get("/trainer/status") {
+                            call.respondText(buildTrainerStatus(context).toString(), ContentType.Application.Json)
+                        }
+                        post("/trainer/settings") {
+                            val response = saveTrainerSettings(context, call.receiveText())
+                            val status = if (response.optBoolean("ok")) HttpStatusCode.OK else HttpStatusCode.BadRequest
+                            call.respondText(response.toString(), ContentType.Application.Json, status)
+                        }
+                        post("/trainer/start") {
+                            val accepted = StartModule.requestStartFromWeb()
+                            val response =
+                                JSONObject().apply {
+                                    put("ok", accepted)
+                                    put("running", BotService.isRunning)
+                                    put(
+                                        "message",
+                                        if (accepted) {
+                                            "Start requested on Android device."
+                                        } else {
+                                            "StartModule is not ready. Open the Android app once, then retry."
+                                        },
+                                    )
+                                }
+                            call.respondText(response.toString(), ContentType.Application.Json, if (accepted) HttpStatusCode.Accepted else HttpStatusCode.ServiceUnavailable)
+                        }
+                        post("/trainer/stop") {
+                            val accepted = StartModule.requestStopFromWeb()
+                            val response =
+                                JSONObject().apply {
+                                    put("ok", accepted)
+                                    put("running", BotService.isRunning)
+                                    put(
+                                        "message",
+                                        if (accepted) {
+                                            "Stop requested on Android device."
+                                        } else {
+                                            "StartModule is not ready. Open the Android app once, then retry."
+                                        },
+                                    )
+                                }
+                            call.respondText(response.toString(), ContentType.Application.Json, if (accepted) HttpStatusCode.Accepted else HttpStatusCode.ServiceUnavailable)
                         }
 
                         // Serve the full message log for download.
