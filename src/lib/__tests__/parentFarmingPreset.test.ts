@@ -32,6 +32,7 @@ const createSettings = (): Settings =>
                 raceBonusPct: 50,
                 raceCostPct: 100,
                 fanWeight: 0,
+                minimumRaceGapTurns: 0,
                 aptitudeThreshold: "C",
                 includeOpAndPreOp: false,
                 allowSummerRacing: false,
@@ -80,6 +81,7 @@ describe("parentFarmingPreset", () => {
 
         expect(weights.fanWeight).toBe(1.0e-3)
         expect(weights.targetEpithetMultiplier).toBe(4)
+        expect(weights.minimumRaceGapTurns).toBe(1)
         expect(weights.raceCostPct).toBe(75)
         expect(weights.consecutiveRacePenalty).toBe(2)
         expect(weights.hintWeight).toBe(12)

@@ -219,6 +219,7 @@ const SmartRaceSolverSettings = () => {
     const [raceBonusPctInput, setRaceBonusPctInput] = useState(weights.raceBonusPct.toString())
     const [raceCostPctInput, setRaceCostPctInput] = useState(weights.raceCostPct.toString())
     const [fanWeightInput, setFanWeightInput] = useState(weights.fanWeight.toString())
+    const [minimumRaceGapTurnsInput, setMinimumRaceGapTurnsInput] = useState(weights.minimumRaceGapTurns.toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
@@ -229,6 +230,7 @@ const SmartRaceSolverSettings = () => {
     useEffect(() => setRaceBonusPctInput(weights.raceBonusPct.toString()), [weights.raceBonusPct])
     useEffect(() => setRaceCostPctInput(weights.raceCostPct.toString()), [weights.raceCostPct])
     useEffect(() => setFanWeightInput(weights.fanWeight.toString()), [weights.fanWeight])
+    useEffect(() => setMinimumRaceGapTurnsInput(weights.minimumRaceGapTurns.toString()), [weights.minimumRaceGapTurns])
 
     /** Derived optimization mode. Mode is not persisted - it falls out of the weights so the radio toggle and the slider can never disagree. */
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
@@ -1656,6 +1658,22 @@ const SmartRaceSolverSettings = () => {
                                                     </Pressable>
 
                                                     <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Minimum Race Gap Turns</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={minimumRaceGapTurnsInput}
+                                                            onChangeText={(t) => /^\d*$/.test(t) && setMinimumRaceGapTurnsInput(t)}
+                                                            onBlur={() => updateWeight("minimumRaceGapTurns", Math.max(0, Math.floor(parseFloat(minimumRaceGapTurnsInput) || 0)))}
+                                                            keyboardType="number-pad"
+                                                            placeholder="0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Hard minimum number of non-race turns between solver-planned races. Set to 1 for at least one training/rest turn between races. Parent
+                                                            farming presets use 1 by default.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
                                                         <Text style={styles.inputLabel}>Hint Reward Weight</Text>
                                                         <Input
                                                             style={styles.input}
@@ -2013,6 +2031,7 @@ const SmartRaceSolverSettings = () => {
                                                                 { key: "EPITHET", val: `${weights.epithetValue}` },
                                                                 { key: "TARGET", val: `${weights.targetEpithetMultiplier}x` },
                                                                 { key: "FANS", val: `${weights.fanWeight}` },
+                                                                { key: "GAP", val: `${weights.minimumRaceGapTurns}` },
                                                                 { key: "HINT", val: `${weights.hintWeight}` },
                                                                 { key: "CONSEC", val: `-${weights.consecutiveRacePenalty}` },
                                                                 { key: "SUMMER", val: `-${weights.summerPenalty}` },

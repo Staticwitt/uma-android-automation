@@ -12,6 +12,7 @@ export interface ParentFarmingGoalPreset {
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
     targetEpithetMultiplier: 4.0,
+    minimumRaceGapTurns: 1,
 }
 
 export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [

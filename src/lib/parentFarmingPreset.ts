@@ -12,6 +12,7 @@ export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
     ...OPTIMIZE_MODE_PRESETS.FANS_EPITAPH,
     targetEpithetMultiplier: 4.0,
     consecutiveRacePenalty: 2.0,
+    minimumRaceGapTurns: 1,
     raceCostPct: 75.0,
     includeOpAndPreOp: false,
     allowSummerRacing: false,

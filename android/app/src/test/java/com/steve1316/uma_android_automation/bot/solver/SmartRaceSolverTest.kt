@@ -92,6 +92,23 @@ class SmartRaceSolverTest {
     }
 
     @Test
+    fun minimumRaceGapPreventsBackToBackSolverRaces() {
+        val r30 = race("Race 30", 30)
+        val r31 = race("Race 31", 31)
+        val r32 = race("Race 32", 32)
+        val st =
+            state(
+                currentTurn = 30,
+                races = listOf(r30, r31, r32),
+                weights = Weights(fanWeight = 1e-3, minimumRaceGapTurns = 1),
+            )
+
+        val raceTurns = SmartRaceSolver.solve(st).raceTurns().map { it.first }
+        assertTrue(raceTurns.isNotEmpty())
+        assertTrue(raceTurns.zipWithNext().all { (a, b) -> b - a > 1 }, "Expected at least one non-race turn between planned races, got $raceTurns")
+    }
+
+    @Test
     fun reSolveAfterLossDropsBlockedEpithet() {
         // Initial state: two reachable epithets, both feasible.
         val r1 = race("Race A", 30)

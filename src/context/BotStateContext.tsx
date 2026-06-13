@@ -288,6 +288,7 @@ export const defaultSettings: Settings = {
             raceBonusPct: 50.0,
             raceCostPct: 100.0,
             fanWeight: 0.0,
+            minimumRaceGapTurns: 0,
             aptitudeThreshold: "C",
             includeOpAndPreOp: false,
             allowSummerRacing: false,

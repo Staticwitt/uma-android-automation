@@ -101,11 +101,24 @@ object Heuristic {
 
         val children = ArrayList<Beam>(racesHere.size + 2)
         for (race in racesHere) {
+            if (!canRaceAfterGap(beam, turn, state)) continue
             children += applyDecision(beam, turn, Decision.RaceDecision(race.key), state)
         }
         children += applyDecision(beam, turn, Decision.Train, state)
         children += applyDecision(beam, turn, Decision.Rest, state)
         return children
+    }
+
+    /** Returns false when [Weights.minimumRaceGapTurns] would be violated by racing on [turn]. */
+    private fun canRaceAfterGap(
+        beam: Beam,
+        turn: TurnNumber,
+        state: SolverState,
+    ): Boolean {
+        val gap = state.weights.minimumRaceGapTurns.coerceAtLeast(0)
+        if (gap == 0) return true
+        val blockedTurns = (turn - gap)..(turn - 1)
+        return beam.raceHistory.none { it.turnNumber in blockedTurns }
     }
 
     /**

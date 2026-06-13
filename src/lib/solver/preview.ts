@@ -42,6 +42,8 @@ export interface SolverConfigSnapshot {
         raceCostPct: number
         /** Per-fan score contribution applied to a race's reward fans. 0.0 ignores fans entirely (Stat Epitaphs preset default). */
         fanWeight: number
+        /** Minimum number of non-race turns required between solver-planned races. */
+        minimumRaceGapTurns: number
         /** Minimum aptitude rank (S..G) a race needs in BOTH its distance type and surface to be eligible. */
         aptitudeThreshold: string
         /** When true, OP and Pre-OP races are also considered alongside G1 / G2 / G3. */

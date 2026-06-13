@@ -873,6 +873,7 @@ object SmartRaceSolverIntegration {
             raceBonusPct = obj.optDouble("raceBonusPct", 50.0),
             raceCostPct = obj.optDouble("raceCostPct", 100.0),
             fanWeight = obj.optDouble("fanWeight", 0.0),
+            minimumRaceGapTurns = obj.optInt("minimumRaceGapTurns", 0),
             aptitudeThreshold = parseAptitude(obj.optString("aptitudeThreshold", "C")),
             includeOpAndPreOp = obj.optBoolean("includeOpAndPreOp", false),
             allowSummerRacing = obj.optBoolean("allowSummerRacing", false),

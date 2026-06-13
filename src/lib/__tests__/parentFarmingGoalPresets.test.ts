@@ -28,6 +28,7 @@ const createRacingSettings = (): Settings["racing"] =>
             raceBonusPct: 50,
             raceCostPct: 100,
             fanWeight: 0,
+            minimumRaceGapTurns: 0,
             aptitudeThreshold: "C",
             includeOpAndPreOp: false,
             allowSummerRacing: false,
@@ -51,6 +52,7 @@ describe("parentFarmingGoalPresets", () => {
         expect(targets).toEqual(expect.arrayContaining(["Manual Target", "Triple Crown", "Senior Autumn Triple Crown"]))
         expect(forced).toEqual(["Manual Forced"])
         expect(weights.targetEpithetMultiplier).toBe(4)
+        expect(weights.minimumRaceGapTurns).toBe(1)
     })
 
     it("respects allowed epithet filters when adding targets", () => {
