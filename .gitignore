@@ -66,6 +66,17 @@ yarn-error.log
 # testing
 /coverage
 
+# Keep the Kotlin/JS scoring package available so a fresh `yarn install` can
+# resolve the local `uma-scoring` dependency before Gradle has been run.
+!android/scoring-shared/build/
+android/scoring-shared/build/*
+!android/scoring-shared/build/dist/
+android/scoring-shared/build/dist/*
+!android/scoring-shared/build/dist/js/
+android/scoring-shared/build/dist/js/*
+!android/scoring-shared/build/dist/js/productionLibrary/
+!android/scoring-shared/build/dist/js/productionLibrary/**
+
 # Yarn
 .yarn/*
 !.yarn/patches

@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { BotMetaContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -21,6 +21,7 @@ import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
+import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -39,6 +40,7 @@ const RacingSettings = () => {
     const { colors } = useTheme()
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
+    const { setSettings } = useContext(BotMetaContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
@@ -49,6 +51,7 @@ const RacingSettings = () => {
     // Merge current racing settings with defaults to handle missing properties.
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
+        enableParentFarmingMode,
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
@@ -70,6 +73,17 @@ const RacingSettings = () => {
     } = racingSettings
 
     /**
+     * Enable/disable the parent-farming preset. Disabling only clears the mode marker so custom
+     * edits made after applying the preset are not unexpectedly reverted.
+     */
+    const setParentFarmingMode = useCallback(
+        (checked: boolean) => {
+            setSettings((prev) => (checked ? applyParentFarmingPreset(prev) : disableParentFarmingMode(prev)))
+        },
+        [setSettings]
+    )
+
+    /**
      * Update a racing setting with special handling for the in-game race agenda.
      * When the in-game race agenda is enabled, it automatically disables the Farming Fans and Smart Race Solver settings to prevent conflicts.
      * @param key The key of the setting to update.
@@ -81,9 +95,22 @@ const RacingSettings = () => {
                 updateRacing((prev) => ({
                     // Disable Farming Fans and the Smart Race Solver when User In Game Race Agenda is enabled.
                     ...prev,
+                    enableParentFarmingMode: false,
                     enableFarmingFans: false,
                     enableUserInGameRaceAgenda: true,
                     enableSmartRaceSolver: false,
+                }))
+            } else if (key === "enableForceRacing" && value) {
+                updateRacing((prev) => ({
+                    ...prev,
+                    enableParentFarmingMode: false,
+                    enableForceRacing: true,
+                }))
+            } else if ((key === "enableFarmingFans" || key === "enableSmartRaceSolver") && value === false) {
+                updateRacing((prev) => ({
+                    ...prev,
+                    enableParentFarmingMode: false,
+                    [key]: value,
                 }))
             } else {
                 updateRacing({ [key]: value } as Partial<Settings["racing"]>)
@@ -177,6 +204,28 @@ const RacingSettings = () => {
                 <PageHeader title="Racing Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
+                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
+                            //////////////////////////////////////////////////////////////////////////////////////////////////
+                            Parent Farming */}
+                        <Section label="Parent Farming">
+                            <SearchableItem
+                                id="enable-parent-farming-mode"
+                                title="Enable Parent Farming Mode"
+                                description="Applies a preset tuned for unattended parent runs: Smart Race Solver, fan-weighted epithets, more extra-race tolerance, and relaxed stat targets."
+                            >
+                                <Row
+                                    title="Enable Parent Farming Mode"
+                                    description="Applies a preset tuned for unattended parent runs. You can still customize character presets, epithets, aptitudes, and weights afterward."
+                                    right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
+                                />
+                            </SearchableItem>
+                            {enableParentFarmingMode && (
+                                <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                    {`${PARENT_FARMING_MODE_SUMMARY} Open Smart Race Solver to choose the parent character, aptitudes, target epithets, and manual race locks.`}
+                                </InfoContainer>
+                            )}
+                        </Section>
+
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////
                             //////////////////////////////////////////////////////////////////////////////////////////////////
                             Race Behavior */}

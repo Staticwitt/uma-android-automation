@@ -44,6 +44,7 @@ export interface Settings {
 
     // Racing settings
     racing: {
+        enableParentFarmingMode: boolean
         enableFarmingFans: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
@@ -242,6 +243,7 @@ export const defaultSettings: Settings = {
         dialogWaitDelay: 0.5,
     },
     racing: {
+        enableParentFarmingMode: false,
         enableFarmingFans: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,
