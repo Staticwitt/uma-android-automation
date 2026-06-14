@@ -4,7 +4,7 @@ import {
     buildParentFarmingTrainingSettings,
     PARENT_FARMING_GOAL_RACING_BASE,
     PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
-} from "./parentFarmingPreset"
+} from "./parentFarmingConstants"
 
 export interface ParentFarmingGoalPreset {
     key: string
@@ -29,11 +29,6 @@ const statPriorityProfile = (order: string[]): Pick<Settings["training"], "statP
 })
 
 const G1_FAN_TRAINING: Partial<Settings["training"]> = {
-    preferredDistanceOverride: "Auto",
-    ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
-}
-
-const BALANCED_TRAINING: Partial<Settings["training"]> = {
     preferredDistanceOverride: "Auto",
     ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
 }
@@ -278,6 +273,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
     },
 ]
 
+export const findParentFarmingGoalPreset = (key: string): ParentFarmingGoalPreset | undefined =>
+    PARENT_FARMING_GOAL_PRESETS.find((preset) => preset.key === key)
+
 const parseStringList = (json: string | undefined): string[] => {
     try {
         const parsed = JSON.parse(json || "[]")
@@ -353,22 +351,4 @@ export const applyParentFarmingGoalPresetToTraining = (
 ): Partial<Settings["training"]> => ({
     ...buildParentFarmingTrainingSettings(training),
     ...(preset.trainingOverrides ?? {}),
-})
-
-/** Applies racing and training changes for a parent-farming goal preset. */
-export const applyParentFarmingGoalPreset = (
-    settings: Settings,
-    preset: ParentFarmingGoalPreset,
-    allowedNames?: Set<string>,
-    options?: ParentFarmingGoalPresetApplyOptions,
-): Settings => ({
-    ...settings,
-    racing: {
-        ...settings.racing,
-        ...applyParentFarmingGoalPresetToRacing(settings.racing, preset, allowedNames, options),
-    },
-    training: {
-        ...settings.training,
-        ...applyParentFarmingGoalPresetToTraining(settings.training, preset),
-    },
 })

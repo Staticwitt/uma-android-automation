@@ -1,7 +1,8 @@
 import * as Application from "expo-application"
 import MessageLog from "../../components/MessageLog"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
-import { BotMetaContext, GeneralMiscContext } from "../../context/BotStateContext"
+import { BotMetaContext, GeneralMiscContext, useSettingsSnapshot } from "../../context/BotStateContext"
+import { prepareSettingsForBotStart } from "../../lib/prepareSettingsForBotStart"
 import { useSettings } from "../../context/SettingsContext"
 import { logWithTimestamp, logErrorWithTimestamp } from "../../lib/logger"
 import { Animated, DeviceEventEmitter, StyleSheet, View, NativeModules } from "react-native"
@@ -85,10 +86,11 @@ const Home = () => {
     const [showPermissionDialog, setShowPermissionDialog] = useState<boolean>(false)
     const [abiMismatch, setAbiMismatch] = useState<boolean>(false)
 
-    const { readyStatus, setReadyStatus, setAppName, setAppVersion } = useContext(BotMetaContext)
+    const { readyStatus, setReadyStatus, setAppName, setAppVersion, setSettings } = useContext(BotMetaContext)
     const { general, updateGeneral } = useContext(GeneralMiscContext)
     const mlc = useContext(MessageLogDispatchContext)
     const { saveSettings } = useSettings()
+    const settings = useSettingsSnapshot()
     const { currentProfileName } = useProfileContext()
 
     const pulseAnim = useRef(new Animated.Value(1)).current
@@ -200,7 +202,9 @@ const Home = () => {
     const proceedToStart = async () => {
         logWithTimestamp("[Home] Saving settings before starting bot...")
         try {
-            await saveSettings()
+            const prepared = prepareSettingsForBotStart(settings)
+            setSettings(prepared)
+            await saveSettings(prepared)
             logWithTimestamp("[Home] Settings saved successfully, starting bot...")
         } catch (error) {
             logErrorWithTimestamp("[Home] Failed to save settings:", error)

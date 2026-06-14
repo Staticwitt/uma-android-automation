@@ -5,7 +5,10 @@ import { ModalCheckRow, ModalFooterChip } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { Snackbar } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
-import { TrainingContext, GeneralMiscContext, BotMetaContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { TrainingContext, GeneralMiscContext, BotMetaContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
+import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
+import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { SPACING } from "../../lib/spacing"
 import CustomSlider from "../../components/CustomSlider"
 import DraggablePriorityList from "../../components/DraggablePriorityList"
 import CustomSelect from "../../components/CustomSelect"
@@ -24,7 +27,6 @@ import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
 import { TYPE } from "../../lib/type"
-import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 import { MOTION } from "../../lib/motion"
 import { ROW_PADDING_Y } from "../../lib/density"
@@ -45,6 +47,7 @@ const TrainingSettings = () => {
     const { training, trainingStatTarget, updateTraining, updateTrainingStatTarget: updateStatTargetSlice } = useContext(TrainingContext)
     const { misc, updateMisc } = useContext(GeneralMiscContext)
     const { setSettings } = useContext(BotMetaContext)
+    const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
     const { saveSettingsImmediate } = useSettings()
     const { currentProfileName } = useProfileManager()
@@ -110,6 +113,8 @@ const TrainingSettings = () => {
     )
 
     const trainingStatTargetSettings = useMemo(() => ({ ...defaultSettings.trainingStatTarget, ...trainingStatTarget }), [trainingStatTarget])
+
+    const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
 
     const {
         maximumFailureChance,
@@ -504,6 +509,12 @@ const TrainingSettings = () => {
                 <PageHeader title="Training Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
+                        <ParentFarmingActivePresetChip settings={settings} />
+                        {parentFarmingDriftWarnings.length > 0 && (
+                            <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                {parentFarmingDriftWarnings.join("\n\n")}
+                            </WarningContainer>
+                        )}
                         <SearchableItem
                             id="training-settings-profile-selector"
                             title="Profile Selector"

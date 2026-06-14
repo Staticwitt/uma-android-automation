@@ -61,10 +61,12 @@ class ParentRunSummaryTest {
                     targetEpithetMultiplier = 4.0,
                     raceStats = RunRaceStats(wins = 18, losses = 2),
                     elapsedMs = 3600000L,
+                    trainingBias = "Auto distance · Speed-first · skill hints on · stat targets off",
                 ),
             )
 
         assertTrue(summary.contains("Parent Run Complete"))
+        assertTrue(summary.contains("Training bias: Auto distance"), summary)
         assertTrue(summary.contains("G1 / Fan Parent"), summary)
         assertTrue(summary.contains("Targets completed"), summary)
         assertTrue(summary.contains("Inheritance sparks"), summary)

@@ -4,12 +4,16 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
+import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
-import { applyParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
+import { applyParentFarmingGoalPreset, PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, type ParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
+import { findParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
+import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -26,7 +30,6 @@ import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
-import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
@@ -49,11 +52,13 @@ const RacingSettings = () => {
     const { setSettings } = useContext(BotMetaContext)
     const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
+    const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
 
     // Modal state for the Junior / Original strategy pickers (nav-row + chip pattern).
     const [juniorPickerOpen, setJuniorPickerOpen] = useState(false)
     const [originalPickerOpen, setOriginalPickerOpen] = useState(false)
+    const [goalPickerOpen, setGoalPickerOpen] = useState(false)
 
     // Merge current racing settings with defaults to handle missing properties.
     const racingSettings = { ...defaultSettings.racing, ...racing }
@@ -93,6 +98,8 @@ const RacingSettings = () => {
 
     const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
 
+    const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
+
     const allowedEpithetNames = useMemo(
         () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
         [general?.scenario, smartRaceSolverCharacterPreset]
@@ -104,6 +111,19 @@ const RacingSettings = () => {
         },
         [allowedEpithetNames, setSettings]
     )
+
+    const applyGoalPresetFromPicker = useCallback(
+        (preset: ParentFarmingGoalPreset) => {
+            applyGoalPreset(preset)
+            setGoalPickerOpen(false)
+        },
+        [applyGoalPreset]
+    )
+
+    const applyDefaultGoalPreset = useCallback(() => {
+        const preset = findParentFarmingGoalPreset(PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY)
+        if (preset) applyGoalPresetFromPicker(preset)
+    }, [applyGoalPresetFromPicker])
 
     const updateSolverWeight = useCallback(
         (key: string, value: number) => {
@@ -125,9 +145,20 @@ const RacingSettings = () => {
      */
     const setParentFarmingMode = useCallback(
         (checked: boolean) => {
-            setSettings((prev) => (checked ? applyParentFarmingPreset(prev) : disableParentFarmingMode(prev)))
+            if (!checked) {
+                setGoalPickerOpen(false)
+                setSettings((prev) => disableParentFarmingMode(prev))
+                return
+            }
+            const hasStoredPreset =
+                racingSettings.parentFarmingGoalPresetKey || racingSettings.parentFarmingBundleKey
+            if (hasStoredPreset) {
+                setSettings((prev) => applyParentFarmingPreset(prev))
+            } else {
+                setGoalPickerOpen(true)
+            }
         },
-        [setSettings]
+        [setSettings, racingSettings.parentFarmingGoalPresetKey, racingSettings.parentFarmingBundleKey]
     )
 
     const applyCharacterBundle = useCallback(
@@ -273,6 +304,12 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
                                 />
                             </SearchableItem>
+                            <ParentFarmingActivePresetChip settings={settings} />
+                            {parentFarmingDriftWarnings.length > 0 && (
+                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                    {parentFarmingDriftWarnings.join("\n\n")}
+                                </WarningContainer>
+                            )}
                             <SearchableItem
                                 id="enable-parent-run-summary"
                                 title="Parent Run Summary"
@@ -738,6 +775,47 @@ const RacingSettings = () => {
                         updateRacingSetting("originalRaceStrategy", value)
                         setOriginalPickerOpen(false)
                     })}
+                </SheetModal>
+
+                <SheetModal
+                    visible={goalPickerOpen}
+                    onRequestClose={() => setGoalPickerOpen(false)}
+                    header={
+                        <View style={modalShellStyles.modalHeaderRow}>
+                            <Text style={modalShellStyles.modalTitleMono}>CHOOSE PARENT GOAL</Text>
+                            <Pressable
+                                style={modalShellStyles.modalCloseChip}
+                                onPress={() => setGoalPickerOpen(false)}
+                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                accessibilityLabel="Close"
+                            >
+                                <Ionicons name="close" size={18} color={colors.text} />
+                            </Pressable>
+                        </View>
+                    }
+                    footer={null}
+                >
+                    <View style={{ padding: SPACING.md }}>
+                        <Text style={{ ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginBottom: SPACING.sm }}>
+                            Parent Farming needs a goal preset for epithets, solver weights, and training bias. Pick one below or use the default G1 / Fan route.
+                        </Text>
+                        <Pressable
+                            onPress={applyDefaultGoalPreset}
+                            style={{
+                                padding: SPACING.md,
+                                marginBottom: SPACING.sm,
+                                borderRadius: RADII.md,
+                                borderWidth: 1,
+                                borderColor: colors.borderHair,
+                                backgroundColor: colors.surface,
+                            }}
+                            android_ripple={{ color: colors.ripple, foreground: true }}
+                            accessibilityRole="button"
+                        >
+                            <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "700" }}>Use default — G1 / Fan Parent</Text>
+                        </Pressable>
+                        <ParentFarmingGoalPresetGrid allowedEpithetNames={allowedEpithetNames} onApply={applyGoalPresetFromPicker} />
+                    </View>
                 </SheetModal>
             </SearchPageProvider>
         </View>

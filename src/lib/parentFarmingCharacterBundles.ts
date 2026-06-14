@@ -1,10 +1,8 @@
 import type { Settings } from "../context/BotStateContext"
 import characterPresetsData from "../data/characterPresets.json"
 import epithetsData from "../data/epithets.json"
-import { applyParentFarmingPreset } from "./parentFarmingPreset"
 import {
-    applyParentFarmingGoalPresetToRacing,
-    applyParentFarmingGoalPresetToTraining,
+    findParentFarmingGoalPreset,
     PARENT_FARMING_GOAL_PRESETS,
     type ParentFarmingGoalPreset,
 } from "./parentFarmingGoalPresets"
@@ -170,9 +168,6 @@ export const buildAllowedEpithetNamesForParentBundle = (scenario: string, charac
     return names
 }
 
-export const findParentFarmingGoalPreset = (key: string): ParentFarmingGoalPreset | undefined =>
-    PARENT_FARMING_GOAL_PRESETS.find((preset) => preset.key === key)
-
 export const findParentFarmingCharacterBundle = (key: string): ParentFarmingCharacterBundle | undefined =>
     PARENT_FARMING_CHARACTER_BUNDLES.find((bundle) => bundle.key === key)
 
@@ -190,64 +185,4 @@ export const countEligibleBundleTargetEpithets = (bundle: ParentFarmingCharacter
     if (!goalPreset) return 0
     const allowedNames = buildAllowedEpithetNamesForParentBundle(scenario, bundle.characterName)
     return goalPreset.targetEpithets.filter((name) => allowedNames.has(name)).length
-}
-
-/**
- * Applies a one-tap parent-farming bundle: full parent-farming preset, character preset + aptitudes,
- * fresh goal epithets/weights, cleared manual locks, and optional training/weight overrides.
- *
- * @param settings Current settings snapshot.
- * @param bundle Character + goal bundle to apply.
- * @returns Updated settings. Returns the input unchanged when the bundle references missing data.
- */
-export const applyParentFarmingCharacterBundle = (settings: Settings, bundle: ParentFarmingCharacterBundle): Settings => {
-    const characterPreset = findCharacterPresetEntry(bundle.characterName)
-    const goalPreset = findParentFarmingGoalPreset(bundle.goalPresetKey)
-    if (!characterPreset || !goalPreset) return settings
-
-    const base = applyParentFarmingPreset(settings)
-    const allowedNames = buildAllowedEpithetNamesForParentBundle(base.general.scenario, bundle.characterName)
-
-    const racingSeed: Settings["racing"] = {
-        ...base.racing,
-        smartRaceSolverCharacterPreset: characterPreset.name,
-        smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(characterPreset)),
-        smartRaceSolverManualLocks: "{}",
-    }
-
-    const goalRacing = applyParentFarmingGoalPresetToRacing(racingSeed, goalPreset, allowedNames, { mergeEpithets: false })
-
-    let smartRaceSolverWeights = goalRacing.smartRaceSolverWeights
-    if (bundle.weightOverrides && smartRaceSolverWeights) {
-        try {
-            const parsed = JSON.parse(smartRaceSolverWeights)
-            smartRaceSolverWeights = JSON.stringify({ ...parsed, ...bundle.weightOverrides })
-        } catch {
-            // Keep goal preset weights if parsing fails.
-        }
-    }
-
-    const mergedWeights =
-        smartRaceSolverWeights ?? goalRacing.smartRaceSolverWeights ?? base.racing.smartRaceSolverWeights
-
-    return {
-        ...base,
-        racing: {
-            ...base.racing,
-            ...goalRacing,
-            smartRaceSolverCharacterPreset: characterPreset.name,
-            smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(characterPreset)),
-            smartRaceSolverManualLocks: "{}",
-            smartRaceSolverWeights: mergedWeights,
-            parentFarmingBundleKey: bundle.key,
-            parentFarmingBundleLabel: bundle.label,
-            parentFarmingGoalPresetKey: goalPreset.key,
-            parentFarmingGoalPresetLabel: goalPreset.label,
-        },
-        training: {
-            ...base.training,
-            ...applyParentFarmingGoalPresetToTraining(base.training, goalPreset),
-            ...bundle.trainingOverrides,
-        },
-    }
 }

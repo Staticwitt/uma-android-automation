@@ -193,6 +193,33 @@ describe("applyMigrations", () => {
         expect(anyMigrated).toBe(false)
     })
 
+    it("re-resolves parent farming settings when resolver revision is stale", () => {
+        const settings = {
+            general: { scenario: "Trackblazer", enableStopBeforeFinals: true },
+            skills: { enableSkillPointCheck: true },
+            racing: {
+                enableParentFarmingMode: true,
+                parentFarmingGoalPresetKey: "mile-sprint",
+                parentFarmingGoalPresetLabel: "Mile / Sprint Parent",
+                parentFarmingResolverRevision: 0,
+                smartRaceSolverCharacterPreset: "Special Week",
+                smartRaceSolverTargetEpithets: "[]",
+                smartRaceSolverForcedEpithets: "[]",
+                smartRaceSolverWeights: "{}",
+            },
+            training: {
+                disableStatTargets: false,
+                preferredDistanceOverride: "Default",
+            },
+        } as any
+
+        const { settings: migrated, anyMigrated } = applyMigrations(settings)
+        expect(anyMigrated).toBe(true)
+        expect(migrated.training.disableStatTargets).toBe(true)
+        expect(migrated.training.preferredDistanceOverride).toBe("Mile")
+        expect(migrated.racing.parentFarmingResolverRevision).toBe(1)
+    })
+
     it("is idempotent: running twice produces same result", () => {
         const settings = {
             ocr: { ocrConfidence: 85 },
