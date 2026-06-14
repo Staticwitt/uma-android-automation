@@ -241,6 +241,14 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableParentRunArchive = true
             anyMigrated = true
         }
+        if (typeof racing.enableAutoSelectLegacyParents !== "boolean") {
+            racing.enableAutoSelectLegacyParents = false
+            anyMigrated = true
+        }
+        if (typeof racing.legacyParentPreferredPair !== "string") {
+            racing.legacyParentPreferredPair = "[]"
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

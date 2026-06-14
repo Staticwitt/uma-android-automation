@@ -12,6 +12,7 @@ import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInvento
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
+import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
