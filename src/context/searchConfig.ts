@@ -332,6 +332,12 @@ const searchConfig: SearchOption[] = [
         page: "RacingSettings",
     },
     {
+        id: "spark-selection-strategy",
+        title: "Spark Selection Strategy",
+        description: "How the bot picks inheritance sparks before confirming inheritance.",
+        page: "RacingSettings",
+    },
+    {
         id: "parent-farming-character-bundles",
         title: "Character + Goal Bundles",
         description: "One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias.",

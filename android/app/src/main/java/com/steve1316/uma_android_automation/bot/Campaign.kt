@@ -1157,10 +1157,16 @@ abstract class Campaign(game: Game) : Task(game) {
     open fun handleInheritanceEvent(): Boolean {
         // Stop checking after Senior Year Early Apr.
         return if (date.day <= 56) {
-            if (ButtonInheritance.click(game.imageUtils)) {
-                MessageLog.v(TAG, "\n[INFO] Claimed an inheritance on $date.")
-                trainee.bHasUpdatedAptitudes = false
-                true
+            if (ButtonInheritance.check(game.imageUtils)) {
+                val (_, sourceBitmap) = ButtonInheritance.find(game.imageUtils)
+                SparkSelector.selectAndTapBestSpark(game, sourceBitmap)
+                if (ButtonInheritance.click(game.imageUtils)) {
+                    MessageLog.v(TAG, "\n[INFO] Claimed an inheritance on $date.")
+                    trainee.bHasUpdatedAptitudes = false
+                    true
+                } else {
+                    false
+                }
             } else {
                 false
             }

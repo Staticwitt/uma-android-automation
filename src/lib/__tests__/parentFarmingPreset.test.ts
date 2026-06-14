@@ -1,5 +1,6 @@
 import type { Settings } from "../../context/BotStateContext"
 import { applyParentFarmingPreset, disableParentFarmingMode } from "../parentFarmingPreset"
+import { PARENT_FARMING_SPARK_SELECTION_STRATEGY } from "../sparkSelection"
 
 const createSettings = (): Settings =>
     ({
@@ -73,6 +74,7 @@ describe("parentFarmingPreset", () => {
         expect(result.racing.ignoreConsecutiveRaceWarning).toBe(true)
         expect(result.racing.enableCompleteCareerOnFailure).toBe(true)
         expect(result.racing.daysToRunExtraRaces).toBe(3)
+        expect(result.racing.sparkSelectionStrategy).toBe(PARENT_FARMING_SPARK_SELECTION_STRATEGY)
 
         expect(result.racing.smartRaceSolverCharacterPreset).toBe("Oguri Cap")
         expect(result.racing.smartRaceSolverTargetEpithets).toBe(JSON.stringify(["Globe-Trotter"]))
