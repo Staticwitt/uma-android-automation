@@ -35,7 +35,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/pop
 import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, GeneralMiscContext, BotMetaContext, defaultSettings } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
+import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
+import { aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
+import { recommendSupportDeckForCharacter } from "../../lib/recommendSupportDeck"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
 import WarningContainer from "../../components/WarningContainer"
@@ -249,7 +253,34 @@ const SmartRaceSolverSettings = () => {
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
 
     const [presetSearch, setPresetSearch] = useState("")
+    const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [distanceFilter, setDistanceFilter] = useState<"all" | "Sprint" | "Mile" | "Medium" | "Long" | "Dirt">("all")
+    const characterSupportRecommendation = useMemo(
+        () => (smartRaceSolverCharacterPreset ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset) : null),
+        [smartRaceSolverCharacterPreset],
+    )
+
+    const applyFriendBorrowFromRecommendation = useCallback(
+        (characterName: string, borrowOrder: string[]) => {
+            setSettings((prev) => {
+                const preset = findCharacterPresetEntry(characterName)
+                return {
+                    ...prev,
+                    racing: {
+                        ...prev.racing,
+                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
+                        smartRaceSolverCharacterPreset: characterName,
+                        enableAutoBorrowSupportCard: true,
+                        ...(preset
+                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
+                            : {}),
+                    },
+                }
+            })
+        },
+        [setSettings],
+    )
+
     const [epithetSearch, setEpithetSearch] = useState("")
     const [forcedEpithetSearch, setForcedEpithetSearch] = useState("")
     /** Name of the epithet whose contributing races should be highlighted on the calendar. */
@@ -1356,6 +1387,48 @@ const SmartRaceSolverSettings = () => {
                                     </SearchableItem>
                                 </Section>
 
+                                {characterSupportRecommendation && (
+                                    <Section label="Recommended supports">
+                                        <SearchableItem
+                                            id="smart-solver-support-recommendation"
+                                            condition={enableSmartRaceSolver}
+                                            parentId="enable-smart-race-solver"
+                                            title="Support deck for selected character"
+                                            description="Suggested trainee lineup and friend borrow order for parent-style runs."
+                                        >
+                                            <View style={[sectionsDisabledStyle, { padding: SPACING.md, gap: SPACING.md }]}>
+                                                <CharacterSupportRecommendationView recommendation={characterSupportRecommendation} />
+                                                <Pressable
+                                                    onPress={() => setSupportFinderOpen(true)}
+                                                    style={{
+                                                        padding: SPACING.md,
+                                                        borderRadius: RADII.md,
+                                                        borderWidth: 1,
+                                                        borderColor: colors.borderHair,
+                                                        backgroundColor: colors.surface,
+                                                    }}
+                                                    android_ripple={{ color: colors.ripple, foreground: true }}
+                                                    accessibilityRole="button"
+                                                >
+                                                    <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Browse supports for another Uma</Text>
+                                                </Pressable>
+                                                <CustomButton
+                                                    variant="default"
+                                                    size="sm"
+                                                    onPress={() =>
+                                                        applyFriendBorrowFromRecommendation(
+                                                            characterSupportRecommendation.characterName,
+                                                            characterSupportRecommendation.friendBorrowOrder,
+                                                        )
+                                                    }
+                                                >
+                                                    Apply friend borrow list
+                                                </CustomButton>
+                                            </View>
+                                        </SearchableItem>
+                                    </Section>
+                                )}
+
                                 {/* Aptitudes */}
                                 <Section label="Aptitudes">
                                     <SearchableItem
@@ -2105,6 +2178,12 @@ const SmartRaceSolverSettings = () => {
                     </View>
                 </ScrollView>
             </SearchPageProvider>
+            <CharacterSupportFinderSheet
+                visible={supportFinderOpen}
+                initialCharacterName={smartRaceSolverCharacterPreset}
+                onClose={() => setSupportFinderOpen(false)}
+                onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
+            />
             {dirty && (
                 <View style={styles.recalcFab}>
                     <View style={styles.recalcFabLabel}>

@@ -1,23 +1,24 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.6</latestVersion>
-    <latestVersionCode>86</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.6</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.6/v5.8.6-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.7</latestVersion>
+    <latestVersionCode>87</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.7</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.7/v5.8.7-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.6 - Parent Farming UI + quality
+v5.8.7 - Solver optimizations + support recommendations
 
-UI
+Smart Race Solver
 ---
-- Dedicated Parent Farming settings page (drawer or Settings)
-- Tabbed character setups vs goal presets; Racing Settings simplified
+- pickRace reuses cached schedule (no MILP per on-screen pick)
+- Race losses mark dead epithets and force replan
+- Memoized calendar contribution JSON; fewer duplicate solves at startup
 
-Parent quality (v5.8.5)
+Support recommendations
 ---
-- Skill Hint / Turf goal spark strategies; smarter inheritance OCR
-- Post-inheritance aptitude replan; drift warnings
+- Find best supports for any Uma (Parent Farming + Smart Race Solver)
+- Route-based deck presets with apply friend borrow
 
-Includes v5.8.4 race prep View Results fix.
+Includes v5.8.6 Parent Farming UI and v5.8.5 quality fixes.
 
     </releaseNotes>
   </update>
