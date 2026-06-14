@@ -43,6 +43,8 @@ data class AppUpdateInfo(
     val latestVersionCode: Int,
     val url: String,
     val apkUrl: String?,
+    /** Optional x86_64 split APK for emulators and x86_64 devices. */
+    val apkUrlX8664: String?,
     val releaseNotes: String,
 )
 
@@ -51,7 +53,7 @@ enum class AppUpdateDisplayMode { UPDATE_AVAILABLE, CURRENT_CHANGELOG }
 
 /**
  * Checks for app updates by fetching [AppUpdateChecker.UPDATE_XML_URL] on GitHub. When a newer build is available, shows a dialog with
- * release notes and can download the arm64 APK directly and launch the package installer.
+ * release notes and can download the matching ABI split APK directly and launch the package installer.
  */
 class AppUpdateChecker(private val activity: Activity) {
     companion object {
@@ -74,6 +76,7 @@ class AppUpdateChecker(private val activity: Activity) {
             var latestVersionCode: Int? = null
             var url: String? = null
             var apkUrl: String? = null
+            var apkUrlX8664: String? = null
             var releaseNotes: String? = null
             var currentTag: String? = null
 
@@ -92,6 +95,7 @@ class AppUpdateChecker(private val activity: Activity) {
                             "latestVersionCode" -> latestVersionCode = text.toIntOrNull()
                             "url" -> url = text
                             "apkUrl" -> apkUrl = text
+                            "apkUrlX8664" -> apkUrlX8664 = text
                             "releaseNotes" -> releaseNotes = text.trim()
                         }
                     }
@@ -106,11 +110,21 @@ class AppUpdateChecker(private val activity: Activity) {
                     latestVersionCode = latestVersionCode ?: 0,
                     url = url,
                     apkUrl = apkUrl?.takeIf { it.isNotEmpty() },
+                    apkUrlX8664 = apkUrlX8664?.takeIf { it.isNotEmpty() },
                     releaseNotes = releaseNotes,
                 )
             } else {
                 null
             }
+        }
+
+        /** Picks arm64 or x86_64 download URL based on the device's primary supported ABI. */
+        fun resolveApkUrlForDevice(updateInfo: AppUpdateInfo): String? {
+            val primaryAbi = Build.SUPPORTED_ABIS?.firstOrNull() ?: ""
+            if (primaryAbi == "x86_64" && updateInfo.apkUrlX8664 != null) {
+                return updateInfo.apkUrlX8664
+            }
+            return updateInfo.apkUrl
         }
 
         /**
@@ -191,7 +205,8 @@ class AppUpdateChecker(private val activity: Activity) {
         val subtitle = dialog.findViewById<TextView>(R.id.dialog_subtitle)
         val dismissBtn = dialog.findViewById<Button>(R.id.btn_dismiss)
         val updateBtn = dialog.findViewById<Button>(R.id.btn_update)
-        val canDirectInstall = mode == AppUpdateDisplayMode.UPDATE_AVAILABLE && updateInfo.apkUrl != null
+        val resolvedApkUrl = resolveApkUrlForDevice(updateInfo)
+        val canDirectInstall = mode == AppUpdateDisplayMode.UPDATE_AVAILABLE && resolvedApkUrl != null
 
         when (mode) {
             AppUpdateDisplayMode.UPDATE_AVAILABLE -> {
@@ -245,7 +260,7 @@ class AppUpdateChecker(private val activity: Activity) {
         updateBtn: Button,
         dismissBtn: Button,
     ) {
-        val apkUrl = updateInfo.apkUrl ?: return
+        val apkUrl = resolveApkUrlForDevice(updateInfo) ?: return
         if (!ensureInstallPermission()) return
 
         updateBtn.isEnabled = false
