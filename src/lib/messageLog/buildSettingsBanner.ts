@@ -1,5 +1,6 @@
 import { Settings } from "../../context/BotStateContext"
 import { PARENT_FARMING_MODE_LABEL } from "../parentFarmingPreset"
+import { formatParentFarmingTrainingBias, getParentFarmingActiveLabels } from "../parentFarmingDrift"
 import { SCORING_CONSTANTS_CATALOG } from "../training/scoringConstantsCatalog"
 
 /**
@@ -74,6 +75,8 @@ export function buildSettingsBanner(settings: Settings): string {
         }
     })()
     const smartRaceSolverFanWeight = typeof smartRaceSolverWeightsObj.fanWeight === "number" ? smartRaceSolverWeightsObj.fanWeight : 0
+    const smartRaceSolverMinimumFanTarget =
+        typeof smartRaceSolverWeightsObj.minimumFanTarget === "number" ? smartRaceSolverWeightsObj.minimumFanTarget : 0
     const smartRaceSolverOptimizeMode = smartRaceSolverFanWeight > 0 ? "Fans + Epitaphs" : "Stat Epitaphs"
     const smartRaceSolverAptitudesObj = (() => {
         try {
@@ -154,7 +157,21 @@ ${mediumTargetsString}
 ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 
 ---------- Racing Options ----------
-🌱 ${PARENT_FARMING_MODE_LABEL}: ${settings.racing.enableParentFarmingMode ? "✅" : "❌"}
+🌱 ${PARENT_FARMING_MODE_LABEL}: ${settings.racing.enableParentFarmingMode ? "✅" : "❌"}${
+        settings.racing.enableParentFarmingMode
+            ? (() => {
+                  const { bundleLabel, goalPresetLabel } = getParentFarmingActiveLabels(settings)
+                  const lines: string[] = []
+                  if (bundleLabel) lines.push(`\n\t📦 Bundle: ${bundleLabel}`)
+                  if (goalPresetLabel) lines.push(`\n\t🎯 Goal preset: ${goalPresetLabel}`)
+                  lines.push(`\n\t🏋️ Training bias: ${formatParentFarmingTrainingBias(settings.training)}`)
+                  if (smartRaceSolverMinimumFanTarget > 0) {
+                      lines.push(`\n\t👥 Solver fan floor: ${smartRaceSolverMinimumFanTarget}`)
+                  }
+                  return lines.join("")
+              })()
+            : ""
+    }
 📋 Parent Run Summary: ${settings.racing.enableParentRunSummary ? "✅" : "❌"}
 ✨ Spark Selection: ${settings.racing.sparkSelectionStrategy || "Default"}
 👥 Prioritize Farming Fans: ${settings.racing.enableFarmingFans ? "✅" : "❌"}

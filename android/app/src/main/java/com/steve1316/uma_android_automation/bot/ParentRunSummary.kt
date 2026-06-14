@@ -34,6 +34,7 @@ data class ParentRunSummaryInput(
     val targetEpithetMultiplier: Double,
     val raceStats: RunRaceStats,
     val elapsedMs: Long?,
+    val trainingBias: String = "",
 )
 
 /**
@@ -91,7 +92,21 @@ object ParentRunSummary {
             targetEpithetMultiplier = weights.targetEpithetMultiplier,
             raceStats = SmartRaceSolverIntegration.snapshotRaceStats(),
             elapsedMs = elapsedMs,
+            trainingBias = formatTrainingBiasFromSettings(),
         )
+    }
+
+    private fun formatTrainingBiasFromSettings(): String {
+        val distanceRaw = SettingsHelper.getStringSetting("training", "preferredDistanceOverride")
+        val distanceLabel = when {
+            distanceRaw.isEmpty() || distanceRaw == "Default" -> "Auto"
+            else -> distanceRaw
+        }
+        val statPriorities = SettingsHelper.getStringArraySetting("training", "statPrioritization")
+        val topStat = statPriorities.firstOrNull()?.takeIf { it.isNotEmpty() } ?: "Speed"
+        val skillHints = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)
+        val disableTargets = SettingsHelper.getBooleanSetting("training", "disableStatTargets", false)
+        return "$distanceLabel distance · $topStat-first · skill hints ${if (skillHints) "on" else "off"} · stat targets ${if (disableTargets) "off" else "on"}"
     }
 
     /**
@@ -126,6 +141,9 @@ object ParentRunSummary {
                 "targetEpithet×${formatDecimal(input.targetEpithetMultiplier)}, " +
                 "minRaceGap=${input.minimumRaceGapTurns} turns",
         )
+        if (input.trainingBias.isNotEmpty()) {
+            lines.add("Training bias: ${input.trainingBias}")
+        }
         lines.add(formatTargetEpithets(input.targetEpithets))
         lines.addAll(formatEpithetResults(input))
         lines.addAll(formatSparkPicks(input.sparkPicks))
@@ -182,6 +200,9 @@ object ParentRunSummary {
                     "targetEpithet×${formatDecimal(input.targetEpithetMultiplier)}, minRaceGap=${input.minimumRaceGapTurns} turns",
             ),
         )
+        if (input.trainingBias.isNotEmpty()) {
+            setup.add(DiscordMessageFormatter.bullet("Training bias", input.trainingBias))
+        }
         lines.add(DiscordMessageFormatter.section("Setup", setup))
 
         val epithets = mutableListOf<String>()
@@ -264,6 +285,9 @@ object ParentRunSummary {
                 inline = false,
             ),
         )
+        if (input.trainingBias.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Training bias", input.trainingBias, inline = false))
+        }
         fields.add(
             DiscordEmbedField(
                 "Races",

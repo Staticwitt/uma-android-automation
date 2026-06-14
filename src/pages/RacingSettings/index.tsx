@@ -4,13 +4,15 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
+import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
 import { applyParentFarmingGoalPreset, PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, type ParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
 import { findParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
+import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
 import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
@@ -50,6 +52,7 @@ const RacingSettings = () => {
     const { setSettings } = useContext(BotMetaContext)
     const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
+    const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
 
     // Modal state for the Junior / Original strategy pickers (nav-row + chip pattern).
@@ -94,6 +97,8 @@ const RacingSettings = () => {
     }, [smartRaceSolverWeights])
 
     const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
+
+    const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
 
     const allowedEpithetNames = useMemo(
         () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
@@ -299,6 +304,12 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
                                 />
                             </SearchableItem>
+                            <ParentFarmingActivePresetChip settings={settings} />
+                            {parentFarmingDriftWarnings.length > 0 && (
+                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                    {parentFarmingDriftWarnings.join("\n\n")}
+                                </WarningContainer>
+                            )}
                             <SearchableItem
                                 id="enable-parent-run-summary"
                                 title="Parent Run Summary"
