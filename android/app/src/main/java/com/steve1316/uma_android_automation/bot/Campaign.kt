@@ -8,6 +8,7 @@ import com.steve1316.automation_library.utils.ImageUtils.ScaleConfidenceResult
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.bot.ParentRunSummary
 import com.steve1316.uma_android_automation.bot.ParentDiscordNotifier
 import com.steve1316.uma_android_automation.components.ButtonBack
@@ -791,7 +792,7 @@ abstract class Campaign(game: Game) : Task(game) {
             MessageLog.v(TAG, "********************")
             game.notificationMessage = "Stopping the bot due to failing a mandatory race."
             if (DiscordUtils.enableDiscordNotifications) {
-                DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Stopping the bot due to failing a mandatory race.\n```")
+                AppDiscordNotifications.sendError("Stopping the bot due to failing a mandatory race.")
             }
             throw IllegalStateException()
         }
@@ -1547,7 +1548,7 @@ abstract class Campaign(game: Game) : Task(game) {
             MessageLog.v(TAG, "\n[END] Stopping bot due to detection of Mandatory Race.")
             game.notificationMessage = "Stopping bot due to detection of Mandatory Race."
             if (DiscordUtils.enableDiscordNotifications) {
-                DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Stopping bot due to detection of Mandatory Race.\n```")
+                AppDiscordNotifications.sendError("Stopping bot due to detection of Mandatory Race.")
             }
             return true
         }
@@ -1585,7 +1586,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 MessageLog.v(TAG, "\n[END] Bot will stop due to the detection of the Crane Game Event.")
                 game.notificationMessage = "Bot will stop due to the detection of the Crane Game Event."
                 if (DiscordUtils.enableDiscordNotifications) {
-                    DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot will stop due to the detection of the Crane Game Event.\n```")
+                    AppDiscordNotifications.sendError("Bot will stop due to the detection of the Crane Game Event.")
                 }
                 throw CampaignBreakpointException(game.notificationMessage)
             }
@@ -1623,7 +1624,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 MessageLog.v(TAG, "\n[END] Bot may have encountered a warning popup. Exiting now...")
                 game.notificationMessage = "Bot may have encountered a warning popup"
                 if (DiscordUtils.enableDiscordNotifications) {
-                    DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Bot may have encountered a warning popup. Exiting now...\n```")
+                    AppDiscordNotifications.sendError("Bot may have encountered a warning popup. Exiting now...")
                 }
                 throw CampaignBreakpointException(game.notificationMessage)
             }
@@ -2112,6 +2113,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
                     val summary = ParentRunSummary.buildFromSettings(trainee, game.scenario, elapsedMs)
                     ParentRunSummary.logSummary(summary)
+                    game.taskEndDiscordEmbed = ParentRunSummary.discordEmbedFromSettings(trainee, game.scenario, elapsedMs)
                     game.taskEndDiscordMessage = ParentRunSummary.discordMarkdownFromSettings(trainee, game.scenario, elapsedMs)
                 }
 

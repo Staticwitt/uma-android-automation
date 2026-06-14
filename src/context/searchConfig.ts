@@ -931,6 +931,13 @@ const searchConfig: SearchOption[] = [
         parentId: "enableDiscordNotifications",
     },
     {
+        id: "enableDiscordEmbeds",
+        title: "Rich Discord Embeds",
+        description: "Send colored embed cards instead of plain markdown for Discord notifications.",
+        page: "DiscordSettings",
+        parentId: "enableDiscordNotifications",
+    },
+    {
         id: "enableDiscordLiveStatus",
         title: "Parent Farming Live Status",
         description: "Send periodic Discord updates during parent farming runs (fans, goals, race record).",

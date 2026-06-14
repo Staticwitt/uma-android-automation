@@ -11,8 +11,8 @@ import com.steve1316.automation_library.utils.MyAccessibilityService
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Campaign
-import com.steve1316.uma_android_automation.bot.DiscordMessageFormatter
-import com.steve1316.uma_android_automation.bot.ParentDiscordNotifier
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
+import com.steve1316.uma_android_automation.bot.DiscordEmbedService
 import com.steve1316.uma_android_automation.bot.SkillDatabase
 import com.steve1316.uma_android_automation.bot.Task
 import com.steve1316.uma_android_automation.bot.campaigns.Trackblazer
@@ -39,8 +39,11 @@ class Game(val myContext: Context) {
     /** Wall-clock start time for the active bot run. */
     var runStartTimeMillis: Long = 0L
 
-    /** Optional multi-line Discord body set at career end (e.g. parent run summary). */
+    /** Optional multi-line Discord body set at career end (plain-text fallback when embeds disabled). */
     var taskEndDiscordMessage: String? = null
+
+    /** Optional Discord embed set at career end (e.g. parent run summary). */
+    var taskEndDiscordEmbed: DiscordEmbedSpec? = null
 
     /** The utility class for image processing and template matching. */
     val imageUtils: CustomImageUtils = CustomImageUtils(myContext, this)
@@ -309,7 +312,10 @@ class Game(val myContext: Context) {
                 } else {
                     val startMessage = "Bot run started — scenario: $scenario"
                     val suffix = if (logViewerString.isNotEmpty()) "\n$logViewerString" else ""
-                    DiscordUtils.queue.add(DiscordMessageFormatter.success("$startMessage$suffix"))
+                    AppDiscordNotifications.sendInfo(
+                        title = "Bot run started",
+                        description = startMessage + suffix,
+                    )
                 }
             }
             task.start()
@@ -319,6 +325,7 @@ class Game(val myContext: Context) {
 
         // Wait to make sure Discord webhook message queue gets fully processed before terminating Bot Thread.
         if (DiscordUtils.enableDiscordNotifications) {
+            DiscordEmbedService.flushBlocking()
             wait(1.0, skipWaitingForLoading = true)
         }
 

@@ -29,8 +29,12 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.AppUpdateChecker
 import com.steve1316.uma_android_automation.utils.LogStreamServer
+import com.steve1316.uma_android_automation.bot.DiscordEmbedColors
+import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.channel.createMessage
+import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.runBlocking
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
@@ -523,9 +527,21 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                             return@runBlocking
                         }
 
-                    // Prepend a timestamp to the test message.
+                    // Send a plain confirmation plus a sample embed card.
                     val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-                    dmChannel.createMessage("[$timestamp] \u2705 Test message from Uma Android Automation! Discord integration is working.")
+                    dmChannel.createMessage("[$timestamp] Test message from Uma Android Automation — plain text OK.")
+                    dmChannel.createMessage {
+                        embed {
+                            title = "Discord embed test"
+                            description = "Rich embed cards are working."
+                            color = Color(DiscordEmbedColors.GREEN)
+                            field("Status", true) { "Connected" }
+                            field("App", true) { "Uma Android Automation" }
+                            footer {
+                                text = timestamp
+                            }
+                        }
+                    }
                     client.shutdown()
                     promise.resolve("Test message sent successfully!")
                 } catch (e: Exception) {

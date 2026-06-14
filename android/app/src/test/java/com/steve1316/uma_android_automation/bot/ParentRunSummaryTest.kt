@@ -112,6 +112,44 @@ class ParentRunSummaryTest {
     }
 
     @Test
+    fun buildDiscordEmbed_includes_key_fields_and_color() {
+        val trainee = Trainee()
+        trainee.name = "Special Week"
+        trainee.fans = 250000
+        trainee.fanCountClass = FanCountClass.GOLD
+        trainee.skillPoints = 420
+
+        val embed =
+            ParentRunSummary.buildDiscordEmbed(
+                ParentRunSummaryInput(
+                    trainee = trainee,
+                    scenario = "Trackblazer",
+                    profileName = "Parents",
+                    bundleLabel = "Special Week — G1 / Fan Parent",
+                    goalPresetLabel = "G1 / Fan Parent",
+                    characterPreset = "Special Week",
+                    sparkStrategy = "StatAndAptitude",
+                    targetEpithets = listOf("Globe-Trotter", "Triple Tiara"),
+                    completedTargetEpithets = listOf("Globe-Trotter"),
+                    incompleteTargetEpithets = listOf("Triple Tiara (1/3)"),
+                    extraCompletedEpithets = emptyList(),
+                    sparkPicks = emptyList(),
+                    fanWeight = 1.0,
+                    minimumFanTarget = 120000,
+                    minimumRaceGapTurns = 1,
+                    targetEpithetMultiplier = 4.0,
+                    raceStats = RunRaceStats(wins = 10, losses = 1),
+                    elapsedMs = 1800000L,
+                ),
+            )
+
+        assertTrue(embed.title.contains("Parent run complete"), embed.title)
+        assertTrue(embed.fields.any { it.name == "Bundle" }, embed.fields.map { it.name }.toString())
+        assertTrue(embed.fields.any { it.name == "Completed" }, embed.fields.map { it.name }.toString())
+        assertTrue(embed.toPlainFallback().contains("Globe-Trotter"), embed.toPlainFallback())
+    }
+
+    @Test
     fun chunkForDiscord_splits_long_text() {
         val longText = "line\n".repeat(500)
         val chunks = ParentRunSummary.chunkForDiscord(longText, 200)

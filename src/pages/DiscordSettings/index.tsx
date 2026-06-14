@@ -36,7 +36,7 @@ const DiscordSettings = () => {
 
     // Merge current Discord settings with defaults to handle missing properties.
     const discordSettings = { ...defaultSettings.discord, ...discord }
-    const { enableDiscordNotifications, discordToken, enableDiscordLiveStatus, discordLiveStatusTurnInterval } = discordSettings
+    const { enableDiscordNotifications, discordToken, enableDiscordEmbeds, enableDiscordLiveStatus, discordLiveStatusTurnInterval } = discordSettings
     // Coerce to string since SQLite may store numeric IDs as numbers.
     const discordUserID = String(discordSettings.discordUserID || "")
 
@@ -214,6 +214,23 @@ const DiscordSettings = () => {
                                     title="Discord Notifications"
                                     description="DM run results when the bot stops"
                                     right={<Switch checked={enableDiscordNotifications} onCheckedChange={(checked) => updateDiscordSetting("enableDiscordNotifications", checked)} />}
+                                />
+                            </SearchableItem>
+                            <SearchableItem
+                                id="enableDiscordEmbeds"
+                                title="Rich Discord Embeds"
+                                description="Send colored embed cards instead of plain markdown for Discord notifications."
+                            >
+                                <Row
+                                    title="Rich Discord Embeds"
+                                    description="Colored embed cards for start, live status, and run summaries"
+                                    right={
+                                        <Switch
+                                            checked={enableDiscordEmbeds}
+                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordEmbeds", checked)}
+                                            disabled={!enableDiscordNotifications}
+                                        />
+                                    }
                                 />
                             </SearchableItem>
                             <SearchableItem
