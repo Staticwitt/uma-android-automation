@@ -1,23 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.1</latestVersion>
-    <latestVersionCode>81</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.1</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.1/v5.8.1-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.2</latestVersion>
+    <latestVersionCode>82</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.2</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.2/v5.8.2-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.1 - Parent quality: borrow presets and aptitude replan
+v5.8.2 - Per-bundle support card selector
 
 Features
 ---
-- Support card borrow presets per parent goal (auto-OCR at career selection)
-- Post-inheritance aptitude replan for Smart Race Solver
-- Spark picker uses live aptitudes after inheritance
-- Forced epithets on crown/tiara/derby/queen/dirt/skill-hint presets
-- Auto-borrow toggle in Parent Farming settings
+- Per-bundle support borrow defaults and draggable priority picker (people icon on bundle cards)
+- User overrides saved per bundle; active chip shows support borrow preview
+- Applies borrow list when you apply or save supports for the active bundle
 
-Fixes
+Includes from 5.8.1
 ---
-- Drift warnings for forced epithets when settings diverge from preset
+- Support borrow at career selection (OCR match on visible friend slots)
+- Post-inheritance aptitude replan for Smart Race Solver
+- Forced epithets on crown/tiara routes
 
     </releaseNotes>
   </update>
