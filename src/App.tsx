@@ -20,6 +20,7 @@ import Settings from "./pages/Settings"
 import TrainingSettings from "./pages/TrainingSettings"
 import TrainingEventSettings from "./pages/TrainingEventSettings"
 import RacingSettings from "./pages/RacingSettings"
+import ParentFarmingSettings from "./pages/ParentFarmingSettings"
 import SmartRaceSolverSettings from "./pages/SmartRaceSolverSettings"
 import Skills from "./pages/Skills"
 import EventLogVisualizer from "./pages/EventLogVisualizer"
@@ -53,6 +54,7 @@ function SettingsStack() {
             <Stack.Screen name="TrainingSettings" component={TrainingSettings} />
             <Stack.Screen name="TrainingEventSettings" component={TrainingEventSettings} />
             <Stack.Screen name="RacingSettings" component={RacingSettings} />
+            <Stack.Screen name="ParentFarmingSettings" component={ParentFarmingSettings} />
             <Stack.Screen name="SmartRaceSolverSettings" component={SmartRaceSolverSettings} />
             <Stack.Screen name="Skills" component={Skills} initialParams={{ tab: "skillPointCheck" }} />
             <Stack.Screen name="EventLogVisualizer" component={EventLogVisualizer} />

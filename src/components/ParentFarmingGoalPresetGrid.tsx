@@ -9,12 +9,14 @@ import { RADII } from "../lib/radii"
 interface ParentFarmingGoalPresetGridProps {
     allowedEpithetNames: Set<string>
     onApply: (preset: ParentFarmingGoalPreset) => void
+    /** When true, omits the intro paragraph (parent section already explained). */
+    hideIntro?: boolean
 }
 
 /**
  * Grid of parent-farming goal presets with per-scenario epithet eligibility counts.
  */
-export const ParentFarmingGoalPresetGrid = ({ allowedEpithetNames, onApply }: ParentFarmingGoalPresetGridProps) => {
+export const ParentFarmingGoalPresetGrid = ({ allowedEpithetNames, onApply, hideIntro = false }: ParentFarmingGoalPresetGridProps) => {
     const { colors } = useTheme()
 
     const styles = useMemo(
@@ -41,9 +43,11 @@ export const ParentFarmingGoalPresetGrid = ({ allowedEpithetNames, onApply }: Pa
 
     return (
         <View>
-            <Text style={styles.description}>
-                Adds target epithets, solver weights, and goal-aligned training. Existing hand-picked epithets are preserved when merging.
-            </Text>
+            {!hideIntro && (
+                <Text style={styles.description}>
+                    Adds target epithets, solver weights, and goal-aligned training. Existing hand-picked epithets are preserved when merging.
+                </Text>
+            )}
             <View style={styles.grid}>
                 {PARENT_FARMING_GOAL_PRESETS.map((preset) => {
                     const eligibleTargets = preset.targetEpithets.filter((name) => allowedEpithetNames.has(name)).length

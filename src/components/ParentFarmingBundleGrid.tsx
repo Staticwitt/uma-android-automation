@@ -24,12 +24,14 @@ interface ParentFarmingBundleGridProps {
     supportBorrowOverrides: ParentFarmingSupportBorrowOverrides
     onApply: (bundle: ParentFarmingCharacterBundle) => void
     onEditSupports: (bundle: ParentFarmingCharacterBundle) => void
+    /** When true, omits the intro paragraph (parent section already explained). */
+    hideIntro?: boolean
 }
 
 /**
  * Grid of one-tap parent-farming character + goal bundles with per-bundle support borrow editor.
  */
-export const ParentFarmingBundleGrid = ({ scenario, supportBorrowOverrides, onApply, onEditSupports }: ParentFarmingBundleGridProps) => {
+export const ParentFarmingBundleGrid = ({ scenario, supportBorrowOverrides, onApply, onEditSupports, hideIntro = false }: ParentFarmingBundleGridProps) => {
     const { colors } = useTheme()
 
     const styles = useMemo(
@@ -64,9 +66,11 @@ export const ParentFarmingBundleGrid = ({ scenario, supportBorrowOverrides, onAp
 
     return (
         <View>
-            <Text style={styles.description}>
-                Tap a card to apply the bundle. Tap the people icon to set friend support borrow order for that parent. Manual race locks are cleared on apply.
-            </Text>
+            {!hideIntro && (
+                <Text style={styles.description}>
+                    Tap a card to apply the bundle. Tap the people icon to set friend support borrow order for that parent. Manual race locks are cleared on apply.
+                </Text>
+            )}
             <View style={styles.grid}>
                 {PARENT_FARMING_CHARACTER_BUNDLES.map((bundle) => {
                     const goalPreset = findParentFarmingGoalPreset(bundle.goalPresetKey)

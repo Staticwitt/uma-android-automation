@@ -56,6 +56,7 @@ import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
 import { applyParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
 import { PARENT_FARMING_GOAL_PRESETS, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
+import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -130,7 +131,13 @@ const SmartRaceSolverSettings = () => {
         smartRaceSolverForcedEpithets,
         smartRaceSolverManualLocks,
         smartRaceSolverWeights,
+        parentFarmingSupportBorrowOverrides,
     } = racingSettings
+
+    const supportBorrowOverrides = useMemo(
+        () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
+        [parentFarmingSupportBorrowOverrides],
+    )
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1460,7 +1467,13 @@ const SmartRaceSolverSettings = () => {
                                         >
                                             <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
                                                 <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
-                                                <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                                <ParentFarmingBundleGrid
+                                                    scenario={general?.scenario || "Trackblazer"}
+                                                    supportBorrowOverrides={supportBorrowOverrides}
+                                                    onApply={applyCharacterBundle}
+                                                    onEditSupports={() => navigation.navigate("ParentFarmingSettings" as never)}
+                                                    hideIntro
+                                                />
                                             </View>
                                         </SearchableItem>
                                         <SearchableItem

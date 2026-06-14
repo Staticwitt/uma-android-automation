@@ -191,6 +191,7 @@ const Settings = () => {
                 <Section label="GAMEPLAY">
                     <Row title="Training" description="Stat priorities, training behavior, and customization." right={chevron} onPress={() => navigation.navigate("TrainingSettings" as never)} />
                     <Row title="Training Events" description="Training event preferences and event selection." right={chevron} onPress={() => navigation.navigate("TrainingEventSettings" as never)} />
+                    <Row title="Parent Farming" description="Goal presets, inheritance sparks, and character setups." right={chevron} onPress={() => navigation.navigate("ParentFarmingSettings" as never)} />
                     <Row title="Racing" description="Racing behavior, retries, and mandatory race handling." right={chevron} onPress={() => navigation.navigate("RacingSettings" as never)} />
                     <Row title="Skills" description="Skill purchasing behavior." right={chevron} onPress={() => navigation.navigate("Skills" as never)} />
                 </Section>

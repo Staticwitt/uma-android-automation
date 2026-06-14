@@ -2,20 +2,10 @@ import { useMemo, useContext, useRef, useCallback, useState } from "react"
 import { View, Text, TextInput, ScrollView, StyleSheet, Pressable } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
-import { Cpu, ChevronRight } from "lucide-react-native"
+import { Cpu, ChevronRight, Leaf } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
-import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
-import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
-import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
-import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
-import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
-import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
-import { applyParentFarmingGoalPreset, PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, enableParentFarmingCharacterBundle, type ParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
-import { findParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
-import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
-import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
-import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
+import { RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
+import { getParentFarmingActiveLabels } from "../../lib/parentFarmingDrift"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -32,7 +22,6 @@ import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
-import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -43,35 +32,23 @@ const RACE_STRATEGY_OPTIONS = ["Default", "Auto", "Front", "Pace", "Late", "End"
 type RaceStrategy = (typeof RACE_STRATEGY_OPTIONS)[number]
 
 /**
- * The Racing Settings page.
- * Provides configuration for fan farming, race behavior, race strategies, force racing, in-game race agenda, and navigation to the Smart Race Solver Settings sub-page.
+ * Racing behavior, strategies, agenda, and solver navigation. Parent farming lives on its own page.
  */
 const RacingSettings = () => {
     usePerformanceLogging("RacingSettings")
     const { colors } = useTheme()
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
-    const { setSettings } = useContext(BotMetaContext)
-    const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
 
-    // Modal state for the Junior / Original strategy pickers (nav-row + chip pattern).
     const [juniorPickerOpen, setJuniorPickerOpen] = useState(false)
     const [originalPickerOpen, setOriginalPickerOpen] = useState(false)
-    const [goalPickerOpen, setGoalPickerOpen] = useState(false)
-    const [bundleSupportSheetOpen, setBundleSupportSheetOpen] = useState(false)
-    const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
 
-    // Merge current racing settings with defaults to handle missing properties.
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableParentFarmingMode,
-        enableParentRunSummary,
-        sparkSelectionStrategy,
-        enableAutoBorrowSupportCard,
-        supportBorrowPreferredCards,
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
@@ -90,139 +67,18 @@ const RacingSettings = () => {
         limitRacesToInGameAgenda,
         skipSummerTrainingForAgenda,
         customAgendaTitle,
-        parentFarmingBundleLabel,
-        parentFarmingSupportBorrowOverrides,
-        smartRaceSolverCharacterPreset,
-        smartRaceSolverWeights,
     } = racingSettings
 
-    const solverWeights = useMemo(() => {
-        try {
-            return JSON.parse(smartRaceSolverWeights || "{}") as Record<string, number>
-        } catch {
-            return {} as Record<string, number>
-        }
-    }, [smartRaceSolverWeights])
+    const parentFarmingSummary = useMemo(() => {
+        if (!enableParentFarmingMode) return "Off — tap to configure parent runs"
+        const { bundleLabel, goalPresetLabel } = getParentFarmingActiveLabels(settings)
+        return bundleLabel || goalPresetLabel || "On — tap to configure"
+    }, [enableParentFarmingMode, settings])
 
-    const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
-
-    const supportBorrowNames = useMemo(() => {
-        try {
-            const parsed = JSON.parse(supportBorrowPreferredCards || "[]")
-            return Array.isArray(parsed) ? parsed.filter((name): name is string => typeof name === "string") : []
-        } catch {
-            return []
-        }
-    }, [supportBorrowPreferredCards])
-
-    const supportBorrowOverrides = useMemo(
-        () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
-        [parentFarmingSupportBorrowOverrides],
-    )
-
-    const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
-
-    const allowedEpithetNames = useMemo(
-        () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
-        [general?.scenario, smartRaceSolverCharacterPreset]
-    )
-
-    const applyGoalPreset = useCallback(
-        (preset: ParentFarmingGoalPreset) => {
-            setSettings((prev) => applyParentFarmingGoalPreset(prev, preset, allowedEpithetNames))
-        },
-        [allowedEpithetNames, setSettings]
-    )
-
-    const applyGoalPresetFromPicker = useCallback(
-        (preset: ParentFarmingGoalPreset) => {
-            applyGoalPreset(preset)
-            setGoalPickerOpen(false)
-        },
-        [applyGoalPreset]
-    )
-
-    const applyDefaultGoalPreset = useCallback(() => {
-        const preset = findParentFarmingGoalPreset(PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY)
-        if (preset) applyGoalPresetFromPicker(preset)
-    }, [applyGoalPresetFromPicker])
-
-    const updateSolverWeight = useCallback(
-        (key: string, value: number) => {
-            updateRacing((prev) => {
-                try {
-                    const parsed = JSON.parse(prev.smartRaceSolverWeights || "{}")
-                    return { ...prev, smartRaceSolverWeights: JSON.stringify({ ...parsed, [key]: value }) }
-                } catch {
-                    return prev
-                }
-            })
-        },
-        [updateRacing]
-    )
-
-    /**
-     * Enable/disable the parent-farming preset. Disabling only clears the mode marker so custom
-     * edits made after applying the preset are not unexpectedly reverted.
-     */
-    const setParentFarmingMode = useCallback(
-        (checked: boolean) => {
-            if (!checked) {
-                setGoalPickerOpen(false)
-                setSettings((prev) => disableParentFarmingMode(prev))
-                return
-            }
-            const hasStoredPreset =
-                racingSettings.parentFarmingGoalPresetKey || racingSettings.parentFarmingBundleKey
-            if (hasStoredPreset) {
-                setSettings((prev) => applyParentFarmingPreset(prev))
-            } else {
-                setGoalPickerOpen(true)
-            }
-        },
-        [setSettings, racingSettings.parentFarmingGoalPresetKey, racingSettings.parentFarmingBundleKey]
-    )
-
-    const applyCharacterBundle = useCallback(
-        (bundle: ParentFarmingCharacterBundle) => {
-            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
-        },
-        [setSettings],
-    )
-
-    const openBundleSupportEditor = useCallback((bundle: ParentFarmingCharacterBundle) => {
-        setBundleSupportEditing(bundle)
-        setBundleSupportSheetOpen(true)
-    }, [])
-
-    const saveBundleSupportCards = useCallback(
-        (bundleKey: string, cards: string[]) => {
-            setSettings((prev) => {
-                const overridesJson = saveBundleSupportBorrowOverride(prev.racing.parentFarmingSupportBorrowOverrides, bundleKey, cards)
-                const withOverrides = {
-                    ...prev,
-                    racing: { ...prev.racing, parentFarmingSupportBorrowOverrides: overridesJson },
-                }
-                if (withOverrides.racing.parentFarmingBundleKey === bundleKey) {
-                    return enableParentFarmingCharacterBundle(withOverrides, bundleKey)
-                }
-                return withOverrides
-            })
-        },
-        [setSettings],
-    )
-
-    /**
-     * Update a racing setting with special handling for the in-game race agenda.
-     * When the in-game race agenda is enabled, it automatically disables the Farming Fans and Smart Race Solver settings to prevent conflicts.
-     * @param key The key of the setting to update.
-     * @param value The value to set the setting to.
-     */
     const updateRacingSetting = useCallback(
-        (key: keyof Settings["racing"], value: any) => {
+        (key: keyof Settings["racing"], value: unknown) => {
             if (key === "enableUserInGameRaceAgenda" && value) {
                 updateRacing((prev) => ({
-                    // Disable Farming Fans and the Smart Race Solver when User In Game Race Agenda is enabled.
                     ...prev,
                     enableParentFarmingMode: false,
                     enableFarmingFans: false,
@@ -245,7 +101,7 @@ const RacingSettings = () => {
                 updateRacing({ [key]: value } as Partial<Settings["racing"]>)
             }
         },
-        [updateRacing]
+        [updateRacing],
     )
 
     const styles = useMemo(
@@ -258,17 +114,6 @@ const RacingSettings = () => {
                     margin: 10,
                     backgroundColor: colors.bg,
                 },
-                section: {
-                    marginBottom: 24,
-                },
-                inputContainer: {
-                    marginBottom: 16,
-                },
-                inputLabel: {
-                    fontSize: 16,
-                    color: colors.text,
-                    marginBottom: 8,
-                },
                 input: {
                     borderWidth: 1,
                     borderColor: colors.borderHair,
@@ -278,24 +123,13 @@ const RacingSettings = () => {
                     color: colors.text,
                     backgroundColor: colors.bg,
                 },
-                inputDescription: {
-                    fontSize: 14,
-                    color: colors.text,
-                    opacity: 0.7,
-                    marginTop: 4,
-                },
                 perDistanceGroupLabel: { ...TYPE.monoLabel, color: colors.textMuted, paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.xs },
                 perDistanceBody: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, gap: SPACING.sm },
                 perDistanceItem: { flexDirection: "row" as const, alignItems: "center" as const, gap: SPACING.md },
             }),
-        [colors]
+        [colors],
     )
 
-    /**
-     * Render a small cyan pill displaying the current strategy value (for nav rows).
-     * @param label The strategy value to render inside the pill.
-     * @returns A styled `Text` node sized to fit the value.
-     */
     const renderStrategyPill = (label: string) => (
         <Text
             style={{
@@ -312,13 +146,6 @@ const RacingSettings = () => {
         </Text>
     )
 
-    /**
-     * Render the modal contents for a strategy picker.
-     * @param current The currently selected strategy.
-     * @param onSelect Called when the user picks a new value (the modal close is handled by the caller).
-     * @returns A list of pressable option rows.
-     */
-    // `current` is typed `string` to match the context shape; if the stored value is outside RACE_STRATEGY_OPTIONS, no row renders as selected.
     const renderStrategyOptions = (current: string, onSelect: (value: RaceStrategy) => void) => (
         <View style={modalShellStyles.modalBodyList}>
             {RACE_STRATEGY_OPTIONS.map((option) => (
@@ -331,135 +158,37 @@ const RacingSettings = () => {
         <View style={styles.root}>
             <SearchPageProvider page="RacingSettings" scrollViewRef={scrollViewRef}>
                 <PageHeader title="Racing Settings" />
-                <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                <ScrollView ref={scrollViewRef} nestedScrollEnabled showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Parent Farming */}
-                        <Section label="Parent Farming">
-                            <SearchableItem
-                                id="enable-parent-farming-mode"
-                                title="Enable Parent Farming Mode"
-                                description="Applies a preset tuned for unattended parent runs: Smart Race Solver, fan-weighted epithets, more extra-race tolerance, and relaxed stat targets."
-                            >
-                                <Row
-                                    title="Enable Parent Farming Mode"
-                                    description="Applies a preset tuned for unattended parent runs. You can still customize character presets, epithets, aptitudes, and weights afterward."
-                                    right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
-                                />
-                            </SearchableItem>
-                            <ParentFarmingActivePresetChip settings={settings} />
-                            {parentFarmingDriftWarnings.length > 0 && (
-                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    {parentFarmingDriftWarnings.join("\n\n")}
-                                </WarningContainer>
-                            )}
-                            <SearchableItem
-                                id="enable-parent-run-summary"
-                                title="Parent Run Summary"
-                                description="At career end, log a parent run summary and send it to Discord when notifications are enabled."
-                            >
-                                <Row
-                                    title="Parent Run Summary"
-                                    description="Logs fans, stats, aptitudes, race record, and goal epithets when a parent farming run finishes. Also sent to Discord if notifications are on."
-                                    right={
-                                        <Switch
-                                            checked={enableParentRunSummary}
-                                            onCheckedChange={(checked) => updateRacingSetting("enableParentRunSummary", checked)}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
-                            <SearchableItem
-                                title="Spark Selection Strategy"
-                                description="How the bot picks inheritance sparks before confirming inheritance."
-                            >
-                                <View style={{ padding: SPACING.md }}>
-                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Spark Selection Strategy</Text>
-                                    <Text style={{ ...TYPE.caption, color: colors.textMuted, marginBottom: SPACING.sm, lineHeight: 18 }}>
-                                        OCRs the three inheritance spark options and taps the best match. Parent Farming Mode sets Stat & aptitude; use Skill hints for white-factor
-                                        farming.
-                                    </Text>
-                                    <CustomSelect
-                                        searchId="spark-selection-strategy"
-                                        searchTitle="Spark Selection Strategy"
-                                        searchDescription="How the bot picks inheritance sparks before confirming inheritance."
-                                        width={260}
-                                        options={SPARK_SELECTION_STRATEGIES.map((option) => ({ value: option.value, label: option.label }))}
-                                        value={sparkSelectionStrategy || "Default"}
-                                        onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
-                                        placeholder="Default"
-                                    />
+                        <Pressable
+                            onPress={() => navigation.navigate("ParentFarmingSettings" as never)}
+                            android_ripple={{ color: colors.ripple, foreground: true }}
+                            accessibilityRole="button"
+                            style={{ marginBottom: SPACING.md }}
+                        >
+                            <GlassSurface style={{ borderRadius: RADII.lg }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.md, padding: SPACING.md }}>
+                                    <View
+                                        style={{
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 999,
+                                            backgroundColor: enableParentFarmingMode ? colors.brandSubtle : colors.surfaceRaised,
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <Leaf size={18} color={enableParentFarmingMode ? colors.brand : colors.textMuted} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600" }}>Parent Farming</Text>
+                                        <Text style={{ ...TYPE.caption, color: colors.textMuted }} numberOfLines={2}>{parentFarmingSummary}</Text>
+                                    </View>
+                                    <ChevronRight size={16} color={colors.textMuted} />
                                 </View>
-                            </SearchableItem>
-                            <SearchableItem
-                                id="enable-auto-borrow-support-card"
-                                title="Auto-Borrow Support Card"
-                                description="At career selection, borrow a friend support card from your preset priority list before training starts."
-                            >
-                                <Row
-                                    title="Auto-Borrow Support Card"
-                                    description={
-                                        supportBorrowNames.length > 0
-                                            ? `Priority: ${supportBorrowNames.slice(0, 4).join(" → ")}${supportBorrowNames.length > 4 ? " …" : ""}. Start the bot on career selection (before the training menu).`
-                                            : "Apply a parent goal preset to load a support priority list. Start the bot on career selection (before the training menu)."
-                                    }
-                                    right={
-                                        <Switch
-                                            checked={enableAutoBorrowSupportCard}
-                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoBorrowSupportCard", checked)}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
-                            <SearchableItem
-                                id="parent-farming-goal-presets"
-                                title="Parent Goal Presets"
-                                description="Quickly add common parent-farming target epithets, solver weights, and training bias."
-                            >
-                                <View style={{ padding: SPACING.md }}>
-                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Parent Goal Presets</Text>
-                                    <ParentFarmingGoalPresetGrid allowedEpithetNames={allowedEpithetNames} onApply={applyGoalPreset} />
-                                </View>
-                            </SearchableItem>
-                            <View style={{ padding: SPACING.md }}>
-                                <CustomSlider
-                                    searchId="minimum-fan-target"
-                                    value={minimumFanTarget}
-                                    placeholder={0}
-                                    onValueChange={(value) => updateSolverWeight("minimumFanTarget", value)}
-                                    min={0}
-                                    max={300000}
-                                    step={5000}
-                                    label="Solver Fan Floor"
-                                    showValue={true}
-                                    showLabels={true}
-                                    description="When current fans meet this target, fan-weighted race scoring stops so the bot prefers training. 0 disables. Requires fan weight > 0."
-                                />
-                            </View>
-                            <SearchableItem
-                                description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
-                            >
-                                <View style={{ padding: SPACING.md }}>
-                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
-                                    <ParentFarmingBundleGrid
-                                        scenario={general?.scenario || "Trackblazer"}
-                                        supportBorrowOverrides={supportBorrowOverrides}
-                                        onApply={applyCharacterBundle}
-                                        onEditSupports={openBundleSupportEditor}
-                                    />
-                                </View>
-                            </SearchableItem>
-                            {enableParentFarmingMode && (
-                                <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    {`${PARENT_FARMING_MODE_SUMMARY} Use a bundle above for a full setup, or open Smart Race Solver to fine-tune epithets, aptitudes, and manual race locks.`}
-                                </InfoContainer>
-                            )}
-                        </Section>
+                            </GlassSurface>
+                        </Pressable>
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Race Behavior */}
                         <Section label="Race Behavior">
                             <SearchableItem id="enable-farming-fans" title="Enable Farming Fans" description="When enabled, the bot will start running extra races to gain fans.">
                                 <Row
@@ -478,9 +207,9 @@ const RacingSettings = () => {
                                     max={15}
                                     step={1}
                                     label="Days to Run Extra Races"
-                                    showValue={true}
-                                    showLabels={true}
-                                    description="Extra races are eligible only on days where current day % value == 0. For example, 5 means days 5, 10, 15, etc. Has no effect when Smart Race Solver is enabled."
+                                    showValue
+                                    showLabels
+                                    description="Extra races on days where turn % interval matches (e.g. 5 → days 5, 10, 15). Ignored when Smart Race Solver is on."
                                 />
                             </View>
                             <SearchableItem
@@ -561,9 +290,6 @@ const RacingSettings = () => {
                             {enableForceRacing && <WarningContainer>Warning: Enabling this will override all other racing settings and they will be ignored.</WarningContainer>}
                         </Section>
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Strategy */}
                         <Section label="Strategy">
                             <SearchableItem
                                 id="enable-per-distance-strategy"
@@ -657,9 +383,6 @@ const RacingSettings = () => {
                             )}
                         </Section>
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            In-Game Race Agenda */}
                         <Section label="In-Game Race Agenda">
                             <SearchableItem
                                 id="enable-user-in-game-race-agenda"
@@ -756,9 +479,6 @@ const RacingSettings = () => {
                             )}
                         </Section>
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Advanced */}
                         <SectionLabel label="Advanced" />
                         <Pressable
                             onPress={() => navigation.navigate("SmartRaceSolverSettings" as never)}
@@ -795,9 +515,6 @@ const RacingSettings = () => {
                     </View>
                 </ScrollView>
 
-                {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                    //////////////////////////////////////////////////////////////////////////////////////////////////
-                    Strategy picker modals */}
                 <SheetModal
                     visible={juniorPickerOpen}
                     onRequestClose={() => setJuniorPickerOpen(false)}
@@ -845,55 +562,6 @@ const RacingSettings = () => {
                         setOriginalPickerOpen(false)
                     })}
                 </SheetModal>
-
-                <SheetModal
-                    visible={goalPickerOpen}
-                    onRequestClose={() => setGoalPickerOpen(false)}
-                    header={
-                        <View style={modalShellStyles.modalHeaderRow}>
-                            <Text style={modalShellStyles.modalTitleMono}>CHOOSE PARENT GOAL</Text>
-                            <Pressable
-                                style={modalShellStyles.modalCloseChip}
-                                onPress={() => setGoalPickerOpen(false)}
-                                android_ripple={{ color: colors.ripple, foreground: true }}
-                                accessibilityLabel="Close"
-                            >
-                                <Ionicons name="close" size={18} color={colors.text} />
-                            </Pressable>
-                        </View>
-                    }
-                    footer={null}
-                >
-                    <View style={{ padding: SPACING.md }}>
-                        <Text style={{ ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginBottom: SPACING.sm }}>
-                            Parent Farming needs a goal preset for epithets, solver weights, and training bias. Pick one below or use the default G1 / Fan route.
-                        </Text>
-                        <Pressable
-                            onPress={applyDefaultGoalPreset}
-                            style={{
-                                padding: SPACING.md,
-                                marginBottom: SPACING.sm,
-                                borderRadius: RADII.md,
-                                borderWidth: 1,
-                                borderColor: colors.borderHair,
-                                backgroundColor: colors.surface,
-                            }}
-                            android_ripple={{ color: colors.ripple, foreground: true }}
-                            accessibilityRole="button"
-                        >
-                            <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "700" }}>Use default — G1 / Fan Parent</Text>
-                        </Pressable>
-                        <ParentFarmingGoalPresetGrid allowedEpithetNames={allowedEpithetNames} onApply={applyGoalPresetFromPicker} />
-                    </View>
-                </SheetModal>
-
-                <ParentFarmingBundleSupportSheet
-                    visible={bundleSupportSheetOpen}
-                    bundle={bundleSupportEditing}
-                    overrides={supportBorrowOverrides}
-                    onClose={() => setBundleSupportSheetOpen(false)}
-                    onSave={saveBundleSupportCards}
-                />
             </SearchPageProvider>
         </View>
     )
