@@ -47,6 +47,7 @@ export const buildParentFarmingRacingSettings = (racing: Settings["racing"]): Pa
         enableUserInGameRaceAgenda: false,
         enableSmartRaceSolver: true,
         sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
+        enableParentRunSummary: true,
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,

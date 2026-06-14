@@ -332,6 +332,12 @@ const searchConfig: SearchOption[] = [
         page: "RacingSettings",
     },
     {
+        id: "enable-parent-run-summary",
+        title: "Parent Run Summary",
+        description: "At career end, log a parent run summary and send it to Discord when notifications are enabled.",
+        page: "RacingSettings",
+    },
+    {
         id: "spark-selection-strategy",
         title: "Spark Selection Strategy",
         description: "How the bot picks inheritance sparks before confirming inheritance.",

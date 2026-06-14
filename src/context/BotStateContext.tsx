@@ -45,6 +45,7 @@ export interface Settings {
     // Racing settings
     racing: {
         enableParentFarmingMode: boolean
+        enableParentRunSummary: boolean
         enableFarmingFans: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
@@ -246,6 +247,7 @@ export const defaultSettings: Settings = {
     },
     racing: {
         enableParentFarmingMode: false,
+        enableParentRunSummary: true,
         enableFarmingFans: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,

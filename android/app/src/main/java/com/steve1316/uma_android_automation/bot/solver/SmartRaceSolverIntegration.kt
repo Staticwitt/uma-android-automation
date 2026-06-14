@@ -4,6 +4,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.RunRaceStats
 import com.steve1316.uma_android_automation.bot.Racing.RaceData
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.GameDate
@@ -94,6 +95,13 @@ object SmartRaceSolverIntegration {
 
     /** Turn that [cachedSchedule] was solved against. Used to invalidate the cache when the bot has advanced to a new turn. */
     @Volatile private var cachedScheduleTurn: TurnNumber = -1
+
+    /** Snapshot of confirmed race wins and losses for the current run. */
+    fun snapshotRaceStats(): RunRaceStats =
+        RunRaceStats(
+            wins = synchronized(raceHistory) { raceHistory.size },
+            losses = synchronized(raceLosses) { raceLosses.size },
+        )
 
     /** Clears in-memory race history and pending state. Call at the start of a fresh bot run. */
     fun reset() {

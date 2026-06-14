@@ -8,6 +8,7 @@ import com.steve1316.automation_library.utils.ImageUtils.ScaleConfidenceResult
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
+import com.steve1316.uma_android_automation.bot.ParentRunSummary
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonCancel
 import com.steve1316.uma_android_automation.components.ButtonCareerEndSkills
@@ -2098,6 +2099,16 @@ abstract class Campaign(game: Game) : Task(game) {
 
                 // Print the final Trainee information.
                 trainee.logInfo()
+
+                if (
+                    SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
+                    SettingsHelper.getBooleanSetting("racing", "enableParentRunSummary", true)
+                ) {
+                    val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
+                    val summary = ParentRunSummary.buildFromSettings(trainee, game.scenario, elapsedMs)
+                    ParentRunSummary.logSummary(summary)
+                    game.taskEndDiscordMessage = summary
+                }
 
                 return TaskResult.Success(
                     TaskResultCode.TASK_RESULT_COMPLETE,
