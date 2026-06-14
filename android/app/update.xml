@@ -1,19 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.5</latestVersion>
-    <latestVersionCode>85</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.5</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.5/v5.8.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.6</latestVersion>
+    <latestVersionCode>86</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.6</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.6/v5.8.6-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.5 - Parent quality optimizations
+v5.8.6 - Parent Farming UI + quality
 
-Parent farming
+UI
 ---
-- Skill Hint preset uses SkillHints spark selection; Turf All-Rounder uses Balanced
-- Resolver revision 4 re-syncs spark strategy on settings load
-- Spark scorer sums all % bonuses; OCR retries at 2x when blank
-- Opens aptitude dialog after inheritance for faster solver replan
-- Drift warning when spark strategy differs from active preset
+- Dedicated Parent Farming settings page (drawer or Settings)
+- Tabbed character setups vs goal presets; Racing Settings simplified
+
+Parent quality (v5.8.5)
+---
+- Skill Hint / Turf goal spark strategies; smarter inheritance OCR
+- Post-inheritance aptitude replan; drift warnings
 
 Includes v5.8.4 race prep View Results fix.
 
