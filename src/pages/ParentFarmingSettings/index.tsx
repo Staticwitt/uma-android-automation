@@ -7,11 +7,13 @@ import { useTheme } from "../../context/ThemeContext"
 import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
+import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
+import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
-import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
+import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import {
     applyParentFarmingGoalPreset,
@@ -35,6 +37,7 @@ import { Switch } from "../../components/ui/switch"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
+import { recommendSupportDeckForCharacter } from "../../lib/recommendSupportDeck"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
@@ -57,6 +60,7 @@ const ParentFarmingSettings = () => {
     const [goalPickerOpen, setGoalPickerOpen] = useState(false)
     const [bundleSupportSheetOpen, setBundleSupportSheetOpen] = useState(false)
     const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
+    const [supportFinderOpen, setSupportFinderOpen] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
@@ -166,6 +170,32 @@ const ParentFarmingSettings = () => {
                     return enableParentFarmingCharacterBundle(withOverrides, bundleKey)
                 }
                 return withOverrides
+            })
+        },
+        [setSettings],
+    )
+
+    const activeCharacterSupportRecommendation = useMemo(
+        () => (smartRaceSolverCharacterPreset ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset) : null),
+        [smartRaceSolverCharacterPreset],
+    )
+
+    const applyFriendBorrowFromRecommendation = useCallback(
+        (characterName: string, borrowOrder: string[]) => {
+            setSettings((prev) => {
+                const preset = findCharacterPresetEntry(characterName)
+                return {
+                    ...prev,
+                    racing: {
+                        ...prev.racing,
+                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
+                        smartRaceSolverCharacterPreset: characterName,
+                        enableAutoBorrowSupportCard: true,
+                        ...(preset
+                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
+                            : {}),
+                    },
+                }
             })
         },
         [setSettings],
@@ -299,6 +329,39 @@ const ParentFarmingSettings = () => {
                                             }
                                         />
                                     </SearchableItem>
+                                    <SearchableItem
+                                        id="character-support-finder"
+                                        title="Support deck finder"
+                                        description="Recommended four-support deck and friend borrow for any trainee."
+                                    >
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.md }}>
+                                            <Pressable
+                                                onPress={() => setSupportFinderOpen(true)}
+                                                style={{
+                                                    padding: SPACING.md,
+                                                    borderRadius: RADII.md,
+                                                    borderWidth: 1,
+                                                    borderColor: colors.borderHair,
+                                                    backgroundColor: colors.surface,
+                                                }}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                            >
+                                                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Find best supports for any Uma</Text>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                    Search all characters — not only the preset bundles above.
+                                                </Text>
+                                            </Pressable>
+                                            {activeCharacterSupportRecommendation && (
+                                                <View>
+                                                    <Text style={{ ...TYPE.caption, color: colors.textMuted, marginBottom: SPACING.sm }}>
+                                                        Current character preset ({smartRaceSolverCharacterPreset})
+                                                    </Text>
+                                                    <CharacterSupportRecommendationView recommendation={activeCharacterSupportRecommendation} />
+                                                </View>
+                                            )}
+                                        </View>
+                                    </SearchableItem>
                                     <SearchableItem id="enable-parent-run-summary" title="Parent run summary" description="End-of-career summary in logs and Discord.">
                                         <Row
                                             title="Run summary at career end"
@@ -418,6 +481,12 @@ const ParentFarmingSettings = () => {
                     </View>
                 </SheetModal>
 
+                <CharacterSupportFinderSheet
+                    visible={supportFinderOpen}
+                    initialCharacterName={smartRaceSolverCharacterPreset}
+                    onClose={() => setSupportFinderOpen(false)}
+                    onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
+                />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}
                     bundle={bundleSupportEditing}
