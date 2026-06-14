@@ -1,22 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.0</latestVersion>
-    <latestVersionCode>80</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.0</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.0/v5.8.0-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.1</latestVersion>
+    <latestVersionCode>81</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.1</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.1/v5.8.1-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.0 - In-app auto updater
+v5.8.1 - Parent quality: borrow presets and aptitude replan
 
 Features
 ---
-- Check for updates on launch and from the drawer (cloud icon)
-- Download and install APK updates directly from GitHub releases
-- Version checks use versionCode from update.xml for reliable comparisons
-- Changelog viewer uses the same release notes feed
+- Support card borrow presets per parent goal (auto-OCR at career selection)
+- Post-inheritance aptitude replan for Smart Race Solver
+- Spark picker uses live aptitudes after inheritance
+- Forced epithets on crown/tiara/derby/queen/dirt/skill-hint presets
+- Auto-borrow toggle in Parent Farming settings
 
 Fixes
 ---
-- Update feed now points to Staticwitt/uma-android-automation (was steve1316)
+- Drift warnings for forced epithets when settings diverge from preset
 
     </releaseNotes>
   </update>
