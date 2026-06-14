@@ -22,9 +22,11 @@ import com.steve1316.uma_android_automation.components.ButtonRaceAgendaLoadList
 import com.steve1316.uma_android_automation.components.ButtonRaceExclamation
 import com.steve1316.uma_android_automation.components.ButtonRaceListFullStats
 import com.steve1316.uma_android_automation.components.ButtonRaceManual
+import com.steve1316.uma_android_automation.components.ButtonRaceResults
 import com.steve1316.uma_android_automation.components.ButtonRaces
 import com.steve1316.uma_android_automation.components.ButtonSkip
 import com.steve1316.uma_android_automation.components.ButtonTryAgainAlt
+import com.steve1316.uma_android_automation.components.ButtonInterface
 import com.steve1316.uma_android_automation.components.ButtonViewResults
 import com.steve1316.uma_android_automation.components.IconRaceAgendaEmpty
 import com.steve1316.uma_android_automation.components.IconRaceDayRibbon
@@ -1025,6 +1027,61 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         }
     }
 
+    /** Whether the bot is on the race prep screen where skip-to-results or manual race can be chosen. */
+    private fun isOnRacePrepScreen(bitmap: Bitmap): Boolean =
+        ButtonChangeRunningStyle.check(game.imageUtils, sourceBitmap = bitmap) ||
+            ButtonViewResults.check(game.imageUtils, sourceBitmap = bitmap) ||
+            ButtonRaceResults.check(game.imageUtils, sourceBitmap = bitmap)
+
+    /**
+     * Clicks "View Results" / "Go to Race Results" on the race prep screen, or runs manually when skip is locked.
+     *
+     * @param bitmap Current screenshot.
+     * @return True if a skip or manual-race action was performed.
+     */
+    private fun clickGoToRaceResults(bitmap: Bitmap): Boolean {
+        val skipButton: ButtonInterface? =
+            when {
+                ButtonViewResults.check(game.imageUtils, sourceBitmap = bitmap) -> ButtonViewResults
+                ButtonRaceResults.check(game.imageUtils, sourceBitmap = bitmap) -> ButtonRaceResults
+                else -> null
+            }
+
+        if (skipButton == null) {
+            MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: No skip-race button detected on prep screen.")
+            return false
+        }
+
+        return when (skipButton.checkDisabled(game.imageUtils, bitmap)) {
+            true -> {
+                if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
+                    MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
+                    game.waitForLoading()
+                    true
+                } else {
+                    MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: Skip is locked. Failed to click manual race button.")
+                    false
+                }
+            }
+
+            false -> {
+                if (skipButton.click(game.imageUtils, sourceBitmap = bitmap)) {
+                    MessageLog.i(TAG, "[RACE] Clicked skip-race button (${skipButton.template.path}) to view results.")
+                    game.waitForLoading()
+                    true
+                } else {
+                    MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: Failed to click skip-race button.")
+                    false
+                }
+            }
+
+            null -> {
+                MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: Skip-race button found but disabled state could not be determined.")
+                false
+            }
+        }
+    }
+
     /**
      * Executes the race with retry logic.
      *
@@ -1056,12 +1113,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
 
             when {
-                // Handle the race prep screen.
-                // Check for both of these buttons in case one of them fails detection.
-                // This helps prevent us from accidentally clicking the Race button.
-                ButtonChangeRunningStyle.check(game.imageUtils, sourceBitmap = bitmap) ||
-                    ButtonViewResults.check(game.imageUtils, sourceBitmap = bitmap) -> {
-                    MessageLog.i(TAG, "[RACE] Detected ButtonChangeRunningStyle. Handling race prep screen...")
+                // Handle the race prep screen (View Results / Go to Race Results / manual race).
+                isOnRacePrepScreen(bitmap) -> {
+                    MessageLog.i(TAG, "[RACE] Detected race prep screen. Handling skip-to-results...")
 
                     // Always handle race strategy at this screen in case it hasn't been handled yet.
                     // Latch the result so we don't continuously try to handle strategy.
@@ -1069,31 +1123,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         bDidSelectRaceStrategy = selectRaceStrategy()
                     }
 
-                    when (ButtonViewResults.checkDisabled(game.imageUtils, bitmap)) {
-                        true -> {
-                            if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
-                                MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
-                                // Clicking this button triggers connection to server.
-                                game.waitForLoading()
-                            } else {
-                                MessageLog.w(TAG, "[WARN] runRaceWithRetries:: Skip is locked. Failed to click manual race button.")
-                            }
-                        }
-
-                        false -> {
-                            if (ButtonViewResults.click(game.imageUtils, sourceBitmap = bitmap)) {
-                                MessageLog.i(TAG, "[RACE] Clicked ViewResults button to skip race.")
-                                // Clicking this button triggers connection to server.
-                                game.waitForLoading()
-                            } else {
-                                MessageLog.w(TAG, "[WARN] runRaceWithRetries:: Failed to click ViewResults button to skip race.")
-                            }
-                        }
-
-                        null -> {
-                            MessageLog.w(TAG, "[WARN] runRaceWithRetries:: At Race prep screen but failed to detect ViewResults button.")
-                        }
-                    }
+                    clickGoToRaceResults(bitmap)
                 }
 
                 ButtonRace.click(game.imageUtils, sourceBitmap = bitmap) -> {
@@ -1574,8 +1604,8 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         } else if (ButtonRace.check(game.imageUtils)) {
             MessageLog.v(TAG, "[RACE] The bot is already at the Race List screen and a race has already been selected.")
             return handleSelectedRace()
-        } else if (ButtonChangeRunningStyle.check(game.imageUtils)) {
-            MessageLog.i(TAG, "[RACE] The bot is currently sitting on the race screen. Most likely here for a scheduled race.")
+        } else if (isOnRacePrepScreen(game.imageUtils.getSourceBitmap())) {
+            MessageLog.i(TAG, "[RACE] The bot is currently sitting on the race prep screen. Most likely here for a scheduled race.")
             handleStandaloneRace()
             return true
         }
@@ -1892,6 +1922,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             return false
         }
         game.wait(2.0)
+        game.waitForLoading()
 
         // Skip the race if possible, otherwise run it manually.
         runRaceWithRetries()
@@ -2046,6 +2077,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         game.wait(1.0)
         ButtonRace.click(game.imageUtils, tries = 10)
         game.wait(2.0)
+        game.waitForLoading()
 
         // Skip the race if possible, otherwise run it manually.
         runRaceWithRetries()
