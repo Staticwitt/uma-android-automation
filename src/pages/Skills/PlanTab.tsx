@@ -19,6 +19,7 @@ import CustomScrollView from "../../components/CustomScrollView"
 import WarningContainer from "../../components/WarningContainer"
 import skillsData from "../../data/skills.json"
 import icons from "./icons"
+import { mergeSkillPlanConfig, parseSkillIdCsv } from "../../lib/skillPlanSettings"
 
 /** Represents a skill entry from the `skills.json` data file. */
 interface Skill {
@@ -84,15 +85,17 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
     const [showSelected, setShowSelected] = useState(false)
     const [selectionMode, setSelectionMode] = useState<"plan" | "blacklist">("plan")
 
-    const planIds: number[] = useMemo(() => {
-        return plan && plan !== "" && typeof plan === "string" ? plan.split(",").map((s) => Number(s)) : []
-    }, [plan])
+    const planIds: number[] = useMemo(() => parseSkillIdCsv(plan), [plan])
 
-    const blacklistIds: number[] = useMemo(() => {
-        return blacklist && blacklist !== "" && typeof blacklist === "string" ? blacklist.split(",").map((s) => Number(s)) : []
-    }, [blacklist])
+    const blacklistIds: number[] = useMemo(() => parseSkillIdCsv(blacklist), [blacklist])
 
     const activeIds: number[] = selectionMode === "plan" ? planIds : blacklistIds
+
+    useEffect(() => {
+        setSelectionMode("plan")
+        setShowSelected(false)
+        setSearchQuery("")
+    }, [planKey])
 
     useEffect(() => {
         if (activeIds.length === 0) {
@@ -116,7 +119,7 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                 ...prev,
                 plans: {
                     ...prev.plans,
-                    [planKey]: { ...prev.plans[planKey], [key]: value },
+                    [planKey]: mergeSkillPlanConfig(planKey, { ...prev.plans[planKey], [key]: value }),
                 },
             }))
         },
@@ -142,6 +145,15 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
     const clearActiveList = useCallback(() => {
         updatePlanSetting(selectionMode, "")
     }, [selectionMode, updatePlanSetting])
+
+    const selectionExtraData = useMemo(
+        () => ({
+            selectionMode,
+            plan,
+            blacklist,
+        }),
+        [selectionMode, plan, blacklist]
+    )
 
     const styles = useMemo(
         () =>
@@ -223,6 +235,30 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
             }),
         [colors]
     )
+
+    const renderSkillItem = useCallback(
+        ({ item: skill }: { item: Skill }) => {
+            const isActive = selectionMode === "plan" ? planIds.includes(skill.id) : blacklistIds.includes(skill.id)
+            return (
+                <Pressable onPress={() => handleSkillPress(skill)} style={styles.skillItem} android_ripple={{ color: colors.ripple, foreground: true }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        <Image source={icons[skill.icon_id]} style={{ width: 64, height: 64, marginRight: 8 }} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.skillName}>{skill.name_en}</Text>
+                            <Text style={styles.skillDescription}>{skill.desc_en}</Text>
+                            <Text style={styles.skillSubtext}>
+                                ID: <Text style={TYPE.monoValue}>{skill.id}</Text>
+                            </Text>
+                        </View>
+                        {isActive && <CircleCheckBig size={18} color={selectionMode === "plan" ? "green" : "red"} />}
+                    </View>
+                </Pressable>
+            )
+        },
+        [blacklistIds, colors.ripple, handleSkillPress, planIds, selectionMode, styles]
+    )
+
+    const skillKeyExtractor = useCallback((skill: Skill) => String(skill.id), [])
 
     if (!config) {
         return <Text style={styles.unknown}>Unknown plan: {planKey}</Text>
@@ -376,21 +412,10 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                         <CustomScrollView
                             targetProps={{
                                 data: filteredSkills,
-                                renderItem: ({ item: skill }: { item: Skill }) => (
-                                    <Pressable onPress={() => handleSkillPress(skill)} style={styles.skillItem} android_ripple={{ color: colors.ripple, foreground: true }}>
-                                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                                            <Image source={icons[skill.icon_id]} style={{ width: 64, height: 64, marginRight: 8 }} />
-                                            <View style={{ flex: 1 }}>
-                                                <Text style={styles.skillName}>{skill.name_en}</Text>
-                                                <Text style={styles.skillDescription}>{skill.desc_en}</Text>
-                                                <Text style={styles.skillSubtext}>
-                                                    ID: <Text style={TYPE.monoValue}>{skill.id}</Text>
-                                                </Text>
-                                            </View>
-                                            {activeIds.includes(skill.id) && <CircleCheckBig size={18} color={selectionMode === "plan" ? "green" : "red"} />}
-                                        </View>
-                                    </Pressable>
-                                ),
+                                renderItem: renderSkillItem,
+                                keyExtractor: skillKeyExtractor,
+                                estimatedItemSize: 104,
+                                extraData: selectionExtraData,
                                 nestedScrollEnabled: true,
                             }}
                             position="right"
