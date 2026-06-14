@@ -48,6 +48,13 @@ const setsEqual = (left: string[], right: string[]): boolean => {
     return left.every((value) => rightSet.has(value))
 }
 
+/** Whether spark selection strategy differs from what the resolver would apply. */
+export const hasParentFarmingSparkStrategyDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    return settings.racing.sparkSelectionStrategy !== resolved.racing.sparkSelectionStrategy
+}
+
 /** Whether forced epithets differ from what the resolver would apply. */
 export const hasParentFarmingForcedEpithetDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
@@ -98,6 +105,11 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
         if (hasParentFarmingTrainingDrift(settings)) {
             warnings.push(
                 "Training settings differ from the active parent-farming preset. The bot will use your current training values until you re-apply the preset or start a run (which re-syncs from the preset).",
+            )
+        }
+        if (hasParentFarmingSparkStrategyDrift(settings)) {
+            warnings.push(
+                "Spark selection strategy differs from the active parent-farming preset. Inheritance picks may not match your goal until you re-apply the preset or start a run.",
             )
         }
         if (hasParentFarmingForcedEpithetDrift(settings)) {

@@ -1,5 +1,5 @@
 import type { Settings } from "../../context/BotStateContext"
-import { detectParentFarmingDrift, formatParentFarmingTrainingBias, hasParentFarmingTrainingDrift } from "../parentFarmingDrift"
+import { detectParentFarmingDrift, formatParentFarmingTrainingBias, hasParentFarmingSparkStrategyDrift, hasParentFarmingTrainingDrift } from "../parentFarmingDrift"
 import { prepareSettingsForBotStart } from "../prepareSettingsForBotStart"
 
 const baseSettings = (): Settings =>
@@ -48,6 +48,13 @@ describe("parentFarmingDrift", () => {
         const settings = baseSettings()
         settings.training.preferredDistanceOverride = "Long"
         expect(hasParentFarmingTrainingDrift(settings)).toBe(true)
+    })
+
+    it("detects spark strategy drift from active preset", () => {
+        const settings = baseSettings()
+        settings.racing.parentFarmingGoalPresetKey = "skill-hints"
+        settings.racing.sparkSelectionStrategy = "StatAndAptitude"
+        expect(hasParentFarmingSparkStrategyDrift(settings)).toBe(true)
     })
 })
 

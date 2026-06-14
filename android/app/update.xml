@@ -1,18 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.4</latestVersion>
-    <latestVersionCode>84</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.4</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.4/v5.8.4-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.5</latestVersion>
+    <latestVersionCode>85</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.5</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.5/v5.8.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.4 - Race prep View Results fix
+v5.8.5 - Parent quality optimizations
 
-Fixes
+Parent farming
 ---
-- Clicks See Results / View Results / Go to Race Results on race prep (see_results template was unused)
-- Skips to results before opening running-style dialogs that can cover the button
-- Full-screen template search fallback when bottom-half match fails
-- Fresh screenshot after strategy selection; fallback tap above Manual Race when templates miss
+- Skill Hint preset uses SkillHints spark selection; Turf All-Rounder uses Balanced
+- Resolver revision 4 re-syncs spark strategy on settings load
+- Spark scorer sums all % bonuses; OCR retries at 2x when blank
+- Opens aptitude dialog after inheritance for faster solver replan
+- Drift warning when spark strategy differs from active preset
+
+Includes v5.8.4 race prep View Results fix.
 
     </releaseNotes>
   </update>
