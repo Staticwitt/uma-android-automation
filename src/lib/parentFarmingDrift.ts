@@ -33,6 +33,30 @@ export const formatParentFarmingTrainingBias = (training: Settings["training"]):
     return `${distance} distance · ${topStat}-first · ${skillHints} · ${statTargets}`
 }
 
+const parseStringList = (json: string | undefined): string[] => {
+    try {
+        const parsed = JSON.parse(json || "[]")
+        return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []
+    } catch {
+        return []
+    }
+}
+
+const setsEqual = (left: string[], right: string[]): boolean => {
+    if (left.length !== right.length) return false
+    const rightSet = new Set(right)
+    return left.every((value) => rightSet.has(value))
+}
+
+/** Whether forced epithets differ from what the resolver would apply. */
+export const hasParentFarmingForcedEpithetDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    const current = parseStringList(settings.racing.smartRaceSolverForcedEpithets)
+    const expected = parseStringList(resolved.racing.smartRaceSolverForcedEpithets)
+    return !setsEqual(current, expected)
+}
+
 /** Whether parent-farming training fields differ from what the resolver would apply. */
 export const hasParentFarmingTrainingDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
@@ -74,6 +98,11 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
         if (hasParentFarmingTrainingDrift(settings)) {
             warnings.push(
                 "Training settings differ from the active parent-farming preset. The bot will use your current training values until you re-apply the preset or start a run (which re-syncs from the preset).",
+            )
+        }
+        if (hasParentFarmingForcedEpithetDrift(settings)) {
+            warnings.push(
+                "Forced epithets differ from the active parent-farming preset. Critical epithet routes may be skipped until you re-apply the preset or start a run.",
             )
         }
     }

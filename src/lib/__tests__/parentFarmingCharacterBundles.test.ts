@@ -72,5 +72,6 @@ describe("parentFarmingCharacterBundles", () => {
 
         expect(targets.every((name) => allowed.has(name))).toBe(true)
         expect(targets).toContain("Triple Tiara")
+        expect(JSON.parse(result.racing.smartRaceSolverForcedEpithets) as string[]).toContain("Triple Tiara")
     })
 })

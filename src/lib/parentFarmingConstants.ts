@@ -8,7 +8,7 @@ export const PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY = "g1-fans"
 /**
  * Bump when preset definitions change so `applyMigrations` re-resolves active parent-farming profiles.
  */
-export const PARENT_FARMING_RESOLVER_REVISION = 1
+export const PARENT_FARMING_RESOLVER_REVISION = 2
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {

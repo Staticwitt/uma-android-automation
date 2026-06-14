@@ -21,6 +21,12 @@ const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
     ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
 }
 
+/** Solver tuning for epithet-critical routes: spacing between races and softer consecutive-race stacking. */
+const QUALITY_ROUTE_WEIGHTS: Partial<WeightsMap> = {
+    minimumRaceGapTurns: 1,
+    consecutiveRacePenalty: 3.0,
+}
+
 /** G1 / fan routes: keep speed and stamina up between scheduled G1 races. */
 const statPriorityProfile = (order: string[]): Pick<Settings["training"], "statPrioritization" | "eventChoiceStatPriority" | "summerTrainingStatPriority"> => ({
     statPrioritization: order,
@@ -86,17 +92,25 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
     {
         key: "classic-crown",
         label: "Classic Crown Parent",
-        description: "Targets the Classic Triple Crown line plus senior spring/autumn crown routes.",
+        description: "Forces Triple Crown completion and targets senior crown epithets for classic-route parents.",
         targetEpithets: ["Triple Crown", "Way of Kings", "Stunning", "Senior Spring Triple Crown", "Senior Autumn Triple Crown", "Spring Champion", "Fall Champion"],
-        weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        forcedEpithets: ["Triple Crown"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            ...QUALITY_ROUTE_WEIGHTS,
+        },
         trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "triple-tiara",
         label: "Triple Tiara Parent",
-        description: "Targets Oka Sho, Japanese Oaks, and Shuka Sho inheritance routes.",
+        description: "Forces Triple Tiara completion and targets Oaks / queen-route epithets.",
         targetEpithets: ["Triple Tiara", "Way of Queens", "Lady", "Double Tiara"],
-        weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        forcedEpithets: ["Triple Tiara"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            ...QUALITY_ROUTE_WEIGHTS,
+        },
         trainingOverrides: MILE_QUEEN_TRAINING,
     },
     {
@@ -113,8 +127,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
     {
         key: "dirt",
         label: "Dirt Parent",
-        description: "Targets dirt race history and dirt G1 achievements. Best with Dirt aptitude raised.",
+        description: "Forces Dirt G1 Dominator and targets dirt race history epithets. Best with Dirt aptitude raised.",
         targetEpithets: ["Kicking Up Dust", "Dirt G1 Achiever", "Dirt G1 Star", "Dirt G1 Powerhouse", "Dirt G1 Dominator", "All-Rounder", "Dirt Dancer"],
+        forcedEpithets: ["Dirt G1 Dominator"],
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             includeOpAndPreOp: true,
@@ -125,8 +140,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
     {
         key: "skill-hints",
         label: "Skill Hint Parent",
-        description: "Emphasizes hint-reward epithets useful for white-factor-focused parent attempts.",
+        description: "Forces Legendary and emphasizes hint-reward epithets for white-factor parents.",
         targetEpithets: ["Mile a Minute", "Dirt G1 Dominator", "Legendary"],
+        forcedEpithets: ["Legendary"],
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             hintWeight: 18.0,
@@ -180,7 +196,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
     {
         key: "derby-stayer-line",
         label: "Derby / Stayer Line",
-        description: "Classic derby and stayer epithets for inheritance along the Triple Crown / Kikuka axis.",
+        description: "Forces Derby Dreamer and targets derby / stayer epithets along the Triple Crown axis.",
         targetEpithets: [
             "Derby Dreamer",
             "Derby Umamusume",
@@ -192,13 +208,17 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             "Double Crown",
             "Divergent Double Crown",
         ],
-        weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        forcedEpithets: ["Derby Dreamer"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            ...QUALITY_ROUTE_WEIGHTS,
+        },
         trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "queens-race",
         label: "Queen's Race Parent",
-        description: "Mile queen, Oaks, and Empress epithets for female-oriented inheritance routes.",
+        description: "Forces Oaks Obsessed and targets queen-route epithets for female inheritance lines.",
         targetEpithets: [
             "Queen of the Amazons",
             "Mile Queen",
@@ -210,8 +230,10 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             "Oaks Obsessed",
             "Oaks Umamusume",
         ],
+        forcedEpithets: ["Oaks Obsessed"],
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
+            ...QUALITY_ROUTE_WEIGHTS,
             fanWeight: 1.0e-3,
         },
         trainingOverrides: MILE_QUEEN_TRAINING,
