@@ -84,7 +84,7 @@ describe("parentFarmingPreset", () => {
 
         expect(weights.fanWeight).toBe(1.0e-3)
         expect(weights.targetEpithetMultiplier).toBe(4)
-        expect(weights.minimumRaceGapTurns).toBe(1)
+        expect(weights.minimumRaceGapTurns).toBe(0)
         expect(weights.raceCostPct).toBe(75)
         expect(weights.consecutiveRacePenalty).toBe(2)
         expect(weights.hintWeight).toBe(12)

@@ -747,15 +747,21 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         // bot trains or rests instead of racing as filler. Hard requirements above still short-circuit to true before this guard.
         if (enableSmartRaceSolver) {
             val plannedKey = SmartRaceSolverIntegration.peekRaceKeyForTurn(currentTurn = campaign.date.day, scenario = game.scenario)
-            if (plannedKey == null) {
+            if (plannedKey != null) {
+                MessageLog.i(TAG, "[RACE] Smart Race Solver has \"$plannedKey\" planned for turn ${campaign.date.day}. Proceeding to racing screen.")
+                val result = !raceRepeatWarningCheck
+                campaign.decisionTracer.recordRaceEligibility(eligible = result, reason = "Smart Race Solver planned race \"$plannedKey\" (raceRepeatWarning=$raceRepeatWarningCheck)")
+                return result
+            }
+            if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
                 MessageLog.i(TAG, "[RACE] Smart Race Solver has no race planned for turn ${campaign.date.day}. Skipping the extra-race fallback.")
                 campaign.decisionTracer.recordRaceEligibility(eligible = false, reason = "Smart Race Solver has no race planned for this turn")
                 return false
             }
-            MessageLog.i(TAG, "[RACE] Smart Race Solver has \"$plannedKey\" planned for turn ${campaign.date.day}. Proceeding to racing screen.")
-            val result = !raceRepeatWarningCheck
-            campaign.decisionTracer.recordRaceEligibility(eligible = result, reason = "Smart Race Solver planned race \"$plannedKey\" (raceRepeatWarning=$raceRepeatWarningCheck)")
-            return result
+            MessageLog.i(
+                TAG,
+                "[RACE] Parent farming mode: Smart Race Solver has no race planned for turn ${campaign.date.day}. Falling back to fan-farming interval.",
+            )
         }
 
         // For scenarios that race as often as possible, bypass most checks.

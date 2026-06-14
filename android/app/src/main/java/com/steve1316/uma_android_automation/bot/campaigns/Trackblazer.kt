@@ -985,7 +985,13 @@ class Trackblazer(game: Game) : Campaign(game) {
 
             // Handle any consecutive race warning dialogs that might pop up after clicking "Races".
             val dialogResult = handleDialogs()
-            if (dialogResult is DialogHandlerResult.Handled && consecutiveRaceCount > consecutiveRacesLimit && game.imageUtils.determineTurnsRemainingBeforeNextGoal() != 1) {
+            if (dialogResult is DialogHandlerResult.Handled &&
+                dialogResult.dialog.name == "consecutive_race_warning" &&
+                consecutiveRaceCount > consecutiveRacesLimit &&
+                !racing.ignoreConsecutiveRaceWarning &&
+                !racing.enableForceRacing &&
+                game.imageUtils.determineTurnsRemainingBeforeNextGoal() != 1
+            ) {
                 MessageLog.i(TAG, "[TRACKBLAZER] Consecutive race warning obeyed. Aborting racing.")
                 return false
             }

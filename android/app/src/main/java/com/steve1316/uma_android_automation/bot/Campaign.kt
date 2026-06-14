@@ -721,7 +721,6 @@ abstract class Campaign(game: Game) : Task(game) {
      */
     private fun handleConsecutiveRaceWarning(dialog: DialogInterface, args: Map<String, Any>): DialogHandlerResult {
         val overrideIgnoreConsecutiveRaceWarning = args["overrideIgnoreConsecutiveRaceWarning"] as? Boolean ?: false
-        racing.raceRepeatWarningCheck = true
 
         // Pre-processing hook (e.g. Trackblazer OCR).
         onConsecutiveRaceWarningDetected(dialog, args)
@@ -731,6 +730,8 @@ abstract class Campaign(game: Game) : Task(game) {
         val shouldProceed = forceRace || shouldAllowConsecutiveRace(args)
 
         if (shouldProceed) {
+            // Proceeding with the race must not block later solver-planned races the same day.
+            racing.raceRepeatWarningCheck = false
             // If the bot hasn't checked the date yet, it usually means it started on the prep screen or it is the Finale season.
             // If we are explicitly overriding the warning (mandatory race), we should proceed even if the date check hasn't finished.
             if (!bHasCheckedDateThisTurn && !overrideIgnoreConsecutiveRaceWarning && !date.bIsFinaleSeason) {
@@ -751,6 +752,7 @@ abstract class Campaign(game: Game) : Task(game) {
             }
         } else {
             MessageLog.i(TAG, "[RACE] Consecutive race warning! Aborting racing...")
+            racing.raceRepeatWarningCheck = true
             racing.clearRacingRequirementFlags()
             dialog.close(game.imageUtils)
         }
