@@ -135,12 +135,19 @@ object ScoringFunctions {
      * Reward magnitude of completing [epithet]. Stat rewards return the amount derived from
      * the reward bullet via [EpithetFilters.rewardFromBullets]. Hint rewards return [Weights.hintWeight].
      * Unknown rewards return zero. The result is then scaled by [Weights.epithetValue].
+     * Target epithets are multiplied again by [Weights.targetEpithetMultiplier] so user-selected
+     * goals can beat generic incidental rewards.
      *
      * @param epithet Completed epithet whose reward should be valued.
      * @param weights Active weights providing [Weights.hintWeight] and [Weights.epithetValue].
+     * @param isTarget Whether [epithet] is in [SolverState.targetEpithets].
      * @return Score contribution if [epithet] is completed.
      */
-    fun epithetContribution(epithet: Epithet, weights: Weights): Double {
+    fun epithetContribution(
+        epithet: Epithet,
+        weights: Weights,
+        isTarget: Boolean = false,
+    ): Double {
         val (kind, amount) = EpithetFilters.rewardFromBullets(epithet.bullets)
         val base =
             when (kind) {
@@ -148,7 +155,8 @@ object ScoringFunctions {
                 "hint" -> weights.hintWeight
                 else -> 0.0
             }
-        return base * weights.epithetValue
+        val targetMultiplier = if (isTarget) weights.targetEpithetMultiplier.coerceAtLeast(1.0) else 1.0
+        return base * weights.epithetValue * targetMultiplier
     }
 
     /**

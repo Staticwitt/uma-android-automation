@@ -155,6 +155,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 
 ---------- Racing Options ----------
 🌱 ${PARENT_FARMING_MODE_LABEL}: ${settings.racing.enableParentFarmingMode ? "✅" : "❌"}
+✨ Spark Selection: ${settings.racing.sparkSelectionStrategy || "Default"}
 👥 Prioritize Farming Fans: ${settings.racing.enableFarmingFans ? "✅" : "❌"}
 ⏰ Modulo Days to Farm Fans: ${settings.racing.enableFarmingFans ? `${settings.racing.daysToRunExtraRaces} days` : "❌"}
 🚫 Ignore Consecutive Race Warning: ${settings.racing.ignoreConsecutiveRaceWarning ? "✅" : "❌"}
@@ -178,7 +179,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🎭 Solver Character Preset: ${settings.racing.smartRaceSolverCharacterPreset || "(none)"}
 🐎 Solver Aptitudes: Spr ${smartRaceSolverAptitudesObj.Sprint ?? "?"}, Mile ${smartRaceSolverAptitudesObj.Mile ?? "?"}, Med ${smartRaceSolverAptitudesObj.Medium ?? "?"}, Lng ${smartRaceSolverAptitudesObj.Long ?? "?"}, Trf ${smartRaceSolverAptitudesObj.Turf ?? "?"}, Drt ${smartRaceSolverAptitudesObj.Dirt ?? "?"}
 🎯 Solver Optimize Mode: ${smartRaceSolverOptimizeMode}
-⚖️ Solver Weights: race ${smartRaceSolverWeightsObj.raceValue ?? "?"}, epithet ${smartRaceSolverWeightsObj.epithetValue ?? "?"}, fans ${smartRaceSolverWeightsObj.fanWeight ?? 0}, hint ${smartRaceSolverWeightsObj.hintWeight ?? "?"}, consec −${smartRaceSolverWeightsObj.consecutiveRacePenalty ?? "?"}, summer −${smartRaceSolverWeightsObj.summerPenalty ?? "?"}, raceBonus ${smartRaceSolverWeightsObj.raceBonusPct ?? "?"}%, raceCost ${smartRaceSolverWeightsObj.raceCostPct ?? "?"}%, threshold ${smartRaceSolverWeightsObj.aptitudeThreshold ?? "?"}, includeOP ${smartRaceSolverWeightsObj.includeOpAndPreOp ? "✅" : "❌"}, summerRacing ${smartRaceSolverWeightsObj.allowSummerRacing ? "✅" : "❌"}
+⚖️ Solver Weights: race ${smartRaceSolverWeightsObj.raceValue ?? "?"}, epithet ${smartRaceSolverWeightsObj.epithetValue ?? "?"}, target ${smartRaceSolverWeightsObj.targetEpithetMultiplier ?? 3}x, fans ${smartRaceSolverWeightsObj.fanWeight ?? 0}, gap ${smartRaceSolverWeightsObj.minimumRaceGapTurns ?? 0}, hint ${smartRaceSolverWeightsObj.hintWeight ?? "?"}, consec −${smartRaceSolverWeightsObj.consecutiveRacePenalty ?? "?"}, summer −${smartRaceSolverWeightsObj.summerPenalty ?? "?"}, raceBonus ${smartRaceSolverWeightsObj.raceBonusPct ?? "?"}%, raceCost ${smartRaceSolverWeightsObj.raceCostPct ?? "?"}%, threshold ${smartRaceSolverWeightsObj.aptitudeThreshold ?? "?"}, includeOP ${smartRaceSolverWeightsObj.includeOpAndPreOp ? "✅" : "❌"}, summerRacing ${smartRaceSolverWeightsObj.allowSummerRacing ? "✅" : "❌"}
 🎯 Solver Target Epithets: ${smartRaceSolverTargetCount} selected
 🚨 Solver Forced Epithets: ${smartRaceSolverForcedCount} selected
 🔒 Solver Manual Turn Locks: ${smartRaceSolverLockCount} locked turn(s)

@@ -68,6 +68,13 @@ class ScoringFunctionsTest {
     }
 
     @Test
+    fun targetEpithetContributionUsesTargetMultiplier() {
+        val ep = epithet("Target", emptyList(), rewardKind = "stat", amount = 30, displayAmount = 15)
+        val tunedWeights = Weights(targetEpithetMultiplier = 4.0)
+        assertEquals(120.0, ScoringFunctions.epithetContribution(ep, tunedWeights, isTarget = true), 1e-9)
+    }
+
+    @Test
     fun hintRewardEpithetContributionUsesHintWeight() {
         val ep = epithet("Hint", emptyList(), rewardKind = "hint", amount = 1, displayAmount = 1)
         assertEquals(w.hintWeight, ScoringFunctions.epithetContribution(ep, w), 1e-9)

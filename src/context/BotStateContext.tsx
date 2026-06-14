@@ -77,6 +77,8 @@ export interface Settings {
         smartRaceSolverForcedEpithets: string
         smartRaceSolverManualLocks: string
         smartRaceSolverWeights: string
+        /** Inheritance spark picker: Default, StatAndAptitude, SkillHints, or Balanced. */
+        sparkSelectionStrategy: string
     }
 
     // Skill Settings
@@ -276,9 +278,11 @@ export const defaultSettings: Settings = {
         smartRaceSolverTargetEpithets: "[]",
         smartRaceSolverForcedEpithets: "[]",
         smartRaceSolverManualLocks: "{}",
+        sparkSelectionStrategy: "Default",
         smartRaceSolverWeights: JSON.stringify({
             raceValue: 1.0,
             epithetValue: 1.0,
+            targetEpithetMultiplier: 3.0,
             statWeight: 1.0,
             spWeight: 1.0,
             hintWeight: 8.0,
@@ -287,6 +291,7 @@ export const defaultSettings: Settings = {
             raceBonusPct: 50.0,
             raceCostPct: 100.0,
             fanWeight: 0.0,
+            minimumRaceGapTurns: 0,
             aptitudeThreshold: "C",
             includeOpAndPreOp: false,
             allowSummerRacing: false,

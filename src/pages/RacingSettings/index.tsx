@@ -4,7 +4,9 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotMetaContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -22,6 +24,7 @@ import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
+import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -41,6 +44,7 @@ const RacingSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
     const { setSettings } = useContext(BotMetaContext)
+    const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
@@ -52,6 +56,7 @@ const RacingSettings = () => {
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableParentFarmingMode,
+        sparkSelectionStrategy,
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
@@ -79,6 +84,13 @@ const RacingSettings = () => {
     const setParentFarmingMode = useCallback(
         (checked: boolean) => {
             setSettings((prev) => (checked ? applyParentFarmingPreset(prev) : disableParentFarmingMode(prev)))
+        },
+        [setSettings]
+    )
+
+    const applyCharacterBundle = useCallback(
+        (bundle: ParentFarmingCharacterBundle) => {
+            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
         },
         [setSettings]
     )
@@ -219,9 +231,41 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
                                 />
                             </SearchableItem>
+                            <SearchableItem
+                                id="spark-selection-strategy"
+                                title="Spark Selection Strategy"
+                                description="How the bot picks inheritance sparks before confirming inheritance."
+                            >
+                                <View style={{ padding: SPACING.md }}>
+                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Spark Selection Strategy</Text>
+                                    <Text style={{ ...TYPE.caption, color: colors.textMuted, marginBottom: SPACING.sm, lineHeight: 18 }}>
+                                        OCRs the three inheritance spark options and taps the best match. Parent Farming Mode sets Stat & aptitude; use Skill hints for white-factor
+                                        farming.
+                                    </Text>
+                                    <CustomSelect
+                                        searchId="spark-selection-strategy"
+                                        searchTitle="Spark Selection Strategy"
+                                        searchDescription="How the bot picks inheritance sparks before confirming inheritance."
+                                        width={260}
+                                        options={SPARK_SELECTION_STRATEGIES.map((option) => ({ value: option.value, label: option.label }))}
+                                        value={sparkSelectionStrategy || "Default"}
+                                        onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
+                                        placeholder="Default"
+                                    />
+                                </View>
+                            </SearchableItem>
+                            <SearchableItem
+                                title="Character + Goal Bundles"
+                                description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
+                            >
+                                <View style={{ padding: SPACING.md }}>
+                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
+                                    <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                </View>
+                            </SearchableItem>
                             {enableParentFarmingMode && (
                                 <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    {`${PARENT_FARMING_MODE_SUMMARY} Open Smart Race Solver to choose the parent character, aptitudes, target epithets, and manual race locks.`}
+                                    {`${PARENT_FARMING_MODE_SUMMARY} Use a bundle above for a full setup, or open Smart Race Solver to fine-tune epithets, aptitudes, and manual race locks.`}
                                 </InfoContainer>
                             )}
                         </Section>

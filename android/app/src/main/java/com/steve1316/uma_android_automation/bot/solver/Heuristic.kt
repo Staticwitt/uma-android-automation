@@ -101,11 +101,24 @@ object Heuristic {
 
         val children = ArrayList<Beam>(racesHere.size + 2)
         for (race in racesHere) {
+            if (!canRaceAfterGap(beam, turn, state)) continue
             children += applyDecision(beam, turn, Decision.RaceDecision(race.key), state)
         }
         children += applyDecision(beam, turn, Decision.Train, state)
         children += applyDecision(beam, turn, Decision.Rest, state)
         return children
+    }
+
+    /** Returns false when [Weights.minimumRaceGapTurns] would be violated by racing on [turn]. */
+    private fun canRaceAfterGap(
+        beam: Beam,
+        turn: TurnNumber,
+        state: SolverState,
+    ): Boolean {
+        val gap = state.weights.minimumRaceGapTurns.coerceAtLeast(0)
+        if (gap == 0) return true
+        val blockedTurns = (turn - gap)..(turn - 1)
+        return beam.raceHistory.none { it.turnNumber in blockedTurns }
     }
 
     /**
@@ -184,9 +197,9 @@ object Heuristic {
         // reward to the objective. This is what makes G2/G3 races (which net zero on grade-
         // and-cost alone) competitive - a free epithet reward tips the balance over Train.
         // Forced epithets are still surfaced via the feasibility check in [keepTopK]. Targeted
-        // epithets get an additional weight boost via [Weights.epithetValue].
+        // epithets get an additional weight boost via [Weights.targetEpithetMultiplier].
         val epithetGain =
-            newlyCompleted.sumOf { ScoringFunctions.epithetContribution(it, state.weights) }
+            newlyCompleted.sumOf { ScoringFunctions.epithetContribution(it, state.weights, it.name in state.targetEpithets) }
         val summer = ScoringFunctions.summerBlockPenalty(turn, state)
         val consec = ScoringFunctions.consecutiveRacePenalty(newConsec, turn, state.weights)
 

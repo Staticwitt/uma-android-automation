@@ -1,16 +1,19 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, OPTIMIZE_MODE_PRESETS, type WeightsMap } from "./solver/constants"
+import { PARENT_FARMING_SPARK_SELECTION_STRATEGY } from "./sparkSelection"
 
 /** Human-readable label for the settings bundle used by the UI and message log. */
 export const PARENT_FARMING_MODE_LABEL = "Parent Farming Mode"
 
 /** Short summary of what the preset changes. */
-export const PARENT_FARMING_MODE_SUMMARY = "Enables Smart Race Solver, fan-weighted epithet routing, fan-farming fallback, safer career completion, skill-hint priority, and relaxed stat targets."
+export const PARENT_FARMING_MODE_SUMMARY = "Enables Smart Race Solver, fan-weighted epithet routing, fan-farming fallback, stat/aptitude spark picking, safer career completion, skill-hint priority, and relaxed stat targets."
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
     ...OPTIMIZE_MODE_PRESETS.FANS_EPITAPH,
+    targetEpithetMultiplier: 4.0,
     consecutiveRacePenalty: 2.0,
+    minimumRaceGapTurns: 1,
     raceCostPct: 75.0,
     includeOpAndPreOp: false,
     allowSummerRacing: false,
@@ -43,6 +46,7 @@ export const buildParentFarmingRacingSettings = (racing: Settings["racing"]): Pa
         enableForceRacing: false,
         enableUserInGameRaceAgenda: false,
         enableSmartRaceSolver: true,
+        sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,

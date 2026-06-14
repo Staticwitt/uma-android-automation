@@ -112,6 +112,7 @@ object MilpSolver {
             wireXrConsistency()
             wireSummerHardBlock()
             wireManualLocks()
+            wireMinimumRaceGap()
             wireConsecutiveRaceIndicators()
             wireEpithetMatchers()
             wireDependsOn()
@@ -165,6 +166,31 @@ object MilpSolver {
                         if (v != null) v.lower(1.0) else xVars[turn]!!.upper(0.0)
                     }
                     Decision.Train, Decision.Rest -> xVars[turn]!!.upper(0.0)
+                }
+            }
+        }
+
+        /**
+         * Enforces [Weights.minimumRaceGapTurns] as a hard gap between planned race turns.
+         * For gap=1, adjacent race indicators satisfy `x[t] + x[t-1] <= 1`.
+         * Existing race history also blocks early future turns within the requested gap.
+         */
+        private fun wireMinimumRaceGap() {
+            val gap = state.weights.minimumRaceGapTurns.coerceAtLeast(0)
+            if (gap == 0) return
+
+            val historyTurns = state.raceHistory.mapTo(HashSet()) { it.turnNumber }
+            for (t in turns) {
+                if ((1..gap).any { d -> (t - d) in historyTurns }) {
+                    xVars[t]!!.upper(0.0)
+                }
+                for (d in 1..gap) {
+                    val prev = t - d
+                    if (prev !in turns) continue
+                    val expr = model.newExpression("gap_${t}_$prev")
+                    expr.set(xVars[t]!!, 1.0)
+                    expr.set(xVars[prev]!!, 1.0)
+                    expr.upper(1.0)
                 }
             }
         }
@@ -270,7 +296,7 @@ object MilpSolver {
             }
             for ((name, v) in epithetVars) {
                 val epithet = state.epithetsByName[name] ?: continue
-                v.weight(ScoringFunctions.epithetContribution(epithet, state.weights))
+                v.weight(ScoringFunctions.epithetContribution(epithet, state.weights, name in state.targetEpithets))
             }
             for ((t, v) in zVars) {
                 if (t in LATE_DEC_FREE_TURNS) continue

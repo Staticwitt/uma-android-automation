@@ -74,6 +74,7 @@ data class Aptitudes(
  *
  * @property raceValue Multiplier applied to the per-race net (gross - cost) value.
  * @property epithetValue Multiplier applied to every epithet completion's reward.
+ * @property targetEpithetMultiplier Extra multiplier applied only to selected target epithets.
  * @property statWeight Coefficient on the stat component of gross race reward and cost baseline.
  * @property spWeight Coefficient on the skill-point component of gross race reward and cost baseline.
  * @property hintWeight Score awarded per completed hint-reward epithet.
@@ -84,6 +85,7 @@ data class Aptitudes(
  * @property fanWeight Per-fan score contribution applied to a race's reward fans. 0.0 means fans are ignored entirely (Stat Epitaphs preset default).
  *   1e-3 (Fans + Epitaphs preset) makes a 25k-fan G1 contribute ~25 score points - meaningful but not dominant. Above 5e-3 the solver will
  *   race almost every eligible turn.
+ * @property minimumRaceGapTurns Minimum number of non-race turns required between planned races. 1 means no back-to-back solver races.
  * @property aptitudeThreshold Minimum aptitude grade required for both distance and surface
  *   for a race to be eligible.
  * @property includeOpAndPreOp When true, OP/Pre-OP races are eligible (subject to the threshold).
@@ -92,6 +94,7 @@ data class Aptitudes(
 data class Weights(
     val raceValue: Double = 1.0,
     val epithetValue: Double = 1.0,
+    val targetEpithetMultiplier: Double = 3.0,
     val statWeight: Double = 1.0,
     val spWeight: Double = 1.0,
     val hintWeight: Double = 8.0,
@@ -100,6 +103,7 @@ data class Weights(
     val raceBonusPct: Double = 50.0,
     val raceCostPct: Double = 100.0,
     val fanWeight: Double = 0.0,
+    val minimumRaceGapTurns: Int = 0,
     val aptitudeThreshold: Aptitude = Aptitude.C,
     val includeOpAndPreOp: Boolean = false,
     val allowSummerRacing: Boolean = false,

@@ -33,7 +33,9 @@ import {
 } from "../../lib/solver/scoring"
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import { useTheme } from "../../context/ThemeContext"
-import { RacingContext, GeneralMiscContext, defaultSettings } from "../../context/BotStateContext"
+import { RacingContext, GeneralMiscContext, BotMetaContext, defaultSettings } from "../../context/BotStateContext"
+import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
 import WarningContainer from "../../components/WarningContainer"
@@ -52,6 +54,7 @@ import { Section } from "../../components/ui/section"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
+import { applyParentFarmingGoalPresetToRacing, PARENT_FARMING_GOAL_PRESETS, ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -103,6 +106,7 @@ const SmartRaceSolverSettings = () => {
     // Subscribe to context slices to avoid re-rendering on unrelated settings changes.
     const { racing, updateRacing } = useContext(RacingContext)
     const { general } = useContext(GeneralMiscContext)
+    const { setSettings } = useContext(BotMetaContext)
     const scrollViewRef = useRef<ScrollView>(null)
     const navigation = useNavigation<any>()
 
@@ -211,21 +215,25 @@ const SmartRaceSolverSettings = () => {
 
     const [raceValueInput, setRaceValueInput] = useState(weights.raceValue.toString())
     const [epithetValueInput, setEpithetValueInput] = useState(weights.epithetValue.toString())
+    const [targetEpithetMultiplierInput, setTargetEpithetMultiplierInput] = useState(weights.targetEpithetMultiplier.toString())
     const [hintWeightInput, setHintWeightInput] = useState(weights.hintWeight.toString())
     const [consecPenaltyInput, setConsecPenaltyInput] = useState(weights.consecutiveRacePenalty.toString())
     const [summerPenaltyInput, setSummerPenaltyInput] = useState(weights.summerPenalty.toString())
     const [raceBonusPctInput, setRaceBonusPctInput] = useState(weights.raceBonusPct.toString())
     const [raceCostPctInput, setRaceCostPctInput] = useState(weights.raceCostPct.toString())
     const [fanWeightInput, setFanWeightInput] = useState(weights.fanWeight.toString())
+    const [minimumRaceGapTurnsInput, setMinimumRaceGapTurnsInput] = useState(weights.minimumRaceGapTurns.toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
+    useEffect(() => setTargetEpithetMultiplierInput(weights.targetEpithetMultiplier.toString()), [weights.targetEpithetMultiplier])
     useEffect(() => setHintWeightInput(weights.hintWeight.toString()), [weights.hintWeight])
     useEffect(() => setConsecPenaltyInput(weights.consecutiveRacePenalty.toString()), [weights.consecutiveRacePenalty])
     useEffect(() => setSummerPenaltyInput(weights.summerPenalty.toString()), [weights.summerPenalty])
     useEffect(() => setRaceBonusPctInput(weights.raceBonusPct.toString()), [weights.raceBonusPct])
     useEffect(() => setRaceCostPctInput(weights.raceCostPct.toString()), [weights.raceCostPct])
     useEffect(() => setFanWeightInput(weights.fanWeight.toString()), [weights.fanWeight])
+    useEffect(() => setMinimumRaceGapTurnsInput(weights.minimumRaceGapTurns.toString()), [weights.minimumRaceGapTurns])
 
     /** Derived optimization mode. Mode is not persisted - it falls out of the weights so the radio toggle and the slider can never disagree. */
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
@@ -450,6 +458,29 @@ const SmartRaceSolverSettings = () => {
         const preset = OPTIMIZE_MODE_PRESETS[mode]
         updateRacingSetting("smartRaceSolverWeights", JSON.stringify({ ...weights, ...preset }))
     }
+
+    /**
+     * Adds a parent-farming goal preset to the current target / forced epithet selections and applies
+     * the preset's scoring weights. Existing hand-picked epithets are preserved.
+     *
+     * @param preset Parent goal preset to merge into racing settings.
+     */
+    const applyGoalPreset = useCallback(
+        (preset: ParentFarmingGoalPreset) => {
+            updateRacing((prev) => ({
+                ...prev,
+                ...applyParentFarmingGoalPresetToRacing(prev, preset, allowedEpithetNames),
+            }))
+        },
+        [allowedEpithetNames, updateRacing]
+    )
+
+    const applyCharacterBundle = useCallback(
+        (bundle: ParentFarmingCharacterBundle) => {
+            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
+        },
+        [setSettings]
+    )
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -688,6 +719,20 @@ const SmartRaceSolverSettings = () => {
                     borderRadius: 6,
                     padding: 6,
                 },
+                goalPresetGrid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: SPACING.sm },
+                goalPresetCard: {
+                    flexBasis: "48%" as const,
+                    flexGrow: 1,
+                    minHeight: 104,
+                    padding: SPACING.md,
+                    borderRadius: RADII.md,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    backgroundColor: colors.surface,
+                },
+                goalPresetTitle: { ...TYPE.body, color: colors.text, fontWeight: "700" as const, marginBottom: SPACING.xs },
+                goalPresetDescription: { ...TYPE.caption, color: colors.textMuted, lineHeight: 17 },
+                goalPresetCount: { ...TYPE.monoLabel, color: colors.brand, marginTop: SPACING.sm },
                 presetItem: {
                     paddingVertical: 8,
                     paddingHorizontal: 6,
@@ -1407,6 +1452,56 @@ const SmartRaceSolverSettings = () => {
                                             </InfoCallout>
                                         </View>
                                         <SearchableItem
+                                            id="smart-solver-parent-character-bundles"
+                                            condition={enableSmartRaceSolver}
+                                            parentId="enable-smart-race-solver"
+                                            title="Character + Goal Bundles"
+                                            description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
+                                        >
+                                            <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
+                                                <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
+                                                <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                            </View>
+                                        </SearchableItem>
+                                        <SearchableItem
+                                            id="smart-solver-parent-goal-presets"
+                                            condition={enableSmartRaceSolver}
+                                            parentId="enable-smart-race-solver"
+                                            title="Parent Goal Presets"
+                                            description="Quickly add common parent-farming target epithets and weight tuning."
+                                        >
+                                            <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
+                                                <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Parent Goal Presets</Text>
+                                                <Text style={styles.description}>
+                                                    Adds target epithets and solver weights for common parent builds. Existing target and forced epithets are preserved.
+                                                </Text>
+                                                <View style={styles.goalPresetGrid}>
+                                                    {PARENT_FARMING_GOAL_PRESETS.map((preset) => {
+                                                        const eligibleTargets = preset.targetEpithets.filter((name) => allowedEpithetNames.has(name)).length
+                                                        const totalTargets = preset.targetEpithets.length
+                                                        return (
+                                                            <Pressable
+                                                                key={preset.key}
+                                                                style={styles.goalPresetCard}
+                                                                onPress={() => applyGoalPreset(preset)}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                            >
+                                                                <Text style={styles.goalPresetTitle}>{preset.label}</Text>
+                                                                <Text style={styles.goalPresetDescription}>{preset.description}</Text>
+                                                                <Text style={styles.goalPresetCount}>
+                                                                    Adds {eligibleTargets}/{totalTargets} visible target{totalTargets === 1 ? "" : "s"}
+                                                                </Text>
+                                                            </Pressable>
+                                                        )
+                                                    })}
+                                                </View>
+                                                <Text style={[styles.inputDescription, { marginTop: SPACING.sm }]}>
+                                                    Counts respect the active scenario and character filters. Change the character preset or campaign if a preset shows fewer visible targets than
+                                                    expected.
+                                                </Text>
+                                            </View>
+                                        </SearchableItem>
+                                        <SearchableItem
                                             id="smart-solver-target-epithets"
                                             condition={enableSmartRaceSolver}
                                             parentId="enable-smart-race-solver"
@@ -1553,6 +1648,22 @@ const SmartRaceSolverSettings = () => {
                                                     </Pressable>
 
                                                     <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Target Epithet Multiplier</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={targetEpithetMultiplierInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setTargetEpithetMultiplierInput(t)}
+                                                            onBlur={() => updateWeight("targetEpithetMultiplier", parseFloat(targetEpithetMultiplierInput) || 1)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="3.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Extra multiplier for selected Target Epithets only. Default 3.0 makes hand-picked goals matter more than incidental epithets; parent goal
+                                                            presets use 4.0.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
                                                         <Text style={styles.inputLabel}>Fan Weight</Text>
                                                         <Input
                                                             style={styles.input}
@@ -1565,6 +1676,22 @@ const SmartRaceSolverSettings = () => {
                                                         <Text style={styles.inputDescription}>
                                                             Score per fan earned from a race. Default 0.0 ignores fans entirely (Stat Epitaphs preset). 0.001 (Fans + Epitaphs preset) makes a 25k-fan
                                                             G1 worth ~25 score points - meaningful but not dominant. Above 0.005 the solver will race almost every eligible turn.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Minimum Race Gap Turns</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={minimumRaceGapTurnsInput}
+                                                            onChangeText={(t) => /^\d*$/.test(t) && setMinimumRaceGapTurnsInput(t)}
+                                                            onBlur={() => updateWeight("minimumRaceGapTurns", Math.max(0, Math.floor(parseFloat(minimumRaceGapTurnsInput) || 0)))}
+                                                            keyboardType="number-pad"
+                                                            placeholder="0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Hard minimum number of non-race turns between solver-planned races. Set to 1 for at least one training/rest turn between races. Parent
+                                                            farming presets use 1 by default.
                                                         </Text>
                                                     </Pressable>
 
@@ -1924,7 +2051,9 @@ const SmartRaceSolverSettings = () => {
                                                             [
                                                                 { key: "RACE", val: `${weights.raceValue}` },
                                                                 { key: "EPITHET", val: `${weights.epithetValue}` },
+                                                                { key: "TARGET", val: `${weights.targetEpithetMultiplier}x` },
                                                                 { key: "FANS", val: `${weights.fanWeight}` },
+                                                                { key: "GAP", val: `${weights.minimumRaceGapTurns}` },
                                                                 { key: "HINT", val: `${weights.hintWeight}` },
                                                                 { key: "CONSEC", val: `-${weights.consecutiveRacePenalty}` },
                                                                 { key: "SUMMER", val: `-${weights.summerPenalty}` },

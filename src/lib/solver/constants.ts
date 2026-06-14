@@ -72,6 +72,8 @@ export interface WeightsMap {
     raceValue: number
     /** Multiplier applied to epithet stat rewards. */
     epithetValue: number
+    /** Extra multiplier applied only to selected target epithets. */
+    targetEpithetMultiplier: number
     /** Per-stat-point weight in the scoring function. */
     statWeight: number
     /** Per-SP-point weight in the scoring function. */
@@ -89,6 +91,8 @@ export interface WeightsMap {
     /** Per-fan score contribution applied to a race's reward fans. 0.0 ignores fans entirely (Stat Epitaphs preset default).
      *  1e-3 (Fans + Epitaphs preset) makes a 25k-fan G1 contribute ~25 score points - meaningful but not dominant. */
     fanWeight: number
+    /** Minimum number of non-race turns required between solver-planned races. 1 prevents back-to-back solver races. */
+    minimumRaceGapTurns: number
     /** Minimum aptitude rank (S..G) a race needs in BOTH its distance type and surface to be eligible. */
     aptitudeThreshold: string
     /** When true, OP and Pre-OP races are also considered alongside G1 / G2 / G3. */
@@ -158,6 +162,7 @@ export const DEFAULT_APTITUDES: AptitudeMap = { Sprint: "A", Mile: "A", Medium: 
 export const DEFAULT_WEIGHTS: WeightsMap = {
     raceValue: 1.0,
     epithetValue: 1.0,
+    targetEpithetMultiplier: 3.0,
     statWeight: 1.0,
     spWeight: 1.0,
     hintWeight: 8.0,
@@ -166,6 +171,7 @@ export const DEFAULT_WEIGHTS: WeightsMap = {
     raceBonusPct: 50.0,
     raceCostPct: 100.0,
     fanWeight: 0.0,
+    minimumRaceGapTurns: 0,
     aptitudeThreshold: "C",
     includeOpAndPreOp: false,
     allowSummerRacing: false,

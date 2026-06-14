@@ -1,5 +1,6 @@
 import type { Settings } from "../../context/BotStateContext"
 import { applyParentFarmingPreset, disableParentFarmingMode } from "../parentFarmingPreset"
+import { PARENT_FARMING_SPARK_SELECTION_STRATEGY } from "../sparkSelection"
 
 const createSettings = (): Settings =>
     ({
@@ -23,6 +24,7 @@ const createSettings = (): Settings =>
             smartRaceSolverWeights: JSON.stringify({
                 raceValue: 1,
                 epithetValue: 1,
+                targetEpithetMultiplier: 3,
                 statWeight: 1,
                 spWeight: 1,
                 hintWeight: 8,
@@ -31,6 +33,7 @@ const createSettings = (): Settings =>
                 raceBonusPct: 50,
                 raceCostPct: 100,
                 fanWeight: 0,
+                minimumRaceGapTurns: 0,
                 aptitudeThreshold: "C",
                 includeOpAndPreOp: false,
                 allowSummerRacing: false,
@@ -71,6 +74,7 @@ describe("parentFarmingPreset", () => {
         expect(result.racing.ignoreConsecutiveRaceWarning).toBe(true)
         expect(result.racing.enableCompleteCareerOnFailure).toBe(true)
         expect(result.racing.daysToRunExtraRaces).toBe(3)
+        expect(result.racing.sparkSelectionStrategy).toBe(PARENT_FARMING_SPARK_SELECTION_STRATEGY)
 
         expect(result.racing.smartRaceSolverCharacterPreset).toBe("Oguri Cap")
         expect(result.racing.smartRaceSolverTargetEpithets).toBe(JSON.stringify(["Globe-Trotter"]))
@@ -78,6 +82,8 @@ describe("parentFarmingPreset", () => {
         expect(result.racing.smartRaceSolverManualLocks).toBe(JSON.stringify({ "31": "Tokyo Yushun (Japanese Derby)" }))
 
         expect(weights.fanWeight).toBe(1.0e-3)
+        expect(weights.targetEpithetMultiplier).toBe(4)
+        expect(weights.minimumRaceGapTurns).toBe(1)
         expect(weights.raceCostPct).toBe(75)
         expect(weights.consecutiveRacePenalty).toBe(2)
         expect(weights.hintWeight).toBe(12)
