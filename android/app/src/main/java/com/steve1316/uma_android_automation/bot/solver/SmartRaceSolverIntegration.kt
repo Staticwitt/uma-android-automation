@@ -99,6 +99,18 @@ object SmartRaceSolverIntegration {
     /** Turn that [cachedSchedule] was solved against. Used to invalidate the cache when the bot has advanced to a new turn. */
     @Volatile private var cachedScheduleTurn: TurnNumber = -1
 
+    /** Epithets marked unreachable after confirmed race losses. Fed into [SolverState.deadEpithets] on every solve. */
+    @Volatile private var runtimeDeadEpithets: Set<String> = emptySet()
+
+    /** Memoised epithet contribution arrays for the Remote Log Viewer calendar. Invalidated when the schedule or win list changes. */
+    @Volatile private var cachedContributions: ContributionsCache? = null
+
+    private data class ContributionsCache(
+        val schedule: Schedule,
+        val winsSnapshot: List<RaceWin>,
+        val contributions: Map<TurnNumber, JSONArray>,
+    )
+
     /** Trainee fan count observed during the current run. Fed into [SolverState.currentFans]. */
     @Volatile private var currentRunFans: Int = 0
 
@@ -144,6 +156,7 @@ object SmartRaceSolverIntegration {
         updateCurrentAptitudes(live)
         cachedSchedule = null
         cachedScheduleTurn = -1
+        cachedContributions = null
         MessageLog.i(TAG, "Replanning schedule after aptitude change ($reason): $previous -> $live")
         broadcastCalendarSnapshot(reuseSchedule = false)
     }
@@ -165,6 +178,8 @@ object SmartRaceSolverIntegration {
         scrapedDebutEntry = null
         cachedSchedule = null
         cachedScheduleTurn = -1
+        runtimeDeadEpithets = emptySet()
+        cachedContributions = null
         currentRunFans = 0
         currentRunAptitudes = null
         SparkPickHistory.reset()
@@ -340,7 +355,7 @@ object SmartRaceSolverIntegration {
             seedHistoryFromPreview(currentTurn, scenario, epithets, racesByTurn)
         }
         historySeeded = true
-        broadcastCalendarSnapshot()
+        broadcastCalendarSnapshot(reuseSchedule = true)
         logSyntheticDebutOnce(currentTurn)
     }
 
@@ -356,7 +371,11 @@ object SmartRaceSolverIntegration {
         if (!won) {
             recordRaceLost(pending.raceKey, pending.name, pending.classYear, pending.turnNumber)
             MessageLog.i(TAG, "Race \"${pending.name}\" on turn ${pending.turnNumber} did not finish 1st; recorded as a loss.")
-            broadcastCalendarSnapshot()
+            markDeadEpithetsAfterLoss(pending.name)
+            cachedSchedule = null
+            cachedScheduleTurn = -1
+            cachedContributions = null
+            broadcastCalendarSnapshot(reuseSchedule = false)
             return
         }
         val historyBefore = synchronized(raceHistory) { raceHistory.toList() }
@@ -581,10 +600,15 @@ object SmartRaceSolverIntegration {
             loadEpithets() ?: return null.also {
                 MessageLog.w(TAG, "Solver enabled but epithets.json data is empty; skipping.")
             }
-        val racesForTurn = candidates.map { it.toRaceCandidate(currentTurn) }
-        val state = newSolverState(currentTurn, scenario, epithets, mapOf(currentTurn to racesForTurn))
+        val racesByTurn = loadAllRaces() ?: return null.also {
+            MessageLog.w(TAG, "Solver enabled but races data is empty; skipping.")
+        }
 
-        val schedule = SmartRaceSolver.solve(state)
+        currentRunTurn = currentTurn
+        currentRunScenario = scenario
+        runStartupHooks(game = null, currentTurn = currentTurn, scenario = scenario)
+
+        val schedule = solveOrReuseSchedule(currentTurn, scenario, epithets, racesByTurn)
         val decision = schedule.decisionAt(currentTurn)
         if (decision !is Decision.RaceDecision) {
             MessageLog.i(TAG, "Solver recommends a non-race decision for turn $currentTurn ($decision); skipping.")
@@ -626,17 +650,11 @@ object SmartRaceSolverIntegration {
         val epithets = loadEpithets() ?: return null
         val racesByTurn = loadAllRaces() ?: return null
 
+        currentRunTurn = currentTurn
+        currentRunScenario = scenario
         runStartupHooks(game = null, currentTurn = currentTurn, scenario = scenario)
 
-        cachedSchedule?.let { return it.decisionAt(currentTurn) }
-
-        val state = newSolverState(currentTurn, scenario, epithets, racesByTurn)
-        return SmartRaceSolver.solve(state)
-            .also {
-                cachedSchedule = it
-                cachedScheduleTurn = currentTurn
-            }
-            .decisionAt(currentTurn)
+        return solveOrReuseSchedule(currentTurn, scenario, epithets, racesByTurn).decisionAt(currentTurn)
     }
 
     /**
@@ -731,7 +749,53 @@ object SmartRaceSolverIntegration {
             lockedDecisions = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn),
             weights = readWeights(),
             currentFans = currentRunFans,
+            deadEpithets = runtimeDeadEpithets,
         )
+
+    /**
+     * Runs [SmartRaceSolver.solve] or returns [cachedSchedule] when already populated. Every fresh solve updates the cache so
+     * [pickRace], [peekDecisionForTurn], and calendar broadcasts share one locked-in plan per run.
+     */
+    private fun solveOrReuseSchedule(
+        currentTurn: TurnNumber,
+        scenario: String,
+        epithets: List<Epithet>,
+        racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
+        reuseCached: Boolean = true,
+    ): Schedule {
+        if (reuseCached) {
+            cachedSchedule?.let { return it }
+        }
+        return SmartRaceSolver.solve(newSolverState(currentTurn, scenario, epithets, racesByTurn)).also {
+            cachedSchedule = it
+            cachedScheduleTurn = currentTurn
+            cachedContributions = null
+        }
+    }
+
+    /**
+     * After a confirmed loss, marks epithets that can no longer be completed and adds them to [runtimeDeadEpithets].
+     */
+    private fun markDeadEpithetsAfterLoss(lostRaceName: String) {
+        val epithets = loadEpithets() ?: return
+        val racesByTurn = loadAllRaces() ?: return
+        val wins = synchronized(raceHistory) { raceHistory.toList() }
+        val lostNames =
+            synchronized(raceLosses) { raceLosses.map { it.name }.toSet() }
+        val filteredEpithets = epithetsForActiveContext(epithets, currentRunScenario)
+        val newlyDead =
+            EpithetReachability.epithetsMadeUnreachable(
+                epithets = filteredEpithets,
+                racesByTurn = racesByTurn,
+                wins = wins,
+                lostRaceNames = lostNames,
+                currentTurn = currentRunTurn,
+                alreadyDead = runtimeDeadEpithets,
+            )
+        if (newlyDead.isEmpty()) return
+        runtimeDeadEpithets = runtimeDeadEpithets + newlyDead
+        MessageLog.i(TAG, "Marked ${newlyDead.size} epithet(s) dead after losing \"$lostRaceName\": ${newlyDead.sorted().joinToString()}")
+    }
 
     /**
      * Filters [epithets] down to those obtainable in the active scenario AND for the active
@@ -786,6 +850,9 @@ object SmartRaceSolverIntegration {
                 raceHistorySnapshot = emptyList(),
             )
         val schedule = SmartRaceSolver.solve(state)
+        cachedSchedule = schedule
+        cachedScheduleTurn = currentTurn
+        cachedContributions = null
         logPreviewSchedule(schedule, racesByTurn)
         if (currentTurn <= 1) return
         var seeded = 0
@@ -1210,6 +1277,21 @@ object SmartRaceSolverIntegration {
     }
 
     /**
+     * Lightweight content fingerprint for large inline JSON payloads. Combines length with a
+     * sparse character sample so unrelated strings are less likely to collide than [String.hashCode] alone.
+     */
+    private fun jsonContentFingerprint(json: String): Int {
+        var h = json.length
+        val step = maxOf(1, json.length / 64)
+        var i = 0
+        while (i < json.length) {
+            h = 31 * h + json[i].code
+            i += step
+        }
+        return h
+    }
+
+    /**
      * Parses inline races JSON if shipped, otherwise returns the most recent cached inline result.
      * The JS layer omits `racesDataJson` after the first successful preview to save ~150KB of
      * marshalling per debounced re-solve, so once we've parsed any inline payload we keep using it
@@ -1221,7 +1303,7 @@ object SmartRaceSolverIntegration {
      */
     private fun parseRacesJsonField(json: String?): Map<TurnNumber, List<RaceCandidate>>? {
         if (json.isNullOrEmpty()) return cachedInlineRaces?.second
-        val hash = json.hashCode()
+        val hash = jsonContentFingerprint(json)
         cachedInlineRaces?.let { (cachedHash, value) -> if (cachedHash == hash) return value }
         return runCatching { parseRacesData(json) }
             .onFailure { MessageLog.e(TAG, "Failed to parse inline racesDataJson: ${it.message}") }
@@ -1237,7 +1319,7 @@ object SmartRaceSolverIntegration {
      */
     private fun parseEpithetsJsonField(json: String?): List<Epithet>? {
         if (json.isNullOrEmpty()) return cachedInlineEpithets?.second
-        val hash = json.hashCode()
+        val hash = jsonContentFingerprint(json)
         cachedInlineEpithets?.let { (cachedHash, value) -> if (cachedHash == hash) return value }
         return runCatching { parseEpithets(json) }
             .onFailure { MessageLog.e(TAG, "Failed to parse inline epithetsDataJson: ${it.message}") }
@@ -1408,23 +1490,19 @@ object SmartRaceSolverIntegration {
     private fun buildCalendarSnapshotJson(reuseSchedule: Boolean = false): String? {
         val racesByTurn = loadAllRaces() ?: return null
         val epithets = loadEpithets() ?: emptyList()
-        val state = newSolverState(currentRunTurn, currentRunScenario, epithets, racesByTurn)
+        val filteredEpithets = epithetsForActiveContext(epithets, currentRunScenario)
 
-        val cached = cachedSchedule
         val schedule: Schedule =
-            if (reuseSchedule && cached != null) {
+            if (reuseSchedule && cachedSchedule != null) {
                 MessageLog.d(TAG, "Calendar snapshot reusing cached schedule from turn $cachedScheduleTurn.")
-                cached
+                cachedSchedule!!
             } else {
-                SmartRaceSolver.solve(state).also {
-                    cachedSchedule = it
-                    cachedScheduleTurn = currentRunTurn
-                }
+                solveOrReuseSchedule(currentRunTurn, currentRunScenario, epithets, racesByTurn, reuseCached = false)
             }
 
         val winsSnapshot = synchronized(raceHistory) { raceHistory.toList() }
         val lossesSnapshot = synchronized(raceLosses) { raceLosses.toList() }
-        val contributionsByTurn = computeEpithetContributionsByTurn(state.epithets, racesByTurn, schedule, winsSnapshot)
+        val contributionsByTurn = contributionsForSchedule(filteredEpithets, racesByTurn, schedule, winsSnapshot)
 
         val decisions = JSONObject()
         for ((turn, decision) in schedule.decisions) {
@@ -1567,6 +1645,21 @@ object SmartRaceSolverIntegration {
      * @param winsSnapshot Authoritative past wins.
      * @return Map of turn -> JSON array of `{name, beforeCurrent, beforeRequired, afterCurrent, afterRequired, conditions, pending}` entries.
      */
+    private fun contributionsForSchedule(
+        epithets: List<Epithet>,
+        racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
+        schedule: Schedule,
+        winsSnapshot: List<RaceWin>,
+    ): Map<TurnNumber, JSONArray> {
+        val cached = cachedContributions
+        if (cached != null && cached.schedule === schedule && cached.winsSnapshot == winsSnapshot) {
+            return cached.contributions
+        }
+        return computeEpithetContributionsByTurn(epithets, racesByTurn, schedule, winsSnapshot).also {
+            cachedContributions = ContributionsCache(schedule, winsSnapshot, it)
+        }
+    }
+
     private fun computeEpithetContributionsByTurn(
         epithets: List<Epithet>,
         racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
