@@ -46,6 +46,8 @@ export interface Settings {
     racing: {
         enableParentFarmingMode: boolean
         enableParentRunSummary: boolean
+        /** Persist completed parent runs locally for history and comparison. */
+        enableParentRunArchive: boolean
         enableFarmingFans: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
@@ -82,6 +84,10 @@ export interface Settings {
         sparkSelectionStrategy: string
         /** Auto-borrow a friend support card at career selection before training. */
         enableAutoBorrowSupportCard: boolean
+        /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
+        enableAutoSelectLegacyParents: boolean
+        /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
+        legacyParentPreferredPair: string
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
         /** JSON array of support cards the user owns (filters recommendations). */
@@ -268,6 +274,7 @@ export const defaultSettings: Settings = {
     racing: {
         enableParentFarmingMode: false,
         enableParentRunSummary: true,
+        enableParentRunArchive: true,
         enableFarmingFans: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,
@@ -302,6 +309,8 @@ export const defaultSettings: Settings = {
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
         enableAutoBorrowSupportCard: false,
+        enableAutoSelectLegacyParents: false,
+        legacyParentPreferredPair: "[]",
         supportBorrowPreferredCards: "[]",
         ownedSupportCards: "[]",
         supportDeckOwnedCards: "[]",

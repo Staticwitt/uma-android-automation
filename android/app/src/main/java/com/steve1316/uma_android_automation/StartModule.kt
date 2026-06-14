@@ -30,6 +30,7 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.AppUpdateChecker
 import com.steve1316.uma_android_automation.utils.LogStreamServer
 import com.steve1316.uma_android_automation.bot.DiscordEmbedColors
+import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
@@ -608,6 +609,25 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("UPDATE_CHECK_ERROR", "Failed to check for updates: ${e.message}")
+        }
+    }
+
+    @ReactMethod
+    fun getParentRunArchive(promise: Promise) {
+        try {
+            promise.resolve(ParentRunArchive.readJson(context))
+        } catch (e: Exception) {
+            promise.reject("PARENT_RUN_ARCHIVE", "Failed to read parent run archive: ${e.message}")
+        }
+    }
+
+    @ReactMethod
+    fun clearParentRunArchive(promise: Promise) {
+        try {
+            ParentRunArchive.clear(context)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("PARENT_RUN_ARCHIVE", "Failed to clear parent run archive: ${e.message}")
         }
     }
 

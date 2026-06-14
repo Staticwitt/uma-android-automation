@@ -32,8 +32,10 @@ export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
     daysToRunExtraRaces: 3,
     enableCompleteCareerOnFailure: true,
     enableParentRunSummary: true,
+    enableParentRunArchive: true,
     sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
     enableAutoBorrowSupportCard: true,
+    enableAutoSelectLegacyParents: true,
 }
 
 /** Shared parent-farming training defaults applied before goal-specific overrides. */

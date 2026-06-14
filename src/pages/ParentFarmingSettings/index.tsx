@@ -12,7 +12,7 @@ import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInvento
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
-import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
+import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
@@ -35,6 +35,7 @@ import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
+import { Input } from "../../components/ui/input"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
@@ -64,13 +65,17 @@ const ParentFarmingSettings = () => {
     const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
+    const [archiveOpen, setArchiveOpen] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableParentFarmingMode,
         enableParentRunSummary,
+        enableParentRunArchive,
         sparkSelectionStrategy,
         enableAutoBorrowSupportCard,
+        enableAutoSelectLegacyParents,
+        legacyParentPreferredPair,
         supportBorrowPreferredCards,
         ownedSupportCards,
         supportDeckOwnedCards,
@@ -102,6 +107,17 @@ const ParentFarmingSettings = () => {
             return []
         }
     }, [supportBorrowPreferredCards])
+
+    const legacyParentNames = useMemo(() => {
+        try {
+            const parsed = JSON.parse(legacyParentPreferredPair || "[]")
+            if (!Array.isArray(parsed)) return ["", ""]
+            const names = parsed.filter((name): name is string => typeof name === "string")
+            return [names[0] ?? "", names[1] ?? ""]
+        } catch {
+            return ["", ""]
+        }
+    }, [legacyParentPreferredPair])
 
     const supportBorrowOverrides = useMemo(
         () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
@@ -241,6 +257,15 @@ const ParentFarmingSettings = () => {
         [updateRacing],
     )
 
+    const updateLegacyParentName = useCallback(
+        (index: number, value: string) => {
+            const next = [...legacyParentNames]
+            next[index] = value
+            updateRacingSetting("legacyParentPreferredPair", JSON.stringify([next[0].trim(), next[1].trim()]))
+        },
+        [legacyParentNames, updateRacingSetting],
+    )
+
     const saveOwnedInventory = useCallback(
         (cards: string[]) => {
             updateRacingSetting("ownedSupportCards", JSON.stringify(cards))
@@ -301,7 +326,7 @@ const ParentFarmingSettings = () => {
                             </SearchableItem>
                             {!enableParentFarmingMode && (
                                 <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-borrow support cards.
+                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-borrow supports and legacy parent auto-select.
                                 </InfoContainer>
                             )}
                             <ParentFarmingActivePresetChip settings={settings} />
@@ -368,6 +393,47 @@ const ParentFarmingSettings = () => {
                                                 />
                                             }
                                         />
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="enable-auto-select-legacy-parents"
+                                        title="Auto-select legacy parents"
+                                        description="Use in-game Auto-Select or OCR a preferred parent pair at career selection."
+                                    >
+                                        <Row
+                                            title="Auto-select parent pair"
+                                            description={
+                                                legacyParentNames.some((name) => name.length > 0)
+                                                    ? `Preferred: ${legacyParentNames.filter(Boolean).join(" · ")} (OCR); otherwise in-game Auto-Select`
+                                                    : "Uses the game's Auto-Select when no preferred names are set."
+                                            }
+                                            right={
+                                                <Switch
+                                                    checked={enableAutoSelectLegacyParents}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableAutoSelectLegacyParents", checked)}
+                                                />
+                                            }
+                                        />
+                                        {enableAutoSelectLegacyParents && (
+                                            <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm }}>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Optional preferred parent pair (leave blank for in-game Auto-Select only):
+                                                </Text>
+                                                <View style={{ flexDirection: "row", gap: SPACING.sm }}>
+                                                    <Input
+                                                        value={legacyParentNames[0]}
+                                                        onChangeText={(value) => updateLegacyParentName(0, value)}
+                                                        placeholder="Parent 1"
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                    <Input
+                                                        value={legacyParentNames[1]}
+                                                        onChangeText={(value) => updateLegacyParentName(1, value)}
+                                                        placeholder="Parent 2"
+                                                        style={{ flex: 1 }}
+                                                    />
+                                                </View>
+                                            </View>
+                                        )}
                                     </SearchableItem>
                                     <SearchableItem
                                         id="character-support-finder"
@@ -468,6 +534,41 @@ const ParentFarmingSettings = () => {
                                                 />
                                             }
                                         />
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="parent-run-archive"
+                                        title="Parent run history"
+                                        description="Save completed parent runs on-device and compare fans and epithets across runs."
+                                    >
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.md }}>
+                                            <Row
+                                                title="Save run history"
+                                                description="Stored locally when a parent-farming career ends."
+                                                right={
+                                                    <Switch
+                                                        checked={enableParentRunArchive}
+                                                        onCheckedChange={(checked) => updateRacingSetting("enableParentRunArchive", checked)}
+                                                    />
+                                                }
+                                            />
+                                            <Pressable
+                                                onPress={() => setArchiveOpen(true)}
+                                                style={{
+                                                    padding: SPACING.md,
+                                                    borderRadius: RADII.md,
+                                                    borderWidth: 1,
+                                                    borderColor: colors.borderHair,
+                                                    backgroundColor: colors.surface,
+                                                }}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                            >
+                                                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Browse parent run history</Text>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                    Compare fans and epithets vs your previous runs for the same character.
+                                                </Text>
+                                            </Pressable>
+                                        </View>
                                     </SearchableItem>
                                 </Section>
 
@@ -591,6 +692,7 @@ const ParentFarmingSettings = () => {
                     onClose={() => setOwnedInventoryOpen(false)}
                     onSave={saveOwnedInventory}
                 />
+                <ParentRunArchiveSheet visible={archiveOpen} onClose={() => setArchiveOpen(false)} />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}
                     bundle={bundleSupportEditing}
