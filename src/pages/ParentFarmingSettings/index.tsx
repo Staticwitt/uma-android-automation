@@ -8,6 +8,7 @@ import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Set
 import { applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
 import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
+import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInventorySheet"
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
@@ -37,7 +38,8 @@ import { Switch } from "../../components/ui/switch"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
-import { recommendSupportDeckForCharacter } from "../../lib/recommendSupportDeck"
+import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
+import { copyToClipboard } from "../../lib/utils"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
@@ -61,6 +63,7 @@ const ParentFarmingSettings = () => {
     const [bundleSupportSheetOpen, setBundleSupportSheetOpen] = useState(false)
     const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
+    const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
@@ -69,6 +72,8 @@ const ParentFarmingSettings = () => {
         sparkSelectionStrategy,
         enableAutoBorrowSupportCard,
         supportBorrowPreferredCards,
+        ownedSupportCards,
+        supportDeckOwnedCards,
         enableFarmingFans,
         enableForceRacing,
         enableUserInGameRaceAgenda,
@@ -175,9 +180,14 @@ const ParentFarmingSettings = () => {
         [setSettings],
     )
 
+    const ownedInventory = useMemo(() => parseOwnedSupportCards(ownedSupportCards), [ownedSupportCards])
+
     const activeCharacterSupportRecommendation = useMemo(
-        () => (smartRaceSolverCharacterPreset ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset) : null),
-        [smartRaceSolverCharacterPreset],
+        () =>
+            smartRaceSolverCharacterPreset
+                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory })
+                : null,
+        [smartRaceSolverCharacterPreset, ownedInventory],
     )
 
     const applyFriendBorrowFromRecommendation = useCallback(
@@ -201,11 +211,40 @@ const ParentFarmingSettings = () => {
         [setSettings],
     )
 
+    const applyFullDeckFromRecommendation = useCallback(
+        (characterName: string, ownedCards: string[], borrowOrder: string[]) => {
+            setSettings((prev) => {
+                const preset = findCharacterPresetEntry(characterName)
+                return {
+                    ...prev,
+                    racing: {
+                        ...prev.racing,
+                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
+                        supportDeckOwnedCards: JSON.stringify(ownedCards),
+                        smartRaceSolverCharacterPreset: characterName,
+                        enableAutoBorrowSupportCard: true,
+                        ...(preset
+                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
+                            : {}),
+                    },
+                }
+            })
+        },
+        [setSettings],
+    )
+
     const updateRacingSetting = useCallback(
         (key: keyof Settings["racing"], value: unknown) => {
             updateRacing({ [key]: value } as Partial<Settings["racing"]>)
         },
         [updateRacing],
+    )
+
+    const saveOwnedInventory = useCallback(
+        (cards: string[]) => {
+            updateRacingSetting("ownedSupportCards", JSON.stringify(cards))
+        },
+        [updateRacingSetting],
     )
 
     const updateSolverWeight = useCallback(
@@ -358,6 +397,44 @@ const ParentFarmingSettings = () => {
                                                         Current character preset ({smartRaceSolverCharacterPreset})
                                                     </Text>
                                                     <CharacterSupportRecommendationView recommendation={activeCharacterSupportRecommendation} />
+                                                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, marginTop: SPACING.sm }}>
+                                                        <Pressable
+                                                            onPress={() =>
+                                                                applyFullDeckFromRecommendation(
+                                                                    activeCharacterSupportRecommendation.characterName,
+                                                                    activeCharacterSupportRecommendation.ownedCards,
+                                                                    activeCharacterSupportRecommendation.friendBorrowOrder,
+                                                                )
+                                                            }
+                                                            style={{
+                                                                paddingVertical: SPACING.sm,
+                                                                paddingHorizontal: SPACING.md,
+                                                                borderRadius: RADII.md,
+                                                                backgroundColor: colors.brandSubtle,
+                                                                borderWidth: 1,
+                                                                borderColor: colors.brandBorder,
+                                                            }}
+                                                        >
+                                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply full deck</Text>
+                                                        </Pressable>
+                                                        <Pressable
+                                                            onPress={() => copyToClipboard(formatSupportDeckClipboard(activeCharacterSupportRecommendation))}
+                                                            style={{
+                                                                paddingVertical: SPACING.sm,
+                                                                paddingHorizontal: SPACING.md,
+                                                                borderRadius: RADII.md,
+                                                                borderWidth: 1,
+                                                                borderColor: colors.borderHair,
+                                                            }}
+                                                        >
+                                                            <Text style={{ ...TYPE.caption, color: colors.text }}>Copy deck</Text>
+                                                        </Pressable>
+                                                    </View>
+                                                    {supportDeckOwnedCards && parseOwnedSupportCards(supportDeckOwnedCards).length > 0 && (
+                                                        <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                            Saved owned slots: {parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}
+                                                        </Text>
+                                                    )}
                                                 </View>
                                             )}
                                         </View>
@@ -484,8 +561,17 @@ const ParentFarmingSettings = () => {
                 <CharacterSupportFinderSheet
                     visible={supportFinderOpen}
                     initialCharacterName={smartRaceSolverCharacterPreset}
+                    ownedInventory={ownedInventory}
                     onClose={() => setSupportFinderOpen(false)}
                     onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
+                    onApplyFullDeck={applyFullDeckFromRecommendation}
+                    onEditOwnedInventory={() => setOwnedInventoryOpen(true)}
+                />
+                <OwnedSupportInventorySheet
+                    visible={ownedInventoryOpen}
+                    ownedCards={ownedInventory}
+                    onClose={() => setOwnedInventoryOpen(false)}
+                    onSave={saveOwnedInventory}
                 />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}

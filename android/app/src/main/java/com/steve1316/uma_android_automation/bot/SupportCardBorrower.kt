@@ -97,6 +97,7 @@ object SupportCardBorrower {
             val normalizedOcr = ocrText.lowercase()
             for (name in preferredNames) {
                 val needle = name.lowercase()
+                if (!ocrMightMatchName(normalizedOcr, needle)) continue
                 val score =
                     when {
                         normalizedOcr.contains(needle) -> 1.0
@@ -134,6 +135,17 @@ object SupportCardBorrower {
             return true
         }
         MessageLog.w(TAG, "Failed to confirm support card borrow.")
+        return false
+    }
+
+    /** Skips expensive similarity when OCR text shares no token overlap with the support name. */
+    private fun ocrMightMatchName(normalizedOcr: String, needle: String): Boolean {
+        if (needle.isEmpty()) return false
+        if (normalizedOcr.contains(needle)) return true
+        if (needle.length < 3) return true
+        for (i in 0..needle.length - 3) {
+            if (normalizedOcr.contains(needle.substring(i, i + 3))) return true
+        }
         return false
     }
 

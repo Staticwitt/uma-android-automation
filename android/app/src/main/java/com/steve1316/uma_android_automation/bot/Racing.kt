@@ -2221,12 +2221,13 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                     return true
                 }
             }
-            MessageLog.i(TAG, "[RACE] Smart Race Solver's planned race \"$plannedKey\" was not found among on-screen candidates. Canceling racing process.")
-            return false
+            MessageLog.i(
+                TAG,
+                "[RACE] Smart Race Solver's planned race \"$plannedKey\" was not found among on-screen candidates; falling back to on-screen pickRace.",
+            )
         }
 
-        // Fallback when the solver had no plan or chose Train/Rest: scan every on-screen
-        // race and let pickRace decide.
+        // When the solver chose Train/Rest, or the planned race was not on screen, scan visible races and let pickRace choose.
         val currentRaces =
             doublePredictionLocations.flatMap { location ->
                 val raceName = game.imageUtils.extractRaceName(location)

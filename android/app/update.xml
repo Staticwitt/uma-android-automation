@@ -1,24 +1,27 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.7</latestVersion>
-    <latestVersionCode>87</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.7</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.7/v5.8.7-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.8</latestVersion>
+    <latestVersionCode>88</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.8</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.8/v5.8.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.7 - Solver optimizations + support recommendations
+v5.8.8 - Follow-up solver + support recommendation polish
 
 Smart Race Solver
 ---
-- pickRace reuses cached schedule (no MILP per on-screen pick)
-- Race losses mark dead epithets and force replan
-- Memoized calendar contribution JSON; fewer duplicate solves at startup
+- Soft fallback when planned race is missing on screen (pick among visible races)
+- Incremental contribution JSON; lighter win logging; manual-locks cache
+- Calendar snapshot broadcasts on coroutines; clear caches on aptitude replan
 
 Support recommendations
 ---
-- Find best supports for any Uma (Parent Farming + Smart Race Solver)
-- Route-based deck presets with apply friend borrow
+- Owned support inventory with deck swaps from your collection
+- Apply full deck, copy deck, and edit inventory on Solver + Parent Farming
+- Solver preview persisted in AsyncStorage for faster reopen
 
-Includes v5.8.6 Parent Farming UI and v5.8.5 quality fixes.
+Bot runtime
+---
+- Support borrow OCR pre-filter; faster training event title matching
 
     </releaseNotes>
   </update>

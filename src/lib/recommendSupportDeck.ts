@@ -29,8 +29,15 @@ export interface SupportDeckRecommendation {
     bundleKey?: string
     /** Full lineup: trainee + four owned + friend borrow. */
     slots: SupportDeckSlot[]
+    /** Four owned support slots (trainee card excluded). */
+    ownedCards: string[]
     /** Ordered friend borrow list for auto-borrow (friend first, then alternates). */
     friendBorrowOrder: string[]
+}
+
+export interface RecommendSupportDeckOptions {
+    /** When set, owned slots prefer cards from this inventory and swap unknowns when possible. */
+    ownedInventory?: string[]
 }
 
 const CHARACTER_PRESETS = characterPresetsData as Record<string, CharacterPresetEntry>
@@ -82,9 +89,25 @@ const substituteIfTrainee = (owned: string[], traineeName: string, alternates: s
     return out
 }
 
-const buildSlots = (traineeName: string, deck: SupportDeckPreset, friendBorrowOrder: string[]): SupportDeckSlot[] => {
+const preferInventoryOwned = (owned: string[], inventory: Set<string>, alternates: string[]): string[] => {
+    if (inventory.size === 0) return owned
+    return owned.map((name) => {
+        if (inventory.has(name)) return name
+        const swap = alternates.find((alt) => inventory.has(alt) && !owned.includes(alt))
+        return swap ?? name
+    })
+}
+
+const buildSlots = (
+    traineeName: string,
+    deck: SupportDeckPreset,
+    friendBorrowOrder: string[],
+    ownedInventory?: string[],
+): SupportDeckSlot[] => {
     const alternates = findSupportBorrowPreset(deck.goalPresetKey)
-    const owned = substituteIfTrainee(deck.owned, traineeName, alternates)
+    const inventory = new Set(ownedInventory ?? [])
+    const ownedBase = preferInventoryOwned(deck.owned, inventory, alternates)
+    const owned = substituteIfTrainee(ownedBase, traineeName, alternates)
     const friend =
         friendBorrowOrder[0] ??
         (deck.friend === traineeName ? alternates.find((n) => n !== traineeName) ?? deck.friend : deck.friend)
@@ -136,7 +159,10 @@ const buildFriendBorrowOrder = (
  * @param characterName Character preset name (e.g. "Grass Wonder").
  * @returns Recommendation, or null when the character is unknown.
  */
-export const recommendSupportDeckForCharacter = (characterName: string): SupportDeckRecommendation | null => {
+export const recommendSupportDeckForCharacter = (
+    characterName: string,
+    options?: RecommendSupportDeckOptions,
+): SupportDeckRecommendation | null => {
     const preset = findCharacterPresetEntry(characterName) ?? CHARACTER_PRESETS[characterName]
     if (!preset) return null
 
@@ -157,7 +183,8 @@ export const recommendSupportDeckForCharacter = (characterName: string): Support
     const goalPreset = findParentFarmingGoalPreset(goalPresetKey)
     const deck = findSupportDeckPreset(goalPresetKey)
     const friendBorrowOrder = buildFriendBorrowOrder(characterName, deck, bundleBorrow)
-    const slots = buildSlots(characterName, deck, friendBorrowOrder)
+    const slots = buildSlots(characterName, deck, friendBorrowOrder, options?.ownedInventory)
+    const ownedCards = slots.filter((s) => s.role === "owned").map((s) => s.cardName)
 
     const rationale =
         bundle
@@ -173,7 +200,31 @@ export const recommendSupportDeckForCharacter = (characterName: string): Support
         source,
         bundleKey: bundle?.key,
         slots,
+        ownedCards,
         friendBorrowOrder,
+    }
+}
+
+/** Plain-text deck summary for clipboard or logs. */
+export const formatSupportDeckClipboard = (recommendation: SupportDeckRecommendation): string => {
+    const lines = [`Trainee: ${recommendation.characterName}`, `Route: ${recommendation.goalLabel}`]
+    recommendation.ownedCards.forEach((name, index) => {
+        const type = supportCardType(name)
+        lines.push(`Support ${index + 1}: ${name}${type ? ` (${type})` : ""}`)
+    })
+    const friend = recommendation.slots.find((s) => s.role === "friend")
+    if (friend) lines.push(`Friend borrow: ${friend.cardName}`)
+    lines.push(`Auto-borrow priority: ${recommendation.friendBorrowOrder.join(" → ")}`)
+    return lines.join("\n")
+}
+
+export const parseOwnedSupportCards = (json: string | undefined): string[] => {
+    try {
+        const parsed = JSON.parse(json || "[]")
+        if (!Array.isArray(parsed)) return []
+        return parsed.filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+    } catch {
+        return []
     }
 }
 

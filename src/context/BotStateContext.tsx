@@ -84,6 +84,10 @@ export interface Settings {
         enableAutoBorrowSupportCard: boolean
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
+        /** JSON array of support cards the user owns (filters recommendations). */
+        ownedSupportCards: string
+        /** JSON array of four owned support slots from the last applied deck recommendation. */
+        supportDeckOwnedCards: string
         /** Per-bundle user overrides for support borrow order (`bundleKey` → names). */
         parentFarmingSupportBorrowOverrides: string
         /** Last applied parent goal preset / bundle keys for run summaries. */
@@ -299,6 +303,8 @@ export const defaultSettings: Settings = {
         sparkSelectionStrategy: "Default",
         enableAutoBorrowSupportCard: false,
         supportBorrowPreferredCards: "[]",
+        ownedSupportCards: "[]",
+        supportDeckOwnedCards: "[]",
         parentFarmingSupportBorrowOverrides: "{}",
         parentFarmingGoalPresetKey: "",
         parentFarmingGoalPresetLabel: "",
