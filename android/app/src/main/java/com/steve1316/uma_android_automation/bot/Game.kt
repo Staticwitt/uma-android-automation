@@ -34,6 +34,12 @@ class Game(val myContext: Context) {
     /** The current Android notification message to display. */
     var notificationMessage: String = ""
 
+    /** Wall-clock start time for the active bot run. */
+    var runStartTimeMillis: Long = 0L
+
+    /** Optional multi-line Discord body set at career end (e.g. parent run summary). */
+    var taskEndDiscordMessage: String? = null
+
     /** The utility class for image processing and template matching. */
     val imageUtils: CustomImageUtils = CustomImageUtils(myContext, this)
 
@@ -233,7 +239,8 @@ class Game(val myContext: Context) {
      */
     fun start(): Boolean {
         MessageLog.i(TAG, "Started at ${MessageLog.getSystemTimeString()}.")
-        val startTime: Long = System.currentTimeMillis()
+        runStartTimeMillis = System.currentTimeMillis()
+        val startTime: Long = runStartTimeMillis
 
         // Print current app settings at the start of the run.
         try {

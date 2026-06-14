@@ -75,6 +75,7 @@ describe("parentFarmingPreset", () => {
         expect(result.racing.enableCompleteCareerOnFailure).toBe(true)
         expect(result.racing.daysToRunExtraRaces).toBe(3)
         expect(result.racing.sparkSelectionStrategy).toBe(PARENT_FARMING_SPARK_SELECTION_STRATEGY)
+        expect(result.racing.enableParentRunSummary).toBe(true)
 
         expect(result.racing.smartRaceSolverCharacterPreset).toBe("Oguri Cap")
         expect(result.racing.smartRaceSolverTargetEpithets).toBe(JSON.stringify(["Globe-Trotter"]))

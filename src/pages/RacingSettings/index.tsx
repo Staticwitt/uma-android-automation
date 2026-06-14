@@ -56,6 +56,7 @@ const RacingSettings = () => {
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableParentFarmingMode,
+        enableParentRunSummary,
         sparkSelectionStrategy,
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
@@ -232,7 +233,22 @@ const RacingSettings = () => {
                                 />
                             </SearchableItem>
                             <SearchableItem
-                                id="spark-selection-strategy"
+                                id="enable-parent-run-summary"
+                                title="Parent Run Summary"
+                                description="At career end, log a parent run summary and send it to Discord when notifications are enabled."
+                            >
+                                <Row
+                                    title="Parent Run Summary"
+                                    description="Logs fans, stats, aptitudes, race record, and goal epithets when a parent farming run finishes. Also sent to Discord if notifications are on."
+                                    right={
+                                        <Switch
+                                            checked={enableParentRunSummary}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentRunSummary", checked)}
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
+                            <SearchableItem
                                 title="Spark Selection Strategy"
                                 description="How the bot picks inheritance sparks before confirming inheritance."
                             >

@@ -6,6 +6,7 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.DialogHandler
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.ParentRunSummary
 
 /** The possible result codes for a task's execution. */
 enum class TaskResultCode {
@@ -134,7 +135,14 @@ abstract class Task(game: Game) : DialogHandler(game) {
         }
 
         if (DiscordUtils.enableDiscordNotifications) {
-            DiscordUtils.queue.add("```diff\n$diffChar ${MessageLog.getSystemTimeString()} $discordMessage.\n```")
+            val customSummary = game.taskEndDiscordMessage
+            if (customSummary != null) {
+                for (chunk in ParentRunSummary.chunkForDiscord(customSummary)) {
+                    DiscordUtils.queue.add("```\n$chunk\n```")
+                }
+            } else {
+                DiscordUtils.queue.add("```diff\n$diffChar ${MessageLog.getSystemTimeString()} $discordMessage.\n```")
+            }
             // Wait to ensure the Discord message queue is processed.
             game.wait(1.0, skipWaitingForLoading = true)
         }

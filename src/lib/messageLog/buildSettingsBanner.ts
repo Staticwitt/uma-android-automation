@@ -155,6 +155,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 
 ---------- Racing Options ----------
 🌱 ${PARENT_FARMING_MODE_LABEL}: ${settings.racing.enableParentFarmingMode ? "✅" : "❌"}
+📋 Parent Run Summary: ${settings.racing.enableParentRunSummary ? "✅" : "❌"}
 ✨ Spark Selection: ${settings.racing.sparkSelectionStrategy || "Default"}
 👥 Prioritize Farming Fans: ${settings.racing.enableFarmingFans ? "✅" : "❌"}
 ⏰ Modulo Days to Farm Fans: ${settings.racing.enableFarmingFans ? `${settings.racing.daysToRunExtraRaces} days` : "❌"}
