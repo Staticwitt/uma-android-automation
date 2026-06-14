@@ -6,6 +6,7 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.DialogHandler
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.DiscordMessageFormatter
 import com.steve1316.uma_android_automation.bot.ParentRunSummary
 
 /** The possible result codes for a task's execution. */
@@ -121,27 +122,25 @@ abstract class Task(game: Game) : DialogHandler(game) {
         val logMessage = "${result.javaClass.simpleName} (${result.code}): ${result.message}"
         game.notificationMessage = logMessage
         val discordMessage = "${this::class.simpleName}:: ${result.javaClass.simpleName} (${result.code}): ${result.message}"
-        var diffChar: String
         when (result) {
-            is TaskResult.Success -> {
-                MessageLog.i(TAG, logMessage)
-                diffChar = "+"
-            }
-
-            is TaskResult.Error -> {
-                MessageLog.e(TAG, logMessage)
-                diffChar = "-"
-            }
+            is TaskResult.Success -> MessageLog.i(TAG, logMessage)
+            is TaskResult.Error -> MessageLog.e(TAG, logMessage)
         }
 
         if (DiscordUtils.enableDiscordNotifications) {
             val customSummary = game.taskEndDiscordMessage
             if (customSummary != null) {
                 for (chunk in ParentRunSummary.chunkForDiscord(customSummary)) {
-                    DiscordUtils.queue.add("```\n$chunk\n```")
+                    DiscordUtils.queue.add(chunk)
                 }
             } else {
-                DiscordUtils.queue.add("```diff\n$diffChar ${MessageLog.getSystemTimeString()} $discordMessage.\n```")
+                val formatted =
+                    if (result is TaskResult.Success) {
+                        DiscordMessageFormatter.success(discordMessage)
+                    } else {
+                        DiscordMessageFormatter.error(discordMessage)
+                    }
+                DiscordUtils.queue.add(formatted)
             }
             // Wait to ensure the Discord message queue is processed.
             game.wait(1.0, skipWaitingForLoading = true)

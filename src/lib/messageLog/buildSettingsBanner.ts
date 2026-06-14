@@ -263,6 +263,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 
 ---------- Discord Options ----------
 🔔 Discord Notifications: ${settings.discord?.enableDiscordNotifications ? "✅" : "❌"}
+📡 Parent Live Status: ${settings.discord?.enableDiscordLiveStatus ? "✅" : "❌"}
+📅 Live Status Interval: every ${settings.discord?.discordLiveStatusTurnInterval ?? 6} turns
 👤 Discord User ID: ${settings.discord?.discordUserID ? "Configured" : "Not Set"}
 🔑 Discord Bot Token: ${settings.discord?.discordToken ? "Configured" : "Not Set"}`
 }

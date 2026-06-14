@@ -11,6 +11,8 @@ import com.steve1316.automation_library.utils.MyAccessibilityService
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Campaign
+import com.steve1316.uma_android_automation.bot.DiscordMessageFormatter
+import com.steve1316.uma_android_automation.bot.ParentDiscordNotifier
 import com.steve1316.uma_android_automation.bot.SkillDatabase
 import com.steve1316.uma_android_automation.bot.Task
 import com.steve1316.uma_android_automation.bot.campaigns.Trackblazer
@@ -241,6 +243,7 @@ class Game(val myContext: Context) {
         MessageLog.i(TAG, "Started at ${MessageLog.getSystemTimeString()}.")
         runStartTimeMillis = System.currentTimeMillis()
         val startTime: Long = runStartTimeMillis
+        ParentDiscordNotifier.reset()
 
         // Print current app settings at the start of the run.
         try {
@@ -299,9 +302,15 @@ class Game(val myContext: Context) {
                     val port = SettingsHelper.getIntSetting("debug", "remoteLogViewerPort", 9000)
                     val ipAddress = com.steve1316.uma_android_automation.utils.LogStreamServer.getDeviceIpAddress(myContext)
                     val finalIpAddress = if (ipAddress == "10.0.2.15") "localhost" else ipAddress
-                    logViewerString = "Remote Log Viewer is enabled at http://$finalIpAddress:$port"
+                    logViewerString = "Remote log viewer: http://$finalIpAddress:$port"
                 }
-                DiscordUtils.queue.add("```diff\n+ ${MessageLog.getSystemTimeString()} Bot run started! Scenario: $scenario```$logViewerString")
+                if (ParentDiscordNotifier.isParentFarmingRun()) {
+                    ParentDiscordNotifier.maybeSendParentRunStart(scenario, logViewerString)
+                } else {
+                    val startMessage = "Bot run started — scenario: $scenario"
+                    val suffix = if (logViewerString.isNotEmpty()) "\n$logViewerString" else ""
+                    DiscordUtils.queue.add(DiscordMessageFormatter.success("$startMessage$suffix"))
+                }
             }
             task.start()
         }

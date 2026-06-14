@@ -4,6 +4,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { DiscordContext, defaultSettings, Settings } from "../../context/BotStateContext"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
+import CustomSlider from "../../components/CustomSlider"
 import PageHeader from "../../components/PageHeader"
 import WarningContainer from "../../components/WarningContainer"
 import SearchableItem from "../../components/SearchableItem"
@@ -35,7 +36,7 @@ const DiscordSettings = () => {
 
     // Merge current Discord settings with defaults to handle missing properties.
     const discordSettings = { ...defaultSettings.discord, ...discord }
-    const { enableDiscordNotifications, discordToken } = discordSettings
+    const { enableDiscordNotifications, discordToken, enableDiscordLiveStatus, discordLiveStatusTurnInterval } = discordSettings
     // Coerce to string since SQLite may store numeric IDs as numbers.
     const discordUserID = String(discordSettings.discordUserID || "")
 
@@ -215,6 +216,40 @@ const DiscordSettings = () => {
                                     right={<Switch checked={enableDiscordNotifications} onCheckedChange={(checked) => updateDiscordSetting("enableDiscordNotifications", checked)} />}
                                 />
                             </SearchableItem>
+                            <SearchableItem
+                                id="enableDiscordLiveStatus"
+                                title="Parent Farming Live Status"
+                                description="Send periodic Discord updates during parent farming runs (fans, goals, race record)."
+                            >
+                                <Row
+                                    title="Parent Farming Live Status"
+                                    description="Periodic updates while a parent farming run is in progress"
+                                    right={
+                                        <Switch
+                                            checked={enableDiscordLiveStatus}
+                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordLiveStatus", checked)}
+                                            disabled={!enableDiscordNotifications}
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
+                            {enableDiscordNotifications && enableDiscordLiveStatus && (
+                                <View style={{ padding: SPACING.md }}>
+                                    <CustomSlider
+                                        searchId="discordLiveStatusTurnInterval"
+                                        value={discordLiveStatusTurnInterval ?? 6}
+                                        placeholder={6}
+                                        onValueChange={(value) => updateDiscordSetting("discordLiveStatusTurnInterval", value)}
+                                        min={1}
+                                        max={12}
+                                        step={1}
+                                        label="Live Status Turn Interval"
+                                        showValue={true}
+                                        showLabels={true}
+                                        description="Send a live status DM every N in-game turns (also on turn 1 and during finals)."
+                                    />
+                                </View>
+                            )}
                         </Section>
 
                         <Section label="Setup">
