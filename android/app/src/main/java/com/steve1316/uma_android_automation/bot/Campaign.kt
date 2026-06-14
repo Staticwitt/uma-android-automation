@@ -29,6 +29,8 @@ import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonNextRaceEnd
 import com.steve1316.uma_android_automation.components.ButtonOk
 import com.steve1316.uma_android_automation.components.ButtonRaceStrategyEnd
+import com.steve1316.uma_android_automation.components.ButtonRaceResults
+import com.steve1316.uma_android_automation.components.ButtonViewResults
 import com.steve1316.uma_android_automation.components.ButtonRaceStrategyFront
 import com.steve1316.uma_android_automation.components.ButtonRaceStrategyLate
 import com.steve1316.uma_android_automation.components.ButtonRaceStrategyPace
@@ -983,7 +985,11 @@ abstract class Campaign(game: Game) : Task(game) {
      */
     open fun checkRacingScreen(): Boolean {
         MessageLog.i(TAG, "\n[INFO] Checking if the bot is sitting on the Racing screen.")
-        return if (ButtonChangeRunningStyle.check(game.imageUtils)) {
+        return if (
+            ButtonChangeRunningStyle.check(game.imageUtils) ||
+                ButtonViewResults.check(game.imageUtils) ||
+                ButtonRaceResults.check(game.imageUtils)
+        ) {
             MessageLog.v(TAG, "[INFO] Bot is at the Racing screen waiting to be skipped or done manually.")
             true
         } else {

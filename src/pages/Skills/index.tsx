@@ -15,6 +15,7 @@ import { SPACING } from "../../lib/spacing"
 import { skillPlanSettingsPages } from "../SkillPlanSettings/config"
 import PlanTab from "./PlanTab"
 import StyleSection from "./StyleSection"
+import { mergeSkillPlanConfig } from "../../lib/skillPlanSettings"
 
 /** Ordered list of plan tabs. Keys match `skillPlanSettingsPages` plan keys. */
 const TAB_ITEMS: TabStripItem[] = [
@@ -55,7 +56,7 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
                 ...prev,
                 plans: {
                     ...prev.plans,
-                    [activeKey]: { ...prev.plans[activeKey], [key]: value },
+                    [activeKey]: mergeSkillPlanConfig(activeKey, { ...prev.plans[activeKey], [key]: value }),
                 },
             }))
         },
@@ -87,7 +88,7 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
     return (
         <View style={styles.container}>
             <PageHeader title="Skills" />
-            <ScrollView contentContainerStyle={styles.scroll}>
+            <ScrollView contentContainerStyle={styles.scroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                 <InfoCallout title="How skill spending works">
                     <Text style={styles.intro}>Allows configuration of automated skill point spending.</Text>
                     <Text style={[styles.intro, { marginBottom: 0 }]}>
@@ -120,7 +121,10 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
                                                 updateSkills((prev) => ({
                                                     ...prev,
                                                     enableSkillPointCheck: false,
-                                                    plans: { ...prev.plans, skillPointCheck: { ...prev.plans.skillPointCheck, enabled: false } },
+                                                    plans: {
+                                                        ...prev.plans,
+                                                        skillPointCheck: mergeSkillPlanConfig("skillPointCheck", { ...prev.plans.skillPointCheck, enabled: false }),
+                                                    },
                                                 }))
                                             }
                                         }}

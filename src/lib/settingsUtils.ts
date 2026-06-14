@@ -1,6 +1,7 @@
 import { logWithTimestamp } from "./logger"
 import { PARENT_FARMING_RESOLVER_REVISION } from "./parentFarmingConstants"
 import { refreshParentFarmingSettings } from "./parentFarmingPreset"
+import { normalizeSkillPlans } from "./skillPlanSettings"
 
 /**
  * Deep merges two objects, preserving nested structure.
@@ -210,6 +211,17 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             delete scenarioOverrides.trackblazerLowMainStatGainItemFloor
             anyMigrated = true
             logWithTimestamp("[SettingsManager] Migrated trackblazerLowMainStatGainItemFloor to trackblazerSkipBadMoodItemsBelowGain.")
+        }
+    }
+
+    // Migration: Ensure each skill plan entry includes required fields for Kotlin parsing.
+    const skills = migratedSettings.skills as any
+    if (skills?.plans && typeof skills.plans === "object") {
+        const normalizedPlans = normalizeSkillPlans(skills.plans)
+        if (JSON.stringify(skills.plans) !== JSON.stringify(normalizedPlans)) {
+            skills.plans = normalizedPlans
+            anyMigrated = true
+            logWithTimestamp("[SettingsManager] Normalized partial skill plan settings with defaults.")
         }
     }
 
