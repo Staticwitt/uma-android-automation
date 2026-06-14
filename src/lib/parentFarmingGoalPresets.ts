@@ -8,11 +8,61 @@ export interface ParentFarmingGoalPreset {
     targetEpithets: string[]
     forcedEpithets?: string[]
     weightOverrides?: Partial<WeightsMap>
+    /** Training distance bias and stat priorities applied with the goal preset. */
+    trainingOverrides?: Partial<Settings["training"]>
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
     targetEpithetMultiplier: 4.0,
     minimumRaceGapTurns: 1,
+}
+
+/** Builds matching stat, event-choice, and summer-training priority lists. */
+const statPriorityProfile = (order: string[]): Pick<Settings["training"], "statPrioritization" | "eventChoiceStatPriority" | "summerTrainingStatPriority"> => ({
+    statPrioritization: order,
+    eventChoiceStatPriority: [...order],
+    summerTrainingStatPriority: [...order],
+})
+
+const BALANCED_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Auto",
+    ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
+}
+
+const MILE_SPRINT_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Mile",
+    ...statPriorityProfile(["Speed", "Power", "Stamina", "Wit", "Guts"]),
+}
+
+const MILE_QUEEN_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Mile",
+    ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
+}
+
+const MEDIUM_STAMINA_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Medium",
+    ...statPriorityProfile(["Stamina", "Power", "Speed", "Wit", "Guts"]),
+}
+
+const LONG_STAMINA_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Long",
+    ...statPriorityProfile(["Stamina", "Power", "Speed", "Wit", "Guts"]),
+}
+
+const DIRT_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Auto",
+    ...statPriorityProfile(["Power", "Speed", "Stamina", "Wit", "Guts"]),
+}
+
+const SKILL_HINT_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Auto",
+    ...statPriorityProfile(["Wit", "Speed", "Stamina", "Power", "Guts"]),
+    enablePrioritizeSkillHints: true,
+}
+
+const JUNIOR_STAR_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Auto",
+    ...statPriorityProfile(["Speed", "Power", "Stamina", "Wit", "Guts"]),
 }
 
 export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
@@ -27,6 +77,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             raceCostPct: 70.0,
             consecutiveRacePenalty: 2.0,
         },
+        trainingOverrides: BALANCED_TRAINING,
     },
     {
         key: "classic-crown",
@@ -34,6 +85,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         description: "Targets the Classic Triple Crown line plus senior spring/autumn crown routes.",
         targetEpithets: ["Triple Crown", "Way of Kings", "Stunning", "Senior Spring Triple Crown", "Senior Autumn Triple Crown", "Spring Champion", "Fall Champion"],
         weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "triple-tiara",
@@ -41,6 +93,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         description: "Targets Oka Sho, Japanese Oaks, and Shuka Sho inheritance routes.",
         targetEpithets: ["Triple Tiara", "Way of Queens", "Lady", "Double Tiara"],
         weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        trainingOverrides: MILE_QUEEN_TRAINING,
     },
     {
         key: "mile-sprint",
@@ -51,6 +104,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.0e-3,
         },
+        trainingOverrides: MILE_SPRINT_TRAINING,
     },
     {
         key: "dirt",
@@ -62,6 +116,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             includeOpAndPreOp: true,
             fanWeight: 1.0e-3,
         },
+        trainingOverrides: DIRT_TRAINING,
     },
     {
         key: "skill-hints",
@@ -72,6 +127,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             hintWeight: 18.0,
         },
+        trainingOverrides: SKILL_HINT_TRAINING,
     },
     {
         key: "medium-long",
@@ -95,6 +151,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             fanWeight: 1.0e-3,
             allowSummerRacing: true,
         },
+        trainingOverrides: MEDIUM_STAMINA_TRAINING,
     },
     {
         key: "stayer-stamina",
@@ -114,6 +171,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             raceCostPct: 80.0,
         },
+        trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "derby-stayer-line",
@@ -131,6 +189,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             "Divergent Double Crown",
         ],
         weightOverrides: TARGET_PRIORITY_WEIGHTS,
+        trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "queens-race",
@@ -151,6 +210,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.0e-3,
         },
+        trainingOverrides: MILE_QUEEN_TRAINING,
     },
     {
         key: "turf-allrounder",
@@ -172,6 +232,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             fanWeight: 1.2e-3,
             raceCostPct: 72.0,
         },
+        trainingOverrides: BALANCED_TRAINING,
     },
     {
         key: "senior-finale",
@@ -192,6 +253,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             allowSummerRacing: true,
         },
+        trainingOverrides: LONG_STAMINA_TRAINING,
     },
     {
         key: "junior-star",
@@ -203,6 +265,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             fanWeight: 1.0e-3,
             includeOpAndPreOp: true,
         },
+        trainingOverrides: JUNIOR_STAR_TRAINING,
     },
 ]
 
@@ -272,3 +335,27 @@ export const applyParentFarmingGoalPresetToRacing = (
         }),
     }
 }
+
+/** Applies goal-aligned training distance bias and stat priorities. */
+export const applyParentFarmingGoalPresetToTraining = (
+    training: Settings["training"],
+    preset: ParentFarmingGoalPreset,
+): Partial<Settings["training"]> => (preset.trainingOverrides ? { ...preset.trainingOverrides } : {})
+
+/** Applies racing and training changes for a parent-farming goal preset. */
+export const applyParentFarmingGoalPreset = (
+    settings: Settings,
+    preset: ParentFarmingGoalPreset,
+    allowedNames?: Set<string>,
+    options?: ParentFarmingGoalPresetApplyOptions,
+): Settings => ({
+    ...settings,
+    racing: {
+        ...settings.racing,
+        ...applyParentFarmingGoalPresetToRacing(settings.racing, preset, allowedNames, options),
+    },
+    training: {
+        ...settings.training,
+        ...applyParentFarmingGoalPresetToTraining(settings.training, preset),
+    },
+})

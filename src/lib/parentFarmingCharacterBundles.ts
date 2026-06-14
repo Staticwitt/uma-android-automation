@@ -4,6 +4,7 @@ import epithetsData from "../data/epithets.json"
 import { applyParentFarmingPreset } from "./parentFarmingPreset"
 import {
     applyParentFarmingGoalPresetToRacing,
+    applyParentFarmingGoalPresetToTraining,
     PARENT_FARMING_GOAL_PRESETS,
     type ParentFarmingGoalPreset,
 } from "./parentFarmingGoalPresets"
@@ -31,7 +32,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Mile-focused G1 and fan epithets with Mile training bias.",
         characterName: "Grass Wonder",
         goalPresetKey: "mile-sprint",
-        trainingOverrides: { preferredDistanceOverride: "Mile" },
     },
     {
         key: "oguri-cap-g1",
@@ -54,7 +54,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Mile and sprint epithets tuned for Suzuka's mile strengths.",
         characterName: "Silence Suzuka",
         goalPresetKey: "mile-sprint",
-        trainingOverrides: { preferredDistanceOverride: "Mile" },
     },
     {
         key: "haru-urara-dirt",
@@ -69,7 +68,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Classic crown routes and long-distance epithets.",
         characterName: "Mejiro McQueen",
         goalPresetKey: "classic-crown",
-        trainingOverrides: { preferredDistanceOverride: "Long" },
     },
     {
         key: "biwa-hayahide-crown",
@@ -85,7 +83,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Classic crown line with long-distance training bias.",
         characterName: "Rice Shower",
         goalPresetKey: "classic-crown",
-        trainingOverrides: { preferredDistanceOverride: "Long" },
     },
     {
         key: "special-week-g1",
@@ -107,7 +104,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Oka Sho, Oaks, and Shuka Sho inheritance routes.",
         characterName: "Vodka",
         goalPresetKey: "triple-tiara",
-        trainingOverrides: { preferredDistanceOverride: "Mile" },
     },
     {
         key: "tokai-teio-medium",
@@ -115,7 +111,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Medium-distance G1 and stayer epithets for Tokai Teio-style parents.",
         characterName: "Tokai Teio",
         goalPresetKey: "medium-long",
-        trainingOverrides: { preferredDistanceOverride: "Medium" },
     },
     {
         key: "symboli-rudolf-senior",
@@ -123,7 +118,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Senior finale and end-year G1 epithets for long-route inheritance.",
         characterName: "Symboli Rudolf",
         goalPresetKey: "senior-finale",
-        trainingOverrides: { preferredDistanceOverride: "Long" },
     },
     {
         key: "daiwa-scarlet-queens",
@@ -131,7 +125,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Queen's race and mile queen epithets for female inheritance routes.",
         characterName: "Daiwa Scarlet",
         goalPresetKey: "queens-race",
-        trainingOverrides: { preferredDistanceOverride: "Mile" },
     },
     {
         key: "super-creek-stayer",
@@ -139,7 +132,6 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Stamina and stayer epithets for endurance-focused parents.",
         characterName: "Super Creek",
         goalPresetKey: "stayer-stamina",
-        trainingOverrides: { preferredDistanceOverride: "Long" },
     },
     {
         key: "matikanefukukitaru-turf",
@@ -250,6 +242,7 @@ export const applyParentFarmingCharacterBundle = (settings: Settings, bundle: Pa
         },
         training: {
             ...base.training,
+            ...applyParentFarmingGoalPresetToTraining(base.training, goalPreset),
             ...bundle.trainingOverrides,
         },
     }

@@ -54,7 +54,7 @@ import { Section } from "../../components/ui/section"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
-import { applyParentFarmingGoalPresetToRacing, PARENT_FARMING_GOAL_PRESETS, ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
+import { applyParentFarmingGoalPreset, PARENT_FARMING_GOAL_PRESETS, ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -467,12 +467,9 @@ const SmartRaceSolverSettings = () => {
      */
     const applyGoalPreset = useCallback(
         (preset: ParentFarmingGoalPreset) => {
-            updateRacing((prev) => ({
-                ...prev,
-                ...applyParentFarmingGoalPresetToRacing(prev, preset, allowedEpithetNames),
-            }))
+            setSettings((prev) => applyParentFarmingGoalPreset(prev, preset, allowedEpithetNames))
         },
-        [allowedEpithetNames, updateRacing]
+        [allowedEpithetNames, setSettings]
     )
 
     const applyCharacterBundle = useCallback(

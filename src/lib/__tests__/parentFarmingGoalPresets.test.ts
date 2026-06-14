@@ -1,5 +1,10 @@
 import type { Settings } from "../../context/BotStateContext"
-import { applyParentFarmingGoalPresetToRacing, PARENT_FARMING_GOAL_PRESETS } from "../parentFarmingGoalPresets"
+import {
+    applyParentFarmingGoalPreset,
+    applyParentFarmingGoalPresetToRacing,
+    applyParentFarmingGoalPresetToTraining,
+    PARENT_FARMING_GOAL_PRESETS,
+} from "../parentFarmingGoalPresets"
 
 const createRacingSettings = (): Settings["racing"] =>
     ({
@@ -35,6 +40,21 @@ const createRacingSettings = (): Settings["racing"] =>
         }),
     }) as Settings["racing"]
 
+const createTrainingSettings = (): Settings["training"] =>
+    ({
+        trainingBlacklist: [],
+        statPrioritization: ["Guts", "Wit", "Power", "Stamina", "Speed"],
+        eventChoiceStatPriority: ["Guts", "Wit", "Power", "Stamina", "Speed"],
+        summerTrainingStatPriority: ["Guts", "Wit", "Power", "Stamina", "Speed"],
+        maximumFailureChance: 20,
+        disableTrainingOnMaxedStat: false,
+        enableRainbowTrainingBonus: false,
+        enablePrioritizeNearMaxFriendship: false,
+        preferredDistanceOverride: "Default",
+        enablePrioritizeSkillHints: false,
+        disableStatTargets: false,
+    }) as Settings["training"]
+
 describe("parentFarmingGoalPresets", () => {
     it("adds preset targets and weights without removing existing selections", () => {
         const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "classic-crown")
@@ -61,6 +81,29 @@ describe("parentFarmingGoalPresets", () => {
         const targets = JSON.parse(result.smartRaceSolverTargetEpithets!)
 
         expect(targets).toEqual(["Manual Target", "Triple Crown"])
+    })
+
+    it("applies goal-aligned training overrides", () => {
+        const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "mile-sprint")!
+        const result = applyParentFarmingGoalPresetToTraining(createTrainingSettings(), preset)
+
+        expect(result.preferredDistanceOverride).toBe("Mile")
+        expect(result.statPrioritization).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
+        expect(result.eventChoiceStatPriority).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
+        expect(result.summerTrainingStatPriority).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
+    })
+
+    it("applyParentFarmingGoalPreset updates racing and training slices", () => {
+        const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "stayer-stamina")!
+        const settings = {
+            racing: createRacingSettings(),
+            training: createTrainingSettings(),
+        } as Settings
+
+        const result = applyParentFarmingGoalPreset(settings, preset)
+        expect(result.training.preferredDistanceOverride).toBe("Long")
+        expect(result.training.statPrioritization?.[0]).toBe("Stamina")
+        expect(result.racing.enableSmartRaceSolver).toBe(true)
     })
 
     it("defines only epithets that exist in bundled epithets data", () => {

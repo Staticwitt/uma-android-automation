@@ -6,7 +6,7 @@ import { PARENT_FARMING_SPARK_SELECTION_STRATEGY } from "./sparkSelection"
 export const PARENT_FARMING_MODE_LABEL = "Parent Farming Mode"
 
 /** Short summary of what the preset changes. */
-export const PARENT_FARMING_MODE_SUMMARY = "Enables Smart Race Solver, fan-weighted epithet routing, fan-farming fallback, stat/aptitude spark picking, safer career completion, skill-hint priority, and relaxed stat targets."
+export const PARENT_FARMING_MODE_SUMMARY = "Enables Smart Race Solver, fan-weighted epithet routing, fan-farming fallback, stat/aptitude spark picking, goal-aligned training bias, safer career completion, skill-hint priority, and relaxed stat targets."
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
