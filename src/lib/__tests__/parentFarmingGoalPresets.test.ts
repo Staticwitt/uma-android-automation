@@ -70,9 +70,10 @@ describe("parentFarmingGoalPresets", () => {
         expect(result.enableForceRacing).toBe(false)
         expect(result.enableUserInGameRaceAgenda).toBe(false)
         expect(targets).toEqual(expect.arrayContaining(["Manual Target", "Triple Crown", "Senior Autumn Triple Crown"]))
-        expect(forced).toEqual(["Manual Forced"])
+        expect(forced).toEqual(expect.arrayContaining(["Manual Forced", "Triple Crown"]))
         expect(weights.targetEpithetMultiplier).toBe(4)
-        expect(weights.minimumRaceGapTurns).toBe(0)
+        expect(weights.minimumRaceGapTurns).toBe(1)
+        expect(weights.consecutiveRacePenalty).toBe(3)
     })
 
     it("respects allowed epithet filters when adding targets", () => {
