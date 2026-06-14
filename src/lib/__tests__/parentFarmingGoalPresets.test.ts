@@ -74,6 +74,8 @@ describe("parentFarmingGoalPresets", () => {
         expect(weights.targetEpithetMultiplier).toBe(4)
         expect(weights.minimumRaceGapTurns).toBe(1)
         expect(weights.consecutiveRacePenalty).toBe(3)
+        const borrowCards = JSON.parse(result.supportBorrowPreferredCards!)
+        expect(borrowCards).toContain("Super Creek")
     })
 
     it("respects allowed epithet filters when adding targets", () => {

@@ -66,6 +66,8 @@ const RacingSettings = () => {
         enableParentFarmingMode,
         enableParentRunSummary,
         sparkSelectionStrategy,
+        enableAutoBorrowSupportCard,
+        supportBorrowPreferredCards,
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
@@ -97,6 +99,15 @@ const RacingSettings = () => {
     }, [smartRaceSolverWeights])
 
     const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
+
+    const supportBorrowNames = useMemo(() => {
+        try {
+            const parsed = JSON.parse(supportBorrowPreferredCards || "[]")
+            return Array.isArray(parsed) ? parsed.filter((name): name is string => typeof name === "string") : []
+        } catch {
+            return []
+        }
+    }, [supportBorrowPreferredCards])
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
 
@@ -347,6 +358,26 @@ const RacingSettings = () => {
                                         placeholder="Default"
                                     />
                                 </View>
+                            </SearchableItem>
+                            <SearchableItem
+                                id="enable-auto-borrow-support-card"
+                                title="Auto-Borrow Support Card"
+                                description="At career selection, borrow a friend support card from your preset priority list before training starts."
+                            >
+                                <Row
+                                    title="Auto-Borrow Support Card"
+                                    description={
+                                        supportBorrowNames.length > 0
+                                            ? `Priority: ${supportBorrowNames.slice(0, 4).join(" → ")}${supportBorrowNames.length > 4 ? " …" : ""}. Start the bot on career selection (before the training menu).`
+                                            : "Apply a parent goal preset to load a support priority list. Start the bot on career selection (before the training menu)."
+                                    }
+                                    right={
+                                        <Switch
+                                            checked={enableAutoBorrowSupportCard}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoBorrowSupportCard", checked)}
+                                        />
+                                    }
+                                />
                             </SearchableItem>
                             <SearchableItem
                                 id="parent-farming-goal-presets"

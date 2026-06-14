@@ -550,11 +550,31 @@ abstract class Campaign(game: Game) : Task(game) {
                 result.dialog.close(game.imageUtils)
             }
 
+            "borrow_card" -> {
+                if (SupportCardBorrower.isEnabled()) {
+                    val sourceBitmap = game.imageUtils.getSourceBitmap()
+                    if (!SupportCardBorrower.selectPreferredCard(game, sourceBitmap)) {
+                        result.dialog.close(game.imageUtils)
+                    }
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+
+            "borrow_card_confirmation" -> {
+                if (SupportCardBorrower.isEnabled()) {
+                    SupportCardBorrower.confirmBorrow(game)
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+
             "umamusume_details" -> {
                 val prevRunningStyle = trainee.runningStyle
                 trainee.updateAptitudes(game.imageUtils)
                 trainee.updateStats(game.imageUtils, isAptitudeDialog = true)
                 trainee.bTemporaryRunningStyleAptitudesUpdated = false
+                SmartRaceSolverIntegration.maybeReplanForTraineeAptitudes(trainee, "umamusume details")
 
                 // Read the trainee's name once per run while the dialog is still open.
                 if (trainee.name.isEmpty()) {
@@ -1169,6 +1189,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 if (ButtonInheritance.click(game.imageUtils)) {
                     MessageLog.v(TAG, "\n[INFO] Claimed an inheritance on $date.")
                     trainee.bHasUpdatedAptitudes = false
+                    bHasCheckedDateThisTurn = false
                     true
                 } else {
                     false
@@ -2036,6 +2057,10 @@ abstract class Campaign(game: Game) : Task(game) {
         try {
             // We always check for dialogs first.
             if (tryHandleAllDialogs()) {
+                return null
+            }
+
+            if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
                 return null
             }
 

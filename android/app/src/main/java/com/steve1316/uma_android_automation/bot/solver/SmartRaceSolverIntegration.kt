@@ -7,6 +7,8 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.RunRaceStats
 import com.steve1316.uma_android_automation.bot.SparkPickHistory
 import com.steve1316.uma_android_automation.bot.Racing.RaceData
+import com.steve1316.uma_android_automation.bot.toSolverAptitudes
+import com.steve1316.uma_android_automation.types.Trainee
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.uma_android_automation.types.RaceGrade
@@ -100,9 +102,50 @@ object SmartRaceSolverIntegration {
     /** Trainee fan count observed during the current run. Fed into [SolverState.currentFans]. */
     @Volatile private var currentRunFans: Int = 0
 
+    /** Live aptitude grades from the trainee details dialog; overrides settings until [reset]. */
+    @Volatile private var currentRunAptitudes: Aptitudes? = null
+
     /** Updates the fan count used by live solver decisions for [Weights.minimumFanTarget]. */
     fun updateCurrentFans(fans: Int) {
         currentRunFans = fans.coerceAtLeast(0)
+    }
+
+    /** Aptitudes used by the solver: live trainee grades when set, otherwise saved settings. */
+    fun effectiveAptitudes(): Aptitudes = currentRunAptitudes ?: readUserAptitudes()
+
+    /** JSON snapshot of [effectiveAptitudes] for spark scoring and logging. */
+    fun effectiveAptitudesJson(): String {
+        val apt = effectiveAptitudes()
+        return JSONObject()
+            .put("Sprint", apt.sprint.name)
+            .put("Mile", apt.mile.name)
+            .put("Medium", apt.medium.name)
+            .put("Long", apt.long.name)
+            .put("Turf", apt.turf.name)
+            .put("Dirt", apt.dirt.name)
+            .toString()
+    }
+
+    fun updateCurrentAptitudes(aptitudes: Aptitudes) {
+        currentRunAptitudes = aptitudes
+    }
+
+    /**
+     * When live trainee aptitudes differ from the active solver baseline, updates the override and replans.
+     *
+     * @param trainee Trainee after aptitude OCR.
+     * @param reason Short log label (e.g. inheritance, details dialog).
+     */
+    fun maybeReplanForTraineeAptitudes(trainee: Trainee, reason: String) {
+        if (!SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver")) return
+        val live = trainee.toSolverAptitudes()
+        val previous = currentRunAptitudes ?: readUserAptitudes()
+        if (live == previous) return
+        updateCurrentAptitudes(live)
+        cachedSchedule = null
+        cachedScheduleTurn = -1
+        MessageLog.i(TAG, "Replanning schedule after aptitude change ($reason): $previous -> $live")
+        broadcastCalendarSnapshot(reuseSchedule = false)
     }
 
     /** Snapshot of confirmed race wins and losses for the current run. */
@@ -123,6 +166,7 @@ object SmartRaceSolverIntegration {
         cachedSchedule = null
         cachedScheduleTurn = -1
         currentRunFans = 0
+        currentRunAptitudes = null
         SparkPickHistory.reset()
     }
 
@@ -678,7 +722,7 @@ object SmartRaceSolverIntegration {
             currentTurn = currentTurn,
             scenario = scenario,
             characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").ifEmpty { null },
-            aptitudes = readUserAptitudes(),
+            aptitudes = effectiveAptitudes(),
             racesByTurn = racesByTurn,
             epithets = epithetsForActiveContext(epithets, scenario),
             raceHistory = raceHistorySnapshot,
