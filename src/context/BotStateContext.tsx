@@ -202,6 +202,8 @@ export interface Settings {
     // Discord settings
     discord: {
         enableDiscordNotifications: boolean
+        enableDiscordLiveStatus: boolean
+        discordLiveStatusTurnInterval: number
         discordToken: string
         discordUserID: string
     }
@@ -467,6 +469,8 @@ export const defaultSettings: Settings = {
     },
     discord: {
         enableDiscordNotifications: false,
+        enableDiscordLiveStatus: true,
+        discordLiveStatusTurnInterval: 6,
         discordToken: "",
         discordUserID: "",
     },

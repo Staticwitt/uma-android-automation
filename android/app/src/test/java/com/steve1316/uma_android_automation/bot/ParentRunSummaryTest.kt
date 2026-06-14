@@ -73,6 +73,45 @@ class ParentRunSummaryTest {
     }
 
     @Test
+    fun buildDiscordMarkdown_uses_markdown_sections() {
+        val trainee = Trainee()
+        trainee.name = "Special Week"
+        trainee.fans = 250000
+        trainee.fanCountClass = FanCountClass.GOLD
+        trainee.skillPoints = 420
+
+        val markdown =
+            ParentRunSummary.buildDiscordMarkdown(
+                ParentRunSummaryInput(
+                    trainee = trainee,
+                    scenario = "Trackblazer",
+                    profileName = "Parents",
+                    bundleLabel = "Special Week — G1 / Fan Parent",
+                    goalPresetLabel = "G1 / Fan Parent",
+                    characterPreset = "Special Week",
+                    sparkStrategy = "StatAndAptitude",
+                    targetEpithets = listOf("Globe-Trotter"),
+                    completedTargetEpithets = listOf("Globe-Trotter"),
+                    incompleteTargetEpithets = emptyList(),
+                    extraCompletedEpithets = emptyList(),
+                    sparkPicks = emptyList(),
+                    fanWeight = 1.0,
+                    minimumFanTarget = 120000,
+                    minimumRaceGapTurns = 1,
+                    targetEpithetMultiplier = 4.0,
+                    raceStats = RunRaceStats(wins = 10, losses = 1),
+                    elapsedMs = 1800000L,
+                ),
+            )
+
+        assertTrue(markdown.contains("**Parent run complete**"), markdown)
+        assertTrue(markdown.contains("**Overview**"), markdown)
+        assertTrue(markdown.contains("**Setup**"), markdown)
+        assertTrue(markdown.contains("G1 / Fan Parent"), markdown)
+        assertTrue(!markdown.contains("```"), markdown)
+    }
+
+    @Test
     fun chunkForDiscord_splits_long_text() {
         val longText = "line\n".repeat(500)
         val chunks = ParentRunSummary.chunkForDiscord(longText, 200)

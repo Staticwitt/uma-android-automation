@@ -930,6 +930,20 @@ const searchConfig: SearchOption[] = [
         page: "DiscordSettings",
         parentId: "enableDiscordNotifications",
     },
+    {
+        id: "enableDiscordLiveStatus",
+        title: "Parent Farming Live Status",
+        description: "Send periodic Discord updates during parent farming runs (fans, goals, race record).",
+        page: "DiscordSettings",
+        parentId: "enableDiscordNotifications",
+    },
+    {
+        id: "discordLiveStatusTurnInterval",
+        title: "Live Status Turn Interval",
+        description: "Send a live status DM every N in-game turns during parent farming runs.",
+        page: "DiscordSettings",
+        parentId: "enableDiscordLiveStatus",
+    },
 
     // ============================================================
     // Debug Settings
