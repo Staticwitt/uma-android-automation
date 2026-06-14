@@ -48,6 +48,8 @@ describe("parentFarmingCharacterBundles", () => {
         expect(result.training.enablePrioritizeSkillHints).toBe(true)
         expect(result.skills.enableSkillPointCheck).toBe(false)
         expect(result.general.enableStopBeforeFinals).toBe(false)
+        expect(result.racing.parentFarmingBundleKey).toBe("grass-wonder-mile")
+        expect(result.racing.parentFarmingGoalPresetKey).toBe("mile-sprint")
     })
 
     it("replaces epithet selections and clears manual locks instead of merging", () => {

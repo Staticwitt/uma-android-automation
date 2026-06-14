@@ -239,6 +239,10 @@ export const applyParentFarmingCharacterBundle = (settings: Settings, bundle: Pa
             smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(characterPreset)),
             smartRaceSolverManualLocks: "{}",
             smartRaceSolverWeights: mergedWeights,
+            parentFarmingBundleKey: bundle.key,
+            parentFarmingBundleLabel: bundle.label,
+            parentFarmingGoalPresetKey: goalPreset.key,
+            parentFarmingGoalPresetLabel: goalPreset.label,
         },
         training: {
             ...base.training,

@@ -91,6 +91,8 @@ export interface WeightsMap {
     /** Per-fan score contribution applied to a race's reward fans. 0.0 ignores fans entirely (Stat Epitaphs preset default).
      *  1e-3 (Fans + Epitaphs preset) makes a 25k-fan G1 contribute ~25 score points - meaningful but not dominant. */
     fanWeight: number
+    /** When current fans meet this target, fan-weighted race scoring is suppressed so the solver stops fan-farming. 0 disables. */
+    minimumFanTarget: number
     /** Minimum number of non-race turns required between solver-planned races. 1 prevents back-to-back solver races. */
     minimumRaceGapTurns: number
     /** Minimum aptitude rank (S..G) a race needs in BOTH its distance type and surface to be eligible. */
@@ -171,6 +173,7 @@ export const DEFAULT_WEIGHTS: WeightsMap = {
     raceBonusPct: 50.0,
     raceCostPct: 100.0,
     fanWeight: 0.0,
+    minimumFanTarget: 0,
     minimumRaceGapTurns: 0,
     aptitudeThreshold: "C",
     includeOpAndPreOp: false,

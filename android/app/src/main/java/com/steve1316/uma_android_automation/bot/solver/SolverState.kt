@@ -103,6 +103,7 @@ data class Weights(
     val raceBonusPct: Double = 50.0,
     val raceCostPct: Double = 100.0,
     val fanWeight: Double = 0.0,
+    val minimumFanTarget: Int = 0,
     val minimumRaceGapTurns: Int = 0,
     val aptitudeThreshold: Aptitude = Aptitude.C,
     val includeOpAndPreOp: Boolean = false,
@@ -212,6 +213,8 @@ data class SolverState(
     val lockedDecisions: Map<TurnNumber, Decision> = emptyMap(),
     val summerBlockTurns: Set<TurnNumber> = DEFAULT_SUMMER_BLOCKS,
     val weights: Weights = Weights(),
+    /** Current trainee fan count at solve time. Used for [Weights.minimumFanTarget] gating. */
+    val currentFans: Int = 0,
 ) {
     val epithetsByName: Map<String, Epithet> by lazy { epithets.associateBy { it.name } }
 

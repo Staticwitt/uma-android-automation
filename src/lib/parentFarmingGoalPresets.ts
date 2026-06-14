@@ -333,6 +333,10 @@ export const applyParentFarmingGoalPresetToRacing = (
             ...TARGET_PRIORITY_WEIGHTS,
             ...preset.weightOverrides,
         }),
+        parentFarmingGoalPresetKey: preset.key,
+        parentFarmingGoalPresetLabel: preset.label,
+        parentFarmingBundleKey: "",
+        parentFarmingBundleLabel: "",
     }
 }
 

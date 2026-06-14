@@ -344,6 +344,18 @@ const searchConfig: SearchOption[] = [
         page: "RacingSettings",
     },
     {
+        id: "parent-farming-goal-presets",
+        title: "Parent Goal Presets",
+        description: "Quickly add common parent-farming target epithets, solver weights, and training bias.",
+        page: "RacingSettings",
+    },
+    {
+        id: "minimum-fan-target",
+        title: "Solver Fan Floor",
+        description: "When current fans meet this target, fan-weighted race scoring stops so the bot prefers training.",
+        page: "RacingSettings",
+    },
+    {
         id: "parent-farming-character-bundles",
         title: "Character + Goal Bundles",
         description: "One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias.",

@@ -39,10 +39,24 @@ class ParentRunSummaryTest {
                     trainee = trainee,
                     scenario = "Trackblazer",
                     profileName = "Parents",
+                    bundleLabel = "Special Week — G1 / Fan Parent",
+                    goalPresetLabel = "G1 / Fan Parent",
                     characterPreset = "Special Week",
                     sparkStrategy = "StatAndAptitude",
                     targetEpithets = listOf("Globe-Trotter", "Triple Tiara"),
+                    completedTargetEpithets = listOf("Globe-Trotter"),
+                    incompleteTargetEpithets = listOf("Triple Tiara (1/3)"),
+                    extraCompletedEpithets = listOf("G1 Hunter"),
+                    sparkPicks =
+                        listOf(
+                            SparkPickHistory.Record(
+                                pickIndex = 1,
+                                optionTexts = listOf("Speed +5%", "Stamina +3%", "Power +2%"),
+                                strategy = "StatAndAptitude",
+                            ),
+                        ),
                     fanWeight = 1.0,
+                    minimumFanTarget = 120000,
                     minimumRaceGapTurns = 1,
                     targetEpithetMultiplier = 4.0,
                     raceStats = RunRaceStats(wins = 18, losses = 2),
@@ -51,11 +65,11 @@ class ParentRunSummaryTest {
             )
 
         assertTrue(summary.contains("Parent Run Complete"))
-        assertTrue(summary.contains("Special Week"))
-        assertTrue(summary.contains("250000"))
-        assertTrue(summary.contains("Globe-Trotter"))
-        assertTrue(summary.contains("18 wins, 2 losses"))
-        assertTrue(summary.contains("Surface: Turf A, Dirt C"))
+        assertTrue(summary.contains("G1 / Fan Parent"), summary)
+        assertTrue(summary.contains("Targets completed"), summary)
+        assertTrue(summary.contains("Inheritance sparks"), summary)
+        assertTrue(summary.contains("fanFloor=120000"), summary)
+        assertTrue(summary.contains("18 wins, 2 losses"), summary)
     }
 
     @Test

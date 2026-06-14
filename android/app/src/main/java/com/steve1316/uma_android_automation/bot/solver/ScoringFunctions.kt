@@ -94,16 +94,24 @@ object ScoringFunctions {
      *
      * @param race Race candidate to score.
      * @param weights Active scoring weights.
+     * @param currentFans Trainee fan count at solve time. When fans meet [Weights.minimumFanTarget],
+     *   the per-fan term is zeroed so fan-farming races lose appeal.
      * @return Net contribution to the objective if [race] is picked. Positive values prefer this
      *   race over Train. Negative values prefer Train.
      */
-    fun raceValue(race: RaceCandidate, weights: Weights): Double {
+    fun raceValue(race: RaceCandidate, weights: Weights, currentFans: Int = 0): Double {
         val rb = weights.raceBonusPct.coerceAtLeast(0.0) / 100.0
         val stat = Math.floor(baseStat(race.grade) * (1.0 + rb))
         val sp = Math.floor(baseSp(race.grade) * (1.0 + rb))
         val gross = weights.statWeight * stat + weights.spWeight * sp
         val cost = weights.raceCostPct / 100.0 * costBaseline(race.grade, weights)
-        return (gross - cost) * weights.raceValue + race.fans * weights.fanWeight
+        val fanTerm =
+            if (weights.minimumFanTarget > 0 && currentFans >= weights.minimumFanTarget) {
+                0.0
+            } else {
+                race.fans * weights.fanWeight
+            }
+        return (gross - cost) * weights.raceValue + fanTerm
     }
 
     /**

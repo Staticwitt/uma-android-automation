@@ -104,6 +104,8 @@ describe("parentFarmingGoalPresets", () => {
         expect(result.training.preferredDistanceOverride).toBe("Long")
         expect(result.training.statPrioritization?.[0]).toBe("Stamina")
         expect(result.racing.enableSmartRaceSolver).toBe(true)
+        expect(result.racing.parentFarmingGoalPresetKey).toBe("stayer-stamina")
+        expect(result.racing.parentFarmingBundleKey).toBe("")
     })
 
     it("defines only epithets that exist in bundled epithets data", () => {

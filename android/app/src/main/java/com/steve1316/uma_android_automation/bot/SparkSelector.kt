@@ -42,6 +42,7 @@ object SparkSelector {
         val context = buildContext(strategy)
         val imageUtils = game.imageUtils
         val scores = mutableListOf<Pair<Int, Double>>()
+        val optionTexts = mutableListOf<String>()
 
         val ocrWidth = (SharedData.displayWidth * OCR_WIDTH_FRACTION).toInt()
         val ocrHeight = (SharedData.displayHeight * OCR_HEIGHT_FRACTION).toInt()
@@ -68,10 +69,12 @@ object SparkSelector {
 
             val score = SparkSelectionScorer.score(ocrText, context)
             scores.add(index to score)
+            optionTexts.add(ocrText.trim())
             MessageLog.i(TAG, "[SPARK] Option ${index + 1}: \"$ocrText\" (score=${"%.1f".format(score)})")
         }
 
         val bestIndex = scores.maxByOrNull { it.second }?.first ?: 0
+        SparkPickHistory.record(bestIndex, optionTexts, strategy)
         val tapX = SharedData.displayWidth * SPARK_SLOT_X_FRACTIONS[bestIndex]
         val tapY = SharedData.displayHeight * SPARK_SLOT_Y_FRACTION
 

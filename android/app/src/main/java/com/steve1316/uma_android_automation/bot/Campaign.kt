@@ -538,6 +538,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 val fans = game.imageUtils.getUmamusumeClassDialogFanCount(croppedBitmap)
                 if (fans != null) {
                     trainee.fans = fans
+                    SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
                     bNeedToCheckFans = false
                     MessageLog.i(TAG, "[INFO] Updated fan count: ${trainee.fans}")
                 } else {
@@ -2082,6 +2083,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     val cleanedFans = fansText.replace(Regex("[^0-9]"), "")
                     if (cleanedFans.isNotEmpty()) {
                         trainee.fans = cleanedFans.toInt()
+                        SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
                     } else {
                         MessageLog.w(TAG, "[WARN] process:: Could not detect final fan count for the end of the Career from OCR: $fansText")
                     }

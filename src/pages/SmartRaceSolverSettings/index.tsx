@@ -223,6 +223,7 @@ const SmartRaceSolverSettings = () => {
     const [raceCostPctInput, setRaceCostPctInput] = useState(weights.raceCostPct.toString())
     const [fanWeightInput, setFanWeightInput] = useState(weights.fanWeight.toString())
     const [minimumRaceGapTurnsInput, setMinimumRaceGapTurnsInput] = useState(weights.minimumRaceGapTurns.toString())
+    const [minimumFanTargetInput, setMinimumFanTargetInput] = useState((weights.minimumFanTarget ?? 0).toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
@@ -234,6 +235,7 @@ const SmartRaceSolverSettings = () => {
     useEffect(() => setRaceCostPctInput(weights.raceCostPct.toString()), [weights.raceCostPct])
     useEffect(() => setFanWeightInput(weights.fanWeight.toString()), [weights.fanWeight])
     useEffect(() => setMinimumRaceGapTurnsInput(weights.minimumRaceGapTurns.toString()), [weights.minimumRaceGapTurns])
+    useEffect(() => setMinimumFanTargetInput(String(weights.minimumFanTarget ?? 0)), [weights.minimumFanTarget])
 
     /** Derived optimization mode. Mode is not persisted - it falls out of the weights so the radio toggle and the slider can never disagree. */
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
@@ -1673,6 +1675,21 @@ const SmartRaceSolverSettings = () => {
                                                         <Text style={styles.inputDescription}>
                                                             Score per fan earned from a race. Default 0.0 ignores fans entirely (Stat Epitaphs preset). 0.001 (Fans + Epitaphs preset) makes a 25k-fan
                                                             G1 worth ~25 score points - meaningful but not dominant. Above 0.005 the solver will race almost every eligible turn.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Fan Floor Target</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={minimumFanTargetInput}
+                                                            onChangeText={(t) => /^\d*$/.test(t) && setMinimumFanTargetInput(t)}
+                                                            onBlur={() => updateWeight("minimumFanTarget", Math.max(0, Math.floor(parseFloat(minimumFanTargetInput) || 0)))}
+                                                            keyboardType="number-pad"
+                                                            placeholder="0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            When current fans meet this target, fan-weighted race scoring is suppressed so the solver stops fan-farming. 0 disables.
                                                         </Text>
                                                     </Pressable>
 

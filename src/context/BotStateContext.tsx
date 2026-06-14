@@ -80,6 +80,11 @@ export interface Settings {
         smartRaceSolverWeights: string
         /** Inheritance spark picker: Default, StatAndAptitude, SkillHints, or Balanced. */
         sparkSelectionStrategy: string
+        /** Last applied parent goal preset / bundle keys for run summaries. */
+        parentFarmingGoalPresetKey: string
+        parentFarmingGoalPresetLabel: string
+        parentFarmingBundleKey: string
+        parentFarmingBundleLabel: string
     }
 
     // Skill Settings
@@ -281,6 +286,10 @@ export const defaultSettings: Settings = {
         smartRaceSolverForcedEpithets: "[]",
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
+        parentFarmingGoalPresetKey: "",
+        parentFarmingGoalPresetLabel: "",
+        parentFarmingBundleKey: "",
+        parentFarmingBundleLabel: "",
         smartRaceSolverWeights: JSON.stringify({
             raceValue: 1.0,
             epithetValue: 1.0,
@@ -293,6 +302,7 @@ export const defaultSettings: Settings = {
             raceBonusPct: 50.0,
             raceCostPct: 100.0,
             fanWeight: 0.0,
+            minimumFanTarget: 0,
             minimumRaceGapTurns: 0,
             aptitudeThreshold: "C",
             includeOpAndPreOp: false,

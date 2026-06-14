@@ -110,6 +110,16 @@ class ScoringFunctionsTest {
     }
 
     @Test
+    fun fanFloorSuppressesFanTermWhenTargetMet() {
+        val tunedWeights = Weights(fanWeight = 1e-3, minimumFanTarget = 100000)
+        val big = race("Big", 20, fans = 50000)
+        val belowFloor = ScoringFunctions.raceValue(big, tunedWeights, currentFans = 50000)
+        val aboveFloor = ScoringFunctions.raceValue(big, tunedWeights, currentFans = 150000)
+        assertTrue(belowFloor > aboveFloor)
+        assertEquals(ScoringFunctions.raceValue(big, Weights(fanWeight = 0.0), 0), aboveFloor, 1e-9)
+    }
+
+    @Test
     fun g1RaceValueIsPositive() {
         val g1 = race("G1", 20, grade = RaceGrade.G1, fans = 8000)
         assertTrue(ScoringFunctions.raceValue(g1, w) > 0.0)

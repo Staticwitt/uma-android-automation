@@ -88,5 +88,9 @@ export const disableParentFarmingMode = (settings: Settings): Settings => ({
     racing: {
         ...settings.racing,
         enableParentFarmingMode: false,
+        parentFarmingGoalPresetKey: "",
+        parentFarmingGoalPresetLabel: "",
+        parentFarmingBundleKey: "",
+        parentFarmingBundleLabel: "",
     },
 })
