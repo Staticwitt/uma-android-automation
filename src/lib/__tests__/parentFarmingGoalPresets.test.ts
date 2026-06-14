@@ -62,4 +62,18 @@ describe("parentFarmingGoalPresets", () => {
 
         expect(targets).toEqual(["Manual Target", "Triple Crown"])
     })
+
+    it("defines only epithets that exist in bundled epithets data", () => {
+        const epithets = require("../../data/epithets.json") as Record<string, { name: string }>
+        const knownNames = new Set(Object.values(epithets).map((entry) => entry.name))
+
+        for (const preset of PARENT_FARMING_GOAL_PRESETS) {
+            for (const name of preset.targetEpithets) {
+                expect(knownNames.has(name)).toBe(true)
+            }
+            for (const name of preset.forcedEpithets ?? []) {
+                expect(knownNames.has(name)).toBe(true)
+            }
+        }
+    })
 })
