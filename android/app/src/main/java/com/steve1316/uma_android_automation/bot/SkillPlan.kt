@@ -13,6 +13,7 @@ import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
 import org.json.JSONObject
 import org.opencv.core.Point
+import java.util.Locale
 
 private const val USE_MOCK_DATA: Boolean = false
 private const val MOCK_SKILL_POINTS: Int = 1495
@@ -47,37 +48,41 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                 val jsonObject = JSONObject(plansString)
                 val plansMap = mutableMapOf<String, SkillPlanSettings>()
                 jsonObject.keys().forEach { planName ->
-                    val planData = jsonObject.getJSONObject(planName)
-                    val strategyString: String = planData.getString("strategy")
-                    val skillIds: List<Int> =
-                        planData
-                            .getString("plan")
-                            .split(",")
-                            .map { it.trim() }
-                            .mapNotNull { it.toIntOrNull() }
-                    val skillNames: List<String> = skillIds.mapNotNull { game.skillDatabase.getSkillName(it) }
-                    val blacklistIds: List<Int> =
-                        planData
-                            .optString("blacklist", "")
-                            .split(",")
-                            .map { it.trim() }
-                            .mapNotNull { it.toIntOrNull() }
-                    val skillBlacklist: List<String> = blacklistIds.mapNotNull { game.skillDatabase.getSkillName(it) }
-                    val excludedTypes: Set<SkillType> =
-                        buildSet {
-                            if (planData.optBoolean("excludeGreenSkills", false)) add(SkillType.GREEN)
-                            if (planData.optBoolean("excludeRedSkills", false)) add(SkillType.RED)
-                        }
-                    plansMap[planName] =
-                        SkillPlanSettings(
-                            bIsEnabled = planData.getBoolean("enabled"),
-                            strategy = SpendingStrategy.fromName(strategyString) ?: SpendingStrategy.DEFAULT,
-                            bEnableBuyNegativeSkills = planData.getBoolean("enableBuyNegativeSkills"),
-                            skillNames = skillNames,
-                            skillBlacklist = skillBlacklist,
-                            excludedTypes = excludedTypes,
-                            bExcludeUniqueSkills = planData.optBoolean("excludeUniqueSkills", false),
-                        )
+                    try {
+                        val planData = jsonObject.getJSONObject(planName)
+                        val strategyString: String = planData.optString("strategy", "default")
+                        val skillIds: List<Int> =
+                            planData
+                                .optString("plan", "")
+                                .split(",")
+                                .map { it.trim() }
+                                .mapNotNull { it.toIntOrNull() }
+                        val skillNames: List<String> = skillIds.mapNotNull { game.skillDatabase.getSkillName(it) }
+                        val blacklistIds: List<Int> =
+                            planData
+                                .optString("blacklist", "")
+                                .split(",")
+                                .map { it.trim() }
+                                .mapNotNull { it.toIntOrNull() }
+                        val skillBlacklist: List<String> = blacklistIds.mapNotNull { game.skillDatabase.getSkillName(it) }
+                        val excludedTypes: Set<SkillType> =
+                            buildSet {
+                                if (planData.optBoolean("excludeGreenSkills", false)) add(SkillType.GREEN)
+                                if (planData.optBoolean("excludeRedSkills", false)) add(SkillType.RED)
+                            }
+                        plansMap[planName] =
+                            SkillPlanSettings(
+                                bIsEnabled = planData.optBoolean("enabled", false),
+                                strategy = SpendingStrategy.fromName(strategyString) ?: SpendingStrategy.DEFAULT,
+                                bEnableBuyNegativeSkills = planData.optBoolean("enableBuyNegativeSkills", false),
+                                skillNames = skillNames,
+                                skillBlacklist = skillBlacklist,
+                                excludedTypes = excludedTypes,
+                                bExcludeUniqueSkills = planData.optBoolean("excludeUniqueSkills", false),
+                            )
+                    } catch (e: Exception) {
+                        MessageLog.w(TAG, "[WARN] skillPlans:: Could not parse skill plan \"$planName\": ${e.message}")
+                    }
                 }
                 plansMap
             } else {
@@ -105,8 +110,8 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
             private val nameMap = entries.associateBy { it.name }
             private val ordinalMap = entries.associateBy { it.ordinal }
 
-            /** Retrieve the [SpendingStrategy] by its name. */
-            fun fromName(value: String): SpendingStrategy? = nameMap[value.uppercase()]
+            /** Retrieve the [SpendingStrategy] by its persisted name (case-insensitive, accepts underscores). */
+            fun fromName(value: String): SpendingStrategy? = nameMap[value.trim().uppercase(Locale.US).replace('-', '_')]
 
             /** Retrieve the [SpendingStrategy] by its ordinal value. */
             fun fromOrdinal(ordinal: Int): SpendingStrategy? = ordinalMap[ordinal]
@@ -871,21 +876,17 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
         }
 
         // Determine which skill plan to execute based on the current context.
-        val skillPlanSettings: SkillPlanSettings =
-            if (skillPlanName == null) {
-                if (bIsCareerComplete) {
-                    skillPlans["careerComplete"]!!
-                } else {
-                    skillPlans["preFinals"]!!
-                }
+        val resolvedPlanName: String =
+            skillPlanName ?: if (bIsCareerComplete) {
+                "careerComplete"
             } else {
-                val tmpPlan: SkillPlanSettings? = skillPlans[skillPlanName]
-                if (tmpPlan == null) {
-                    MessageLog.e(TAG, "[ERROR] start:: Invalid skill plan name: $skillPlanName")
-                    return false
-                }
-                tmpPlan
+                "preFinals"
             }
+        val skillPlanSettings: SkillPlanSettings? = skillPlans[resolvedPlanName]
+        if (skillPlanSettings == null) {
+            MessageLog.e(TAG, "[ERROR] start:: Skill plan \"$resolvedPlanName\" is missing or failed to load. Aborting...")
+            return false
+        }
 
         // If no purchasing options are enabled, exit early to avoid unnecessary scanning.
         if (
