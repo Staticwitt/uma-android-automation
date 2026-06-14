@@ -5,13 +5,15 @@
     <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.1</url>
     <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.1/v5.9.1-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.9.1 - Legacy parent auto-select
+v5.9.1 - Parent run archive and legacy parent auto-select
 
 Parent Farming
 ---
+- Save completed parent runs locally (fans, epithets, sparks, stats)
+- Browse and compare vs previous run for the same character preset
 - Auto-select legacy parent pair at career selection (in-game Auto-Select)
 - Optional preferred parent names for OCR pair picking in the legacy picker
-- Toggle and parent name fields in Parent Farming settings
+- Toggles and parent name fields in Parent Farming settings
 
     </releaseNotes>
   </update>
