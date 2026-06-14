@@ -38,21 +38,34 @@ const parseWeights = (weightsJson: string | undefined): WeightsMap => {
 export const buildParentFarmingRacingSettings = (racing: Settings["racing"]): Partial<Settings["racing"]> => {
     const weights = parseWeights(racing.smartRaceSolverWeights)
     return {
-        enableParentFarmingMode: true,
-        enableFarmingFans: true,
-        ignoreConsecutiveRaceWarning: true,
-        daysToRunExtraRaces: 3,
-        enableCompleteCareerOnFailure: true,
-        enableForceRacing: false,
-        enableUserInGameRaceAgenda: false,
-        enableSmartRaceSolver: true,
-        sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
-        enableParentRunSummary: true,
+        ...PARENT_FARMING_GOAL_RACING_BASE,
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
         }),
     }
+}
+
+/** Shared parent-farming training defaults applied before goal-specific overrides. */
+export const buildParentFarmingTrainingSettings = (training: Settings["training"]): Partial<Settings["training"]> => ({
+    maximumFailureChance: Math.min(training.maximumFailureChance, 15),
+    preferredDistanceOverride: "Auto",
+    enablePrioritizeSkillHints: true,
+    disableStatTargets: true,
+})
+
+/** Racing flags shared by parent farming mode and goal-preset application. */
+export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
+    enableParentFarmingMode: true,
+    enableSmartRaceSolver: true,
+    enableForceRacing: false,
+    enableUserInGameRaceAgenda: false,
+    enableFarmingFans: true,
+    ignoreConsecutiveRaceWarning: true,
+    daysToRunExtraRaces: 3,
+    enableCompleteCareerOnFailure: true,
+    enableParentRunSummary: true,
+    sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
 }
 
 /**
@@ -75,10 +88,7 @@ export const applyParentFarmingPreset = (settings: Settings): Settings => ({
     },
     training: {
         ...settings.training,
-        maximumFailureChance: Math.min(settings.training.maximumFailureChance, 15),
-        preferredDistanceOverride: "Auto",
-        enablePrioritizeSkillHints: true,
-        disableStatTargets: true,
+        ...buildParentFarmingTrainingSettings(settings.training),
     },
 })
 
