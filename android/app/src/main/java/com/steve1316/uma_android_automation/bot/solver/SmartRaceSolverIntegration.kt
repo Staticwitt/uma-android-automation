@@ -17,6 +17,10 @@ import com.steve1316.uma_android_automation.types.TrackSurface
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Integration layer between Racing.kt and the pure [SmartRaceSolver].
@@ -32,6 +36,17 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object SmartRaceSolverIntegration {
     private const val TAG: String = "[SMART_RACE_SOLVER]"
+
+    private val calendarSnapshotScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** Settings snapshot reused while walking win-turns for epithet contribution diffs. */
+    private data class ContributionSolverContext(
+        val characterPreset: String?,
+        val aptitudes: Aptitudes,
+        val forcedEpithets: Set<String>,
+        val targetEpithets: Set<String>,
+        val weights: Weights,
+    )
 
     /** Junior turns 1..13 (Early Jan -> Early Jul) are the in-game pre-debut period with no
      *  races, so the OCR-driven Career -> Race History scrape is skipped at or below this
@@ -68,6 +83,10 @@ object SmartRaceSolverIntegration {
     /** Same idea as [cachedInlineRaces] but for the inline epithets payload. The pair is
      *  `(hash, parsedValue)`. */
     @Volatile private var cachedInlineEpithets: Pair<Int, List<Epithet>>? = null
+
+    /** Memoised parse of `smartRaceSolverManualLocks` until the raw JSON changes. */
+    @Volatile private var cachedManualLocksJson: String? = null
+    @Volatile private var cachedManualLocksParsed: Map<TurnNumber, Decision>? = null
 
     /** Race staged by [markPendingRace] awaiting an outcome confirmation via [commitPendingRace]. */
     @Volatile private var pendingRace: RaceWin? = null
@@ -157,6 +176,8 @@ object SmartRaceSolverIntegration {
         cachedSchedule = null
         cachedScheduleTurn = -1
         cachedContributions = null
+        cachedManualLocksJson = null
+        cachedManualLocksParsed = null
         MessageLog.i(TAG, "Replanning schedule after aptitude change ($reason): $previous -> $live")
         broadcastCalendarSnapshot(reuseSchedule = false)
     }
@@ -180,6 +201,8 @@ object SmartRaceSolverIntegration {
         cachedScheduleTurn = -1
         runtimeDeadEpithets = emptySet()
         cachedContributions = null
+        cachedManualLocksJson = null
+        cachedManualLocksParsed = null
         currentRunFans = 0
         currentRunAptitudes = null
         SparkPickHistory.reset()
@@ -404,7 +427,7 @@ object SmartRaceSolverIntegration {
         val candidates = epithets.filter { epi -> epi.matchers.any { matcherReferencesRace(it, raceName, race) } }
         if (candidates.isEmpty()) return
         val stateBefore = newSolverState(currentTurn = 1, scenario = "", epithets = epithets, racesByTurn = racesByTurn, raceHistorySnapshot = historyBefore, lockedDecisions = emptyMap())
-        val stateAfter = newSolverState(currentTurn = 1, scenario = "", epithets = epithets, racesByTurn = racesByTurn, raceHistorySnapshot = historyAfter, lockedDecisions = emptyMap())
+        val stateAfter = stateBefore.copy(raceHistory = historyAfter)
         val affected = candidates.filter { epi -> epithetFraction(epi, stateBefore) != epithetFraction(epi, stateAfter) }
         if (affected.isEmpty()) return
         val sb = StringBuilder()
@@ -1414,9 +1437,45 @@ object SmartRaceSolverIntegration {
      */
     private fun loadManualLocksFromSettings(racesByTurn: Map<TurnNumber, List<RaceCandidate>>): Map<TurnNumber, Decision> {
         val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverManualLocks")
+        val cachedJson = cachedManualLocksJson
+        val cachedParsed = cachedManualLocksParsed
+        if (json == cachedJson && cachedParsed != null) return cachedParsed
         val obj = runCatching { if (json.isEmpty()) null else JSONObject(json) }.getOrNull()
-        return parseManualLocks(obj, racesByTurn)
+        val parsed = parseManualLocks(obj, racesByTurn)
+        cachedManualLocksJson = json
+        cachedManualLocksParsed = parsed
+        return parsed
     }
+
+    private fun buildContributionSolverContext(): ContributionSolverContext =
+        ContributionSolverContext(
+            characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").ifEmpty { null },
+            aptitudes = effectiveAptitudes(),
+            forcedEpithets = readStringSet("smartRaceSolverForcedEpithets"),
+            targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
+            weights = readWeights(),
+        )
+
+    private fun solverStateForContribution(
+        epithets: List<Epithet>,
+        racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
+        wins: List<RaceWin>,
+        ctx: ContributionSolverContext,
+    ): SolverState =
+        SolverState(
+            currentTurn = 1,
+            scenario = currentRunScenario,
+            characterPreset = ctx.characterPreset,
+            aptitudes = ctx.aptitudes,
+            racesByTurn = racesByTurn,
+            epithets = epithets,
+            raceHistory = wins,
+            forcedEpithets = ctx.forcedEpithets,
+            targetEpithets = ctx.targetEpithets,
+            lockedDecisions = emptyMap(),
+            weights = ctx.weights,
+            deadEpithets = runtimeDeadEpithets,
+        )
 
     /**
      * Serialises a [Schedule] into the JSON shape the React Native preview UI expects.
@@ -1468,9 +1527,9 @@ object SmartRaceSolverIntegration {
      */
     private fun broadcastCalendarSnapshot(reuseSchedule: Boolean = false) {
         if (!SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver")) return
-        kotlin.concurrent.thread(name = "calendar-snapshot", isDaemon = true) {
+        calendarSnapshotScope.launch {
             try {
-                val json = buildCalendarSnapshotJson(reuseSchedule) ?: return@thread
+                val json = buildCalendarSnapshotJson(reuseSchedule) ?: return@launch
                 com.steve1316.uma_android_automation.utils.LogStreamServer.broadcastCalendarSnapshot(json)
             } catch (t: Throwable) {
                 MessageLog.w(TAG, "Calendar snapshot broadcast failed: ${t.message}")
@@ -1681,28 +1740,13 @@ object SmartRaceSolverIntegration {
         }
 
         val contributions = mutableMapOf<TurnNumber, JSONArray>()
+        val contributionCtx = buildContributionSolverContext()
         val cumulativeWins = mutableListOf<RaceWin>()
-        var statePrev =
-            newSolverState(
-                currentTurn = 1,
-                scenario = currentRunScenario,
-                epithets = epithets,
-                racesByTurn = racesByTurn,
-                raceHistorySnapshot = emptyList(),
-                lockedDecisions = emptyMap(),
-            )
-        for (turn in 1..72) {
+        var statePrev = solverStateForContribution(epithets, racesByTurn, emptyList(), contributionCtx)
+        for (turn in winsByTurn.keys.sorted()) {
             val race = winsByTurn[turn] ?: continue
             cumulativeWins.add(RaceWin(race.key, race.name, race.classYear, turn))
-            val stateNow =
-                newSolverState(
-                    currentTurn = 1,
-                    scenario = currentRunScenario,
-                    epithets = epithets,
-                    racesByTurn = racesByTurn,
-                    raceHistorySnapshot = cumulativeWins.toList(),
-                    lockedDecisions = emptyMap(),
-                )
+            val stateNow = solverStateForContribution(epithets, racesByTurn, cumulativeWins.toList(), contributionCtx)
 
             val arr = JSONArray()
             for (epi in epithets) {

@@ -36,10 +36,13 @@ import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, GeneralMiscContext, BotMetaContext, defaultSettings } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
+import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInventorySheet"
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
-import { recommendSupportDeckForCharacter } from "../../lib/recommendSupportDeck"
+import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
+import { loadSolverPreviewCache, saveSolverPreviewCache } from "../../lib/solver/previewCacheStorage"
+import { copyToClipboard } from "../../lib/utils"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
 import WarningContainer from "../../components/WarningContainer"
@@ -136,7 +139,11 @@ const SmartRaceSolverSettings = () => {
         smartRaceSolverManualLocks,
         smartRaceSolverWeights,
         parentFarmingSupportBorrowOverrides,
+        ownedSupportCards,
+        supportDeckOwnedCards,
     } = racingSettings
+
+    const ownedInventory = useMemo(() => parseOwnedSupportCards(ownedSupportCards), [ownedSupportCards])
 
     const supportBorrowOverrides = useMemo(
         () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
@@ -254,10 +261,14 @@ const SmartRaceSolverSettings = () => {
 
     const [presetSearch, setPresetSearch] = useState("")
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
+    const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
     const [distanceFilter, setDistanceFilter] = useState<"all" | "Sprint" | "Mile" | "Medium" | "Long" | "Dirt">("all")
     const characterSupportRecommendation = useMemo(
-        () => (smartRaceSolverCharacterPreset ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset) : null),
-        [smartRaceSolverCharacterPreset],
+        () =>
+            smartRaceSolverCharacterPreset
+                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory })
+                : null,
+        [smartRaceSolverCharacterPreset, ownedInventory],
     )
 
     const applyFriendBorrowFromRecommendation = useCallback(
@@ -279,6 +290,35 @@ const SmartRaceSolverSettings = () => {
             })
         },
         [setSettings],
+    )
+
+    const applyFullDeckFromRecommendation = useCallback(
+        (characterName: string, ownedCards: string[], borrowOrder: string[]) => {
+            setSettings((prev) => {
+                const preset = findCharacterPresetEntry(characterName)
+                return {
+                    ...prev,
+                    racing: {
+                        ...prev.racing,
+                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
+                        supportDeckOwnedCards: JSON.stringify(ownedCards),
+                        smartRaceSolverCharacterPreset: characterName,
+                        enableAutoBorrowSupportCard: true,
+                        ...(preset
+                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
+                            : {}),
+                    },
+                }
+            })
+        },
+        [setSettings],
+    )
+
+    const saveOwnedInventory = useCallback(
+        (cards: string[]) => {
+            updateRacing({ ownedSupportCards: JSON.stringify(cards) })
+        },
+        [updateRacing],
     )
 
     const [epithetSearch, setEpithetSearch] = useState("")
@@ -638,6 +678,7 @@ const SmartRaceSolverSettings = () => {
             setPreviewError(result.error ?? null)
             setPreviewSnapshotKey(key)
             lastPreviewCache = { key, preview: result }
+            saveSolverPreviewCache(key, result)
         } catch (e: any) {
             setPreview(null)
             setPreviewError(String(e?.message ?? e))
@@ -655,7 +696,17 @@ const SmartRaceSolverSettings = () => {
             setPreviewSnapshotKey(null)
             return
         }
-        if (preview == null) runPreview()
+        if (preview == null) {
+            loadSolverPreviewCache(currentSnapshotKey).then((cached) => {
+                if (cached) {
+                    setPreview(cached)
+                    setPreviewSnapshotKey(currentSnapshotKey)
+                    lastPreviewCache = { key: currentSnapshotKey, preview: cached }
+                    return
+                }
+                runPreview()
+            })
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [enableSmartRaceSolver])
 
@@ -1412,18 +1463,50 @@ const SmartRaceSolverSettings = () => {
                                                 >
                                                     <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Browse supports for another Uma</Text>
                                                 </Pressable>
-                                                <CustomButton
-                                                    variant="default"
-                                                    size="sm"
-                                                    onPress={() =>
-                                                        applyFriendBorrowFromRecommendation(
-                                                            characterSupportRecommendation.characterName,
-                                                            characterSupportRecommendation.friendBorrowOrder,
-                                                        )
-                                                    }
-                                                >
-                                                    Apply friend borrow list
-                                                </CustomButton>
+                                                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm }}>
+                                                    <CustomButton
+                                                        variant="default"
+                                                        size="sm"
+                                                        onPress={() =>
+                                                            applyFullDeckFromRecommendation(
+                                                                characterSupportRecommendation.characterName,
+                                                                characterSupportRecommendation.ownedCards,
+                                                                characterSupportRecommendation.friendBorrowOrder,
+                                                            )
+                                                        }
+                                                    >
+                                                        Apply full deck
+                                                    </CustomButton>
+                                                    <CustomButton
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onPress={() =>
+                                                            applyFriendBorrowFromRecommendation(
+                                                                characterSupportRecommendation.characterName,
+                                                                characterSupportRecommendation.friendBorrowOrder,
+                                                            )
+                                                        }
+                                                    >
+                                                        Apply friend borrow list
+                                                    </CustomButton>
+                                                    <CustomButton
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onPress={() =>
+                                                            copyToClipboard(formatSupportDeckClipboard(characterSupportRecommendation))
+                                                        }
+                                                    >
+                                                        Copy deck
+                                                    </CustomButton>
+                                                    <CustomButton variant="outline" size="sm" onPress={() => setOwnedInventoryOpen(true)}>
+                                                        Edit owned inventory
+                                                    </CustomButton>
+                                                </View>
+                                                {supportDeckOwnedCards && parseOwnedSupportCards(supportDeckOwnedCards).length > 0 && (
+                                                    <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                        Saved owned slots: {parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}
+                                                    </Text>
+                                                )}
                                             </View>
                                         </SearchableItem>
                                     </Section>
@@ -2181,8 +2264,17 @@ const SmartRaceSolverSettings = () => {
             <CharacterSupportFinderSheet
                 visible={supportFinderOpen}
                 initialCharacterName={smartRaceSolverCharacterPreset}
+                ownedInventory={ownedInventory}
                 onClose={() => setSupportFinderOpen(false)}
                 onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
+                onApplyFullDeck={applyFullDeckFromRecommendation}
+                onEditOwnedInventory={() => setOwnedInventoryOpen(true)}
+            />
+            <OwnedSupportInventorySheet
+                visible={ownedInventoryOpen}
+                ownedCards={ownedInventory}
+                onClose={() => setOwnedInventoryOpen(false)}
+                onSave={saveOwnedInventory}
             />
             {dirty && (
                 <View style={styles.recalcFab}>

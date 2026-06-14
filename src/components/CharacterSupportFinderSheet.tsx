@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native"
+import { View, Text, ScrollView, Pressable, StyleSheet, Alert } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import { CharacterSupportRecommendationView } from "./CharacterSupportRecommendationView"
 import { SheetModal } from "./ui/sheet-modal"
 import { ModalFooterChip } from "./ui/modal-list"
 import { Input } from "./ui/input"
 import {
+    formatSupportDeckClipboard,
     listCharactersForSupportFinder,
     recommendSupportDeckForCharacter,
     type SupportDeckRecommendation,
 } from "../lib/recommendSupportDeck"
+import { copyToClipboard } from "../lib/utils"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -17,9 +19,11 @@ import { RADII } from "../lib/radii"
 interface CharacterSupportFinderSheetProps {
     visible: boolean
     initialCharacterName?: string
+    ownedInventory?: string[]
     onClose: () => void
-    /** Applies friend borrow order to racing settings. */
     onApplyFriendBorrow: (characterName: string, borrowOrder: string[]) => void
+    onApplyFullDeck: (characterName: string, ownedCards: string[], borrowOrder: string[]) => void
+    onEditOwnedInventory?: () => void
 }
 
 /**
@@ -28,8 +32,11 @@ interface CharacterSupportFinderSheetProps {
 export const CharacterSupportFinderSheet = ({
     visible,
     initialCharacterName,
+    ownedInventory = [],
     onClose,
     onApplyFriendBorrow,
+    onApplyFullDeck,
+    onEditOwnedInventory,
 }: CharacterSupportFinderSheetProps) => {
     const { colors } = useTheme()
     const [search, setSearch] = useState("")
@@ -50,15 +57,27 @@ export const CharacterSupportFinderSheet = ({
     }, [allCharacters, search])
 
     const recommendation: SupportDeckRecommendation | null = useMemo(
-        () => (selectedName ? recommendSupportDeckForCharacter(selectedName) : null),
-        [selectedName],
+        () => (selectedName ? recommendSupportDeckForCharacter(selectedName, { ownedInventory }) : null),
+        [selectedName, ownedInventory],
     )
 
-    const handleApply = useCallback(() => {
+    const handleApplyBorrow = useCallback(() => {
         if (!recommendation) return
         onApplyFriendBorrow(recommendation.characterName, recommendation.friendBorrowOrder)
         onClose()
     }, [onApplyFriendBorrow, onClose, recommendation])
+
+    const handleApplyFullDeck = useCallback(() => {
+        if (!recommendation) return
+        onApplyFullDeck(recommendation.characterName, recommendation.ownedCards, recommendation.friendBorrowOrder)
+        onClose()
+    }, [onApplyFullDeck, onClose, recommendation])
+
+    const handleCopy = useCallback(async () => {
+        if (!recommendation) return
+        await copyToClipboard(formatSupportDeckClipboard(recommendation))
+        Alert.alert("Copied", "Support deck copied to clipboard.")
+    }, [recommendation])
 
     const styles = useMemo(
         () =>
@@ -78,6 +97,14 @@ export const CharacterSupportFinderSheet = ({
                 rowName: { ...TYPE.body, color: colors.text },
                 rowApt: { ...TYPE.caption, color: colors.textMuted, marginTop: 2 },
                 empty: { ...TYPE.caption, color: colors.textMuted, padding: SPACING.md },
+                ownedRow: {
+                    padding: SPACING.sm,
+                    marginBottom: SPACING.md,
+                    borderRadius: RADII.md,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    backgroundColor: colors.surface,
+                },
             }),
         [colors],
     )
@@ -92,20 +119,23 @@ export const CharacterSupportFinderSheet = ({
     )
 
     const footer = (
-        <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end" }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, justifyContent: "flex-end" }}>
             <ModalFooterChip label="Close" onPress={onClose} tone="neutral" />
-            <ModalFooterChip
-                label="Apply friend borrow"
-                onPress={handleApply}
-                tone="primary"
-                disabled={!recommendation}
-            />
+            <ModalFooterChip label="Copy deck" onPress={handleCopy} tone="neutral" disabled={!recommendation} />
+            <ModalFooterChip label="Apply friend borrow" onPress={handleApplyBorrow} tone="neutral" disabled={!recommendation} />
+            <ModalFooterChip label="Apply full deck" onPress={handleApplyFullDeck} tone="primary" disabled={!recommendation} />
         </View>
     )
 
     return (
         <SheetModal visible={visible} onRequestClose={onClose} header={header} footer={footer} maxWidth={560} heightFraction={0.85}>
             <ScrollView keyboardShouldPersistTaps="handled">
+                {onEditOwnedInventory && (
+                    <Pressable style={styles.ownedRow} onPress={onEditOwnedInventory} android_ripple={{ color: colors.ripple, foreground: true }}>
+                        <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Owned inventory: {ownedInventory.length} card(s)</Text>
+                        <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: 4 }}>Tap to edit — recommendations prefer owned cards when swapping slots.</Text>
+                    </Pressable>
+                )}
                 <Input value={search} onChangeText={setSearch} placeholder="Search characters..." />
                 <ScrollView style={styles.list} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                     {filtered.map((c) => {

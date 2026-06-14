@@ -100,6 +100,39 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
     /** Cache used to store OCR matching results and avoid redundant string comparisons. */
     private val ocrMatchingCache = mutableMapOf<String, MatchingResult>()
 
+    private data class SupportEventRef(
+        val supportName: String,
+        val eventName: String,
+        val cleanedTitle: String,
+        val options: ArrayList<String>,
+    )
+
+    /** Flattened support events for faster scans than nested JSONObject iteration. */
+    private val supportEventRefs: List<SupportEventRef> = buildSupportEventRefs()
+
+    private fun buildSupportEventRefs(): List<SupportEventRef> {
+        val data = supportEventData ?: return emptyList()
+        val out = ArrayList<SupportEventRef>()
+        data.keys().forEach { supportName ->
+            val supportEvents = data.getJSONObject(supportName)
+            supportEvents.keys().forEach { eventName ->
+                val eventOptionsArray = supportEvents.getJSONArray(eventName)
+                val eventOptions = ArrayList<String>()
+                for (i in 0 until eventOptionsArray.length()) {
+                    eventOptions.add(eventOptionsArray.getString(i))
+                }
+                out.add(SupportEventRef(supportName, eventName, cleanTitle(eventName), eventOptions))
+            }
+        }
+        return out
+    }
+
+    private fun ocrMightMatchEventTitle(ocr: String, cleanedEventTitle: String): Boolean {
+        if (cleanedEventTitle.length < 4 || ocr.length < 2) return true
+        val probe = cleanedEventTitle.take(4)
+        return ocr.contains(probe) || cleanedEventTitle.contains(ocr.take(minOf(ocr.length, 4)))
+    }
+
     /**
      * Store a quadruple of values for training event results.
      *
@@ -257,40 +290,29 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
         }
 
         // Search for the most similar string within the support card event data.
-        supportEventData?.keys()?.forEach { supportName ->
-            val supportEvents = supportEventData.getJSONObject(supportName)
-            supportEvents.keys().forEach { eventName ->
-                // Skip if this is a special event and the name does not match the detected pattern.
-                if (isSpecialEvent && eventName != matchedSpecialEvent) {
-                    return@forEach
-                }
+        for (ref in supportEventRefs) {
+            if (isSpecialEvent && ref.eventName != matchedSpecialEvent) continue
+            if (!ocrMightMatchEventTitle(processedResult, ref.cleanedTitle)) continue
 
-                val eventOptionsArray = supportEvents.getJSONArray(eventName)
-                val eventOptions = ArrayList<String>()
-                for (i in 0 until eventOptionsArray.length()) {
-                    eventOptions.add(eventOptionsArray.getString(i))
-                }
+            val score = stringSimilarityService.score(processedResult, ref.cleanedTitle)
+            if (!hideComparisonResults) {
+                MessageLog.i(
+                    TAG,
+                    "[SUPPORT] ${ref.supportName} \"$processedResult\" vs. \"${ref.cleanedTitle}\" (from \"${ref.eventName}\") confidence: $score",
+                )
+            }
 
-                // Calculate similarity score between standardized OCR result and known event name.
-                val cleanedEventName = cleanTitle(eventName)
-                val score = stringSimilarityService.score(processedResult, cleanedEventName)
-                if (!hideComparisonResults) {
-                    MessageLog.i(TAG, "[SUPPORT] $supportName \"${processedResult}\" vs. \"${cleanedEventName}\" (from \"${eventName}\") confidence: $score")
-                }
+            if (score >= confidence) {
+                confidence = score
+                eventTitle = ref.eventName
+                supportCardTitle = ref.supportName
+                eventOptionRewards = ref.options
+                category = "support"
 
-                if (score >= confidence) {
-                    confidence = score
-                    eventTitle = eventName
-                    supportCardTitle = supportName
-                    eventOptionRewards = eventOptions
-                    category = "support"
-
-                    // Return early if we find a match that meets the minimum confidence criteria.
-                    if (score >= minimumConfidence) {
-                        val result = MatchingResult(confidence, category, eventTitle, supportCardTitle, eventOptionRewards, character)
-                        ocrMatchingCache[ocrResult] = result
-                        return result
-                    }
+                if (score >= minimumConfidence) {
+                    val result = MatchingResult(confidence, category, eventTitle, supportCardTitle, eventOptionRewards, character)
+                    ocrMatchingCache[ocrResult] = result
+                    return result
                 }
             }
         }
