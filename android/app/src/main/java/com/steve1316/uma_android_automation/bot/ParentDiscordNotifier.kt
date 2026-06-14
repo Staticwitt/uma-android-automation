@@ -44,32 +44,34 @@ object ParentDiscordNotifier {
             runCatching { SettingsHelper.getStringSetting("misc", "currentProfileName") }
                 .getOrElse { "" }
 
-        val lines = mutableListOf<String>()
-        lines.add("**Parent farming run started**")
-        lines.add(DiscordMessageFormatter.bullet("Scenario", scenario))
+        val fields = mutableListOf<DiscordEmbedField>()
+        fields.add(DiscordEmbedField("Scenario", scenario, inline = true))
         if (profileName.isNotEmpty()) {
-            lines.add(DiscordMessageFormatter.bullet("Profile", profileName))
+            fields.add(DiscordEmbedField("Profile", profileName, inline = true))
         }
         if (bundleLabel.isNotEmpty()) {
-            lines.add(DiscordMessageFormatter.bullet("Bundle", bundleLabel))
+            fields.add(DiscordEmbedField("Bundle", bundleLabel, inline = false))
         }
         if (goalLabel.isNotEmpty()) {
-            lines.add(DiscordMessageFormatter.bullet("Goal", goalLabel))
+            fields.add(DiscordEmbedField("Goal", goalLabel, inline = false))
         }
         if (logViewerSuffix.isNotEmpty()) {
-            lines.add(logViewerSuffix)
+            fields.add(DiscordEmbedField("Log viewer", logViewerSuffix, inline = false))
         }
 
-        DiscordUtils.queue.add(lines.joinToString("\n"))
+        AppDiscordNotifications.sendEmbed(
+            DiscordEmbedSpec(
+                title = "Parent farming started",
+                description = bundleLabel.ifEmpty { goalLabel.ifEmpty { scenario } },
+                colorRgb = DiscordEmbedColors.YELLOW,
+                fields = fields,
+                footer = MessageLog.getSystemTimeString(),
+            ),
+        )
     }
 
     /**
      * Sends a throttled live status update after the in-game date advances.
-     *
-     * @param game Active game session.
-     * @param trainee Current trainee snapshot.
-     * @param date Current in-game date.
-     * @param dateChanged Whether the turn/date changed this main-screen visit.
      */
     fun maybeSendLiveStatus(game: Game, trainee: Trainee, date: GameDate, dateChanged: Boolean) {
         if (!dateChanged || !isLiveStatusEnabled()) return
@@ -84,22 +86,23 @@ object ParentDiscordNotifier {
 
         lastLiveStatusTurn = date.day
         val includeEpithetDetail = date.bIsFinaleSeason || date.day % (interval * 2) == 0
-        DiscordUtils.queue.add(buildLiveStatusMessage(game, trainee, date, includeEpithetDetail))
+        AppDiscordNotifications.sendEmbed(buildLiveStatusEmbed(game, trainee, date, includeEpithetDetail))
     }
 
-    private fun buildLiveStatusMessage(
+    private fun buildLiveStatusEmbed(
         game: Game,
         trainee: Trainee,
         date: GameDate,
         includeEpithetDetail: Boolean,
-    ): String {
+    ): DiscordEmbedSpec {
         val raceStats = SmartRaceSolverIntegration.snapshotRaceStats()
         val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
-        val runtime = if (game.runStartTimeMillis > 0L && elapsedMs >= 0) {
-            MessageLog.formatElapsedTime(0, elapsedMs)
-        } else {
-            "—"
-        }
+        val runtime =
+            if (game.runStartTimeMillis > 0L && elapsedMs >= 0) {
+                MessageLog.formatElapsedTime(0, elapsedMs)
+            } else {
+                "—"
+            }
 
         val bundleLabel =
             runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingBundleLabel") }
@@ -108,48 +111,55 @@ object ParentDiscordNotifier {
             runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetLabel") }
                 .getOrElse { "" }
 
-        val lines = mutableListOf<String>()
-        lines.add("**Parent farming — live update**")
-        lines.add(DiscordMessageFormatter.bullet("Turn", "${date.day} · $date"))
+        val fields = mutableListOf<DiscordEmbedField>()
+        fields.add(DiscordEmbedField("Turn", "${date.day} · $date", inline = false))
         if (trainee.name.isNotEmpty()) {
-            lines.add(DiscordMessageFormatter.bullet("Trainee", trainee.name))
+            fields.add(DiscordEmbedField("Trainee", trainee.name, inline = true))
         }
         if (bundleLabel.isNotEmpty() || goalLabel.isNotEmpty()) {
             val preset = listOf(bundleLabel, goalLabel).filter { it.isNotEmpty() }.joinToString(" · ")
-            lines.add(DiscordMessageFormatter.bullet("Preset", preset))
+            fields.add(DiscordEmbedField("Preset", preset, inline = false))
         }
-        lines.add(
-            DiscordMessageFormatter.bullet(
+        fields.add(
+            DiscordEmbedField(
                 "Fans",
                 "${trainee.fans} (${trainee.fanCountClass.name.replace('_', ' ')})",
+                inline = true,
             ),
         )
-        lines.add(DiscordMessageFormatter.bullet("Races", "${raceStats.wins}W / ${raceStats.losses}L"))
-        lines.add(DiscordMessageFormatter.bullet("Runtime", runtime))
+        fields.add(DiscordEmbedField("Races", "${raceStats.wins}W / ${raceStats.losses}L", inline = true))
+        fields.add(DiscordEmbedField("Runtime", runtime, inline = true))
 
         if (includeEpithetDetail) {
             val snapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(game.scenario)
             if (snapshot != null) {
                 val targetTotal = snapshot.completedTargets.size + snapshot.incompleteTargets.size
                 if (targetTotal > 0) {
-                    lines.add(
-                        DiscordMessageFormatter.bullet(
+                    fields.add(
+                        DiscordEmbedField(
                             "Goals",
                             "${snapshot.completedTargets.size}/$targetTotal targets complete",
+                            inline = true,
                         ),
                     )
                 }
                 if (snapshot.completedTargets.isNotEmpty()) {
-                    lines.add(DiscordMessageFormatter.plainBullet("Done: ${snapshot.completedTargets.joinToString(", ")}"))
+                    fields.add(DiscordEmbedField("Done", snapshot.completedTargets.joinToString(", "), inline = false))
                 }
                 if (snapshot.incompleteTargets.isNotEmpty()) {
                     val shown = snapshot.incompleteTargets.take(4)
                     val suffix = if (snapshot.incompleteTargets.size > shown.size) "…" else ""
-                    lines.add(DiscordMessageFormatter.plainBullet("Remaining: ${shown.joinToString(", ")}$suffix"))
+                    fields.add(DiscordEmbedField("Remaining", shown.joinToString(", ") + suffix, inline = false))
                 }
             }
         }
 
-        return lines.joinToString("\n")
+        return DiscordEmbedSpec(
+            title = "Parent farming · live update",
+            description = trainee.name.ifEmpty { null },
+            colorRgb = DiscordEmbedColors.BLURPLE,
+            fields = fields,
+            footer = MessageLog.getSystemTimeString(),
+        )
     }
 }

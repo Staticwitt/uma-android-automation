@@ -218,6 +218,124 @@ object ParentRunSummary {
         return lines.filter { it.isNotEmpty() }.joinToString("\n\n")
     }
 
+    /** Structured embed for Discord rich notifications at career end. */
+    fun buildDiscordEmbed(input: ParentRunSummaryInput): DiscordEmbedSpec {
+        val trainee = input.trainee
+        val targetTotal = input.completedTargetEpithets.size + input.incompleteTargetEpithets.size
+        val color =
+            when {
+                targetTotal == 0 -> DiscordEmbedColors.BLURPLE
+                input.incompleteTargetEpithets.isEmpty() -> DiscordEmbedColors.GREEN
+                input.completedTargetEpithets.isNotEmpty() -> DiscordEmbedColors.YELLOW
+                else -> DiscordEmbedColors.RED
+            }
+
+        val description =
+            buildString {
+                if (trainee.name.isNotEmpty()) {
+                    append(trainee.name)
+                }
+                if (input.scenario.isNotEmpty()) {
+                    if (isNotEmpty()) append(" · ")
+                    append(input.scenario)
+                }
+            }.ifEmpty { null }
+
+        val fields = mutableListOf<DiscordEmbedField>()
+        if (input.elapsedMs != null && input.elapsedMs >= 0) {
+            fields.add(DiscordEmbedField("Runtime", MessageLog.formatElapsedTime(0, input.elapsedMs), inline = true))
+        }
+        if (input.profileName.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Profile", input.profileName, inline = true))
+        }
+        if (input.bundleLabel.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Bundle", input.bundleLabel, inline = true))
+        }
+        if (input.goalPresetLabel.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Goal preset", input.goalPresetLabel, inline = true))
+        }
+        fields.add(DiscordEmbedField("Character", input.characterPreset.ifEmpty { "(none)" }, inline = true))
+        fields.add(DiscordEmbedField("Spark strategy", input.sparkStrategy, inline = true))
+        fields.add(
+            DiscordEmbedField(
+                "Solver",
+                "fanWeight=${formatDecimal(input.fanWeight)}, fanFloor=${input.minimumFanTarget}, " +
+                    "targetEpithet×${formatDecimal(input.targetEpithetMultiplier)}, gap=${input.minimumRaceGapTurns} turns",
+                inline = false,
+            ),
+        )
+        fields.add(
+            DiscordEmbedField(
+                "Races",
+                "${input.raceStats.wins} wins · ${input.raceStats.losses} losses",
+                inline = true,
+            ),
+        )
+        fields.add(
+            DiscordEmbedField(
+                "Fans",
+                "${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})",
+                inline = true,
+            ),
+        )
+        fields.add(DiscordEmbedField("Skill points", trainee.skillPoints.toString(), inline = true))
+        fields.add(DiscordEmbedField("Stats", trainee.stats.toString(), inline = false))
+        fields.add(DiscordEmbedField("Target epithets", formatTargetEpithets(input.targetEpithets).removePrefix("Target epithets: "), inline = false))
+        if (input.completedTargetEpithets.isNotEmpty()) {
+            fields.add(
+                DiscordEmbedField(
+                    "Completed",
+                    input.completedTargetEpithets.joinToString(", "),
+                    inline = false,
+                ),
+            )
+        }
+        if (input.incompleteTargetEpithets.isNotEmpty()) {
+            fields.add(
+                DiscordEmbedField(
+                    "Incomplete",
+                    input.incompleteTargetEpithets.joinToString(", "),
+                    inline = false,
+                ),
+            )
+        }
+        if (input.extraCompletedEpithets.isNotEmpty()) {
+            val shown = input.extraCompletedEpithets.take(8)
+            val suffix = if (input.extraCompletedEpithets.size > shown.size) "…" else ""
+            fields.add(
+                DiscordEmbedField(
+                    "Other epithets",
+                    shown.joinToString(", ") + suffix,
+                    inline = false,
+                ),
+            )
+        }
+        val sparkText = formatSparkPicks(input.sparkPicks).joinToString("\n")
+        if (sparkText.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Inheritance sparks", sparkText, inline = false))
+        }
+        fields.add(DiscordEmbedField("Surface", formatSurfaceAptitudes(trainee).removePrefix("Surface: "), inline = true))
+        fields.add(DiscordEmbedField("Distance", formatDistanceAptitudes(trainee).removePrefix("Distance: "), inline = true))
+        fields.add(DiscordEmbedField("Style", formatStyleAptitudes(trainee).removePrefix("Style: "), inline = true))
+        if (trainee.currentPositiveStatuses.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Positive", trainee.currentPositiveStatuses.joinToString(", "), inline = false))
+        }
+        if (trainee.currentNegativeStatuses.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Negative", trainee.currentNegativeStatuses.joinToString(", "), inline = false))
+        }
+
+        return DiscordEmbedSpec(
+            title = "Parent run complete",
+            description = description,
+            colorRgb = color,
+            fields = fields,
+            footer = MessageLog.getSystemTimeString(),
+        )
+    }
+
+    fun discordEmbedFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): DiscordEmbedSpec =
+        buildDiscordEmbed(inputFromSettings(trainee, scenario, elapsedMs))
+
     /** Writes the summary to the message log with a visible banner. */
     fun logSummary(summary: String) {
         MessageLog.i(TAG, LOG_BANNER)

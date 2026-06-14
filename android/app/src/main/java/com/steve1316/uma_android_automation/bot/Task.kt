@@ -6,7 +6,8 @@ import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.DialogHandler
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
-import com.steve1316.uma_android_automation.bot.DiscordMessageFormatter
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
+import com.steve1316.uma_android_automation.bot.DiscordEmbedService
 import com.steve1316.uma_android_automation.bot.ParentRunSummary
 
 /** The possible result codes for a task's execution. */
@@ -128,20 +129,25 @@ abstract class Task(game: Game) : DialogHandler(game) {
         }
 
         if (DiscordUtils.enableDiscordNotifications) {
+            val customEmbed = game.taskEndDiscordEmbed
             val customSummary = game.taskEndDiscordMessage
-            if (customSummary != null) {
-                for (chunk in ParentRunSummary.chunkForDiscord(customSummary)) {
-                    DiscordUtils.queue.add(chunk)
+            when {
+                customEmbed != null -> {
+                    AppDiscordNotifications.sendEmbed(customEmbed)
                 }
-            } else {
-                val formatted =
-                    if (result is TaskResult.Success) {
-                        DiscordMessageFormatter.success(discordMessage)
-                    } else {
-                        DiscordMessageFormatter.error(discordMessage)
+                customSummary != null -> {
+                    for (chunk in ParentRunSummary.chunkForDiscord(customSummary)) {
+                        AppDiscordNotifications.sendPlain(chunk)
                     }
-                DiscordUtils.queue.add(formatted)
+                }
+                result is TaskResult.Success -> {
+                    AppDiscordNotifications.sendSuccess(discordMessage)
+                }
+                else -> {
+                    AppDiscordNotifications.sendError(discordMessage)
+                }
             }
+            DiscordEmbedService.flushBlocking()
             // Wait to ensure the Discord message queue is processed.
             game.wait(1.0, skipWaitingForLoading = true)
         }

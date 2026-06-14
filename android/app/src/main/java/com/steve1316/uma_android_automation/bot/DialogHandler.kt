@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import android.util.Log
 import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.components.ButtonRaceRecommendationsCenterStage
 import com.steve1316.uma_android_automation.components.Checkbox
@@ -112,7 +113,7 @@ open class DialogHandler(val game: Game) {
 
                 if (game.connectionErrorRetryAttempts >= game.maxConnectionErrorRetryAttempts) {
                     if (DiscordUtils.enableDiscordNotifications) {
-                        DiscordUtils.queue.add("```diff\n- ${MessageLog.getSystemTimeString()} Max connection error retry attempts reached. Stopping bot...\n```")
+                        AppDiscordNotifications.sendError("Max connection error retry attempts reached. Stopping bot...")
                     }
                     throw InterruptedException("Max connection error retry attempts reached. Stopping bot...")
                 }
