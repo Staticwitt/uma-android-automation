@@ -47,6 +47,7 @@ object SupportCardBorrower {
         if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
 
         borrowAttemptedThisRun = true
+        logRecommendedOwnedDeck()
         if (ButtonBorrowSupportCard.click(game.imageUtils)) {
             MessageLog.i(TAG, "Opened Borrow Card dialog.")
             game.wait(1.0)
@@ -161,5 +162,29 @@ object SupportCardBorrower {
                 }
             }
         }.getOrElse { emptyList() }
+    }
+
+    private fun readRecommendedOwnedDeck(): List<String> {
+        val json = SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards")
+        if (json.isEmpty()) return emptyList()
+        return runCatching {
+            val array = JSONArray(json)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val value = array.optString(i)
+                    if (value.isNotBlank()) add(value)
+                }
+            }
+        }.getOrElse { emptyList() }
+    }
+
+  /** Logs saved owned-slot recommendations; career deck selection is still manual. */
+    private fun logRecommendedOwnedDeck() {
+        val owned = readRecommendedOwnedDeck()
+        if (owned.isEmpty()) return
+        MessageLog.i(
+            TAG,
+            "Recommended owned support slots (equip manually before borrow): ${owned.joinToString(" · ")}",
+        )
     }
 }

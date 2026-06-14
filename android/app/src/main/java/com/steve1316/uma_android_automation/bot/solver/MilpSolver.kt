@@ -482,16 +482,6 @@ object MilpSolver {
          * @param f Filter predicate.
          * @return True if every non-null/non-empty field of [f] accepts [c].
          */
-        private fun matchesFilter(c: RaceCandidate, f: EpithetFilter): Boolean {
-            if (f.terrain != null && c.terrain != f.terrain) return false
-            if (f.grade != null && c.grade != f.grade) return false
-            if (f.gradeAtLeastOpen && c.grade !in GRADED_OR_OPEN) return false
-            if (f.gradedOnly && c.grade !in GRADED) return false
-            if (f.distanceTypes.isNotEmpty() && c.distanceType !in f.distanceTypes) return false
-            if (f.raceTracks.isNotEmpty() && c.raceTrack !in f.raceTracks) return false
-            if (f.nameContains != null && !c.name.contains(f.nameContains, ignoreCase = true)) return false
-            if (f.nameContainsCountry && !EpithetFilters.nameContainsCountry(c.name)) return false
-            return true
-        }
+        private fun matchesFilter(c: RaceCandidate, f: EpithetFilter): Boolean = EpithetFilters.raceMatchesFilter(c, f)
     }
 }

@@ -32,7 +32,7 @@ The script writes its output into [`src/data/`](../../src/data/) regardless of t
 2.  **Characters**: Scrapes character-specific training events and "After a Race" events.
 3.  **Support Cards**: Scrapes support card training events and effects.
 4.  **Races**: Scrapes race information and calculates turn numbers for the in-game calendar.
-5.  **Epithets**: Scrapes nickname rewards and conditions; preserves the curated `dependsOn` and `matchers` fields used by the Smart Race Solver.
+5.  **Epithets**: Scrapes nickname rewards and conditions; regenerates `matchers` via `derive_matchers` in the scraper (bullets are preserved from GameTora).
 6.  **Character Presets**: Scrapes per-character distance and surface aptitudes used by the Smart Race Solver as starting aptitude defaults (`characterPresets.json`). Selectors are best-effort and may need updating if gametora reshuffles its CSS modules.
 
 > [!NOTE]

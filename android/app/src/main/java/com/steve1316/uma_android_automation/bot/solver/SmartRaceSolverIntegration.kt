@@ -517,31 +517,10 @@ object SmartRaceSolverIntegration {
             is EpithetMatcher.WinRaceTimes -> matcher.name == raceName
             is EpithetMatcher.WinAnyOf -> raceName in matcher.names
             is EpithetMatcher.WinAtLeast -> raceName in matcher.names
-            is EpithetMatcher.WinCount -> race != null && raceMatchesFilter(race, matcher.filter)
+            is EpithetMatcher.WinCount -> race != null && EpithetFilters.raceMatchesFilter(race, matcher.filter)
             is EpithetMatcher.EpithetAnyOf -> false
             is EpithetMatcher.EpithetAll -> false
         }
-
-    /**
-     * Mirrors `EpithetTracker.matchesFilter` and `MilpSolver.matchesFilter` for the win-progress
-     * log. Keep the three copies in sync - visibility on the originals is `private` so they
-     * cannot be called from here directly.
-     *
-     * @param race Race to test.
-     * @param filter Filter predicate.
-     * @return True when every non-null / non-empty field of [filter] accepts [race].
-     */
-    private fun raceMatchesFilter(race: RaceCandidate, filter: EpithetFilter): Boolean {
-        if (filter.terrain != null && race.terrain != filter.terrain) return false
-        if (filter.grade != null && race.grade != filter.grade) return false
-        if (filter.gradeAtLeastOpen && race.grade.ordinal < RaceGrade.OP.ordinal) return false
-        if (filter.gradedOnly && race.grade !in setOf(RaceGrade.G1, RaceGrade.G2, RaceGrade.G3)) return false
-        if (filter.distanceTypes.isNotEmpty() && race.distanceType !in filter.distanceTypes) return false
-        if (filter.raceTracks.isNotEmpty() && race.raceTrack !in filter.raceTracks) return false
-        if (filter.nameContains != null && !race.name.contains(filter.nameContains, ignoreCase = true)) return false
-        if (filter.nameContainsCountry && !EpithetFilters.nameContainsCountry(race.name)) return false
-        return true
-    }
 
     /**
      * Returns the (current, required) tally this matcher contributes toward its epithet's
@@ -578,7 +557,7 @@ object SmartRaceSolverIntegration {
                     state.raceHistory
                         .count { win ->
                             val race = state.racesByTurn[win.turnNumber]?.firstOrNull { it.name == win.name }
-                            race != null && raceMatchesFilter(race, matcher.filter)
+                            race != null && EpithetFilters.raceMatchesFilter(race, matcher.filter)
                         }.coerceAtMost(matcher.count)
                 have to matcher.count
             }
@@ -615,7 +594,19 @@ object SmartRaceSolverIntegration {
      *   not influence this turn (feature disabled, no on-screen candidates, missing data, the
      *   solver picked Train/Rest, or its chosen race is not on screen).
      */
-    fun pickRace(currentTurn: TurnNumber, scenario: String, candidates: List<RaceData>): RaceData? {
+    fun pickRace(currentTurn: TurnNumber, scenario: String, candidates: List<RaceData>): RaceData? =
+        selectOnScreenRace(currentTurn, scenario, candidates)
+
+    /**
+     * Resolves the solver's planned race for [currentTurn] against on-screen [candidates] using a single schedule solve.
+     * Returns null when the solver recommends Train/Rest or its race is not among [candidates].
+     *
+     * @param currentTurn The bot's current turn number.
+     * @param scenario Active scenario name from `settings.general.scenario`.
+     * @param candidates On-screen races already matched via [Racing.lookupRaceInDatabase].
+     * @return The chosen [RaceData], or null when the solver cannot race this turn.
+     */
+    fun selectOnScreenRace(currentTurn: TurnNumber, scenario: String, candidates: List<RaceData>): RaceData? {
         if (!SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver")) return null
         if (candidates.isEmpty()) return null
 
@@ -637,10 +628,16 @@ object SmartRaceSolverIntegration {
             MessageLog.i(TAG, "Solver recommends a non-race decision for turn $currentTurn ($decision); skipping.")
             return null
         }
-        // Map the solver's chosen race key back to one of the on-screen candidates.
-        val pick = candidates.firstOrNull { rd -> rd.name == decision.raceKey || rd.name == raceNameFromKey(decision.raceKey) }
+
+        val pick =
+            candidates.firstOrNull { rd ->
+                rd.name == decision.raceKey || rd.name == raceNameFromKey(decision.raceKey)
+            }
         if (pick == null) {
-            MessageLog.i(TAG, "Solver chose ${decision.raceKey} but it is not on screen; falling through.")
+            MessageLog.i(
+                TAG,
+                "Solver chose ${decision.raceKey} for turn $currentTurn but it is not on screen; falling through.",
+            )
         } else {
             MessageLog.i(TAG, "Solver picked ${pick.name} for turn $currentTurn (projected epithets: ${schedule.projectedEpithets}).")
         }

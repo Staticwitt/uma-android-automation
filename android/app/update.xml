@@ -1,27 +1,32 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.8</latestVersion>
-    <latestVersionCode>88</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.8</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.8/v5.8.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.8.9</latestVersion>
+    <latestVersionCode>89</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.9</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.9/v5.8.9-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.8 - Follow-up solver + support recommendation polish
+v5.8.9 - Parent fan fallback, deck optimizer, solver polish
 
 Smart Race Solver
 ---
-- Soft fallback when planned race is missing on screen (pick among visible races)
-- Incremental contribution JSON; lighter win logging; manual-locks cache
-- Calendar snapshot broadcasts on coroutines; clear caches on aptitude replan
+- Parent farming fan races when SRS plans Train/Rest (standard racing fallback)
+- Single-pass on-screen race selection via selectOnScreenRace
+- Shared EpithetFilters.raceMatchesFilter across solver + reachability
 
 Support recommendations
 ---
-- Owned support inventory with deck swaps from your collection
-- Apply full deck, copy deck, and edit inventory on Solver + Parent Farming
-- Solver preview persisted in AsyncStorage for faster reopen
+- Inventory-aware deck optimizer (type-balanced four-subset search)
+- Missing-owned warnings, source badges, full borrow list in UI
+- Apply full deck syncs owned inventory; owned slots logged at career borrow
+
+Parent Farming
+---
+- Drift warnings for borrow order, solver weights, empty owned inventory
 
 Bot runtime
 ---
-- Support borrow OCR pre-filter; faster training event title matching
+- Character training event OCR prefilter (flattened index)
+- Solver preview cache includes game data bundle revision
 
     </releaseNotes>
   </update>

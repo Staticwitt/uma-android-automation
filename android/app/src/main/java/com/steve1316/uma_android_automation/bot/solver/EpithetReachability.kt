@@ -224,7 +224,7 @@ internal object EpithetReachability {
                 if (turn < currentTurn) 0
                 else races.count { race ->
                     race.name !in lostRaceNames &&
-                        raceMatchesFilter(race, filter) &&
+                        EpithetFilters.raceMatchesFilter(race, filter) &&
                         !wins.any { it.turnNumber == turn && it.name == race.name }
                 }
             }
@@ -252,18 +252,6 @@ internal object EpithetReachability {
         val race =
             racesByTurn[win.turnNumber]?.firstOrNull { it.key == win.raceKey || it.name == win.name }
                 ?: return false
-        return raceMatchesFilter(race, filter)
-    }
-
-    private fun raceMatchesFilter(race: RaceCandidate, filter: EpithetFilter): Boolean {
-        if (filter.terrain != null && race.terrain != filter.terrain) return false
-        if (filter.grade != null && race.grade != filter.grade) return false
-        if (filter.gradeAtLeastOpen && race.grade.ordinal < com.steve1316.uma_android_automation.types.RaceGrade.OP.ordinal) return false
-        if (filter.gradedOnly && race.grade !in setOf(com.steve1316.uma_android_automation.types.RaceGrade.G1, com.steve1316.uma_android_automation.types.RaceGrade.G2, com.steve1316.uma_android_automation.types.RaceGrade.G3)) return false
-        if (filter.distanceTypes.isNotEmpty() && race.distanceType !in filter.distanceTypes) return false
-        if (filter.raceTracks.isNotEmpty() && race.raceTrack !in filter.raceTracks) return false
-        if (filter.nameContains != null && !race.name.contains(filter.nameContains, ignoreCase = true)) return false
-        if (filter.nameContainsCountry && !EpithetFilters.COUNTRY_NAMES.any { race.name.contains(it, ignoreCase = true) }) return false
-        return true
+        return EpithetFilters.raceMatchesFilter(race, filter)
     }
 }

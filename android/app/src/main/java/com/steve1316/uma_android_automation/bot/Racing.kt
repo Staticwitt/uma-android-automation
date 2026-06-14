@@ -2103,7 +2103,16 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             val success =
                 if (useSmartRacing && campaign.date.year != DateYear.JUNIOR) {
                     MessageLog.v(TAG, "[RACE] Using Smart Race Solver for Year ${campaign.date.year}.")
-                    processSmartRacing()
+                    val smartSuccess = processSmartRacing()
+                    if (!smartSuccess && shouldFallbackToParentFanRacing()) {
+                        MessageLog.i(
+                            TAG,
+                            "[RACE] Parent farming fan fallback: Smart Race Solver had no on-screen race for turn ${campaign.date.day}.",
+                        )
+                        processStandardRacing()
+                    } else {
+                        smartSuccess
+                    }
                 } else {
                     if (enableSmartRaceSolver && !hasFanRequirement && !hasTrophyRequirement) {
                         MessageLog.i(TAG, "[RACE] Smart Race Solver conditions not met, using traditional racing logic...")
@@ -2188,53 +2197,16 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             return false
         }
 
-        // Peek the Solver's planned race up front so we can short-circuit OCR as soon as we find it on screen, instead of OCR-scanning every candidate first.
-        val plannedKey =
-            SmartRaceSolverIntegration.peekRaceKeyForTurn(currentTurn = campaign.date.day, scenario = game.scenario)
-
-        if (plannedKey != null) {
-            MessageLog.i(TAG, "[RACE] Smart Race Solver wants \"$plannedKey\" for turn ${campaign.date.day} — scanning until matched.")
-            for (location in doublePredictionLocations) {
-                val raceName = game.imageUtils.extractRaceName(location)
-                val raceDataList = lookupRaceInDatabase(campaign.date.day, raceName)
-                if (raceDataList.isEmpty()) {
-                    MessageLog.i(TAG, "[RACE] ✗ No match found in database for \"$raceName\".")
-                    continue
-                }
-                raceDataList.forEach { raceData ->
-                    MessageLog.i(TAG, "[RACE] ✓ Matched in database: ${raceData.name} (Grade: ${raceData.grade}, Fans: ${raceData.fans}, Track Surface: ${raceData.trackSurface}).")
-                }
-                val match = raceDataList.firstOrNull { SmartRaceSolverIntegration.isRaceKeyMatch(it, plannedKey) }
-                if (match != null) {
-                    MessageLog.v(TAG, "[RACE] Smart Race Solver selected \"${match.name}\". Selecting it.")
-                    SmartRaceSolverIntegration.markPendingRace(
-                        raceKey = match.name,
-                        raceName = match.name,
-                        classYear = campaign.date.year.name,
-                        turnNumber = campaign.date.day,
-                    )
-                    game.tap(location.x, location.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
-                    lastRaceGrade = match.grade
-                    lastRaceFans = match.fans
-                    lastRaceDistance = match.trackDistance
-                    lastRaceIsRival = match.isRival
-                    return true
-                }
-            }
-            MessageLog.i(
-                TAG,
-                "[RACE] Smart Race Solver's planned race \"$plannedKey\" was not found among on-screen candidates; falling back to on-screen pickRace.",
-            )
-        }
-
-        // When the solver chose Train/Rest, or the planned race was not on screen, scan visible races and let pickRace choose.
         val currentRaces =
             doublePredictionLocations.flatMap { location ->
                 val raceName = game.imageUtils.extractRaceName(location)
                 val raceDataList = lookupRaceInDatabase(campaign.date.day, raceName)
                 if (raceDataList.isNotEmpty()) {
                     raceDataList.forEach { raceData ->
-                        MessageLog.i(TAG, "[RACE] ✓ Matched in database: ${raceData.name} (Grade: ${raceData.grade}, Fans: ${raceData.fans}, Track Surface: ${raceData.trackSurface}).")
+                        MessageLog.i(
+                            TAG,
+                            "[RACE] ✓ Matched in database: ${raceData.name} (Grade: ${raceData.grade}, Fans: ${raceData.fans}, Track Surface: ${raceData.trackSurface}).",
+                        )
                     }
                     raceDataList
                 } else {
@@ -2248,7 +2220,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         }
 
         val solverPick =
-            SmartRaceSolverIntegration.pickRace(
+            SmartRaceSolverIntegration.selectOnScreenRace(
                 currentTurn = campaign.date.day,
                 scenario = game.scenario,
                 candidates = currentRaces,
@@ -2277,6 +2249,16 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         lastRaceDistance = solverPick.trackDistance
         lastRaceIsRival = solverPick.isRival
         return true
+    }
+
+    /**
+     * Parent-farming fan interval may mark a turn race-eligible when SRS plans Train/Rest.
+     * Fall back to standard fan racing only when SRS has no planned race for this turn.
+     */
+    private fun shouldFallbackToParentFanRacing(): Boolean {
+        if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) return false
+        if (!enableFarmingFans) return false
+        return SmartRaceSolverIntegration.peekRaceKeyForTurn(campaign.date.day, game.scenario) == null
     }
 
     /**

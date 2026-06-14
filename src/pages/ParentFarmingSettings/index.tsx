@@ -221,6 +221,7 @@ const ParentFarmingSettings = () => {
                         ...prev.racing,
                         supportBorrowPreferredCards: JSON.stringify(borrowOrder),
                         supportDeckOwnedCards: JSON.stringify(ownedCards),
+                        ownedSupportCards: JSON.stringify(ownedCards),
                         smartRaceSolverCharacterPreset: characterName,
                         enableAutoBorrowSupportCard: true,
                         ...(preset
@@ -417,8 +418,25 @@ const ParentFarmingSettings = () => {
                                                         >
                                                             <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply full deck</Text>
                                                         </Pressable>
-                                                        <Pressable
-                                                            onPress={() => copyToClipboard(formatSupportDeckClipboard(activeCharacterSupportRecommendation))}
+                                                    <Pressable
+                                                        onPress={() =>
+                                                            applyFriendBorrowFromRecommendation(
+                                                                activeCharacterSupportRecommendation.characterName,
+                                                                activeCharacterSupportRecommendation.friendBorrowOrder,
+                                                            )
+                                                        }
+                                                        style={{
+                                                            paddingVertical: SPACING.sm,
+                                                            paddingHorizontal: SPACING.md,
+                                                            borderRadius: RADII.md,
+                                                            borderWidth: 1,
+                                                            borderColor: colors.borderHair,
+                                                        }}
+                                                    >
+                                                        <Text style={{ ...TYPE.caption, color: colors.text }}>Apply friend borrow</Text>
+                                                    </Pressable>
+                                                    <Pressable
+                                                        onPress={() => copyToClipboard(formatSupportDeckClipboard(activeCharacterSupportRecommendation))}
                                                             style={{
                                                                 paddingVertical: SPACING.sm,
                                                                 paddingHorizontal: SPACING.md,

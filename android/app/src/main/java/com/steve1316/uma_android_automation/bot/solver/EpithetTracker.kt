@@ -158,15 +158,6 @@ object EpithetTracker {
             state.racesByTurn[win.turnNumber]
                 ?.firstOrNull { it.key == win.raceKey || it.name == win.name }
                 ?: return false
-
-        if (filter.terrain != null && candidate.terrain != filter.terrain) return false
-        if (filter.grade != null && candidate.grade != filter.grade) return false
-        if (filter.gradeAtLeastOpen && candidate.grade.ordinal < RaceGrade.OP.ordinal) return false
-        if (filter.gradedOnly && candidate.grade !in setOf(RaceGrade.G1, RaceGrade.G2, RaceGrade.G3)) return false
-        if (filter.distanceTypes.isNotEmpty() && candidate.distanceType !in filter.distanceTypes) return false
-        if (filter.raceTracks.isNotEmpty() && candidate.raceTrack !in filter.raceTracks) return false
-        if (filter.nameContains != null && !candidate.name.contains(filter.nameContains, ignoreCase = true)) return false
-        if (filter.nameContainsCountry && !EpithetFilters.nameContainsCountry(candidate.name)) return false
-        return true
+        return EpithetFilters.raceMatchesFilter(candidate, filter)
     }
 }
