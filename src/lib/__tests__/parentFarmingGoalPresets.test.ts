@@ -1,10 +1,10 @@
 import type { Settings } from "../../context/BotStateContext"
 import {
-    applyParentFarmingGoalPreset,
     applyParentFarmingGoalPresetToRacing,
     applyParentFarmingGoalPresetToTraining,
     PARENT_FARMING_GOAL_PRESETS,
 } from "../parentFarmingGoalPresets"
+import { applyParentFarmingGoalPreset } from "../parentFarmingResolver"
 
 const createRacingSettings = (): Settings["racing"] =>
     ({

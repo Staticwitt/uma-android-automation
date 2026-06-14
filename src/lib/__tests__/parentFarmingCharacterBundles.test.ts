@@ -1,11 +1,11 @@
 import type { Settings } from "../../context/BotStateContext"
 import {
-    applyParentFarmingCharacterBundle,
     aptitudesFromCharacterPreset,
     buildAllowedEpithetNamesForParentBundle,
     findCharacterPresetEntry,
     findParentFarmingCharacterBundle,
 } from "../parentFarmingCharacterBundles"
+import { applyParentFarmingCharacterBundle } from "../parentFarmingResolver"
 
 const createSettings = (): Settings =>
     ({

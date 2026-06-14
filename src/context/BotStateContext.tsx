@@ -85,6 +85,8 @@ export interface Settings {
         parentFarmingGoalPresetLabel: string
         parentFarmingBundleKey: string
         parentFarmingBundleLabel: string
+        /** Bumped when preset definitions change; triggers re-resolve on settings load. */
+        parentFarmingResolverRevision: number
     }
 
     // Skill Settings
@@ -293,6 +295,7 @@ export const defaultSettings: Settings = {
         parentFarmingGoalPresetLabel: "",
         parentFarmingBundleKey: "",
         parentFarmingBundleLabel: "",
+        parentFarmingResolverRevision: 0,
         smartRaceSolverWeights: JSON.stringify({
             raceValue: 1.0,
             epithetValue: 1.0,

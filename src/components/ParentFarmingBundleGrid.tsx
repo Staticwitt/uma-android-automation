@@ -2,12 +2,12 @@ import { useMemo } from "react"
 import { View, Text, Pressable, StyleSheet } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import {
-    applyParentFarmingCharacterBundle,
     countEligibleBundleTargetEpithets,
-    findParentFarmingGoalPreset,
     PARENT_FARMING_CHARACTER_BUNDLES,
     type ParentFarmingCharacterBundle,
 } from "../lib/parentFarmingCharacterBundles"
+import { findParentFarmingGoalPreset } from "../lib/parentFarmingGoalPresets"
+import { applyParentFarmingCharacterBundle } from "../lib/parentFarmingResolver"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"

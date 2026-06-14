@@ -1,4 +1,6 @@
 import { logWithTimestamp } from "./logger"
+import { PARENT_FARMING_RESOLVER_REVISION } from "./parentFarmingConstants"
+import { refreshParentFarmingSettings } from "./parentFarmingPreset"
 
 /**
  * Deep merges two objects, preserving nested structure.
@@ -208,6 +210,19 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             delete scenarioOverrides.trackblazerLowMainStatGainItemFloor
             anyMigrated = true
             logWithTimestamp("[SettingsManager] Migrated trackblazerLowMainStatGainItemFloor to trackblazerSkipBadMoodItemsBelowGain.")
+        }
+    }
+
+    // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.
+    const racing = migratedSettings.racing as any
+    if (racing?.enableParentFarmingMode) {
+        const revision = typeof racing.parentFarmingResolverRevision === "number" ? racing.parentFarmingResolverRevision : 0
+        if (revision < PARENT_FARMING_RESOLVER_REVISION) {
+            migratedSettings = refreshParentFarmingSettings(migratedSettings)
+            anyMigrated = true
+            logWithTimestamp(
+                `[SettingsManager] Re-resolved parent farming settings (revision ${revision} -> ${PARENT_FARMING_RESOLVER_REVISION}).`,
+            )
         }
     }
 
