@@ -574,6 +574,22 @@ abstract class Campaign(game: Game) : Task(game) {
                 }
             }
 
+            "auto_select" -> {
+                if (LegacyParentSelector.isEnabled()) {
+                    LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+
+            "confirm_auto_select" -> {
+                if (LegacyParentSelector.isEnabled()) {
+                    LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+
             "umamusume_details" -> {
                 val prevRunningStyle = trainee.runningStyle
                 trainee.updateAptitudes(game.imageUtils)
@@ -2077,6 +2093,10 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
+                return null
+            }
+
+            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null
             }
 
