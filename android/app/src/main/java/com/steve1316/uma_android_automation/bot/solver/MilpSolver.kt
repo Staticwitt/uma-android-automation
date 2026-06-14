@@ -289,7 +289,7 @@ object MilpSolver {
                 val byKey = state.racesByTurn[t]?.associateBy { it.key } ?: continue
                 for ((key, v) in races) {
                     val race = byKey[key] ?: continue
-                    var w = ScoringFunctions.raceValue(race, state.weights)
+                    var w = ScoringFunctions.raceValue(race, state.weights, state.currentFans)
                     if (t in state.summerBlockTurns) w -= state.weights.summerPenalty
                     v.weight(w)
                 }

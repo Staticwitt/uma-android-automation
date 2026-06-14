@@ -344,6 +344,18 @@ const searchConfig: SearchOption[] = [
         page: "RacingSettings",
     },
     {
+        id: "parent-farming-goal-presets",
+        title: "Parent Goal Presets",
+        description: "Quickly add common parent-farming target epithets, solver weights, and training bias.",
+        page: "RacingSettings",
+    },
+    {
+        id: "minimum-fan-target",
+        title: "Solver Fan Floor",
+        description: "When current fans meet this target, fan-weighted race scoring stops so the bot prefers training.",
+        page: "RacingSettings",
+    },
+    {
         id: "parent-farming-character-bundles",
         title: "Character + Goal Bundles",
         description: "One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias.",
@@ -917,6 +929,20 @@ const searchConfig: SearchOption[] = [
         description: "Your Discord user ID. Enable Developer Mode in Discord settings, then click your name and select 'Copy User ID'.",
         page: "DiscordSettings",
         parentId: "enableDiscordNotifications",
+    },
+    {
+        id: "enableDiscordLiveStatus",
+        title: "Parent Farming Live Status",
+        description: "Send periodic Discord updates during parent farming runs (fans, goals, race record).",
+        page: "DiscordSettings",
+        parentId: "enableDiscordNotifications",
+    },
+    {
+        id: "discordLiveStatusTurnInterval",
+        title: "Live Status Turn Interval",
+        description: "Send a live status DM every N in-game turns during parent farming runs.",
+        page: "DiscordSettings",
+        parentId: "enableDiscordLiveStatus",
     },
 
     // ============================================================

@@ -19,10 +19,17 @@ data class ParentRunSummaryInput(
     val trainee: Trainee,
     val scenario: String,
     val profileName: String,
+    val bundleLabel: String,
+    val goalPresetLabel: String,
     val characterPreset: String,
     val sparkStrategy: String,
     val targetEpithets: List<String>,
+    val completedTargetEpithets: List<String>,
+    val incompleteTargetEpithets: List<String>,
+    val extraCompletedEpithets: List<String>,
+    val sparkPicks: List<SparkPickHistory.Record>,
     val fanWeight: Double,
+    val minimumFanTarget: Int,
     val minimumRaceGapTurns: Int,
     val targetEpithetMultiplier: Double,
     val raceStats: RunRaceStats,
@@ -46,26 +53,44 @@ object ParentRunSummary {
      * @param scenario Active campaign scenario name.
      * @param elapsedMs Wall-clock runtime in milliseconds, or null to omit runtime.
      */
-    fun buildFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String {
+    fun buildFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String =
+        build(inputFromSettings(trainee, scenario, elapsedMs))
+
+    fun discordMarkdownFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String =
+        buildDiscordMarkdown(inputFromSettings(trainee, scenario, elapsedMs))
+
+    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): ParentRunSummaryInput {
         val weightsJson = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
         val weights = parseWeights(weightsJson)
         val profileName =
             runCatching { SettingsHelper.getStringSetting("misc", "currentProfileName") }
                 .getOrElse { "" }
-        return build(
-            ParentRunSummaryInput(
-                trainee = trainee,
-                scenario = scenario,
-                profileName = profileName,
-                characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset"),
-                sparkStrategy = SettingsHelper.getStringSetting("racing", "sparkSelectionStrategy").ifEmpty { "Default" },
-                targetEpithets = readStringList("smartRaceSolverTargetEpithets"),
-                fanWeight = weights.fanWeight,
-                minimumRaceGapTurns = weights.minimumRaceGapTurns,
-                targetEpithetMultiplier = weights.targetEpithetMultiplier,
-                raceStats = SmartRaceSolverIntegration.snapshotRaceStats(),
-                elapsedMs = elapsedMs,
-            ),
+        val bundleLabel =
+            runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingBundleLabel") }
+                .getOrElse { "" }
+        val goalPresetLabel =
+            runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetLabel") }
+                .getOrElse { "" }
+        val epithetSnapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(scenario)
+        return ParentRunSummaryInput(
+            trainee = trainee,
+            scenario = scenario,
+            profileName = profileName,
+            bundleLabel = bundleLabel,
+            goalPresetLabel = goalPresetLabel,
+            characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset"),
+            sparkStrategy = SettingsHelper.getStringSetting("racing", "sparkSelectionStrategy").ifEmpty { "Default" },
+            targetEpithets = readStringList("smartRaceSolverTargetEpithets"),
+            completedTargetEpithets = epithetSnapshot?.completedTargets ?: emptyList(),
+            incompleteTargetEpithets = epithetSnapshot?.incompleteTargets ?: emptyList(),
+            extraCompletedEpithets = epithetSnapshot?.extraCompleted ?: emptyList(),
+            sparkPicks = SparkPickHistory.snapshot(),
+            fanWeight = weights.fanWeight,
+            minimumFanTarget = weights.minimumFanTarget,
+            minimumRaceGapTurns = weights.minimumRaceGapTurns,
+            targetEpithetMultiplier = weights.targetEpithetMultiplier,
+            raceStats = SmartRaceSolverIntegration.snapshotRaceStats(),
+            elapsedMs = elapsedMs,
         )
     }
 
@@ -87,14 +112,23 @@ object ParentRunSummary {
         if (trainee.name.isNotEmpty()) {
             lines.add("Trainee: ${trainee.name}")
         }
+        if (input.bundleLabel.isNotEmpty()) {
+            lines.add("Bundle: $input.bundleLabel")
+        }
+        if (input.goalPresetLabel.isNotEmpty()) {
+            lines.add("Goal preset: $input.goalPresetLabel")
+        }
         lines.add("Character preset: ${input.characterPreset.ifEmpty { "(none)" }}")
         lines.add("Spark strategy: ${input.sparkStrategy}")
         lines.add(
             "Solver: fanWeight=${formatDecimal(input.fanWeight)}, " +
+                "fanFloor=${input.minimumFanTarget}, " +
                 "targetEpithet×${formatDecimal(input.targetEpithetMultiplier)}, " +
                 "minRaceGap=${input.minimumRaceGapTurns} turns",
         )
         lines.add(formatTargetEpithets(input.targetEpithets))
+        lines.addAll(formatEpithetResults(input))
+        lines.addAll(formatSparkPicks(input.sparkPicks))
         lines.add("Races: ${input.raceStats.wins} wins, ${input.raceStats.losses} losses")
         lines.add("Fans: ${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})")
         lines.add("Skill points: ${trainee.skillPoints}")
@@ -109,6 +143,79 @@ object ParentRunSummary {
             lines.add("Negative: ${trainee.currentNegativeStatuses.joinToString(", ")}")
         }
         return lines.joinToString("\n")
+    }
+
+    /**
+     * Discord markdown variant of [build]. Uses bold headers and bullets instead of plain log text.
+     */
+    fun buildDiscordMarkdown(input: ParentRunSummaryInput): String {
+        val trainee = input.trainee
+        val lines = mutableListOf<String>()
+        lines.add("**Parent run complete**")
+
+        val overview = mutableListOf<String>()
+        if (input.elapsedMs != null && input.elapsedMs >= 0) {
+            overview.add(DiscordMessageFormatter.bullet("Runtime", MessageLog.formatElapsedTime(0, input.elapsedMs)))
+        }
+        overview.add(DiscordMessageFormatter.bullet("Scenario", input.scenario.ifEmpty { "(none)" }))
+        if (input.profileName.isNotEmpty()) {
+            overview.add(DiscordMessageFormatter.bullet("Profile", input.profileName))
+        }
+        if (trainee.name.isNotEmpty()) {
+            overview.add(DiscordMessageFormatter.bullet("Trainee", trainee.name))
+        }
+        lines.add(DiscordMessageFormatter.section("Overview", overview))
+
+        val setup = mutableListOf<String>()
+        if (input.bundleLabel.isNotEmpty()) {
+            setup.add(DiscordMessageFormatter.bullet("Bundle", input.bundleLabel))
+        }
+        if (input.goalPresetLabel.isNotEmpty()) {
+            setup.add(DiscordMessageFormatter.bullet("Goal preset", input.goalPresetLabel))
+        }
+        setup.add(DiscordMessageFormatter.bullet("Character preset", input.characterPreset.ifEmpty { "(none)" }))
+        setup.add(DiscordMessageFormatter.bullet("Spark strategy", input.sparkStrategy))
+        setup.add(
+            DiscordMessageFormatter.bullet(
+                "Solver",
+                "fanWeight=${formatDecimal(input.fanWeight)}, fanFloor=${input.minimumFanTarget}, " +
+                    "targetEpithet×${formatDecimal(input.targetEpithetMultiplier)}, minRaceGap=${input.minimumRaceGapTurns} turns",
+            ),
+        )
+        lines.add(DiscordMessageFormatter.section("Setup", setup))
+
+        val epithets = mutableListOf<String>()
+        epithets.add(DiscordMessageFormatter.plainBullet(formatTargetEpithets(input.targetEpithets).removePrefix("Target epithets: ")))
+        epithets.addAll(formatEpithetResultsDiscord(input))
+        lines.add(DiscordMessageFormatter.section("Epithets", epithets))
+
+        val sparkLines = formatSparkPicksDiscord(input.sparkPicks)
+        if (sparkLines.isNotEmpty()) {
+            lines.add(DiscordMessageFormatter.section("Inheritance sparks", sparkLines))
+        }
+
+        val runStats = mutableListOf<String>()
+        runStats.add(DiscordMessageFormatter.bullet("Races", "${input.raceStats.wins} wins, ${input.raceStats.losses} losses"))
+        runStats.add(
+            DiscordMessageFormatter.bullet(
+                "Fans",
+                "${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})",
+            ),
+        )
+        runStats.add(DiscordMessageFormatter.bullet("Skill points", trainee.skillPoints.toString()))
+        runStats.add(DiscordMessageFormatter.bullet("Stats", trainee.stats.toString()))
+        runStats.add(DiscordMessageFormatter.plainBullet(formatSurfaceAptitudes(trainee)))
+        runStats.add(DiscordMessageFormatter.plainBullet(formatDistanceAptitudes(trainee)))
+        runStats.add(DiscordMessageFormatter.plainBullet(formatStyleAptitudes(trainee)))
+        if (trainee.currentPositiveStatuses.isNotEmpty()) {
+            runStats.add(DiscordMessageFormatter.bullet("Positive", trainee.currentPositiveStatuses.joinToString(", ")))
+        }
+        if (trainee.currentNegativeStatuses.isNotEmpty()) {
+            runStats.add(DiscordMessageFormatter.bullet("Negative", trainee.currentNegativeStatuses.joinToString(", ")))
+        }
+        lines.add(DiscordMessageFormatter.section("Results", runStats))
+
+        return lines.filter { it.isNotEmpty() }.joinToString("\n\n")
     }
 
     /** Writes the summary to the message log with a visible banner. */
@@ -149,6 +256,7 @@ object ParentRunSummary {
 
     private data class ParsedWeights(
         val fanWeight: Double = 0.0,
+        val minimumFanTarget: Int = 0,
         val minimumRaceGapTurns: Int = 0,
         val targetEpithetMultiplier: Double = 3.0,
     )
@@ -159,10 +267,78 @@ object ParentRunSummary {
             val obj = JSONObject(json)
             ParsedWeights(
                 fanWeight = obj.optDouble("fanWeight", 0.0),
+                minimumFanTarget = obj.optInt("minimumFanTarget", 0),
                 minimumRaceGapTurns = obj.optInt("minimumRaceGapTurns", 0),
                 targetEpithetMultiplier = obj.optDouble("targetEpithetMultiplier", 3.0),
             )
         }.getOrElse { ParsedWeights() }
+    }
+
+    private fun formatEpithetResultsDiscord(input: ParentRunSummaryInput): List<String> {
+        val lines = mutableListOf<String>()
+        if (input.completedTargetEpithets.isNotEmpty()) {
+            lines.add(
+                DiscordMessageFormatter.plainBullet(
+                    "Targets completed (${input.completedTargetEpithets.size}): ${input.completedTargetEpithets.joinToString(", ")}",
+                ),
+            )
+        } else {
+            lines.add(DiscordMessageFormatter.plainBullet("Targets completed: (none)"))
+        }
+        if (input.incompleteTargetEpithets.isNotEmpty()) {
+            lines.add(
+                DiscordMessageFormatter.plainBullet(
+                    "Targets incomplete (${input.incompleteTargetEpithets.size}): ${input.incompleteTargetEpithets.joinToString(", ")}",
+                ),
+            )
+        }
+        if (input.extraCompletedEpithets.isNotEmpty()) {
+            val shown = input.extraCompletedEpithets.take(8)
+            val suffix = if (input.extraCompletedEpithets.size > shown.size) "…" else ""
+            lines.add(
+                DiscordMessageFormatter.plainBullet(
+                    "Other epithets completed (${input.extraCompletedEpithets.size}): ${shown.joinToString(", ")}$suffix",
+                ),
+            )
+        }
+        return lines
+    }
+
+    private fun formatSparkPicksDiscord(picks: List<SparkPickHistory.Record>): List<String> {
+        if (picks.isEmpty()) return emptyList()
+        return picks.mapIndexed { index, pick ->
+            val options =
+                pick.optionTexts.mapIndexed { i, text -> "${i + 1}=\"${text.take(40)}\"" }.joinToString(", ")
+            DiscordMessageFormatter.plainBullet("#${index + 1}: slot ${pick.pickIndex + 1} ($pick.strategy) — $options")
+        }
+    }
+
+    private fun formatEpithetResults(input: ParentRunSummaryInput): List<String> {
+        val lines = mutableListOf<String>()
+        if (input.completedTargetEpithets.isNotEmpty()) {
+            lines.add("Targets completed (${input.completedTargetEpithets.size}): ${input.completedTargetEpithets.joinToString(", ")}")
+        } else {
+            lines.add("Targets completed: (none)")
+        }
+        if (input.incompleteTargetEpithets.isNotEmpty()) {
+            lines.add("Targets incomplete (${input.incompleteTargetEpithets.size}): ${input.incompleteTargetEpithets.joinToString(", ")}")
+        }
+        if (input.extraCompletedEpithets.isNotEmpty()) {
+            val shown = input.extraCompletedEpithets.take(8)
+            val suffix = if (input.extraCompletedEpithets.size > shown.size) "…" else ""
+            lines.add("Other epithets completed (${input.extraCompletedEpithets.size}): ${shown.joinToString(", ")}$suffix")
+        }
+        return lines
+    }
+
+    private fun formatSparkPicks(picks: List<SparkPickHistory.Record>): List<String> {
+        if (picks.isEmpty()) return emptyList()
+        val lines = mutableListOf("Inheritance sparks:")
+        for ((index, pick) in picks.withIndex()) {
+            val options = pick.optionTexts.mapIndexed { i, text -> "${i + 1}=\"${text.take(40)}\"" }.joinToString(", ")
+            lines.add("  #${index + 1}: picked slot ${pick.pickIndex + 1} ($pick.strategy) — $options")
+        }
+        return lines
     }
 
     private fun readStringList(key: String): List<String> {

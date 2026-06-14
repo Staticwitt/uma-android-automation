@@ -192,7 +192,7 @@ object Heuristic {
                     EpithetTracker.isCompleted(epithet, syntheticState)
             }
 
-        val baseScore = ScoringFunctions.raceValue(race, state.weights)
+        val baseScore = ScoringFunctions.raceValue(race, state.weights, state.currentFans)
         // Mirror the reference Trackblazer solver: every epithet completion contributes its
         // reward to the objective. This is what makes G2/G3 races (which net zero on grade-
         // and-cost alone) competitive - a free epithet reward tips the balance over Train.

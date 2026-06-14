@@ -6,7 +6,10 @@ import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
+import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
+import { applyParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -76,7 +79,45 @@ const RacingSettings = () => {
         limitRacesToInGameAgenda,
         skipSummerTrainingForAgenda,
         customAgendaTitle,
+        smartRaceSolverCharacterPreset,
+        smartRaceSolverWeights,
     } = racingSettings
+
+    const solverWeights = useMemo(() => {
+        try {
+            return JSON.parse(smartRaceSolverWeights || "{}") as Record<string, number>
+        } catch {
+            return {} as Record<string, number>
+        }
+    }, [smartRaceSolverWeights])
+
+    const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
+
+    const allowedEpithetNames = useMemo(
+        () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
+        [general?.scenario, smartRaceSolverCharacterPreset]
+    )
+
+    const applyGoalPreset = useCallback(
+        (preset: ParentFarmingGoalPreset) => {
+            setSettings((prev) => applyParentFarmingGoalPreset(prev, preset, allowedEpithetNames))
+        },
+        [allowedEpithetNames, setSettings]
+    )
+
+    const updateSolverWeight = useCallback(
+        (key: string, value: number) => {
+            updateRacing((prev) => {
+                try {
+                    const parsed = JSON.parse(prev.smartRaceSolverWeights || "{}")
+                    return { ...prev, smartRaceSolverWeights: JSON.stringify({ ...parsed, [key]: value }) }
+                } catch {
+                    return prev
+                }
+            })
+        },
+        [updateRacing]
+    )
 
     /**
      * Enable/disable the parent-farming preset. Disabling only clears the mode marker so custom
@@ -271,7 +312,31 @@ const RacingSettings = () => {
                                 </View>
                             </SearchableItem>
                             <SearchableItem
-                                title="Character + Goal Bundles"
+                                id="parent-farming-goal-presets"
+                                title="Parent Goal Presets"
+                                description="Quickly add common parent-farming target epithets, solver weights, and training bias."
+                            >
+                                <View style={{ padding: SPACING.md }}>
+                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Parent Goal Presets</Text>
+                                    <ParentFarmingGoalPresetGrid allowedEpithetNames={allowedEpithetNames} onApply={applyGoalPreset} />
+                                </View>
+                            </SearchableItem>
+                            <View style={{ padding: SPACING.md }}>
+                                <CustomSlider
+                                    searchId="minimum-fan-target"
+                                    value={minimumFanTarget}
+                                    placeholder={0}
+                                    onValueChange={(value) => updateSolverWeight("minimumFanTarget", value)}
+                                    min={0}
+                                    max={300000}
+                                    step={5000}
+                                    label="Solver Fan Floor"
+                                    showValue={true}
+                                    showLabels={true}
+                                    description="When current fans meet this target, fan-weighted race scoring stops so the bot prefers training. 0 disables. Requires fan weight > 0."
+                                />
+                            </View>
+                            <SearchableItem
                                 description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
                             >
                                 <View style={{ padding: SPACING.md }}>

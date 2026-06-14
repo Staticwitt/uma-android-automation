@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.RunRaceStats
+import com.steve1316.uma_android_automation.bot.SparkPickHistory
 import com.steve1316.uma_android_automation.bot.Racing.RaceData
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.GameDate
@@ -96,6 +97,14 @@ object SmartRaceSolverIntegration {
     /** Turn that [cachedSchedule] was solved against. Used to invalidate the cache when the bot has advanced to a new turn. */
     @Volatile private var cachedScheduleTurn: TurnNumber = -1
 
+    /** Trainee fan count observed during the current run. Fed into [SolverState.currentFans]. */
+    @Volatile private var currentRunFans: Int = 0
+
+    /** Updates the fan count used by live solver decisions for [Weights.minimumFanTarget]. */
+    fun updateCurrentFans(fans: Int) {
+        currentRunFans = fans.coerceAtLeast(0)
+    }
+
     /** Snapshot of confirmed race wins and losses for the current run. */
     fun snapshotRaceStats(): RunRaceStats =
         RunRaceStats(
@@ -113,6 +122,56 @@ object SmartRaceSolverIntegration {
         scrapedDebutEntry = null
         cachedSchedule = null
         cachedScheduleTurn = -1
+        currentRunFans = 0
+        SparkPickHistory.reset()
+    }
+
+    /** Epithet completion snapshot for parent-run summaries at career end. */
+    data class ParentRunEpithetSnapshot(
+        val completedTargets: List<String>,
+        val incompleteTargets: List<String>,
+        val extraCompleted: List<String>,
+    )
+
+    /**
+     * Classifies target epithets and other completions using accumulated race history.
+     *
+     * @param scenario Active campaign scenario.
+     * @return Snapshot, or null when epithet/race data is unavailable.
+     */
+    fun snapshotParentRunEpithets(scenario: String): ParentRunEpithetSnapshot? {
+        val epithets = loadEpithets() ?: return null
+        val racesByTurn = loadAllRaces() ?: return null
+        val state = newSolverState(currentTurn = 72, scenario = scenario, epithets = epithets, racesByTurn = racesByTurn)
+        val classified = EpithetTracker.classifyAll(state)
+        val targets = state.targetEpithets
+
+        fun formatTargetProgress(name: String): String {
+            val epithet = state.epithetsByName[name] ?: return name
+            val status = classified[name]
+            if (status == EpithetStatus.COMPLETED) return name
+            val fraction = epithetFraction(epithet, state)
+            if (fraction != null) return "$name (${fraction.first}/${fraction.second})"
+            return when (status) {
+                EpithetStatus.DEAD -> "$name (dead)"
+                EpithetStatus.UNTOUCHED -> "$name (untouched)"
+                else -> name
+            }
+        }
+
+        val completedTargets = targets.filter { classified[it] == EpithetStatus.COMPLETED }.sorted()
+        val incompleteTargets = targets.filter { classified[it] != EpithetStatus.COMPLETED }.map { formatTargetProgress(it) }.sorted()
+        val extraCompleted =
+            classified
+                .filter { (name, status) -> status == EpithetStatus.COMPLETED && name !in targets }
+                .keys
+                .sorted()
+
+        return ParentRunEpithetSnapshot(
+            completedTargets = completedTargets,
+            incompleteTargets = incompleteTargets,
+            extraCompleted = extraCompleted,
+        )
     }
 
     /**
@@ -627,6 +686,7 @@ object SmartRaceSolverIntegration {
             targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
             lockedDecisions = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn),
             weights = readWeights(),
+            currentFans = currentRunFans,
         )
 
     /**
@@ -881,6 +941,7 @@ object SmartRaceSolverIntegration {
             raceBonusPct = obj.optDouble("raceBonusPct", 50.0),
             raceCostPct = obj.optDouble("raceCostPct", 100.0),
             fanWeight = obj.optDouble("fanWeight", 0.0),
+            minimumFanTarget = obj.optInt("minimumFanTarget", 0),
             minimumRaceGapTurns = obj.optInt("minimumRaceGapTurns", 0),
             aptitudeThreshold = parseAptitude(obj.optString("aptitudeThreshold", "C")),
             includeOpAndPreOp = obj.optBoolean("includeOpAndPreOp", false),

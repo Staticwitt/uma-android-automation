@@ -9,6 +9,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.bot.ParentRunSummary
+import com.steve1316.uma_android_automation.bot.ParentDiscordNotifier
 import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonCancel
 import com.steve1316.uma_android_automation.components.ButtonCareerEndSkills
@@ -538,6 +539,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 val fans = game.imageUtils.getUmamusumeClassDialogFanCount(croppedBitmap)
                 if (fans != null) {
                     trainee.fans = fans
+                    SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
                     bNeedToCheckFans = false
                     MessageLog.i(TAG, "[INFO] Updated fan count: ${trainee.fans}")
                 } else {
@@ -1679,6 +1681,8 @@ abstract class Campaign(game: Game) : Task(game) {
 
                 // Scenario-specific post-update hook.
                 onAfterTurnStartUpdates()
+
+                ParentDiscordNotifier.maybeSendLiveStatus(game, trainee, date, dateChanged = true)
             }
 
             // Since we're at the main screen, we don't need to worry about this
@@ -2082,6 +2086,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     val cleanedFans = fansText.replace(Regex("[^0-9]"), "")
                     if (cleanedFans.isNotEmpty()) {
                         trainee.fans = cleanedFans.toInt()
+                        SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
                     } else {
                         MessageLog.w(TAG, "[WARN] process:: Could not detect final fan count for the end of the Career from OCR: $fansText")
                     }
@@ -2107,7 +2112,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
                     val summary = ParentRunSummary.buildFromSettings(trainee, game.scenario, elapsedMs)
                     ParentRunSummary.logSummary(summary)
-                    game.taskEndDiscordMessage = summary
+                    game.taskEndDiscordMessage = ParentRunSummary.discordMarkdownFromSettings(trainee, game.scenario, elapsedMs)
                 }
 
                 return TaskResult.Success(
