@@ -38,7 +38,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         label: "Oguri Cap — G1 / Fan Parent",
         description: "High fan volume and broad G1 inheritance history.",
         characterName: "Oguri Cap",
-        goalPresetKey: "g1-fan",
+        goalPresetKey: "g1-fans",
     },
     {
         key: "maruzensky-sprint",
@@ -89,14 +89,14 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         label: "Special Week — G1 / Fan Parent",
         description: "General high-fan G1 parent for broad inheritance history.",
         characterName: "Special Week",
-        goalPresetKey: "g1-fan",
+        goalPresetKey: "g1-fans",
     },
     {
         key: "gold-ship-g1",
         label: "Gold Ship — G1 / Fan Parent",
         description: "Fan-heavy G1 routing for versatile inheritance parents.",
         characterName: "Gold Ship",
-        goalPresetKey: "g1-fan",
+        goalPresetKey: "g1-fans",
     },
     {
         key: "vodka-tiara",

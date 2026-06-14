@@ -72,7 +72,7 @@ describe("parentFarmingGoalPresets", () => {
         expect(targets).toEqual(expect.arrayContaining(["Manual Target", "Triple Crown", "Senior Autumn Triple Crown"]))
         expect(forced).toEqual(["Manual Forced"])
         expect(weights.targetEpithetMultiplier).toBe(4)
-        expect(weights.minimumRaceGapTurns).toBe(1)
+        expect(weights.minimumRaceGapTurns).toBe(0)
     })
 
     it("respects allowed epithet filters when adding targets", () => {
@@ -87,10 +87,25 @@ describe("parentFarmingGoalPresets", () => {
         const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "mile-sprint")!
         const result = applyParentFarmingGoalPresetToTraining(createTrainingSettings(), preset)
 
+        expect(result.maximumFailureChance).toBe(15)
+        expect(result.disableStatTargets).toBe(true)
+        expect(result.enablePrioritizeSkillHints).toBe(true)
         expect(result.preferredDistanceOverride).toBe("Mile")
         expect(result.statPrioritization).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
         expect(result.eventChoiceStatPriority).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
         expect(result.summerTrainingStatPriority).toEqual(["Speed", "Power", "Stamina", "Wit", "Guts"])
+    })
+
+    it("applies fan floor and parent racing flags for G1 fan preset", () => {
+        const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "g1-fans")!
+        const racingResult = applyParentFarmingGoalPresetToRacing(createRacingSettings(), preset)
+        const weights = JSON.parse(racingResult.smartRaceSolverWeights!)
+
+        expect(racingResult.enableFarmingFans).toBe(true)
+        expect(racingResult.ignoreConsecutiveRaceWarning).toBe(true)
+        expect(racingResult.sparkSelectionStrategy).toBeDefined()
+        expect(weights.minimumFanTarget).toBe(120000)
+        expect(weights.minimumRaceGapTurns).toBe(0)
     })
 
     it("applyParentFarmingGoalPreset updates racing and training slices", () => {

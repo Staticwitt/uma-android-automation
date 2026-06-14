@@ -1,5 +1,10 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, type WeightsMap } from "./solver/constants"
+import {
+    buildParentFarmingTrainingSettings,
+    PARENT_FARMING_GOAL_RACING_BASE,
+    PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
+} from "./parentFarmingPreset"
 
 export interface ParentFarmingGoalPreset {
     key: string
@@ -13,16 +18,20 @@ export interface ParentFarmingGoalPreset {
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
-    targetEpithetMultiplier: 4.0,
-    minimumRaceGapTurns: 1,
+    ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
 }
 
-/** Builds matching stat, event-choice, and summer-training priority lists. */
+/** G1 / fan routes: keep speed and stamina up between scheduled G1 races. */
 const statPriorityProfile = (order: string[]): Pick<Settings["training"], "statPrioritization" | "eventChoiceStatPriority" | "summerTrainingStatPriority"> => ({
     statPrioritization: order,
     eventChoiceStatPriority: [...order],
     summerTrainingStatPriority: [...order],
 })
+
+const G1_FAN_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Auto",
+    ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
+}
 
 const BALANCED_TRAINING: Partial<Settings["training"]> = {
     preferredDistanceOverride: "Auto",
@@ -72,12 +81,12 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         description: "Pushes high-value G1 volume for fan count and broad inheritance race history.",
         targetEpithets: ["G1 Hunter", "Epoch Pioneer", "First Step to Glory", "The GOAT"],
         weightOverrides: {
-            ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.5e-3,
             raceCostPct: 70.0,
             consecutiveRacePenalty: 2.0,
+            minimumFanTarget: 120000,
         },
-        trainingOverrides: BALANCED_TRAINING,
+        trainingOverrides: G1_FAN_TRAINING,
     },
     {
         key: "classic-crown",
@@ -228,11 +237,11 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             "Comeback Champion",
         ],
         weightOverrides: {
-            ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.2e-3,
             raceCostPct: 72.0,
+            minimumFanTarget: 100000,
         },
-        trainingOverrides: BALANCED_TRAINING,
+        trainingOverrides: G1_FAN_TRAINING,
     },
     {
         key: "senior-finale",
@@ -322,10 +331,7 @@ export const applyParentFarmingGoalPresetToRacing = (
     const weights = parseWeights(racing.smartRaceSolverWeights)
 
     return {
-        enableParentFarmingMode: true,
-        enableSmartRaceSolver: true,
-        enableForceRacing: false,
-        enableUserInGameRaceAgenda: false,
+        ...PARENT_FARMING_GOAL_RACING_BASE,
         smartRaceSolverTargetEpithets: JSON.stringify(targetEpithets),
         smartRaceSolverForcedEpithets: JSON.stringify(forcedEpithets),
         smartRaceSolverWeights: JSON.stringify({
@@ -340,11 +346,14 @@ export const applyParentFarmingGoalPresetToRacing = (
     }
 }
 
-/** Applies goal-aligned training distance bias and stat priorities. */
+/** Applies parent-farming training defaults plus goal-specific distance and stat priorities. */
 export const applyParentFarmingGoalPresetToTraining = (
     training: Settings["training"],
     preset: ParentFarmingGoalPreset,
-): Partial<Settings["training"]> => (preset.trainingOverrides ? { ...preset.trainingOverrides } : {})
+): Partial<Settings["training"]> => ({
+    ...buildParentFarmingTrainingSettings(training),
+    ...(preset.trainingOverrides ?? {}),
+})
 
 /** Applies racing and training changes for a parent-farming goal preset. */
 export const applyParentFarmingGoalPreset = (
