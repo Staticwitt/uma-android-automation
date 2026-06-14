@@ -29,6 +29,7 @@ import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonNextRaceEnd
 import com.steve1316.uma_android_automation.components.ButtonOk
 import com.steve1316.uma_android_automation.components.ButtonRaceStrategyEnd
+import com.steve1316.uma_android_automation.components.ButtonRaceManual
 import com.steve1316.uma_android_automation.components.ButtonRaceResults
 import com.steve1316.uma_android_automation.components.ButtonSeeResults
 import com.steve1316.uma_android_automation.components.ButtonViewResults
@@ -990,7 +991,8 @@ abstract class Campaign(game: Game) : Task(game) {
             ButtonChangeRunningStyle.check(game.imageUtils) ||
                 ButtonSeeResults.check(game.imageUtils) ||
                 ButtonViewResults.check(game.imageUtils) ||
-                ButtonRaceResults.check(game.imageUtils)
+                ButtonRaceResults.check(game.imageUtils) ||
+                ButtonRaceManual.check(game.imageUtils)
         ) {
             MessageLog.v(TAG, "[INFO] Bot is at the Racing screen waiting to be skipped or done manually.")
             true

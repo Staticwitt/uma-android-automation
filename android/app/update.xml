@@ -12,6 +12,7 @@ Fixes
 - Clicks See Results / View Results / Go to Race Results on race prep (see_results template was unused)
 - Skips to results before opening running-style dialogs that can cover the button
 - Full-screen template search fallback when bottom-half match fails
+- Fresh screenshot after strategy selection; fallback tap above Manual Race when templates miss
 
     </releaseNotes>
   </update>

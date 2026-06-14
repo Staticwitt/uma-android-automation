@@ -1042,30 +1042,84 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             ButtonRaceResults,
         )
 
+    private val fullScreenSearchRegion: IntArray = intArrayOf(0, 0, 0, 0)
+
+    /** A skip-to-results button match and the region that detected it. */
+    private data class SkipRaceButtonMatch(val button: ButtonInterface, val searchRegion: IntArray)
+
     /** Whether the bot is on the race prep screen where skip-to-results or manual race can be chosen. */
     private fun isOnRacePrepScreen(bitmap: Bitmap): Boolean =
         ButtonChangeRunningStyle.check(game.imageUtils, sourceBitmap = bitmap) ||
-            skipRaceButtons.any { it.check(game.imageUtils, sourceBitmap = bitmap) }
+            skipRaceButtons.any { it.check(game.imageUtils, sourceBitmap = bitmap) } ||
+            ButtonRaceManual.check(game.imageUtils, sourceBitmap = bitmap)
 
     /**
      * Finds a skip-to-results button on the race prep screen, searching bottom-half then full screen.
      *
      * @param bitmap Current screenshot.
-     * @return The first matching skip button, or null if none found.
+     * @return The first matching skip button and search region, or null if none found.
      */
-    private fun findSkipRaceButton(bitmap: Bitmap): ButtonInterface? {
+    private fun findSkipRaceButton(bitmap: Bitmap): SkipRaceButtonMatch? {
         for (button in skipRaceButtons) {
             if (button.check(game.imageUtils, sourceBitmap = bitmap)) {
-                return button
+                return SkipRaceButtonMatch(button, button.template.region)
             }
         }
-        val fullScreen = intArrayOf(0, 0, 0, 0)
         for (button in skipRaceButtons) {
-            if (button.check(game.imageUtils, region = fullScreen, sourceBitmap = bitmap)) {
-                return button
+            if (button.check(game.imageUtils, region = fullScreenSearchRegion, sourceBitmap = bitmap)) {
+                return SkipRaceButtonMatch(button, fullScreenSearchRegion)
             }
         }
         return null
+    }
+
+    /**
+     * Clicks a skip-to-results button, retrying alternate search regions when the first click misses.
+     *
+     * @param match The skip button and the region that detected it.
+     * @param bitmap Current screenshot.
+     * @return True if the skip button was clicked.
+     */
+    private fun clickSkipRaceButton(match: SkipRaceButtonMatch, bitmap: Bitmap): Boolean {
+        val regions: List<IntArray> =
+            listOf(match.searchRegion, fullScreenSearchRegion, match.button.template.region)
+                .distinctBy { it.contentHashCode() }
+        for (region in regions) {
+            if (match.button.click(game.imageUtils, region = region, sourceBitmap = bitmap)) {
+                MessageLog.i(TAG, "[RACE] Clicked skip-race button (${match.button.template.path}) to view results.")
+                game.waitForLoading()
+                return true
+            }
+        }
+        MessageLog.w(TAG, "[WARN] clickSkipRaceButton:: Failed to click skip-race button (${match.button.template.path}).")
+        return false
+    }
+
+    /**
+     * Taps above the Manual Race button when skip-to-results templates fail to match.
+     *
+     * @param bitmap Current screenshot.
+     * @return True if a fallback tap was performed.
+     */
+    private fun clickViewResultsFallback(bitmap: Bitmap): Boolean {
+        val manualPoint: Point? =
+            ButtonRaceManual.findImageWithBitmap(game.imageUtils, bitmap) ?:
+                ButtonRaceManual.findImageWithBitmap(
+                    game.imageUtils,
+                    bitmap,
+                    region = fullScreenSearchRegion,
+                )
+        if (manualPoint == null) {
+            return false
+        }
+
+        val yOffset: Double = game.imageUtils.relHeight(75).toDouble()
+        val tapX: Double = manualPoint.x
+        val tapY: Double = manualPoint.y - yOffset
+        MessageLog.i(TAG, "[RACE] Fallback tap above Manual Race for View Results at ($tapX, $tapY).")
+        game.tap(tapX, tapY, "view_results_fallback")
+        game.waitForLoading()
+        return true
     }
 
     /**
@@ -1075,13 +1129,14 @@ class Racing(private val game: Game, private val campaign: Campaign) {
      * @return True if a skip or manual-race action was performed.
      */
     private fun clickGoToRaceResults(bitmap: Bitmap): Boolean {
-        val skipButton: ButtonInterface? = findSkipRaceButton(bitmap)
+        val skipMatch: SkipRaceButtonMatch? = findSkipRaceButton(bitmap)
 
-        if (skipButton == null) {
+        if (skipMatch == null) {
             MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: No skip-race button detected on prep screen.")
-            return false
+            return clickViewResultsFallback(bitmap)
         }
 
+        val skipButton: ButtonInterface = skipMatch.button
         val disabledState: Boolean? = skipButton.checkDisabled(game.imageUtils, bitmap)
         return when (disabledState) {
             true -> {
@@ -1099,14 +1154,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 if (disabledState == null) {
                     MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: Skip button disabled state unknown; attempting click anyway.")
                 }
-                if (skipButton.click(game.imageUtils, sourceBitmap = bitmap)) {
-                    MessageLog.i(TAG, "[RACE] Clicked skip-race button (${skipButton.template.path}) to view results.")
-                    game.waitForLoading()
-                    true
-                } else {
-                    MessageLog.w(TAG, "[WARN] clickGoToRaceResults:: Failed to click skip-race button.")
-                    false
-                }
+                clickSkipRaceButton(skipMatch, bitmap) || clickViewResultsFallback(bitmap)
             }
         }
     }
@@ -1153,7 +1201,8 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                             // Latch after one attempt so a strategy timeout does not block skip every loop.
                             bDidSelectRaceStrategy = true
                         }
-                        clickGoToRaceResults(bitmap)
+                        game.wait(0.5, skipWaitingForLoading = true)
+                        clickGoToRaceResults(game.imageUtils.getSourceBitmap())
                     }
                 }
 
