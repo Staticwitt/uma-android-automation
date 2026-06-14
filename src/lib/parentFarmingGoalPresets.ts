@@ -5,6 +5,7 @@ import {
     PARENT_FARMING_GOAL_RACING_BASE,
     PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
 } from "./parentFarmingConstants"
+import { findSupportBorrowPreset } from "./supportBorrowPresets"
 
 export interface ParentFarmingGoalPreset {
     key: string
@@ -359,6 +360,7 @@ export const applyParentFarmingGoalPresetToRacing = (
             ...TARGET_PRIORITY_WEIGHTS,
             ...preset.weightOverrides,
         }),
+        supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,
         parentFarmingBundleKey: "",

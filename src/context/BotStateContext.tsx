@@ -80,6 +80,10 @@ export interface Settings {
         smartRaceSolverWeights: string
         /** Inheritance spark picker: Default, StatAndAptitude, SkillHints, or Balanced. */
         sparkSelectionStrategy: string
+        /** Auto-borrow a friend support card at career selection before training. */
+        enableAutoBorrowSupportCard: boolean
+        /** JSON array of preferred support card names (first OCR match wins). */
+        supportBorrowPreferredCards: string
         /** Last applied parent goal preset / bundle keys for run summaries. */
         parentFarmingGoalPresetKey: string
         parentFarmingGoalPresetLabel: string
@@ -291,6 +295,8 @@ export const defaultSettings: Settings = {
         smartRaceSolverForcedEpithets: "[]",
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
+        enableAutoBorrowSupportCard: false,
+        supportBorrowPreferredCards: "[]",
         parentFarmingGoalPresetKey: "",
         parentFarmingGoalPresetLabel: "",
         parentFarmingBundleKey: "",

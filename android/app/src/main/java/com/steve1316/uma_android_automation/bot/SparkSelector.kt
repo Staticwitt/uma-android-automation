@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
-import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.components.ButtonInheritance
 import org.opencv.core.Point
 
@@ -87,7 +87,7 @@ object SparkSelector {
     private fun buildContext(strategy: String): SparkSelectionContext {
         val statPriorities = SettingsHelper.getStringArraySetting("training", "statPrioritization")
         val preferredDistance = SettingsHelper.getStringSetting("training", "preferredDistanceOverride").ifEmpty { "Auto" }
-        val aptitudesJson = SettingsHelper.getStringSetting("racing", "smartRaceSolverAptitudes").ifEmpty { "{}" }
+        val aptitudesJson = SmartRaceSolverIntegration.effectiveAptitudesJson()
         val preferSkillHints = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)
 
         return SparkSelectionContext(
