@@ -20,6 +20,10 @@ import {
     PARENT_FARMING_GOAL_RACING_BASE,
     PARENT_FARMING_RESOLVER_REVISION,
 } from "./parentFarmingConstants"
+import {
+    parseSupportBorrowOverrides,
+    resolveSupportBorrowCardsForBundle,
+} from "./parentFarmingSupportBorrow"
 
 export { PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, PARENT_FARMING_RESOLVER_REVISION } from "./parentFarmingConstants"
 
@@ -116,6 +120,11 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
         ...(bundle?.trainingOverrides ?? {}),
     }
 
+    const borrowOverrides = parseSupportBorrowOverrides(settings.racing.parentFarmingSupportBorrowOverrides)
+    const supportBorrowPreferredCards = bundle
+        ? JSON.stringify(resolveSupportBorrowCardsForBundle(bundle, borrowOverrides))
+        : goalRacing.supportBorrowPreferredCards ?? "[]"
+
     return {
         ...settings,
         general,
@@ -125,6 +134,7 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
             ...PARENT_FARMING_GOAL_RACING_BASE,
             ...goalRacing,
             smartRaceSolverWeights: smartRaceSolverWeights ?? goalRacing.smartRaceSolverWeights,
+            supportBorrowPreferredCards,
             enableParentFarmingMode: true,
             parentFarmingGoalPresetKey: goalPreset.key,
             parentFarmingGoalPresetLabel: goalPreset.label,

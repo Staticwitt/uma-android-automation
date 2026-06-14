@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import type { Settings } from "../context/BotStateContext"
 import { getParentFarmingActiveLabels, formatParentFarmingTrainingBias } from "../lib/parentFarmingDrift"
+import { formatSupportBorrowPreview, resolveActiveSupportBorrowCards } from "../lib/parentFarmingSupportBorrow"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -44,6 +45,7 @@ export const ParentFarmingActivePresetChip = ({ settings }: ParentFarmingActiveP
     const primaryLabel = bundleLabel || goalPresetLabel || "Parent farming (no preset label)"
     const secondary =
         bundleLabel && goalPresetLabel && bundleLabel !== goalPresetLabel ? `Goal: ${goalPresetLabel}` : undefined
+    const supports = resolveActiveSupportBorrowCards(settings)
 
     return (
         <View style={styles.root}>
@@ -51,6 +53,7 @@ export const ParentFarmingActivePresetChip = ({ settings }: ParentFarmingActiveP
             <Text style={styles.line}>{primaryLabel}</Text>
             {secondary ? <Text style={styles.muted}>{secondary}</Text> : null}
             <Text style={styles.muted}>Training: {formatParentFarmingTrainingBias(settings.training)}</Text>
+            <Text style={styles.muted}>Supports: {formatSupportBorrowPreview(supports)}</Text>
         </View>
     )
 }

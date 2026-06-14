@@ -84,6 +84,8 @@ export interface Settings {
         enableAutoBorrowSupportCard: boolean
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
+        /** Per-bundle user overrides for support borrow order (`bundleKey` → names). */
+        parentFarmingSupportBorrowOverrides: string
         /** Last applied parent goal preset / bundle keys for run summaries. */
         parentFarmingGoalPresetKey: string
         parentFarmingGoalPresetLabel: string
@@ -297,6 +299,7 @@ export const defaultSettings: Settings = {
         sparkSelectionStrategy: "Default",
         enableAutoBorrowSupportCard: false,
         supportBorrowPreferredCards: "[]",
+        parentFarmingSupportBorrowOverrides: "{}",
         parentFarmingGoalPresetKey: "",
         parentFarmingGoalPresetLabel: "",
         parentFarmingBundleKey: "",

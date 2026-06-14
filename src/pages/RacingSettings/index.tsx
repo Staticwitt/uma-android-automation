@@ -6,13 +6,15 @@ import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle } from "../../lib/parentFarmingCharacterBundles"
-import { applyParentFarmingGoalPreset, PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, type ParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
+import { applyParentFarmingGoalPreset, PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, enableParentFarmingCharacterBundle, type ParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
 import { findParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
 import { applyParentFarmingPreset, disableParentFarmingMode, PARENT_FARMING_MODE_SUMMARY } from "../../lib/parentFarmingPreset"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
@@ -59,6 +61,8 @@ const RacingSettings = () => {
     const [juniorPickerOpen, setJuniorPickerOpen] = useState(false)
     const [originalPickerOpen, setOriginalPickerOpen] = useState(false)
     const [goalPickerOpen, setGoalPickerOpen] = useState(false)
+    const [bundleSupportSheetOpen, setBundleSupportSheetOpen] = useState(false)
+    const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
 
     // Merge current racing settings with defaults to handle missing properties.
     const racingSettings = { ...defaultSettings.racing, ...racing }
@@ -86,6 +90,8 @@ const RacingSettings = () => {
         limitRacesToInGameAgenda,
         skipSummerTrainingForAgenda,
         customAgendaTitle,
+        parentFarmingBundleLabel,
+        parentFarmingSupportBorrowOverrides,
         smartRaceSolverCharacterPreset,
         smartRaceSolverWeights,
     } = racingSettings
@@ -108,6 +114,11 @@ const RacingSettings = () => {
             return []
         }
     }, [supportBorrowPreferredCards])
+
+    const supportBorrowOverrides = useMemo(
+        () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
+        [parentFarmingSupportBorrowOverrides],
+    )
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
 
@@ -176,7 +187,29 @@ const RacingSettings = () => {
         (bundle: ParentFarmingCharacterBundle) => {
             setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
         },
-        [setSettings]
+        [setSettings],
+    )
+
+    const openBundleSupportEditor = useCallback((bundle: ParentFarmingCharacterBundle) => {
+        setBundleSupportEditing(bundle)
+        setBundleSupportSheetOpen(true)
+    }, [])
+
+    const saveBundleSupportCards = useCallback(
+        (bundleKey: string, cards: string[]) => {
+            setSettings((prev) => {
+                const overridesJson = saveBundleSupportBorrowOverride(prev.racing.parentFarmingSupportBorrowOverrides, bundleKey, cards)
+                const withOverrides = {
+                    ...prev,
+                    racing: { ...prev.racing, parentFarmingSupportBorrowOverrides: overridesJson },
+                }
+                if (withOverrides.racing.parentFarmingBundleKey === bundleKey) {
+                    return enableParentFarmingCharacterBundle(withOverrides, bundleKey)
+                }
+                return withOverrides
+            })
+        },
+        [setSettings],
     )
 
     /**
@@ -409,7 +442,12 @@ const RacingSettings = () => {
                             >
                                 <View style={{ padding: SPACING.md }}>
                                     <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
-                                    <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                    <ParentFarmingBundleGrid
+                                        scenario={general?.scenario || "Trackblazer"}
+                                        supportBorrowOverrides={supportBorrowOverrides}
+                                        onApply={applyCharacterBundle}
+                                        onEditSupports={openBundleSupportEditor}
+                                    />
                                 </View>
                             </SearchableItem>
                             {enableParentFarmingMode && (
@@ -848,6 +886,14 @@ const RacingSettings = () => {
                         <ParentFarmingGoalPresetGrid allowedEpithetNames={allowedEpithetNames} onApply={applyGoalPresetFromPicker} />
                     </View>
                 </SheetModal>
+
+                <ParentFarmingBundleSupportSheet
+                    visible={bundleSupportSheetOpen}
+                    bundle={bundleSupportEditing}
+                    overrides={supportBorrowOverrides}
+                    onClose={() => setBundleSupportSheetOpen(false)}
+                    onSave={saveBundleSupportCards}
+                />
             </SearchPageProvider>
         </View>
     )
