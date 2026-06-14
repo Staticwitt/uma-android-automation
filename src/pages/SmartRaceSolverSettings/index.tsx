@@ -33,7 +33,9 @@ import {
 } from "../../lib/solver/scoring"
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import { useTheme } from "../../context/ThemeContext"
-import { RacingContext, GeneralMiscContext, defaultSettings } from "../../context/BotStateContext"
+import { RacingContext, GeneralMiscContext, BotMetaContext, defaultSettings } from "../../context/BotStateContext"
+import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
 import WarningContainer from "../../components/WarningContainer"
@@ -104,6 +106,7 @@ const SmartRaceSolverSettings = () => {
     // Subscribe to context slices to avoid re-rendering on unrelated settings changes.
     const { racing, updateRacing } = useContext(RacingContext)
     const { general } = useContext(GeneralMiscContext)
+    const { setSettings } = useContext(BotMetaContext)
     const scrollViewRef = useRef<ScrollView>(null)
     const navigation = useNavigation<any>()
 
@@ -470,6 +473,13 @@ const SmartRaceSolverSettings = () => {
             }))
         },
         [allowedEpithetNames, updateRacing]
+    )
+
+    const applyCharacterBundle = useCallback(
+        (bundle: ParentFarmingCharacterBundle) => {
+            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
+        },
+        [setSettings]
     )
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1441,6 +1451,18 @@ const SmartRaceSolverSettings = () => {
                                                 </Text>
                                             </InfoCallout>
                                         </View>
+                                        <SearchableItem
+                                            id="smart-solver-parent-character-bundles"
+                                            condition={enableSmartRaceSolver}
+                                            parentId="enable-smart-race-solver"
+                                            title="Character + Goal Bundles"
+                                            description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
+                                        >
+                                            <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
+                                                <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
+                                                <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                            </View>
+                                        </SearchableItem>
                                         <SearchableItem
                                             id="smart-solver-parent-goal-presets"
                                             condition={enableSmartRaceSolver}

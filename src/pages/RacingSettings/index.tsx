@@ -4,7 +4,9 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { BotMetaContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings } from "../../context/BotStateContext"
+import { ParentFarmingBundleGrid, applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
+import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -41,6 +43,7 @@ const RacingSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
     const { setSettings } = useContext(BotMetaContext)
+    const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
 
@@ -79,6 +82,13 @@ const RacingSettings = () => {
     const setParentFarmingMode = useCallback(
         (checked: boolean) => {
             setSettings((prev) => (checked ? applyParentFarmingPreset(prev) : disableParentFarmingMode(prev)))
+        },
+        [setSettings]
+    )
+
+    const applyCharacterBundle = useCallback(
+        (bundle: ParentFarmingCharacterBundle) => {
+            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
         },
         [setSettings]
     )
@@ -219,9 +229,19 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
                                 />
                             </SearchableItem>
+                            <SearchableItem
+                                id="parent-farming-character-bundles"
+                                title="Character + Goal Bundles"
+                                description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
+                            >
+                                <View style={{ padding: SPACING.md }}>
+                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Character + Goal Bundles</Text>
+                                    <ParentFarmingBundleGrid scenario={general?.scenario || "Trackblazer"} onApply={applyCharacterBundle} />
+                                </View>
+                            </SearchableItem>
                             {enableParentFarmingMode && (
                                 <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    {`${PARENT_FARMING_MODE_SUMMARY} Open Smart Race Solver to choose the parent character, aptitudes, target epithets, and manual race locks.`}
+                                    {`${PARENT_FARMING_MODE_SUMMARY} Use a bundle above for a full setup, or open Smart Race Solver to fine-tune epithets, aptitudes, and manual race locks.`}
                                 </InfoContainer>
                             )}
                         </Section>

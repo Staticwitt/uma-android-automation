@@ -103,9 +103,28 @@ const mergeNames = (current: string[], additions: string[], allowedNames?: Set<s
     return Array.from(next)
 }
 
-export const applyParentFarmingGoalPresetToRacing = (racing: Settings["racing"], preset: ParentFarmingGoalPreset, allowedNames?: Set<string>): Partial<Settings["racing"]> => {
-    const targetEpithets = mergeNames(parseStringList(racing.smartRaceSolverTargetEpithets), preset.targetEpithets, allowedNames)
-    const forcedEpithets = mergeNames(parseStringList(racing.smartRaceSolverForcedEpithets), preset.forcedEpithets ?? [], allowedNames)
+export interface ParentFarmingGoalPresetApplyOptions {
+    /** When false, target and forced epithets are replaced with the preset lists instead of merged. */
+    mergeEpithets?: boolean
+}
+
+export const applyParentFarmingGoalPresetToRacing = (
+    racing: Settings["racing"],
+    preset: ParentFarmingGoalPreset,
+    allowedNames?: Set<string>,
+    options?: ParentFarmingGoalPresetApplyOptions
+): Partial<Settings["racing"]> => {
+    const mergeEpithets = options?.mergeEpithets ?? true
+    const filterAllowed = (names: string[]): string[] => {
+        if (!allowedNames) return names
+        return names.filter((name) => allowedNames.has(name))
+    }
+    const targetEpithets = mergeEpithets
+        ? mergeNames(parseStringList(racing.smartRaceSolverTargetEpithets), preset.targetEpithets, allowedNames)
+        : filterAllowed(preset.targetEpithets)
+    const forcedEpithets = mergeEpithets
+        ? mergeNames(parseStringList(racing.smartRaceSolverForcedEpithets), preset.forcedEpithets ?? [], allowedNames)
+        : filterAllowed(preset.forcedEpithets ?? [])
     const weights = parseWeights(racing.smartRaceSolverWeights)
 
     return {

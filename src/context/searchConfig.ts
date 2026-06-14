@@ -326,6 +326,18 @@ const searchConfig: SearchOption[] = [
     // Racing Settings
     // ============================================================
     {
+        id: "enable-parent-farming-mode",
+        title: "Enable Parent Farming Mode",
+        description: "Applies a preset tuned for unattended parent runs: Smart Race Solver, fan-weighted epithets, and relaxed stat targets.",
+        page: "RacingSettings",
+    },
+    {
+        id: "parent-farming-character-bundles",
+        title: "Character + Goal Bundles",
+        description: "One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias.",
+        page: "RacingSettings",
+    },
+    {
         id: "enable-farming-fans",
         title: "Enable Farming Fans",
         description: "When enabled, the bot will start running extra races to gain fans.",
@@ -518,6 +530,20 @@ const searchConfig: SearchOption[] = [
         id: "smart-solver-aptitude-threshold",
         title: "Aptitude Threshold",
         description: "Minimum aptitude (distance AND surface) required for a race to be eligible.",
+        page: "SmartRaceSolverSettings",
+        parentId: "enable-smart-race-solver",
+    },
+    {
+        id: "smart-solver-parent-character-bundles",
+        title: "Character + Goal Bundles",
+        description: "One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias.",
+        page: "SmartRaceSolverSettings",
+        parentId: "enable-smart-race-solver",
+    },
+    {
+        id: "smart-solver-parent-goal-presets",
+        title: "Parent Goal Presets",
+        description: "Quickly add common parent-farming target epithets and weight tuning.",
         page: "SmartRaceSolverSettings",
         parentId: "enable-smart-race-solver",
     },
