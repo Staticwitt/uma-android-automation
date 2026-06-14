@@ -1,11 +1,8 @@
 import type { Settings } from "../context/BotStateContext"
 import characterPresetsData from "../data/characterPresets.json"
 import epithetsData from "../data/epithets.json"
-import {
-    findParentFarmingGoalPreset,
-    PARENT_FARMING_GOAL_PRESETS,
-    type ParentFarmingGoalPreset,
-} from "./parentFarmingGoalPresets"
+import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
+import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { AptitudeMap, CharacterPresetEntry, EpithetEntry, type WeightsMap } from "./solver/constants"
 import { charactersForEpithet, scenariosForEpithet } from "./solver/scoring"
 
@@ -16,12 +13,17 @@ export interface ParentFarmingCharacterBundle {
     description: string
     characterName: string
     goalPresetKey: string
+    /** Default friend support borrow order when no per-bundle override is stored. */
+    supportBorrowCards: string[]
     trainingOverrides?: Partial<Settings["training"]>
     weightOverrides?: Partial<WeightsMap>
 }
 
 const CHARACTER_PRESETS = characterPresetsData as Record<string, CharacterPresetEntry>
 const ALL_EPITHETS = Object.values(epithetsData) as EpithetEntry[]
+
+/** Bundle-specific borrow defaults; falls back to goal preset list when omitted at resolve time. */
+const bundleBorrow = (goalPresetKey: string, cards: string[]): string[] => cards.length > 0 ? cards : findSupportBorrowPreset(goalPresetKey)
 
 export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = [
     {
@@ -30,6 +32,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Mile-focused G1 and fan epithets with Mile training bias.",
         characterName: "Grass Wonder",
         goalPresetKey: "mile-sprint",
+        supportBorrowCards: bundleBorrow("mile-sprint", ["Grass Wonder", "Silence Suzuka", "Maruzensky", "King Halo"]),
     },
     {
         key: "oguri-cap-g1",
@@ -37,6 +40,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "High fan volume and broad G1 inheritance history.",
         characterName: "Oguri Cap",
         goalPresetKey: "g1-fans",
+        supportBorrowCards: bundleBorrow("g1-fans", ["Oguri Cap", "Kitasan Black", "Super Creek", "Gold Ship"]),
     },
     {
         key: "maruzensky-sprint",
@@ -44,6 +48,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Sprint and mile G1 clusters for short-distance inheritance.",
         characterName: "Maruzensky",
         goalPresetKey: "mile-sprint",
+        supportBorrowCards: bundleBorrow("mile-sprint", ["Maruzensky", "Silence Suzuka", "King Halo", "Grass Wonder"]),
         trainingOverrides: { preferredDistanceOverride: "Sprint" },
     },
     {
@@ -52,6 +57,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Mile and sprint epithets tuned for Suzuka's mile strengths.",
         characterName: "Silence Suzuka",
         goalPresetKey: "mile-sprint",
+        supportBorrowCards: bundleBorrow("mile-sprint", ["Silence Suzuka", "Grass Wonder", "Maruzensky", "King Halo"]),
     },
     {
         key: "haru-urara-dirt",
@@ -59,6 +65,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Dirt race history and dirt G1 epithets with OP race support.",
         characterName: "Haru Urara",
         goalPresetKey: "dirt",
+        supportBorrowCards: bundleBorrow("dirt", ["Haru Urara", "Agnes Digital", "Gold Ship", "Matikanefukukitaru"]),
     },
     {
         key: "mejiro-mcqueen-crown",
@@ -66,6 +73,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Classic crown routes and long-distance epithets.",
         characterName: "Mejiro McQueen",
         goalPresetKey: "classic-crown",
+        supportBorrowCards: bundleBorrow("classic-crown", ["Super Creek", "Mejiro McQueen", "Biwa Hayahide", "Symboli Rudolf"]),
     },
     {
         key: "biwa-hayahide-crown",
@@ -73,6 +81,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Triple Crown and senior crown epithets for stamina parents.",
         characterName: "Biwa Hayahide",
         goalPresetKey: "classic-crown",
+        supportBorrowCards: bundleBorrow("classic-crown", ["Biwa Hayahide", "Super Creek", "Mejiro McQueen", "Gold Ship"]),
         trainingOverrides: { preferredDistanceOverride: "Medium" },
     },
     {
@@ -81,6 +90,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Classic crown line with long-distance training bias.",
         characterName: "Rice Shower",
         goalPresetKey: "classic-crown",
+        supportBorrowCards: bundleBorrow("classic-crown", ["Super Creek", "Rice Shower", "Mejiro McQueen", "Biwa Hayahide"]),
     },
     {
         key: "special-week-g1",
@@ -88,6 +98,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "General high-fan G1 parent for broad inheritance history.",
         characterName: "Special Week",
         goalPresetKey: "g1-fans",
+        supportBorrowCards: bundleBorrow("g1-fans", ["Special Week", "Kitasan Black", "Oguri Cap", "Gold Ship"]),
     },
     {
         key: "gold-ship-g1",
@@ -95,6 +106,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Fan-heavy G1 routing for versatile inheritance parents.",
         characterName: "Gold Ship",
         goalPresetKey: "g1-fans",
+        supportBorrowCards: bundleBorrow("g1-fans", ["Gold Ship", "Kitasan Black", "Super Creek", "Oguri Cap"]),
     },
     {
         key: "vodka-tiara",
@@ -102,6 +114,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Oka Sho, Oaks, and Shuka Sho inheritance routes.",
         characterName: "Vodka",
         goalPresetKey: "triple-tiara",
+        supportBorrowCards: bundleBorrow("triple-tiara", ["Vodka", "King Halo", "Air Groove", "Daiwa Scarlet"]),
     },
     {
         key: "tokai-teio-medium",
@@ -109,6 +122,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Medium-distance G1 and stayer epithets for Tokai Teio-style parents.",
         characterName: "Tokai Teio",
         goalPresetKey: "medium-long",
+        supportBorrowCards: bundleBorrow("medium-long", ["Tokai Teio", "Super Creek", "Symboli Rudolf", "Biwa Hayahide"]),
     },
     {
         key: "symboli-rudolf-senior",
@@ -116,6 +130,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Senior finale and end-year G1 epithets for long-route inheritance.",
         characterName: "Symboli Rudolf",
         goalPresetKey: "senior-finale",
+        supportBorrowCards: bundleBorrow("senior-finale", ["Symboli Rudolf", "Super Creek", "Gold Ship", "Biwa Hayahide"]),
     },
     {
         key: "daiwa-scarlet-queens",
@@ -123,6 +138,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Queen's race and mile queen epithets for female inheritance routes.",
         characterName: "Daiwa Scarlet",
         goalPresetKey: "queens-race",
+        supportBorrowCards: bundleBorrow("queens-race", ["Daiwa Scarlet", "Air Groove", "King Halo", "Vodka"]),
     },
     {
         key: "super-creek-stayer",
@@ -130,6 +146,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Stamina and stayer epithets for endurance-focused parents.",
         characterName: "Super Creek",
         goalPresetKey: "stayer-stamina",
+        supportBorrowCards: bundleBorrow("stayer-stamina", ["Super Creek", "Mejiro McQueen", "Biwa Hayahide", "Symboli Rudolf"]),
     },
     {
         key: "matikanefukukitaru-turf",
@@ -137,6 +154,7 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         description: "Turf all-rounder epithets for flexible inheritance history.",
         characterName: "Matikanefukukitaru",
         goalPresetKey: "turf-allrounder",
+        supportBorrowCards: bundleBorrow("turf-allrounder", ["Matikanefukukitaru", "Symboli Rudolf", "Super Creek", "Kitasan Black"]),
     },
 ]
 
