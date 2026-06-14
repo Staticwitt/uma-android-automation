@@ -225,8 +225,21 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
         }
     }
 
-    // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.
     const racing = migratedSettings.racing as any
+
+    // Migration: ensure support-deck inventory fields exist on older profiles.
+    if (racing) {
+        if (typeof racing.ownedSupportCards !== "string") {
+            racing.ownedSupportCards = "[]"
+            anyMigrated = true
+        }
+        if (typeof racing.supportDeckOwnedCards !== "string") {
+            racing.supportDeckOwnedCards = "[]"
+            anyMigrated = true
+        }
+    }
+
+    // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.
     if (racing?.enableParentFarmingMode) {
         const revision = typeof racing.parentFarmingResolverRevision === "number" ? racing.parentFarmingResolverRevision : 0
         if (revision < PARENT_FARMING_RESOLVER_REVISION) {

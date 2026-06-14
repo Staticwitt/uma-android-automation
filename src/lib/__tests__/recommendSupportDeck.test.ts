@@ -42,7 +42,7 @@ describe("recommendSupportDeckForCharacter", () => {
     it("infers route for characters without a bundle", () => {
         const rec = recommendSupportDeckForCharacter("Curren Chan")
         expect(rec).not.toBeNull()
-        expect(rec!.source).toBe("aptitude-inferred")
+        expect(rec!.source).toBe("goal-preset")
         expect(rec!.goalPresetKey).toBe("mile-sprint")
     })
 
@@ -59,12 +59,20 @@ describe("recommendSupportDeckForCharacter", () => {
         expect(rec!.ownedCards.length).toBe(4)
     })
 
-    it("prefers owned inventory when swapping unknown cards", () => {
-        const rec = recommendSupportDeckForCharacter("Curren Chan", {
-            ownedInventory: ["Grass Wonder", "Maruzensky", "King Halo", "Seiun Sky"],
-        })
+    it("optimizes owned deck from inventory when four or more cards are owned", () => {
+        const inventory = [
+            "Mejiro McQueen",
+            "Super Creek",
+            "Fine Motion",
+            "Seeking the Pearl",
+            "Maruzensky",
+            "King Halo",
+            "Seiun Sky",
+        ]
+        const rec = recommendSupportDeckForCharacter("Curren Chan", { ownedInventory: inventory })
         expect(rec).not.toBeNull()
-        expect(rec!.ownedCards).toEqual(["Grass Wonder", "Maruzensky", "King Halo", "Seiun Sky"])
+        expect(rec!.ownedCards.length).toBe(4)
+        expect(rec!.ownedCards.every((name) => inventory.includes(name))).toBe(true)
     })
 
     it("formats clipboard text with trainee, supports, and borrow order", () => {
@@ -74,6 +82,14 @@ describe("recommendSupportDeckForCharacter", () => {
         expect(text).toContain("Support 1:")
         expect(text).toContain("Friend borrow:")
         expect(text).toContain("Auto-borrow priority:")
+    })
+
+    it("reports missing owned inventory cards", () => {
+        const rec = recommendSupportDeckForCharacter("Grass Wonder", {
+            ownedInventory: ["Silence Suzuka", "Maruzensky"],
+        })
+        expect(rec!.missingOwnedCards).toBeDefined()
+        expect(rec!.missingOwnedCards!.length).toBeGreaterThan(0)
     })
 
     it("returns null for unknown character", () => {

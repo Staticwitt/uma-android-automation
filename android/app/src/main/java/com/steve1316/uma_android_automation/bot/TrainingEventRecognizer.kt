@@ -107,8 +107,18 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
         val options: ArrayList<String>,
     )
 
+    private data class CharacterEventRef(
+        val characterKey: String,
+        val eventName: String,
+        val cleanedTitle: String,
+        val options: ArrayList<String>,
+    )
+
     /** Flattened support events for faster scans than nested JSONObject iteration. */
     private val supportEventRefs: List<SupportEventRef> = buildSupportEventRefs()
+
+    /** Flattened character events for OCR prefilter before similarity scoring. */
+    private val characterEventRefs: List<CharacterEventRef> = buildCharacterEventRefs()
 
     private fun buildSupportEventRefs(): List<SupportEventRef> {
         val data = supportEventData ?: return emptyList()
@@ -122,6 +132,23 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
                     eventOptions.add(eventOptionsArray.getString(i))
                 }
                 out.add(SupportEventRef(supportName, eventName, cleanTitle(eventName), eventOptions))
+            }
+        }
+        return out
+    }
+
+    private fun buildCharacterEventRefs(): List<CharacterEventRef> {
+        val data = characterEventData ?: return emptyList()
+        val out = ArrayList<CharacterEventRef>()
+        data.keys().forEach { characterKey ->
+            val characterEvents = data.getJSONObject(characterKey)
+            characterEvents.keys().forEach { eventName ->
+                val eventOptionsArray = characterEvents.getJSONArray(eventName)
+                val eventOptions = ArrayList<String>()
+                for (i in 0 until eventOptionsArray.length()) {
+                    eventOptions.add(eventOptionsArray.getString(i))
+                }
+                out.add(CharacterEventRef(characterKey, eventName, cleanTitle(eventName), eventOptions))
             }
         }
         return out
@@ -251,40 +278,29 @@ class TrainingEventRecognizer(private val game: Game, private val imageUtils: Cu
         }
 
         // Search for the most similar string within the character event data.
-        characterEventData?.keys()?.forEach { characterKey ->
-            val characterEvents = characterEventData.getJSONObject(characterKey)
-            characterEvents.keys().forEach { eventName ->
-                // Skip if this is a special event and the name does not match the detected pattern.
-                if (isSpecialEvent && eventName != matchedSpecialEvent) {
-                    return@forEach
-                }
+        for (ref in characterEventRefs) {
+            if (isSpecialEvent && ref.eventName != matchedSpecialEvent) continue
+            if (!ocrMightMatchEventTitle(processedResult, ref.cleanedTitle)) continue
 
-                val eventOptionsArray = characterEvents.getJSONArray(eventName)
-                val eventOptions = ArrayList<String>()
-                for (i in 0 until eventOptionsArray.length()) {
-                    eventOptions.add(eventOptionsArray.getString(i))
-                }
+            val score = stringSimilarityService.score(processedResult, ref.cleanedTitle)
+            if (!hideComparisonResults) {
+                MessageLog.i(
+                    TAG,
+                    "[CHARACTER] ${ref.characterKey} \"$processedResult\" vs. \"${ref.cleanedTitle}\" (from \"${ref.eventName}\") confidence: ${game.decimalFormat.format(score)}",
+                )
+            }
 
-                // Calculate similarity score between standardized OCR result and known event name.
-                val cleanedEventName = cleanTitle(eventName)
-                val score = stringSimilarityService.score(processedResult, cleanedEventName)
-                if (!hideComparisonResults) {
-                    MessageLog.i(TAG, "[CHARACTER] $characterKey \"${processedResult}\" vs. \"${cleanedEventName}\" (from \"${eventName}\") confidence: ${game.decimalFormat.format(score)}")
-                }
+            if (score >= confidence) {
+                confidence = score
+                eventTitle = ref.eventName
+                eventOptionRewards = ref.options
+                category = "character"
+                character = ref.characterKey
 
-                if (score >= confidence) {
-                    confidence = score
-                    eventTitle = eventName
-                    eventOptionRewards = eventOptions
-                    category = "character"
-                    character = characterKey
-
-                    // Return early if we find a match that meets the minimum confidence criteria.
-                    if (score >= minimumConfidence) {
-                        val result = MatchingResult(confidence, category, eventTitle, supportCardTitle, eventOptionRewards, character)
-                        ocrMatchingCache[ocrResult] = result
-                        return result
-                    }
+                if (score >= minimumConfidence) {
+                    val result = MatchingResult(confidence, category, eventTitle, supportCardTitle, eventOptionRewards, character)
+                    ocrMatchingCache[ocrResult] = result
+                    return result
                 }
             }
         }

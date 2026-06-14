@@ -8,6 +8,7 @@ import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { findSupportDeckPreset, type SupportDeckPreset } from "./supportDeckPresets"
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
+import { optimizeOwnedDeckFromInventory, missingOwnedCards as computeMissingOwnedCards } from "./optimizeSupportDeck"
 import { APTITUDE_RANKS, type CharacterPresetEntry } from "./solver/constants"
 
 export type SupportRecommendationSource = "character-bundle" | "goal-preset" | "aptitude-inferred"
@@ -33,6 +34,8 @@ export interface SupportDeckRecommendation {
     ownedCards: string[]
     /** Ordered friend borrow list for auto-borrow (friend first, then alternates). */
     friendBorrowOrder: string[]
+    /** Recommended owned cards not present in [RecommendSupportDeckOptions.ownedInventory]. */
+    missingOwnedCards?: string[]
 }
 
 export interface RecommendSupportDeckOptions {
@@ -177,13 +180,23 @@ export const recommendSupportDeckForCharacter = (
         bundleBorrow = bundle.supportBorrowCards
     } else {
         goalPresetKey = inferGoalPresetKeyFromAptitudes(preset)
-        source = "aptitude-inferred"
+        source = "goal-preset"
     }
 
     const goalPreset = findParentFarmingGoalPreset(goalPresetKey)
     const deck = findSupportDeckPreset(goalPresetKey)
     const friendBorrowOrder = buildFriendBorrowOrder(characterName, deck, bundleBorrow)
-    const slots = buildSlots(characterName, deck, friendBorrowOrder, options?.ownedInventory)
+    const inventory = options?.ownedInventory ?? []
+    const ownedBase =
+        inventory.length >= 4
+            ? optimizeOwnedDeckFromInventory(inventory, characterName, deck, deck.owned, goalPresetKey)
+            : deck.owned
+    const slots = buildSlots(
+        characterName,
+        { ...deck, owned: ownedBase },
+        friendBorrowOrder,
+        inventory.length >= 4 ? undefined : options?.ownedInventory,
+    )
     const ownedCards = slots.filter((s) => s.role === "owned").map((s) => s.cardName)
 
     const rationale =
@@ -202,6 +215,7 @@ export const recommendSupportDeckForCharacter = (
         slots,
         ownedCards,
         friendBorrowOrder,
+        missingOwnedCards: inventory.length > 0 ? computeMissingOwnedCards(ownedCards, inventory) : undefined,
     }
 }
 

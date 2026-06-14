@@ -42,6 +42,7 @@ import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharac
 import { aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
 import { loadSolverPreviewCache, saveSolverPreviewCache } from "../../lib/solver/previewCacheStorage"
+import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision"
 import { copyToClipboard } from "../../lib/utils"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
@@ -302,6 +303,7 @@ const SmartRaceSolverSettings = () => {
                         ...prev.racing,
                         supportBorrowPreferredCards: JSON.stringify(borrowOrder),
                         supportDeckOwnedCards: JSON.stringify(ownedCards),
+                        ownedSupportCards: JSON.stringify(ownedCards),
                         smartRaceSolverCharacterPreset: characterName,
                         enableAutoBorrowSupportCard: true,
                         ...(preset
@@ -588,6 +590,7 @@ const SmartRaceSolverSettings = () => {
     const currentSnapshotKey = useMemo(
         () =>
             JSON.stringify({
+                dataRevision: SOLVER_DATA_BUNDLE_REVISION,
                 scenario: general?.scenario || "Trackblazer",
                 characterPreset: smartRaceSolverCharacterPreset,
                 aptitudes,

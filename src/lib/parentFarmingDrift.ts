@@ -1,5 +1,7 @@
 import type { Settings } from "../context/BotStateContext"
 import { resolveParentFarmingSettings } from "./parentFarmingResolver"
+import { parseOwnedSupportCards } from "./recommendSupportDeck"
+import { PARENT_FARMING_CHARACTER_BUNDLES } from "./parentFarmingCharacterBundles"
 
 const TRAINING_DRIFT_KEYS: Array<keyof Settings["training"]> = [
     "preferredDistanceOverride",
@@ -80,6 +82,38 @@ export const hasParentFarmingTrainingDrift = (settings: Settings): boolean => {
     return false
 }
 
+/** Whether support borrow order differs from the active bundle's expected list. */
+export const hasParentFarmingSupportBorrowDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const bundleKey = settings.racing.parentFarmingBundleKey
+    if (!bundleKey) return false
+    const bundle = PARENT_FARMING_CHARACTER_BUNDLES.find((b) => b.key === bundleKey)
+    if (!bundle) return false
+    const current = parseStringList(settings.racing.supportBorrowPreferredCards)
+    return !arraysEqual(current, bundle.supportBorrowCards)
+}
+
+/** Whether solver fan weight / minimum fan target differ from the resolved parent-farming preset. */
+export const hasParentFarmingSolverWeightDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    try {
+        const current = JSON.parse(settings.racing.smartRaceSolverWeights || "{}") as Record<string, number>
+        const expected = JSON.parse(resolved.racing.smartRaceSolverWeights || "{}") as Record<string, number>
+        return current.fanWeight !== expected.fanWeight || current.minimumFanTarget !== expected.minimumFanTarget
+    } catch {
+        return false
+    }
+}
+
+/** Whether auto-borrow is on but owned inventory is empty while a character preset is set. */
+export const hasParentFarmingOwnedInventoryWarning = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    if (!settings.racing.enableAutoBorrowSupportCard) return false
+    if (!settings.racing.smartRaceSolverCharacterPreset) return false
+    return parseOwnedSupportCards(settings.racing.ownedSupportCards).length === 0
+}
+
 /**
  * Detects parent-farming configuration drift: stale keys, disabled mode flags, or training overrides
  * that no longer match the active preset.
@@ -115,6 +149,21 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
         if (hasParentFarmingForcedEpithetDrift(settings)) {
             warnings.push(
                 "Forced epithets differ from the active parent-farming preset. Critical epithet routes may be skipped until you re-apply the preset or start a run.",
+            )
+        }
+        if (hasParentFarmingSupportBorrowDrift(settings)) {
+            warnings.push(
+                "Support borrow priority differs from the active character bundle. Re-apply the bundle or update borrow order to match.",
+            )
+        }
+        if (hasParentFarmingSolverWeightDrift(settings)) {
+            warnings.push(
+                "Solver fan weight or fan floor differs from the active parent-farming preset. Fan-weighted epithet scoring may not match your goal.",
+            )
+        }
+        if (hasParentFarmingOwnedInventoryWarning(settings)) {
+            warnings.push(
+                "Auto-borrow is on but owned support inventory is empty. Add owned cards for better deck recommendations (friend borrow still runs).",
             )
         }
     }
