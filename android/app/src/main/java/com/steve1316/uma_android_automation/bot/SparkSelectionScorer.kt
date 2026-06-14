@@ -29,6 +29,9 @@ object SparkSelectionScorer {
             "unique",
             "inherit",
             "factor",
+            "golden",
+            "gold",
+            "spark",
         )
 
     private val APTITUDE_KEYWORDS = listOf("sprint", "mile", "medium", "long", "turf", "dirt")
@@ -105,9 +108,9 @@ object SparkSelectionScorer {
             }
         }
 
-        val percentMatch = Regex("(\\d+)\\s*%").find(lower)
-        if (percentMatch != null) {
-            val pct = percentMatch.groupValues[1].toIntOrNull() ?: 0
+        val percentMatch = Regex("(\\d+)\\s*%").findAll(lower)
+        for (match in percentMatch) {
+            val pct = match.groupValues[1].toIntOrNull() ?: 0
             score += pct * 0.4
         }
 

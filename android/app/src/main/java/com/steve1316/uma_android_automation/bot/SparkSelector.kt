@@ -6,7 +6,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.components.ButtonInheritance
-import org.opencv.core.Point
+import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 /**
  * Reads the three inheritance spark options and taps the best match before confirming inheritance.
@@ -53,19 +53,7 @@ object SparkSelector {
             val cropX = imageUtils.relX(centerX, -(ocrWidth / 2))
             val cropY = imageUtils.relY(centerY, -(ocrHeight / 2))
 
-            val ocrText =
-                imageUtils.performOCROnRegion(
-                    sourceBitmap,
-                    cropX,
-                    cropY,
-                    ocrWidth,
-                    ocrHeight,
-                    useThreshold = false,
-                    useGrayscale = true,
-                    scale = 1.0,
-                    ocrEngine = "mlkit",
-                    debugName = "inheritance_spark_option_${index + 1}",
-                )
+            val ocrText = ocrSparkOption(imageUtils, sourceBitmap, cropX, cropY, ocrWidth, ocrHeight, index)
 
             val score = SparkSelectionScorer.score(ocrText, context)
             scores.add(index to score)
@@ -73,7 +61,12 @@ object SparkSelector {
             MessageLog.i(TAG, "[SPARK] Option ${index + 1}: \"$ocrText\" (score=${"%.1f".format(score)})")
         }
 
-        val bestIndex = scores.maxByOrNull { it.second }?.first ?: 0
+        val bestIndex =
+            scores
+                .maxWithOrNull(
+                    compareBy<Pair<Int, Double>> { it.second }
+                        .thenBy { -it.first },
+                )?.first ?: 0
         SparkPickHistory.record(bestIndex, optionTexts, strategy)
         val tapX = SharedData.displayWidth * SPARK_SLOT_X_FRACTIONS[bestIndex]
         val tapY = SharedData.displayHeight * SPARK_SLOT_Y_FRACTION
@@ -82,6 +75,47 @@ object SparkSelector {
         game.gestureUtils.tap(tapX, tapY, ButtonInheritance.template.path)
         game.wait(0.6)
         return bestIndex
+    }
+
+    private fun ocrSparkOption(
+        imageUtils: CustomImageUtils,
+        sourceBitmap: Bitmap,
+        cropX: Int,
+        cropY: Int,
+        ocrWidth: Int,
+        ocrHeight: Int,
+        index: Int,
+    ): String {
+        val debugName = "inheritance_spark_option_${index + 1}"
+        var ocrText =
+            imageUtils.performOCROnRegion(
+                sourceBitmap,
+                cropX,
+                cropY,
+                ocrWidth,
+                ocrHeight,
+                useThreshold = false,
+                useGrayscale = true,
+                scale = 1.0,
+                ocrEngine = "mlkit",
+                debugName = debugName,
+            )
+        if (ocrText.isBlank()) {
+            ocrText =
+                imageUtils.performOCROnRegion(
+                    sourceBitmap,
+                    cropX,
+                    cropY,
+                    ocrWidth,
+                    ocrHeight,
+                    useThreshold = false,
+                    useGrayscale = true,
+                    scale = 2.0,
+                    ocrEngine = "mlkit",
+                    debugName = "${debugName}_retry",
+                )
+        }
+        return ocrText
     }
 
     private fun buildContext(strategy: String): SparkSelectionContext {

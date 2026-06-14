@@ -1200,6 +1200,11 @@ abstract class Campaign(game: Game) : Task(game) {
                     MessageLog.v(TAG, "\n[INFO] Claimed an inheritance on $date.")
                     trainee.bHasUpdatedAptitudes = false
                     bHasCheckedDateThisTurn = false
+                    game.waitForLoading()
+                    if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
+                        openAptitudesDialog()
+                        tryHandleAllDialogs()
+                    }
                     true
                 } else {
                     false

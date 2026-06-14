@@ -106,9 +106,19 @@ describe("parentFarmingGoalPresets", () => {
 
         expect(racingResult.enableFarmingFans).toBe(true)
         expect(racingResult.ignoreConsecutiveRaceWarning).toBe(true)
-        expect(racingResult.sparkSelectionStrategy).toBeDefined()
+        expect(racingResult.sparkSelectionStrategy).toBe("StatAndAptitude")
         expect(weights.minimumFanTarget).toBe(120000)
         expect(weights.minimumRaceGapTurns).toBe(0)
+    })
+
+    it("applies goal-specific spark selection strategies", () => {
+        const skillHints = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "skill-hints")!
+        const turf = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "turf-allrounder")!
+        const skillRacing = applyParentFarmingGoalPresetToRacing(createRacingSettings(), skillHints)
+        const turfRacing = applyParentFarmingGoalPresetToRacing(createRacingSettings(), turf)
+
+        expect(skillRacing.sparkSelectionStrategy).toBe("SkillHints")
+        expect(turfRacing.sparkSelectionStrategy).toBe("Balanced")
     })
 
     it("applyParentFarmingGoalPreset updates racing and training slices", () => {

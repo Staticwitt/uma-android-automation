@@ -46,6 +46,14 @@ class SparkSelectionScorerTest {
     }
 
     @Test
+    @DisplayName("Sums every percent bonus in OCR text")
+    fun sumsAllPercentBonuses() {
+        val single = SparkSelectionScorer.score("Speed +5%", statContext)
+        val stacked = SparkSelectionScorer.score("Speed +5% Stamina +10%", statContext)
+        assertTrue(stacked > single)
+    }
+
+    @Test
     @DisplayName("Aptitude priorities rank weaker solver aptitudes earlier")
     fun buildAptitudePrioritiesUsesDistanceBiasAndWeakGrades() {
         val json = """{"Sprint":"G","Mile":"A","Medium":"B","Long":"A","Turf":"A","Dirt":"G"}"""

@@ -1,5 +1,6 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, type WeightsMap } from "./solver/constants"
+import type { SparkSelectionStrategy } from "./sparkSelection"
 import {
     buildParentFarmingTrainingSettings,
     PARENT_FARMING_GOAL_RACING_BASE,
@@ -16,6 +17,8 @@ export interface ParentFarmingGoalPreset {
     weightOverrides?: Partial<WeightsMap>
     /** Training distance bias and stat priorities applied with the goal preset. */
     trainingOverrides?: Partial<Settings["training"]>
+    /** Inheritance spark picker override for this parent route. */
+    sparkSelectionStrategy?: SparkSelectionStrategy
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
@@ -149,6 +152,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             hintWeight: 18.0,
         },
         trainingOverrides: SKILL_HINT_TRAINING,
+        sparkSelectionStrategy: "SkillHints",
     },
     {
         key: "medium-long",
@@ -260,6 +264,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             minimumFanTarget: 100000,
         },
         trainingOverrides: G1_FAN_TRAINING,
+        sparkSelectionStrategy: "Balanced",
     },
     {
         key: "senior-finale",
@@ -360,6 +365,7 @@ export const applyParentFarmingGoalPresetToRacing = (
             ...TARGET_PRIORITY_WEIGHTS,
             ...preset.weightOverrides,
         }),
+        sparkSelectionStrategy: preset.sparkSelectionStrategy ?? PARENT_FARMING_GOAL_RACING_BASE.sparkSelectionStrategy,
         supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,
