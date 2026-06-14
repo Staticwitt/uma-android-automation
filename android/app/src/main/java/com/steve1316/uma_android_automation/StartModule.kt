@@ -592,6 +592,26 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
     }
 
     /**
+     * Checks GitHub for a newer APK and shows the update dialog when one is available.
+     *
+     * @param promise Resolves when the check has been dispatched (the dialog may appear asynchronously).
+     */
+    @ReactMethod
+    fun checkForUpdate(promise: Promise) {
+        try {
+            val activity = this.reactApplicationContext.currentActivity
+            if (activity == null) {
+                promise.reject("NO_ACTIVITY", "Cannot check for updates because there is no current Activity.")
+                return
+            }
+            AppUpdateChecker(activity).checkForUpdate(forceShow = true)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("UPDATE_CHECK_ERROR", "Failed to check for updates: ${e.message}")
+        }
+    }
+
+    /**
      * Shows the changelog dialog for the currently installed app version. Reuses [AppUpdateChecker] so the dialog matches the updater UI.
      *
      * @param promise Resolves once the dialog has been dispatched on the UI thread. The dialog fetch may still happen asynchronously.

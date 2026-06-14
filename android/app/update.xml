@@ -1,13 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.7.3</latestVersion>
-    <url>https://github.com/steve1316/uma-android-automation/releases</url>
+    <latestVersion>5.8.0</latestVersion>
+    <latestVersionCode>80</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.0</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.0/v5.8.0-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.7.3 - Changelog
+v5.8.0 - In-app auto updater
+
+Features
+---
+- Check for updates on launch and from the drawer (cloud icon)
+- Download and install APK updates directly from GitHub releases
+- Version checks use versionCode from update.xml for reliable comparisons
+- Changelog viewer uses the same release notes feed
 
 Fixes
 ---
-- Fix visual bug in the `Smart Race Solver` page where the calendar preview popover was not scrollable on small screens.
+- Update feed now points to Staticwitt/uma-android-automation (was steve1316)
 
     </releaseNotes>
   </update>

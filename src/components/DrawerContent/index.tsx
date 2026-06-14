@@ -34,7 +34,7 @@ interface DrawerSection {
 }
 
 /** Repository GitHub URL used by the footer GitHub icon. */
-const GITHUB_URL = "https://github.com/steve1316/uma-android-automation"
+const GITHUB_URL = "https://github.com/Staticwitt/uma-android-automation"
 /** SQLite category for misc drawer state. */
 const MISC_CATEGORY = "misc"
 /** SQLite key holding the JSON-serialised recent-page route list. */
@@ -494,6 +494,18 @@ const DrawerContent: React.FC<DrawerContentComponentProps> = (props) => {
             <View style={styles.footer}>
                 <Pressable style={styles.footerIconButton} android_ripple={{ color: colors.ripple, foreground: true }} onPress={() => Linking.openURL(GITHUB_URL)}>
                     <Ionicons name="logo-github" size={24} color={colors.text} />
+                </Pressable>
+                <Pressable
+                    style={styles.footerIconButton}
+                    android_ripple={{ color: colors.ripple, foreground: true }}
+                    accessibilityLabel="Check for app updates"
+                    onPress={() => {
+                        NativeModules.StartModule.checkForUpdate().catch(() => {
+                            // Swallow failures; toast is shown from native when possible.
+                        })
+                    }}
+                >
+                    <Ionicons name="cloud-download-outline" size={24} color={colors.text} />
                 </Pressable>
                 <Pressable
                     style={styles.footerIconButton}
