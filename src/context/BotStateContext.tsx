@@ -46,6 +46,8 @@ export interface Settings {
     racing: {
         enableParentFarmingMode: boolean
         enableParentRunSummary: boolean
+        /** Persist completed parent runs locally for history and comparison. */
+        enableParentRunArchive: boolean
         enableFarmingFans: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
@@ -268,6 +270,7 @@ export const defaultSettings: Settings = {
     racing: {
         enableParentFarmingMode: false,
         enableParentRunSummary: true,
+        enableParentRunArchive: true,
         enableFarmingFans: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,

@@ -12,7 +12,7 @@ import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInvento
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
-import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
+import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
@@ -64,11 +64,13 @@ const ParentFarmingSettings = () => {
     const [bundleSupportEditing, setBundleSupportEditing] = useState<ParentFarmingCharacterBundle | null>(null)
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
+    const [archiveOpen, setArchiveOpen] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableParentFarmingMode,
         enableParentRunSummary,
+        enableParentRunArchive,
         sparkSelectionStrategy,
         enableAutoBorrowSupportCard,
         supportBorrowPreferredCards,
@@ -469,6 +471,41 @@ const ParentFarmingSettings = () => {
                                             }
                                         />
                                     </SearchableItem>
+                                    <SearchableItem
+                                        id="parent-run-archive"
+                                        title="Parent run history"
+                                        description="Save completed parent runs on-device and compare fans and epithets across runs."
+                                    >
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.md }}>
+                                            <Row
+                                                title="Save run history"
+                                                description="Stored locally when a parent-farming career ends."
+                                                right={
+                                                    <Switch
+                                                        checked={enableParentRunArchive}
+                                                        onCheckedChange={(checked) => updateRacingSetting("enableParentRunArchive", checked)}
+                                                    />
+                                                }
+                                            />
+                                            <Pressable
+                                                onPress={() => setArchiveOpen(true)}
+                                                style={{
+                                                    padding: SPACING.md,
+                                                    borderRadius: RADII.md,
+                                                    borderWidth: 1,
+                                                    borderColor: colors.borderHair,
+                                                    backgroundColor: colors.surface,
+                                                }}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                            >
+                                                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Browse parent run history</Text>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                    Compare fans and epithets vs your previous runs for the same character.
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    </SearchableItem>
                                 </Section>
 
                                 <Section label="Fan target">
@@ -591,6 +628,7 @@ const ParentFarmingSettings = () => {
                     onClose={() => setOwnedInventoryOpen(false)}
                     onSave={saveOwnedInventory}
                 />
+                <ParentRunArchiveSheet visible={archiveOpen} onClose={() => setArchiveOpen(false)} />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}
                     bundle={bundleSupportEditing}

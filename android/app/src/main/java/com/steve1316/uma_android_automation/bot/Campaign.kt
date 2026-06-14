@@ -9,6 +9,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
+import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import com.steve1316.uma_android_automation.bot.ParentRunSummary
 import com.steve1316.uma_android_automation.bot.ParentDiscordNotifier
 import com.steve1316.uma_android_automation.components.ButtonBack
@@ -2153,10 +2154,14 @@ abstract class Campaign(game: Game) : Task(game) {
                     SettingsHelper.getBooleanSetting("racing", "enableParentRunSummary", true)
                 ) {
                     val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
-                    val summary = ParentRunSummary.buildFromSettings(trainee, game.scenario, elapsedMs)
+                    val summaryInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
+                    val summary = ParentRunSummary.build(summaryInput)
                     ParentRunSummary.logSummary(summary)
-                    game.taskEndDiscordEmbed = ParentRunSummary.discordEmbedFromSettings(trainee, game.scenario, elapsedMs)
-                    game.taskEndDiscordMessage = ParentRunSummary.discordMarkdownFromSettings(trainee, game.scenario, elapsedMs)
+                    game.taskEndDiscordEmbed = ParentRunSummary.buildDiscordEmbed(summaryInput)
+                    game.taskEndDiscordMessage = ParentRunSummary.buildDiscordMarkdown(summaryInput)
+                    if (SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
+                        ParentRunArchive.append(game.myContext, summaryInput)
+                    }
                 }
 
                 return TaskResult.Success(

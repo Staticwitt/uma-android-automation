@@ -237,6 +237,10 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.supportDeckOwnedCards = "[]"
             anyMigrated = true
         }
+        if (typeof racing.enableParentRunArchive !== "boolean") {
+            racing.enableParentRunArchive = true
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

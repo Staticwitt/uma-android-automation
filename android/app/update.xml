@@ -1,32 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.8.9</latestVersion>
-    <latestVersionCode>89</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.8.9</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.8.9/v5.8.9-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <latestVersion>5.9.0</latestVersion>
+    <latestVersionCode>90</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.0</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.0/v5.9.0-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <releaseNotes>
-v5.8.9 - Parent fan fallback, deck optimizer, solver polish
-
-Smart Race Solver
----
-- Parent farming fan races when SRS plans Train/Rest (standard racing fallback)
-- Single-pass on-screen race selection via selectOnScreenRace
-- Shared EpithetFilters.raceMatchesFilter across solver + reachability
-
-Support recommendations
----
-- Inventory-aware deck optimizer (type-balanced four-subset search)
-- Missing-owned warnings, source badges, full borrow list in UI
-- Apply full deck syncs owned inventory; owned slots logged at career borrow
+v5.9.0 - Parent run archive
 
 Parent Farming
 ---
-- Drift warnings for borrow order, solver weights, empty owned inventory
-
-Bot runtime
----
-- Character training event OCR prefilter (flattened index)
-- Solver preview cache includes game data bundle revision
+- Save completed parent runs locally (fans, epithets, sparks, stats)
+- Browse and compare vs previous run for the same character preset
+- Toggle in Parent Farming settings; clear history from the archive sheet
 
     </releaseNotes>
   </update>
