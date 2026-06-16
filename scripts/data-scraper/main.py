@@ -2109,7 +2109,7 @@ if __name__ == "__main__":
     manifest_result = update_manifest_game_data()
     versions = manifest_result["versions"]
     previous_versions = manifest_result["previousVersions"]
-    should_run_selenium = manifest_result["manifestChanged"] or args.full or not args.manifest_only
+    should_run_selenium = (manifest_result["manifestChanged"] or args.full) and not args.manifest_only
 
     if args.manifest_only:
         logging.info("Manifest-only mode complete.")

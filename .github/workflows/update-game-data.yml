@@ -51,9 +51,11 @@ jobs:
       - name: Run data scraper
         run: |
           ARGS=""
-          if [ "${{ inputs.manifest_only }}" = "true" ]; then
+          MANIFEST_ONLY="${{ github.event.inputs.manifest_only || 'false' }}"
+          FULL_SCRAPE="${{ github.event.inputs.full_scrape || 'false' }}"
+          if [ "$MANIFEST_ONLY" = "true" ]; then
             ARGS="--manifest-only"
-          elif [ "${{ inputs.full_scrape }}" = "true" ]; then
+          elif [ "$FULL_SCRAPE" = "true" ]; then
             ARGS="--full"
           fi
           python scripts/data-scraper/main.py $ARGS

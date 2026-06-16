@@ -1,1 +1,16 @@
-{}
+{
+    "Gold Ship": {
+        "variant": "[Breakaway Battleship]",
+        "type": "Guts",
+        "friendshipBonus": 45,
+        "moodEffect": 30,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 45,
+        "hintLevel": 4,
+        "hintFrequency": 60,
+        "initStats": { "stamina": 30 }
+    },
+    "Matikanefukukitaru": {
+        "type": "Wit"
+    }
+}

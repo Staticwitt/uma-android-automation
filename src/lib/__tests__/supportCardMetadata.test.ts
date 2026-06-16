@@ -43,4 +43,10 @@ describe("supportCardMetadata", () => {
         const meta = getSupportCardMetadata("Kitasan Black")
         expect(meta!.stats?.specialtyPriority).toBe(scraped!.specialtyPriority)
     })
+
+    it("applies manual overrides on top of scraped stats", () => {
+        const meta = getSupportCardMetadata("Gold Ship")
+        expect(meta!.stats?.hintFrequency).toBe(60)
+        expect(meta!.type).toBe("Guts")
+    })
 })
