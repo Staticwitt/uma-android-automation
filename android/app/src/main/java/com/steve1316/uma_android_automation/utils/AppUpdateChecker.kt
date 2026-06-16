@@ -311,6 +311,13 @@ class AppUpdateChecker(private val activity: Activity) {
             instanceFollowRedirects = true
         }
 
+        connection.connect()
+        val responseCode = connection.responseCode
+        if (responseCode !in 200..299) {
+            connection.disconnect()
+            throw IllegalStateException("Server returned HTTP $responseCode for update APK")
+        }
+
         connection.inputStream.use { input ->
             val totalBytes = connection.contentLengthLong.takeIf { it > 0 } ?: -1L
             FileOutputStream(apkFile).use { output ->
