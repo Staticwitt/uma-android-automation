@@ -10,14 +10,14 @@ export const PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY = "g1-fans"
 /**
  * Bump when preset definitions change so `applyMigrations` re-resolves active parent-farming profiles.
  */
-export const PARENT_FARMING_RESOLVER_REVISION = 6
+export const PARENT_FARMING_RESOLVER_REVISION = 7
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
     ...OPTIMIZE_MODE_PRESETS.FANS_EPITAPH,
     targetEpithetMultiplier: 4.0,
     consecutiveRacePenalty: 2.0,
-    minimumRaceGapTurns: 0,
+    minimumRaceGapTurns: 1,
     raceCostPct: 75.0,
     includeOpAndPreOp: false,
     allowSummerRacing: false,
@@ -35,6 +35,7 @@ export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
     enableCompleteCareerOnFailure: true,
     enableParentRunSummary: true,
     enableParentRunArchive: true,
+    enableParentFarmingStopOnForcedEpithetFail: true,
     sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
     enableAutoBorrowSupportCard: true,
     enableAutoEquipOwnedSupportDeck: true,

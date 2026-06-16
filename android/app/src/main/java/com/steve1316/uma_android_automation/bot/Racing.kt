@@ -2104,10 +2104,10 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 if (useSmartRacing && campaign.date.year != DateYear.JUNIOR) {
                     MessageLog.v(TAG, "[RACE] Using Smart Race Solver for Year ${campaign.date.year}.")
                     val smartSuccess = processSmartRacing()
-                    if (!smartSuccess && shouldFallbackToParentFanRacing()) {
+                    if (!smartSuccess && shouldFallbackToParentFanRacingAfterSmartFailure()) {
                         MessageLog.i(
                             TAG,
-                            "[RACE] Parent farming fan fallback: Smart Race Solver had no on-screen race for turn ${campaign.date.day}.",
+                            "[RACE] Parent farming fan fallback: Smart Race Solver could not select an on-screen race for turn ${campaign.date.day}.",
                         )
                         processStandardRacing()
                     } else {
@@ -2252,13 +2252,12 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     }
 
     /**
-     * Parent-farming fan interval may mark a turn race-eligible when SRS plans Train/Rest.
-     * Fall back to standard fan racing only when SRS has no planned race for this turn.
+     * Parent-farming may fall back to standard fan racing when smart selection fails (OCR mismatch,
+     * missing double-star row, etc.) so unattended runs still enter a useful race instead of stalling.
      */
-    private fun shouldFallbackToParentFanRacing(): Boolean {
+    private fun shouldFallbackToParentFanRacingAfterSmartFailure(): Boolean {
         if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) return false
-        if (!enableFarmingFans) return false
-        return SmartRaceSolverIntegration.peekRaceKeyForTurn(campaign.date.day, game.scenario) == null
+        return enableFarmingFans
     }
 
     /**

@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
+import com.steve1316.uma_android_automation.bot.SupportCardSelection
 import com.steve1316.uma_android_automation.bot.RunRaceStats
 import com.steve1316.uma_android_automation.bot.SparkPickHistory
 import com.steve1316.uma_android_automation.bot.Racing.RaceData
@@ -635,15 +636,53 @@ object SmartRaceSolverIntegration {
             candidates.firstOrNull { rd ->
                 rd.name == decision.raceKey || rd.name == raceNameFromKey(decision.raceKey)
             }
+                ?: bestFuzzyOnScreenRaceMatch(
+                    plannedRaceKey = decision.raceKey,
+                    plannedGrade =
+                        racesByTurn[currentTurn]?.firstOrNull { candidate ->
+                            candidate.key == decision.raceKey || candidate.name == raceNameFromKey(decision.raceKey)
+                        }?.grade,
+                    candidates = candidates,
+                )
         if (pick == null) {
             MessageLog.i(
                 TAG,
                 "Solver chose ${decision.raceKey} for turn $currentTurn but it is not on screen; falling through.",
             )
+        } else if (pick.name != decision.raceKey && pick.name != raceNameFromKey(decision.raceKey)) {
+            MessageLog.i(
+                TAG,
+                "Fuzzy-matched on-screen \"${pick.name}\" to planned ${decision.raceKey} for turn $currentTurn.",
+            )
         } else {
             MessageLog.i(TAG, "Solver picked ${pick.name} for turn $currentTurn (projected epithets: ${schedule.projectedEpithets}).")
         }
         return pick
+    }
+
+    /**
+     * When OCR race names differ slightly from races.json keys, pick the closest on-screen candidate.
+     * Prefers the same grade as the planned calendar entry when available.
+     */
+    internal fun bestFuzzyOnScreenRaceMatch(
+        plannedRaceKey: String,
+        plannedGrade: String?,
+        candidates: List<RaceData>,
+    ): RaceData? {
+        val plannedName = raceNameFromKey(plannedRaceKey)
+        var best: RaceData? = null
+        var bestScore = 0.0
+        for (candidate in candidates) {
+            var score = SupportCardSelection.matchScore(candidate.name, plannedName)
+            if (plannedGrade != null && candidate.grade.equals(plannedGrade, ignoreCase = true)) {
+                score += 0.12
+            }
+            if (score > bestScore) {
+                bestScore = score
+                best = candidate
+            }
+        }
+        return if (best != null && bestScore >= SupportCardSelection.MIN_NAME_MATCH_SCORE) best else null
     }
 
     /**
