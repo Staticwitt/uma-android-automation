@@ -33,6 +33,20 @@ describe("parentFarmingCareerAutomation", () => {
         expect(JSON.parse(next.supportDeckOwnedCards)).toEqual(["A", "B", "C", "D"])
     })
 
+    it("buildFullDeckApplyRacingPatch excludes trainee from borrow and owned lists", () => {
+        const next = buildFullDeckApplyRacingPatch(
+            baseRacing(),
+            ["Speed", "Grass Wonder", "Stamina", "Power"],
+            ["Grass Wonder", "Silence Suzuka"],
+            "Grass Wonder",
+        )
+        const owned = JSON.parse(next.supportDeckOwnedCards) as string[]
+        const borrow = JSON.parse(next.supportBorrowPreferredCards) as string[]
+        expect(owned).not.toContain("Grass Wonder")
+        expect(borrow).not.toContain("Grass Wonder")
+        expect(borrow[0]).toBe("Silence Suzuka")
+    })
+
     it("isCareerSelectionReady requires setup, deck/borrow, and full automation", () => {
         const partial: Settings = {
             racing: {

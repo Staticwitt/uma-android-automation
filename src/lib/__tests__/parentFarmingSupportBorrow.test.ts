@@ -1,13 +1,43 @@
 import type { Settings } from "../../context/BotStateContext"
 import { findParentFarmingCharacterBundle } from "../parentFarmingCharacterBundles"
 import {
+    excludeTraineeFromSupportList,
+    namesMatchTrainee,
     parseSupportBorrowOverrides,
-    resolveSupportBorrowCardsForBundle,
     resolveActiveSupportBorrowCards,
+    resolveSupportBorrowCardsForBundle,
+    substituteTraineeInOwnedDeck,
 } from "../parentFarmingSupportBorrow"
 
 describe("parentFarmingSupportBorrow", () => {
     const mejiroBundle = findParentFarmingCharacterBundle("mejiro-mcqueen-crown")!
+    const grassBundle = findParentFarmingCharacterBundle("grass-wonder-mile")!
+
+    it("namesMatchTrainee compares case-insensitively", () => {
+        expect(namesMatchTrainee("Grass Wonder", "grass wonder")).toBe(true)
+        expect(namesMatchTrainee("Oguri Cap", "Kitasan Black")).toBe(false)
+    })
+
+    it("excludeTraineeFromSupportList removes trainee and backfills alternates", () => {
+        const cards = excludeTraineeFromSupportList(
+            ["Grass Wonder", "Silence Suzuka"],
+            "Grass Wonder",
+            ["Maruzensky", "King Halo"],
+        )
+        expect(cards).not.toContain("Grass Wonder")
+        expect(cards[0]).toBe("Silence Suzuka")
+        expect(cards).toContain("Maruzensky")
+    })
+
+    it("substituteTraineeInOwnedDeck replaces trainee slots", () => {
+        const owned = substituteTraineeInOwnedDeck(
+            ["Speed", "Grass Wonder", "Stamina", "Power"],
+            "Grass Wonder",
+            ["Silence Suzuka", "Maruzensky", "King Halo"],
+        )
+        expect(owned).not.toContain("Grass Wonder")
+        expect(owned.length).toBe(4)
+    })
 
     it("prefers user override over bundle defaults", () => {
         const overrides = { [mejiroBundle.key]: ["Kitasan Black", "Gold Ship"] }
@@ -15,10 +45,16 @@ describe("parentFarmingSupportBorrow", () => {
         expect(cards).toEqual(["Kitasan Black", "Gold Ship"])
     })
 
-    it("uses bundle defaults when no override exists", () => {
+    it("uses bundle defaults when no override exists and excludes trainee", () => {
         const cards = resolveSupportBorrowCardsForBundle(mejiroBundle, {})
         expect(cards[0]).toBe("Super Creek")
-        expect(cards).toContain("Mejiro McQueen")
+        expect(cards).not.toContain("Mejiro McQueen")
+    })
+
+    it("excludes trainee from grass wonder bundle borrow list", () => {
+        const cards = resolveSupportBorrowCardsForBundle(grassBundle, {})
+        expect(cards).not.toContain("Grass Wonder")
+        expect(cards[0]).toBe("Silence Suzuka")
     })
 
     it("resolveActiveSupportBorrowCards reads active bundle with overrides", () => {
@@ -31,6 +67,7 @@ describe("parentFarmingSupportBorrow", () => {
                 supportBorrowPreferredCards: "[]",
                 parentFarmingGoalPresetLabel: "",
                 parentFarmingBundleLabel: "",
+                smartRaceSolverCharacterPreset: "Mejiro McQueen",
             },
         } as Settings
 

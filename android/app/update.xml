@@ -1,20 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.8</latestVersion>
-    <latestVersionCode>98</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.8</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.8/v5.9.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.8/v5.9.8-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.9</latestVersion>
+    <latestVersionCode>99</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.9</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.9/v5.9.9-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.9/v5.9.9-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.8 - Uma-tools export + Discord projected quality
+v5.9.9 - Support card trainee exclusion fix
 
-New
+Fix
 ---
-- Parent run archive: Copy for Umalator (horse JSON), CSV row, and full uma-tools export
-- Discord live status: projected parent quality grade (S–D) at current turn
-- Mid-career epithet snapshot uses current turn instead of end-of-career turn 72
+- Auto-borrow and auto-equip no longer pick support cards matching the trainee Uma
+- Bundle and goal preset borrow lists filter the training character at apply time
 
-Includes v5.9.7 parent farming follow-up pack and earlier strategic depth features.
+Includes v5.9.8 uma-tools export and Discord projected quality.
 
     </releaseNotes>
   </update>

@@ -64,12 +64,12 @@ describe("parentFarmingCharacterBundles", () => {
         expect(result.racing.smartRaceSolverManualLocks).toBe("{}")
     })
 
-    it("applies bundle-specific support borrow cards", () => {
+    it("applies bundle-specific support borrow cards without the trainee", () => {
         const bundle = findParentFarmingCharacterBundle("mejiro-mcqueen-crown")!
         const result = applyParentFarmingCharacterBundle(createSettings(), bundle)
         const cards = JSON.parse(result.racing.supportBorrowPreferredCards) as string[]
         expect(cards[0]).toBe("Super Creek")
-        expect(cards).toContain("Mejiro McQueen")
+        expect(cards).not.toContain("Mejiro McQueen")
     })
 
     it("filters epithets using the bundle character gate", () => {

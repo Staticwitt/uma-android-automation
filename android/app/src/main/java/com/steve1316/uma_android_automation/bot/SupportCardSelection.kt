@@ -2,6 +2,7 @@ package com.steve1316.uma_android_automation.bot
 
 import android.graphics.Bitmap
 import com.steve1316.automation_library.data.SharedData
+import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.LabelEventProgress
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -29,6 +30,19 @@ internal object SupportCardSelection {
             }
         }.getOrElse { emptyList() }
     }
+
+    /** True when [name] matches the active trainee character preset (case-insensitive). */
+    fun isTraineeCharacter(name: String): Boolean {
+        val trainee =
+            SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset")
+                .trim()
+        if (trainee.isEmpty()) return false
+        return name.trim().equals(trainee, ignoreCase = true)
+    }
+
+    /** Drops the trainee from borrow/equip candidate lists so the bot never picks itself as support. */
+    fun filterTraineeFromSupportNames(names: List<String>): List<String> =
+        names.filterNot { isTraineeCharacter(it) }
 
     fun ocrMightMatchName(normalizedOcr: String, needle: String): Boolean {
         if (needle.isEmpty()) return false
@@ -74,6 +88,13 @@ internal object SupportCardSelection {
 
     /** Scrolls a support picker list and taps the first row matching [cardName]. */
     fun findAndTapCardInList(game: Game, cardName: String, logTag: String): Boolean {
+        if (isTraineeCharacter(cardName)) {
+            com.steve1316.automation_library.utils.MessageLog.w(
+                logTag,
+                "Refusing to select trainee \"$cardName\" as support.",
+            )
+            return false
+        }
         var tapped = false
         ScrollList.processWithFallback(
             game,

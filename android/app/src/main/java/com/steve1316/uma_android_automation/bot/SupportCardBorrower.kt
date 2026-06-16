@@ -61,7 +61,9 @@ object SupportCardBorrower {
     fun selectPreferredCard(game: Game, sourceBitmap: Bitmap): Boolean {
         val preferredNames =
             rotatedPreferredNames(
-                SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")),
+                SupportCardSelection.filterTraineeFromSupportNames(
+                    SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")),
+                ),
             )
         if (preferredNames.isEmpty()) {
             MessageLog.w(TAG, "No preferred support cards configured; skipping borrow selection.")
@@ -88,6 +90,7 @@ object SupportCardBorrower {
                     "support_borrow_slot_$index",
                 )
             for (name in preferredNames) {
+                if (SupportCardSelection.isTraineeCharacter(name)) continue
                 val score = SupportCardSelection.matchScore(ocrText, name)
                 if (score > bestScore) {
                     bestScore = score

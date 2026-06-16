@@ -1,4 +1,6 @@
 import type { Settings } from "../context/BotStateContext"
+import { excludeTraineeFromSupportList, substituteTraineeInOwnedDeck } from "./parentFarmingSupportBorrow"
+import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 
 /** Racing flags for hands-off career selection (equip → borrow → parents → start). */
@@ -157,12 +159,17 @@ export const buildFullDeckApplyRacingPatch = (
     borrowOrder: string[],
     characterName: string,
     aptitudesJson?: string,
-): Settings["racing"] => ({
-    ...racing,
-    ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
-    supportBorrowPreferredCards: JSON.stringify(borrowOrder),
-    supportDeckOwnedCards: JSON.stringify(ownedCards),
-    ownedSupportCards: JSON.stringify(ownedCards),
-    smartRaceSolverCharacterPreset: characterName,
-    ...(aptitudesJson ? { smartRaceSolverAptitudes: aptitudesJson } : {}),
-})
+): Settings["racing"] => {
+    const alternates = borrowOrder.length > 0 ? borrowOrder : findSupportBorrowPreset(racing.parentFarmingGoalPresetKey || "g1-fans")
+    const safeOwned = substituteTraineeInOwnedDeck(ownedCards, characterName, alternates)
+    const safeBorrow = excludeTraineeFromSupportList(borrowOrder, characterName, alternates)
+    return {
+        ...racing,
+        ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
+        supportBorrowPreferredCards: JSON.stringify(safeBorrow),
+        supportDeckOwnedCards: JSON.stringify(safeOwned),
+        ownedSupportCards: JSON.stringify(safeOwned),
+        smartRaceSolverCharacterPreset: characterName,
+        ...(aptitudesJson ? { smartRaceSolverAptitudes: aptitudesJson } : {}),
+    }
+}

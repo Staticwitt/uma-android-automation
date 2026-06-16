@@ -10,6 +10,7 @@ import {
     PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
 } from "./parentFarmingConstants"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
+import { excludeTraineeFromSupportList } from "./parentFarmingSupportBorrow"
 
 export interface ParentFarmingGoalPreset {
     key: string
@@ -389,7 +390,13 @@ export const applyParentFarmingGoalPresetToRacing = (
                   parentFarmingQualityTargetScore: preset.qualityTargetScore,
               }
             : {}),
-        supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
+        supportBorrowPreferredCards: JSON.stringify(
+            excludeTraineeFromSupportList(
+                findSupportBorrowPreset(preset.key),
+                racing.smartRaceSolverCharacterPreset,
+                findSupportBorrowPreset(preset.key),
+            ),
+        ),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,
         parentFarmingBundleKey: "",

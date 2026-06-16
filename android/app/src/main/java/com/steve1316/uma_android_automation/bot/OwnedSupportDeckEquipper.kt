@@ -36,9 +36,12 @@ object OwnedSupportDeckEquipper {
     fun tryEquipOwnedDeck(game: Game): Boolean {
         if (!isEnabled() || equipAttemptedThisRun) return false
 
-        val ownedCards = SupportCardSelection.readStringList(
-            SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"),
-        )
+        val ownedCards =
+            SupportCardSelection.filterTraineeFromSupportNames(
+                SupportCardSelection.readStringList(
+                    SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"),
+                ),
+            )
         if (ownedCards.isEmpty()) return false
 
         if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
@@ -52,6 +55,10 @@ object OwnedSupportDeckEquipper {
 
         for (index in ownedCards.indices.take(OWNED_SLOT_X_FRACTIONS.size)) {
             val cardName = ownedCards[index]
+            if (SupportCardSelection.isTraineeCharacter(cardName)) {
+                MessageLog.w(TAG, "Skipping owned slot $index — \"$cardName\" matches the trainee.")
+                continue
+            }
             val centerX = SharedData.displayWidth * OWNED_SLOT_X_FRACTIONS[index]
             val centerY = SharedData.displayHeight * OWNED_SLOT_Y_FRACTION
             val ocrText =
