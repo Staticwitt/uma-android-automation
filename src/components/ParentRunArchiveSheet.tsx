@@ -14,6 +14,12 @@ import {
     loadParentRunArchive,
     type ParentRunArchiveEntry,
 } from "../lib/parentRunArchive"
+import {
+    findBestRunForCharacter,
+    formatEpithetDelta,
+    formatQualityLabel,
+    scoreParentRunArchiveEntry,
+} from "../lib/parentQuality"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -98,6 +104,8 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                 title: { ...TYPE.body, color: colors.text, fontWeight: "600" },
                 meta: { ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs },
                 compare: { ...TYPE.caption, color: colors.brand, marginTop: SPACING.xs },
+                quality: { ...TYPE.caption, color: colors.brand, fontWeight: "700", marginTop: SPACING.xs },
+                best: { ...TYPE.caption, color: colors.warning ?? colors.textMuted, marginTop: SPACING.xs },
                 detail: { ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginTop: SPACING.sm },
                 empty: { ...TYPE.body, color: colors.textMuted, textAlign: "center", marginTop: SPACING.lg },
             }),
@@ -108,7 +116,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         <View>
             <Text style={{ ...TYPE.h2, color: colors.text }}>Parent run history</Text>
             <Text style={styles.intro}>
-                Saved locally when a parent-farming career ends. Compare fans and epithets across runs for the same character preset.
+                Saved locally when a parent-farming career ends. Runs are scored S–D from epithets, fans, forced routes, and race efficiency.
             </Text>
             <Input value={search} onChangeText={setSearch} placeholder="Search character, bundle, scenario…" autoCapitalize="none" autoCorrect={false} />
         </View>
@@ -136,6 +144,10 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                             const previous = findPreviousRunForCharacter(runs, run)
                             const expanded = expandedId === run.id
                             const duration = formatParentRunDuration(run.elapsedMs)
+                            const quality = scoreParentRunArchiveEntry(run)
+                            const characterKey = run.characterPreset || run.traineeName
+                            const bestForCharacter = characterKey ? findBestRunForCharacter(runs, characterKey) : null
+                            const epithetDelta = previous ? formatEpithetDelta(run, previous) : null
                             return (
                                 <Pressable
                                     key={run.id}
@@ -146,6 +158,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                     <Text style={styles.title}>
                                         {run.traineeName || run.characterPreset || "Unknown Uma"}
                                         {run.fans > 0 ? ` · ${run.fans.toLocaleString()} fans` : ""}
+                                        {` · ${formatQualityLabel(quality)}`}
                                     </Text>
                                     <Text style={styles.meta}>
                                         {formatParentRunTimestamp(run.completedAtMs)}
@@ -163,8 +176,13 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                     {previous ? (
                                         <Text style={styles.compare}>{formatFansDelta(run.fans, previous.fans)}</Text>
                                     ) : null}
+                                    {epithetDelta ? <Text style={styles.compare}>{epithetDelta}</Text> : null}
+                                    {bestForCharacter?.id === run.id && runs.filter((r) => (r.characterPreset || r.traineeName) === characterKey).length > 1 ? (
+                                        <Text style={styles.best}>Best quality for {characterKey}</Text>
+                                    ) : null}
                                     {expanded && (
                                         <View style={styles.detail}>
+                                            <Text>Quality: {formatQualityLabel(quality)}</Text>
                                             <Text>Goal: {run.goalPresetLabel || run.characterPreset}</Text>
                                             <Text>Spark: {run.sparkStrategy}</Text>
                                             <Text>

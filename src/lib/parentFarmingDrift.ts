@@ -106,6 +106,29 @@ export const hasParentFarmingSolverWeightDrift = (settings: Settings): boolean =
     }
 }
 
+/** Whether target epithet list differs from the resolved parent-farming preset. */
+export const hasParentFarmingTargetEpithetDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    const current = parseStringList(settings.racing.smartRaceSolverTargetEpithets)
+    const expected = parseStringList(resolved.racing.smartRaceSolverTargetEpithets)
+    return !arraysEqual(current, expected)
+}
+
+/** Whether forced epithet list differs from resolved preset (beyond the existing forced drift check scope). */
+export const hasParentFarmingTargetWeightDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    try {
+        const current = JSON.parse(settings.racing.smartRaceSolverWeights || "{}") as Record<string, number>
+        const expected = JSON.parse(resolved.racing.smartRaceSolverWeights || "{}") as Record<string, number>
+        const keys = ["targetEpithetMultiplier", "raceCostPct", "minimumRaceGapTurns", "consecutiveRacePenalty", "hintWeight"]
+        return keys.some((key) => current[key] !== expected[key])
+    } catch {
+        return false
+    }
+}
+
 /** Whether auto-equip is on but no owned deck slots are saved. */
 export const hasParentFarmingAutoEquipWarning = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
@@ -172,6 +195,16 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
         if (hasParentFarmingSupportBorrowDrift(settings)) {
             warnings.push(
                 "Support borrow priority differs from the active character bundle. Re-apply the bundle or update borrow order to match.",
+            )
+        }
+        if (hasParentFarmingTargetEpithetDrift(settings)) {
+            warnings.push(
+                "Target epithets differ from the active parent-farming preset. Re-sync from preset or re-apply your character setup.",
+            )
+        }
+        if (hasParentFarmingTargetWeightDrift(settings)) {
+            warnings.push(
+                "Solver race-weight tuning differs from the active parent-farming preset (epithet multiplier, race cost, gaps). Re-sync from preset.",
             )
         }
         if (hasParentFarmingSolverWeightDrift(settings)) {

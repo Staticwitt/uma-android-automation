@@ -58,6 +58,7 @@ object ParentRunArchive {
 
     internal fun recordFromInput(input: ParentRunSummaryInput): JSONObject {
         val trainee = input.trainee
+        val quality = ParentRunQuality.score(input)
         val sparks = JSONArray()
         for (pick in input.sparkPicks) {
             sparks.put(
@@ -78,6 +79,7 @@ object ParentRunArchive {
             .put("traineeName", trainee.name)
             .put("sparkStrategy", input.sparkStrategy)
             .put("targetEpithets", JSONArray(input.targetEpithets))
+            .put("forcedEpithets", JSONArray(input.forcedEpithets))
             .put("completedTargetEpithets", JSONArray(input.completedTargetEpithets))
             .put("incompleteTargetEpithets", JSONArray(input.incompleteTargetEpithets))
             .put("extraCompletedEpithets", JSONArray(input.extraCompletedEpithets))
@@ -105,6 +107,9 @@ object ParentRunArchive {
             .put("surfaceAptitudes", aptitudesJson(TrackSurface.entries) { trainee.trackSurfaceAptitudes[it]?.name ?: "" })
             .put("distanceAptitudes", aptitudesJson(TrackDistance.entries) { trainee.trackDistanceAptitudes[it]?.name ?: "" })
             .put("styleAptitudes", aptitudesJson(RunningStyle.entries) { trainee.runningStyleAptitudes[it]?.name ?: "" })
+            .put("qualityScore", quality.score)
+            .put("qualityGrade", quality.grade)
+            .put("qualityBreakdown", ParentRunQuality.breakdownToJson(quality.breakdown))
     }
 
     private fun <T : Enum<T>> aptitudesJson(entries: List<T>, value: (T) -> String): JSONObject {

@@ -13,6 +13,7 @@ import { CharacterSupportRecommendationView } from "../../components/CharacterSu
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import { ParentFarmingCareerAutomationCard } from "../../components/ParentFarmingCareerAutomationCard"
+import { ParentFarmingGoalProgressCard } from "../../components/ParentFarmingGoalProgressCard"
 import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
@@ -29,7 +30,15 @@ import {
     buildFullDeckApplyRacingPatch,
 } from "../../lib/parentFarmingCareerAutomation"
 import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
-import { applyParentFarmingPreset, disableParentFarmingMode } from "../../lib/parentFarmingPreset"
+import { applyParentFarmingPreset, disableParentFarmingMode, refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
+import {
+    hasParentFarmingTargetEpithetDrift,
+    hasParentFarmingTargetWeightDrift,
+    hasParentFarmingTrainingDrift,
+    hasParentFarmingForcedEpithetDrift,
+    hasParentFarmingSparkStrategyDrift,
+    hasParentFarmingSolverWeightDrift,
+} from "../../lib/parentFarmingDrift"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -135,6 +144,26 @@ const ParentFarmingSettings = () => {
     )
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
+
+    const showPresetReSync = useMemo(
+        () =>
+            enableParentFarmingMode &&
+            (hasParentFarmingTargetEpithetDrift(settings) ||
+                hasParentFarmingTargetWeightDrift(settings) ||
+                hasParentFarmingTrainingDrift(settings) ||
+                hasParentFarmingForcedEpithetDrift(settings) ||
+                hasParentFarmingSparkStrategyDrift(settings) ||
+                hasParentFarmingSolverWeightDrift(settings)),
+        [enableParentFarmingMode, settings],
+    )
+
+    const reSyncFromPreset = useCallback(() => {
+        setSettings((prev) => refreshParentFarmingSettings(prev))
+    }, [setSettings])
+
+    const openSmartRaceSolver = useCallback(() => {
+        navigation.navigate("SmartRaceSolverSettings" as never)
+    }, [navigation])
 
     const allowedEpithetNames = useMemo(
         () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
@@ -337,6 +366,14 @@ const ParentFarmingSettings = () => {
                             <ParentFarmingActivePresetChip settings={settings} />
                             {enableParentFarmingMode && (
                                 <ParentFarmingCareerAutomationCard settings={settings} onEnableFullAutomation={enableFullCareerAutomation} />
+                            )}
+                            {enableParentFarmingMode && (
+                                <ParentFarmingGoalProgressCard
+                                    settings={settings}
+                                    onOpenSolver={openSmartRaceSolver}
+                                    onReSyncPreset={reSyncFromPreset}
+                                    showReSync={showPresetReSync}
+                                />
                             )}
                             {parentFarmingDriftWarnings.length > 0 && (
                                 <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>

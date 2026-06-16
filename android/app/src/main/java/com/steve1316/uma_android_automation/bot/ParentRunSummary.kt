@@ -24,6 +24,7 @@ data class ParentRunSummaryInput(
     val characterPreset: String,
     val sparkStrategy: String,
     val targetEpithets: List<String>,
+    val forcedEpithets: List<String> = emptyList(),
     val completedTargetEpithets: List<String>,
     val incompleteTargetEpithets: List<String>,
     val extraCompletedEpithets: List<String>,
@@ -82,6 +83,7 @@ object ParentRunSummary {
             characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset"),
             sparkStrategy = SettingsHelper.getStringSetting("racing", "sparkSelectionStrategy").ifEmpty { "Default" },
             targetEpithets = readStringList("smartRaceSolverTargetEpithets"),
+            forcedEpithets = readStringList("smartRaceSolverForcedEpithets"),
             completedTargetEpithets = epithetSnapshot?.completedTargets ?: emptyList(),
             incompleteTargetEpithets = epithetSnapshot?.incompleteTargets ?: emptyList(),
             extraCompletedEpithets = epithetSnapshot?.extraCompleted ?: emptyList(),
@@ -145,7 +147,12 @@ object ParentRunSummary {
             lines.add("Training bias: ${input.trainingBias}")
         }
         lines.add(formatTargetEpithets(input.targetEpithets))
+        if (input.forcedEpithets.isNotEmpty()) {
+            lines.add("Forced epithets: ${input.forcedEpithets.joinToString(", ")}")
+        }
         lines.addAll(formatEpithetResults(input))
+        val quality = ParentRunQuality.score(input)
+        lines.add("Parent quality: ${quality.grade} (${quality.score}/100)")
         lines.addAll(formatSparkPicks(input.sparkPicks))
         lines.add("Races: ${input.raceStats.wins} wins, ${input.raceStats.losses} losses")
         lines.add("Fans: ${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})")

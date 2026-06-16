@@ -1,5 +1,7 @@
 import { NativeModules } from "react-native"
 
+import type { ParentQualityBreakdown, ParentQualityGrade } from "./parentQuality"
+
 export interface ParentRunSparkPick {
     pickIndex: number
     strategy: string
@@ -25,6 +27,7 @@ export interface ParentRunArchiveEntry {
     traineeName: string
     sparkStrategy: string
     targetEpithets: string[]
+    forcedEpithets: string[]
     completedTargetEpithets: string[]
     incompleteTargetEpithets: string[]
     extraCompletedEpithets: string[]
@@ -39,6 +42,9 @@ export interface ParentRunArchiveEntry {
     fanClass: string
     skillPoints: number
     stats: ParentRunStats
+    qualityScore?: number
+    qualityGrade?: ParentQualityGrade
+    qualityBreakdown?: ParentQualityBreakdown
 }
 
 const parseStringArray = (value: unknown): string[] => {
@@ -94,6 +100,7 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     traineeName: typeof entry.traineeName === "string" ? entry.traineeName : "",
                     sparkStrategy: typeof entry.sparkStrategy === "string" ? entry.sparkStrategy : "",
                     targetEpithets: parseStringArray(entry.targetEpithets),
+                    forcedEpithets: parseStringArray(entry.forcedEpithets),
                     completedTargetEpithets: parseStringArray(entry.completedTargetEpithets),
                     incompleteTargetEpithets: parseStringArray(entry.incompleteTargetEpithets),
                     extraCompletedEpithets: parseStringArray(entry.extraCompletedEpithets),
@@ -108,6 +115,19 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     fanClass: typeof entry.fanClass === "string" ? entry.fanClass : "",
                     skillPoints: typeof entry.skillPoints === "number" ? entry.skillPoints : 0,
                     stats: parseStats(entry.stats),
+                    qualityScore: typeof entry.qualityScore === "number" ? entry.qualityScore : undefined,
+                    qualityGrade:
+                        entry.qualityGrade === "S" ||
+                        entry.qualityGrade === "A" ||
+                        entry.qualityGrade === "B" ||
+                        entry.qualityGrade === "C" ||
+                        entry.qualityGrade === "D"
+                            ? entry.qualityGrade
+                            : undefined,
+                    qualityBreakdown:
+                        entry.qualityBreakdown && typeof entry.qualityBreakdown === "object"
+                            ? (entry.qualityBreakdown as ParentQualityBreakdown)
+                            : undefined,
                 }
             })
             .filter((entry): entry is ParentRunArchiveEntry => entry !== null)

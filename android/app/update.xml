@@ -1,21 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.4</latestVersion>
-    <latestVersionCode>94</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.4</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.4/v5.9.4-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.4/v5.9.4-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.5</latestVersion>
+    <latestVersionCode>95</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.5</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.5/v5.9.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.5/v5.9.5-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.4 - Parent farming immediate ROI
+v5.9.5 - Parent farming strategic depth
 
 New
 ---
-- Auto-equip owned support deck at career selection (OCR + scroll-list matching)
-- Auto-start career on final confirmation
-- Multi-run parent farming loop (configurable count; 0 = until stopped)
-- Shared SupportCardSelection helper for borrow and owned-equip flows
+- Parent quality score (S–D) from epithets, fans, forced routes, race WR, and bonus epithets
+- Run archive ranks by quality, epithet deltas vs previous run, best-run badge per character
+- Strategic goal card: target/forced epithets, solver floor, spark strategy, re-sync from preset
+- Expanded preset drift detection for target epithets and solver weight tuning
 
-Career selection order: owned equip → friend borrow → legacy parents → auto-start → training loop.
+Includes v5.9.4 immediate ROI: auto-equip, auto-start, multi-run, career automation UX.
 
     </releaseNotes>
   </update>

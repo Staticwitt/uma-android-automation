@@ -52,7 +52,8 @@ class ParentRunArchiveTest {
         assertEquals(2, records.length())
         assertEquals("Bundle B", records.getJSONObject(0).getString("bundleLabel"))
         assertEquals("Bundle A", records.getJSONObject(1).getString("bundleLabel"))
-        assertTrue(records.getJSONObject(0).has("id"))
+        assertTrue(records.getJSONObject(0).has("qualityScore"))
+        assertTrue(records.getJSONObject(0).has("qualityGrade"))
         assertEquals(250000, records.getJSONObject(0).getInt("fans"))
     }
 
