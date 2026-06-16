@@ -118,7 +118,7 @@ export const CharacterSupportRecommendationView = ({ recommendation }: Character
                 </Pressable>
             )}
             <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
-                Owned support slots are saved when you apply a deck; enable auto-equip in Parent Farming settings or equip manually at career selection. Friend borrow is automated when enabled.
+                Apply full deck saves owned slots and turns on career automation (equip, borrow, parents, start).
             </Text>
         </View>
     )

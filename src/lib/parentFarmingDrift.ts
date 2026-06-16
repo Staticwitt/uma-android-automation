@@ -106,6 +106,24 @@ export const hasParentFarmingSolverWeightDrift = (settings: Settings): boolean =
     }
 }
 
+/** Whether auto-equip is on but no owned deck slots are saved. */
+export const hasParentFarmingAutoEquipWarning = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    if (!settings.racing.enableAutoEquipOwnedSupportDeck) return false
+    return parseOwnedSupportCards(settings.racing.supportDeckOwnedCards).length === 0
+}
+
+/** Whether auto-borrow is on but the borrow priority list is empty. */
+export const hasParentFarmingAutoBorrowListWarning = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    if (!settings.racing.enableAutoBorrowSupportCard) return false
+    try {
+        const parsed = JSON.parse(settings.racing.supportBorrowPreferredCards || "[]")
+        return !Array.isArray(parsed) || parsed.filter((name) => typeof name === "string" && name.length > 0).length === 0
+    } catch {
+        return true
+    }
+}
 /** Whether auto-borrow is on but owned inventory is empty while a character preset is set. */
 export const hasParentFarmingOwnedInventoryWarning = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
@@ -160,6 +178,12 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
             warnings.push(
                 "Solver fan weight or fan floor differs from the active parent-farming preset. Fan-weighted epithet scoring may not match your goal.",
             )
+        }
+        if (hasParentFarmingAutoEquipWarning(settings)) {
+            warnings.push("Auto-equip is on but no owned support slots are saved. Apply full deck or pick a character setup.")
+        }
+        if (hasParentFarmingAutoBorrowListWarning(settings)) {
+            warnings.push("Auto-borrow is on but the friend borrow list is empty. Apply a setup or full deck.")
         }
         if (hasParentFarmingOwnedInventoryWarning(settings)) {
             warnings.push(

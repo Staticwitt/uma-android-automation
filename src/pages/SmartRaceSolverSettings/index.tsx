@@ -41,6 +41,7 @@ import { CharacterSupportRecommendationView } from "../../components/CharacterSu
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
+import { buildFullDeckApplyRacingPatch } from "../../lib/parentFarmingCareerAutomation"
 import { loadSolverPreviewCache, saveSolverPreviewCache } from "../../lib/solver/previewCacheStorage"
 import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision"
 import { copyToClipboard } from "../../lib/utils"
@@ -297,19 +298,10 @@ const SmartRaceSolverSettings = () => {
         (characterName: string, ownedCards: string[], borrowOrder: string[]) => {
             setSettings((prev) => {
                 const preset = findCharacterPresetEntry(characterName)
+                const aptitudesJson = preset ? JSON.stringify(aptitudesFromCharacterPreset(preset)) : undefined
                 return {
                     ...prev,
-                    racing: {
-                        ...prev.racing,
-                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
-                        supportDeckOwnedCards: JSON.stringify(ownedCards),
-                        ownedSupportCards: JSON.stringify(ownedCards),
-                        smartRaceSolverCharacterPreset: characterName,
-                        enableAutoBorrowSupportCard: true,
-                        ...(preset
-                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
-                            : {}),
-                    },
+                    racing: buildFullDeckApplyRacingPatch(prev.racing, ownedCards, borrowOrder, characterName, aptitudesJson),
                 }
             })
         },
@@ -1478,7 +1470,7 @@ const SmartRaceSolverSettings = () => {
                                                             )
                                                         }
                                                     >
-                                                        Apply full deck
+                                                        Apply full deck + automation
                                                     </CustomButton>
                                                     <CustomButton
                                                         variant="outline"

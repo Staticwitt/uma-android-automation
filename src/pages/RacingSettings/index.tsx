@@ -6,6 +6,7 @@ import { Cpu, ChevronRight, Leaf } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { getParentFarmingActiveLabels } from "../../lib/parentFarmingDrift"
+import { formatCareerAutomationSummary } from "../../lib/parentFarmingCareerAutomation"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -72,7 +73,8 @@ const RacingSettings = () => {
     const parentFarmingSummary = useMemo(() => {
         if (!enableParentFarmingMode) return "Off — tap to configure parent runs"
         const { bundleLabel, goalPresetLabel } = getParentFarmingActiveLabels(settings)
-        return bundleLabel || goalPresetLabel || "On — tap to configure"
+        const preset = bundleLabel || goalPresetLabel || "On"
+        return `${preset} · ${formatCareerAutomationSummary(settings)}`
     }, [enableParentFarmingMode, settings])
 
     const updateRacingSetting = useCallback(
