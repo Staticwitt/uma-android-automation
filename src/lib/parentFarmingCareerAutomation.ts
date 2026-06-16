@@ -1,6 +1,7 @@
 import type { Settings } from "../context/BotStateContext"
 import { excludeTraineeFromSupportList, substituteTraineeInOwnedDeck } from "./parentFarmingSupportBorrow"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
+import { rankSupportsForGoal } from "./supportDeckScoring"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 
 /** Racing flags for hands-off career selection (equip → borrow → parents → start). */
@@ -162,7 +163,12 @@ export const buildFullDeckApplyRacingPatch = (
 ): Settings["racing"] => {
     const alternates = borrowOrder.length > 0 ? borrowOrder : findSupportBorrowPreset(racing.parentFarmingGoalPresetKey || "g1-fans")
     const safeOwned = substituteTraineeInOwnedDeck(ownedCards, characterName, alternates)
-    const safeBorrow = excludeTraineeFromSupportList(borrowOrder, characterName, alternates)
+    const safeBorrow = rankSupportsForGoal(
+        excludeTraineeFromSupportList(borrowOrder, characterName, alternates),
+        racing.parentFarmingGoalPresetKey || "g1-fans",
+        [characterName],
+        alternates,
+    )
     return {
         ...racing,
         ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,

@@ -8,6 +8,8 @@ import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { findSupportDeckPreset, type SupportDeckPreset } from "./supportDeckPresets"
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
+import { formatSupportCardMetadataSummary, getSupportCardMetadata } from "./supportCardMetadata"
+import { pickBestFriendBorrow, rankSupportsForGoal } from "./supportDeckScoring"
 import { optimizeOwnedDeckFromInventory, missingOwnedCards as computeMissingOwnedCards } from "./optimizeSupportDeck"
 import { APTITUDE_RANKS, type CharacterPresetEntry } from "./solver/constants"
 
@@ -18,6 +20,7 @@ export interface SupportDeckSlot {
     cardName: string
     type?: SupportCardType
     note?: string
+    metadataSummary?: string
 }
 
 export interface SupportDeckRecommendation {
@@ -124,10 +127,12 @@ const buildSlots = (
     ]
 
     for (const name of owned) {
+        const meta = getSupportCardMetadata(name)
         slots.push({
             role: "owned",
             cardName: name,
             type: supportCardType(name),
+            metadataSummary: meta ? formatSupportCardMetadataSummary(meta) : undefined,
         })
     }
 
@@ -136,6 +141,9 @@ const buildSlots = (
         cardName: friend,
         type: supportCardType(friend),
         note: "Friend borrow at career selection",
+        metadataSummary: getSupportCardMetadata(friend)
+            ? formatSupportCardMetadataSummary(getSupportCardMetadata(friend)!)
+            : undefined,
     })
 
     return slots
@@ -148,12 +156,19 @@ const buildFriendBorrowOrder = (
 ): string[] => {
     const presetBorrow = bundleBorrow?.length ? bundleBorrow : findSupportBorrowPreset(deck.goalPresetKey)
     const primary =
+        pickBestFriendBorrow(presetBorrow, deck.owned, deck.goalPresetKey, traineeName) ??
+        pickBestFriendBorrow([deck.friend], deck.owned, deck.goalPresetKey, traineeName) ??
         presetBorrow.find((n) => n !== traineeName) ??
         (deck.friend !== traineeName ? deck.friend : findSupportBorrowPreset(deck.goalPresetKey).find((n) => n !== traineeName))
 
     const tail = presetBorrow.filter((n) => n !== traineeName && n !== primary)
     const ownedAlternates = deck.owned.filter((n) => n !== traineeName && n !== primary)
-    return dedupeNames([primary ?? deck.friend, ...tail, ...ownedAlternates])
+    return rankSupportsForGoal(
+        dedupeNames([primary ?? deck.friend, ...tail, ...ownedAlternates].filter(Boolean)),
+        deck.goalPresetKey,
+        [traineeName],
+        presetBorrow,
+    )
 }
 
 /**

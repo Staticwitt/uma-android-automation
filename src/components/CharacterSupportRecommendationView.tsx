@@ -104,6 +104,7 @@ export const CharacterSupportRecommendationView = ({ recommendation }: Character
                     <View style={{ flex: 1 }}>
                         <Text style={styles.slotName}>{slot.cardName}</Text>
                         {slot.type ? <Text style={styles.slotType}>{slot.type}</Text> : null}
+                        {slot.metadataSummary ? <Text style={styles.slotNote}>{slot.metadataSummary}</Text> : null}
                         {slot.note ? <Text style={styles.slotNote}>{slot.note}</Text> : null}
                     </View>
                 </View>
@@ -118,7 +119,7 @@ export const CharacterSupportRecommendationView = ({ recommendation }: Character
                 </Pressable>
             )}
             <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
-                Apply full deck saves owned slots and turns on career automation (equip, borrow, parents, start).
+                Deck order uses support event stats, hints, and route fit — not just card type.
             </Text>
         </View>
     )

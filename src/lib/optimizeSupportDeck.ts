@@ -1,52 +1,16 @@
-import type { SupportCardType } from "./supportCardCatalog"
-import { supportCardType } from "./supportCardCatalog"
 import type { SupportDeckPreset } from "./supportDeckPresets"
+import {
+    rankSupportsForGoal,
+    scoreOwnedSupportDeck,
+    SUPPORT_TYPE_TARGETS_BY_GOAL,
+    type SupportTypeTargets,
+} from "./supportDeckScoring"
 
-/** Target stat-type counts for owned support slots (four cards). */
-export type SupportTypeTargets = Partial<Record<SupportCardType, number>>
+export type { SupportTypeTargets }
+export { SUPPORT_TYPE_TARGETS_BY_GOAL }
 
-/** Goal-route archetype → preferred support types. */
-export const SUPPORT_TYPE_TARGETS_BY_GOAL: Record<string, SupportTypeTargets> = {
-    "g1-fans": { Speed: 2, Wit: 2 },
-    "mile-sprint": { Speed: 3, Wit: 1 },
-    "medium-long": { Stamina: 2, Speed: 1, Wit: 1 },
-    "classic-crown": { Stamina: 2, Power: 1, Wit: 1 },
-    "stayer-stamina": { Stamina: 3, Wit: 1 },
-    "dirt": { Power: 2, Guts: 1, Wit: 1 },
-    "skill-hints": { Wit: 3, Speed: 1 },
-    "triple-tiara": { Speed: 2, Power: 1, Wit: 1 },
-    "derby-stayer-line": { Stamina: 2, Power: 1, Wit: 1 },
-}
-
-const countTypes = (cards: string[]): Record<SupportCardType, number> => {
-    const counts: Record<SupportCardType, number> = {
-        Speed: 0,
-        Stamina: 0,
-        Power: 0,
-        Guts: 0,
-        Wit: 0,
-        Groupe: 0,
-    }
-    for (const name of cards) {
-        const type = supportCardType(name)
-        if (type) counts[type] += 1
-    }
-    return counts
-}
-
-const scoreSubset = (cards: string[], targets: SupportTypeTargets, presetOwned: string[]): number => {
-    const counts = countTypes(cards)
-    let score = 0
-    for (const [type, target] of Object.entries(targets) as Array<[SupportCardType, number]>) {
-        const have = counts[type] ?? 0
-        score += Math.min(have, target) * 10
-        if (have < target) score -= (target - have) * 4
-    }
-    for (const name of cards) {
-        if (presetOwned.includes(name)) score += 2
-    }
-    return score
-}
+const scoreSubset = (cards: string[], goalPresetKey: string, presetOwned: string[]): number =>
+    scoreOwnedSupportDeck(cards, goalPresetKey, presetOwned)
 
 const combinationsOfFour = (pool: string[]): string[][] => {
     const out: string[][] = []
@@ -74,19 +38,19 @@ export const optimizeOwnedDeckFromInventory = (
     fallbackOwned: string[],
     goalPresetKey: string,
 ): string[] => {
-    const targets = SUPPORT_TYPE_TARGETS_BY_GOAL[goalPresetKey] ?? SUPPORT_TYPE_TARGETS_BY_GOAL["g1-fans"]
     const pool = inventory.filter((name) => name && name !== traineeName)
     if (pool.length < 4) return fallbackOwned
 
-    const searchPool = pool.length > 24 ? pool.slice(0, 24) : pool
+    const rankedPool = rankSupportsForGoal(pool, goalPresetKey, [traineeName])
+    const searchPool = rankedPool.length > 24 ? rankedPool.slice(0, 24) : rankedPool
     const combos = combinationsOfFour(searchPool)
     if (combos.length === 0) return fallbackOwned
 
     let best = combos[0]
-    let bestScore = scoreSubset(best, targets, [])
+    let bestScore = scoreSubset(best, goalPresetKey, deck.owned)
 
     for (const combo of combos) {
-        const score = scoreSubset(combo, targets, [])
+        const score = scoreSubset(combo, goalPresetKey, deck.owned)
         if (score > bestScore) {
             bestScore = score
             best = combo

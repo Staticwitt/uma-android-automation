@@ -2,6 +2,7 @@ import type { Settings } from "../context/BotStateContext"
 import type { ParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
+import { rankSupportsForGoal } from "./supportDeckScoring"
 
 /** User overrides: bundle key → ordered support card names. */
 export type ParentFarmingSupportBorrowOverrides = Record<string, string[]>
@@ -62,6 +63,12 @@ export const parseSupportBorrowOverrides = (json: string | undefined): ParentFar
     }
 }
 
+/** Re-ranks borrow candidates using parsed event metadata for the bundle's goal route. */
+export const rankSupportBorrowCardsForBundle = (
+    names: string[],
+    bundle: ParentFarmingCharacterBundle,
+): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names)
+
 /**
  * Ordered borrow list for a bundle: user override → bundle default → goal preset fallback.
  */
@@ -79,7 +86,10 @@ export const resolveSupportBorrowCardsForBundle = (
     } else {
         cards = [...alternates]
     }
-    return excludeTraineeFromSupportList(cards, bundle.characterName, alternates)
+    return rankSupportBorrowCardsForBundle(
+        excludeTraineeFromSupportList(cards, bundle.characterName, alternates),
+        bundle,
+    )
 }
 
 /** Resolves borrow cards for the active parent-farming bundle or goal preset on settings. */
@@ -92,7 +102,14 @@ export const resolveActiveSupportBorrowCards = (settings: Settings): string[] =>
         if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides)
     }
     const goalKey = settings.racing.parentFarmingGoalPresetKey
-    if (goalKey) return excludeTraineeFromSupportList(findSupportBorrowPreset(goalKey), traineeName, findSupportBorrowPreset(goalKey))
+    if (goalKey) {
+        return rankSupportsForGoal(
+            excludeTraineeFromSupportList(findSupportBorrowPreset(goalKey), traineeName, findSupportBorrowPreset(goalKey)),
+            goalKey,
+            traineeName ? [traineeName] : [],
+            findSupportBorrowPreset(goalKey),
+        )
+    }
     try {
         const parsed = JSON.parse(settings.racing.supportBorrowPreferredCards || "[]")
         if (Array.isArray(parsed)) {
