@@ -89,7 +89,13 @@ export const getCareerAutomationSteps = (settings: Settings): CareerAutomationSt
             id: "legacy-parents",
             label: "Auto-select parent pair",
             status: racing.enableAutoSelectLegacyParents ? "ready" : "off",
-            detail: racing.enableAutoSelectLegacyParents ? "In-game Auto-Select or OCR preferred pair" : "Off",
+            detail: racing.enableAutoSelectLegacyParents
+                ? parseStringList(racing.legacyParentPreferredPair).length > 0
+                    ? "OCR preferred pair, else factor scoring"
+                    : racing.legacyParentSelectionStrategy !== "Default"
+                      ? `Factor scoring (${racing.legacyParentSelectionStrategy}) or Auto-Select`
+                      : "In-game Auto-Select"
+                : "Off",
         },
         {
             id: "auto-start",
@@ -101,11 +107,15 @@ export const getCareerAutomationSteps = (settings: Settings): CareerAutomationSt
 
     if (racing.enableParentFarmingMultiRun) {
         const count = racing.parentFarmingMultiRunCount
+        let detail = count <= 0 ? "Runs until you stop the bot" : `${count} career${count === 1 ? "" : "s"} per bot session`
+        if (racing.enableParentFarmingStopOnQualityTarget) {
+            detail += ` · stop at quality ≥ ${racing.parentFarmingQualityTargetScore}`
+        }
         steps.push({
             id: "multi-run",
             label: "Multi-run session",
             status: "ready",
-            detail: count <= 0 ? "Runs until you stop the bot" : `${count} career${count === 1 ? "" : "s"} per bot session`,
+            detail,
         })
     }
 

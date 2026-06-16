@@ -11,16 +11,21 @@ import com.steve1316.uma_android_automation.components.ButtonToHome
 import com.steve1316.uma_android_automation.types.GameDate
 
 /**
- * Runs multiple parent-farming careers in one bot session: after each career end, navigates back
- * to career selection and resets per-run state.
+ * Extended multi-run session state: quality targets and keep-best tracking.
  */
 object ParentFarmingRunLoop {
     private const val TAG = "[PF_MULTI_RUN]"
 
     @Volatile private var sessionRunsCompleted = 0
+    @Volatile private var sessionBestQualityScore = 0
+    @Volatile private var sessionBestQualityGrade = ""
+    @Volatile private var sessionBestRunIndex = 0
 
     fun resetSession() {
         sessionRunsCompleted = 0
+        sessionBestQualityScore = 0
+        sessionBestQualityGrade = ""
+        sessionBestRunIndex = 0
     }
 
     fun isEnabled(): Boolean =
@@ -31,6 +36,15 @@ object ParentFarmingRunLoop {
 
     fun sessionRunsCompleted(): Int = sessionRunsCompleted
 
+    fun sessionBestQualityScore(): Int = sessionBestQualityScore
+
+    fun sessionBestQualitySummary(): String =
+        if (sessionBestQualityScore > 0) {
+            "${sessionBestQualityGrade} · $sessionBestQualityScore/100 (run $sessionBestRunIndex)"
+        } else {
+            ""
+        }
+
     fun shouldContinueAfterRun(): Boolean {
         if (!isEnabled()) return false
         val target = targetRunCount()
@@ -38,22 +52,53 @@ object ParentFarmingRunLoop {
         return sessionRunsCompleted < target
     }
 
+    private fun qualityTargetEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableParentFarmingStopOnQualityTarget", false)
+
+    private fun qualityTargetScore(): Int =
+        SettingsHelper.getIntSetting("racing", "parentFarmingQualityTargetScore", 80).coerceIn(1, 100)
+
+    private fun keepBestRunEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableParentFarmingKeepBestRun", true)
+
     /**
      * After a career ends, optionally navigates back to career selection and resets campaign state.
      *
      * @return True when the main loop should continue for another run.
      */
-    fun tryContinueAfterCareerEnd(campaign: Campaign, game: Game): Boolean {
+    fun tryContinueAfterCareerEnd(campaign: Campaign, game: Game, summaryInput: ParentRunSummaryInput? = null): Boolean {
         if (!isEnabled()) return false
 
         sessionRunsCompleted++
         val target = targetRunCount()
+        val quality = summaryInput?.let { ParentRunQuality.score(it) }
+        if (quality != null) {
+            updateSessionBest(quality)
+            MessageLog.i(
+                TAG,
+                "Parent run $sessionRunsCompleted quality: ${quality.grade} (${quality.score}/100).${sessionBestQualitySummary().let { if (it.isNotEmpty()) " Session best: $it." else "" }}",
+            )
+            if (qualityTargetEnabled() && quality.score >= qualityTargetScore()) {
+                MessageLog.i(
+                    TAG,
+                    "Quality target ${qualityTargetScore()} reached (${quality.grade} ${quality.score}); stopping multi-run.",
+                )
+                return false
+            }
+        }
+
         MessageLog.i(
             TAG,
             "Parent run $sessionRunsCompleted finished${if (target > 0) " (target $target)" else " (until stopped)"}.",
         )
 
         if (!shouldContinueAfterRun()) {
+            if (keepBestRunEnabled() && sessionBestQualityScore > 0) {
+                MessageLog.i(
+                    TAG,
+                    "Multi-run complete. Best session run: ${sessionBestQualitySummary()}.",
+                )
+            }
             MessageLog.i(TAG, "Multi-run target reached; stopping bot.")
             return false
         }
@@ -71,6 +116,14 @@ object ParentFarmingRunLoop {
             ParentDiscordNotifier.maybeSendParentRunStart(game.scenario)
         }
         return true
+    }
+
+    private fun updateSessionBest(quality: ParentRunQuality.Result) {
+        if (quality.score > sessionBestQualityScore) {
+            sessionBestQualityScore = quality.score
+            sessionBestQualityGrade = quality.grade
+            sessionBestRunIndex = sessionRunsCompleted
+        }
     }
 
     private fun flushRunEndDiscord(game: Game) {

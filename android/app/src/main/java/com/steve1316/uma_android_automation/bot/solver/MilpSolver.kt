@@ -296,7 +296,14 @@ object MilpSolver {
             }
             for ((name, v) in epithetVars) {
                 val epithet = state.epithetsByName[name] ?: continue
-                v.weight(ScoringFunctions.epithetContribution(epithet, state.weights, name in state.targetEpithets))
+                v.weight(
+                    ScoringFunctions.epithetContribution(
+                        epithet,
+                        state.weights,
+                        name in state.targetEpithets,
+                        state.epithetTierMultipliers[name] ?: 1.0,
+                    ),
+                )
             }
             for ((t, v) in zVars) {
                 if (t in LATE_DEC_FREE_TURNS) continue

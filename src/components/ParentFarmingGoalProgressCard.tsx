@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Pressable } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import type { Settings } from "../context/BotStateContext"
 import { formatSparkStrategyLabel } from "../lib/sparkSelection"
+import { buildEpithetTiersFromRacing, formatEpithetTierSummary } from "../lib/epithetTiers"
+import { formatLegacyParentStrategyLabel } from "../lib/legacyParentSelection"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -37,6 +39,7 @@ export const ParentFarmingGoalProgressCard = ({
 
     const targetEpithets = useMemo(() => parseStringList(racing.smartRaceSolverTargetEpithets), [racing.smartRaceSolverTargetEpithets])
     const forcedEpithets = useMemo(() => parseStringList(racing.smartRaceSolverForcedEpithets), [racing.smartRaceSolverForcedEpithets])
+    const epithetTierSummary = useMemo(() => formatEpithetTierSummary(buildEpithetTiersFromRacing(racing)), [racing])
 
     const solverWeights = useMemo(() => {
         try {
@@ -109,6 +112,10 @@ export const ParentFarmingGoalProgressCard = ({
                 {targetMultiplier}
             </Text>
             <Text style={styles.row}>Sparks: {formatSparkStrategyLabel(racing.sparkSelectionStrategy)}</Text>
+            <Text style={styles.row}>
+                Legacy parents: {formatLegacyParentStrategyLabel(racing.legacyParentSelectionStrategy)}
+            </Text>
+            <Text style={styles.row}>Epithet tiers: {epithetTierSummary}</Text>
             <Text style={styles.row}>
                 Training: {training.preferredDistanceOverride === "Default" ? "Auto" : training.preferredDistanceOverride || "Auto"} · stat targets{" "}
                 {training.disableStatTargets ? "off" : "on"}

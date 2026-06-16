@@ -78,6 +78,8 @@ export interface Settings {
         smartRaceSolverAptitudes: string
         smartRaceSolverTargetEpithets: string
         smartRaceSolverForcedEpithets: string
+        /** JSON map of epithet name → tier multiplier (forced 2×, primary 1.5×). Auto-built from lists when empty. */
+        smartRaceSolverEpithetTiers: string
         smartRaceSolverManualLocks: string
         smartRaceSolverWeights: string
         /** Inheritance spark picker: Default, StatAndAptitude, SkillHints, or Balanced. */
@@ -92,8 +94,16 @@ export interface Settings {
         enableParentFarmingMultiRun: boolean
         /** Target careers per session (0 = until manually stopped). */
         parentFarmingMultiRunCount: number
+        /** Stop multi-run early when parent quality score meets [parentFarmingQualityTargetScore]. */
+        enableParentFarmingStopOnQualityTarget: boolean
+        /** Minimum parent quality score (0–100) to stop multi-run early. */
+        parentFarmingQualityTargetScore: number
+        /** Log session-best run when multi-run completes. */
+        enableParentFarmingKeepBestRun: boolean
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
         enableAutoSelectLegacyParents: boolean
+        /** OCR scoring strategy when no preferred parent names are configured. */
+        legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
         legacyParentPreferredPair: string
         /** JSON array of preferred support card names (first OCR match wins). */
@@ -314,6 +324,7 @@ export const defaultSettings: Settings = {
         }),
         smartRaceSolverTargetEpithets: "[]",
         smartRaceSolverForcedEpithets: "[]",
+        smartRaceSolverEpithetTiers: "",
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
         enableAutoBorrowSupportCard: false,
@@ -321,7 +332,11 @@ export const defaultSettings: Settings = {
         enableAutoStartCareer: false,
         enableParentFarmingMultiRun: false,
         parentFarmingMultiRunCount: 3,
+        enableParentFarmingStopOnQualityTarget: false,
+        parentFarmingQualityTargetScore: 80,
+        enableParentFarmingKeepBestRun: true,
         enableAutoSelectLegacyParents: false,
+        legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         supportBorrowPreferredCards: "[]",
         ownedSupportCards: "[]",

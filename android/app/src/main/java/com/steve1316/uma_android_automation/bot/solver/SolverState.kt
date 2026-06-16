@@ -210,6 +210,8 @@ data class SolverState(
     val deadEpithets: Set<String> = emptySet(),
     val forcedEpithets: Set<String> = emptySet(),
     val targetEpithets: Set<String> = emptySet(),
+    /** Per-epithet score multipliers (forced 2×, primary targets 1.5×). */
+    val epithetTierMultipliers: Map<String, Double> = emptyMap(),
     val lockedDecisions: Map<TurnNumber, Decision> = emptyMap(),
     val summerBlockTurns: Set<TurnNumber> = DEFAULT_SUMMER_BLOCKS,
     val weights: Weights = Weights(),

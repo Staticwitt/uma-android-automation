@@ -2237,12 +2237,18 @@ abstract class Campaign(game: Game) : Task(game) {
                 // Print the final Trainee information.
                 trainee.logInfo()
 
+                val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
+                val summaryInput =
+                    if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
+                        ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
+                    } else {
+                        null
+                    }
+
                 if (
-                    SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
+                    summaryInput != null &&
                     SettingsHelper.getBooleanSetting("racing", "enableParentRunSummary", true)
                 ) {
-                    val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
-                    val summaryInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
                     val summary = ParentRunSummary.build(summaryInput)
                     ParentRunSummary.logSummary(summary)
                     game.taskEndDiscordEmbed = ParentRunSummary.buildDiscordEmbed(summaryInput)
@@ -2250,9 +2256,11 @@ abstract class Campaign(game: Game) : Task(game) {
                     if (SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
                         ParentRunArchive.append(game.myContext, summaryInput)
                     }
+                } else if (summaryInput != null && SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
+                    ParentRunArchive.append(game.myContext, summaryInput)
                 }
 
-                if (ParentFarmingRunLoop.tryContinueAfterCareerEnd(this, game)) {
+                if (ParentFarmingRunLoop.tryContinueAfterCareerEnd(this, game, summaryInput)) {
                     return null
                 }
 

@@ -32,6 +32,19 @@ class ParentFarmingRunLoopTest {
         assertTrue(shouldContinueAfterRunHelper(enabled = true, completed = 99, target = 0))
     }
 
+    @Test
+    fun qualityTargetReached_stopsEarly() {
+        assertTrue(qualityTargetReachedHelper(enabled = true, score = 85, target = 80))
+        assertFalse(qualityTargetReachedHelper(enabled = true, score = 75, target = 80))
+        assertFalse(qualityTargetReachedHelper(enabled = false, score = 95, target = 80))
+    }
+
+    /** Mirrors quality-target stop condition without SettingsHelper. */
+    private fun qualityTargetReachedHelper(enabled: Boolean, score: Int, target: Int): Boolean {
+        if (!enabled) return false
+        return score >= target
+    }
+
     /** Mirrors [ParentFarmingRunLoop.shouldContinueAfterRun] without SettingsHelper. */
     private fun shouldContinueAfterRunHelper(enabled: Boolean, completed: Int, target: Int): Boolean {
         if (!enabled) return false

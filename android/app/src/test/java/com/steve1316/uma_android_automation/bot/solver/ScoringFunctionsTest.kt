@@ -75,6 +75,15 @@ class ScoringFunctionsTest {
     }
 
     @Test
+    fun epithetTierMultiplierScalesTargetContribution() {
+        val ep = epithet("Target", emptyList(), rewardKind = "stat", amount = 30, displayAmount = 15)
+        val tunedWeights = Weights(targetEpithetMultiplier = 2.0)
+        val base = ScoringFunctions.epithetContribution(ep, tunedWeights, isTarget = true, epithetTierMultiplier = 1.0)
+        val forced = ScoringFunctions.epithetContribution(ep, tunedWeights, isTarget = true, epithetTierMultiplier = 2.0)
+        assertEquals(base * 2.0, forced, 1e-9)
+    }
+
+    @Test
     fun hintRewardEpithetContributionUsesHintWeight() {
         val ep = epithet("Hint", emptyList(), rewardKind = "hint", amount = 1, displayAmount = 1)
         assertEquals(w.hintWeight, ScoringFunctions.epithetContribution(ep, w), 1e-9)

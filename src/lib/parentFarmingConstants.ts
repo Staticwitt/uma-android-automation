@@ -1,6 +1,8 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, OPTIMIZE_MODE_PRESETS, type WeightsMap } from "./solver/constants"
 import { PARENT_FARMING_SPARK_SELECTION_STRATEGY } from "./sparkSelection"
+import { PARENT_FARMING_LEGACY_PARENT_SELECTION_STRATEGY } from "./legacyParentSelection"
+import { buildEpithetTiersFromLists } from "./epithetTiers"
 
 /** Default goal when parent farming is enabled without a stored preset key. */
 export const PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY = "g1-fans"
@@ -8,7 +10,7 @@ export const PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY = "g1-fans"
 /**
  * Bump when preset definitions change so `applyMigrations` re-resolves active parent-farming profiles.
  */
-export const PARENT_FARMING_RESOLVER_REVISION = 4
+export const PARENT_FARMING_RESOLVER_REVISION = 5
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
@@ -38,6 +40,7 @@ export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
     enableAutoEquipOwnedSupportDeck: true,
     enableAutoStartCareer: true,
     enableAutoSelectLegacyParents: true,
+    legacyParentSelectionStrategy: PARENT_FARMING_LEGACY_PARENT_SELECTION_STRATEGY,
 }
 
 /** Shared parent-farming training defaults applied before goal-specific overrides. */
@@ -63,11 +66,22 @@ const parseWeights = (weightsJson: string | undefined): WeightsMap => {
 /** Builds racing-slice solver weights and flags while preserving character-specific solver fields. */
 export const buildParentFarmingRacingSettings = (racing: Settings["racing"]): Partial<Settings["racing"]> => {
     const weights = parseWeights(racing.smartRaceSolverWeights)
+    const parseStringList = (json: string | undefined): string[] => {
+        try {
+            const parsed = JSON.parse(json || "[]")
+            return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && value.length > 0) : []
+        } catch {
+            return []
+        }
+    }
+    const forced = parseStringList(racing.smartRaceSolverForcedEpithets)
+    const targets = parseStringList(racing.smartRaceSolverTargetEpithets)
     return {
         ...PARENT_FARMING_GOAL_RACING_BASE,
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES,
         }),
+        smartRaceSolverEpithetTiers: JSON.stringify(buildEpithetTiersFromLists(forced, targets)),
     }
 }

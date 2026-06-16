@@ -46,6 +46,7 @@ object SmartRaceSolverIntegration {
         val forcedEpithets: Set<String>,
         val targetEpithets: Set<String>,
         val weights: Weights,
+        val epithetTierMultipliers: Map<String, Double>,
     )
 
     /** Junior turns 1..13 (Early Jan -> Early Jul) are the in-game pre-debut period with no
@@ -726,6 +727,7 @@ object SmartRaceSolverIntegration {
                 epithets = epithets,
                 forcedEpithets = jsonStringList(config.optJSONArray("forcedEpithets")).toSet(),
                 targetEpithets = jsonStringList(config.optJSONArray("targetEpithets")).toSet(),
+                epithetTierMultipliers = readEpithetTierMultipliers(),
                 lockedDecisions = parseManualLocks(config.optJSONObject("manualLocks"), racesByTurn),
                 weights = parseWeightsObj(config.optJSONObject("weights")),
             )
@@ -766,6 +768,7 @@ object SmartRaceSolverIntegration {
             raceHistory = raceHistorySnapshot,
             forcedEpithets = readStringSet("smartRaceSolverForcedEpithets"),
             targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
+            epithetTierMultipliers = readEpithetTierMultipliers(),
             lockedDecisions = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn),
             weights = readWeights(),
             currentFans = currentRunFans,
@@ -1051,6 +1054,36 @@ object SmartRaceSolverIntegration {
         if (json.isEmpty()) return Weights()
         return runCatching { parseWeightsObj(JSONObject(json)) }.getOrElse { Weights() }
     }
+
+    private fun readEpithetTierMultipliers(): Map<String, Double> {
+        val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverEpithetTiers")
+        if (json.isNotEmpty()) {
+            parseEpithetTierMap(json)?.let { return it }
+        }
+        return autoEpithetTierMultipliers()
+    }
+
+    private fun autoEpithetTierMultipliers(): Map<String, Double> {
+        val forced = readStringSet("smartRaceSolverForcedEpithets")
+        val targets = readStringSet("smartRaceSolverTargetEpithets")
+        val map = linkedMapOf<String, Double>()
+        for (name in forced) map[name] = 2.0
+        for (name in targets) {
+            if (name !in map) map[name] = 1.5
+        }
+        return map
+    }
+
+    private fun parseEpithetTierMap(json: String): Map<String, Double>? =
+        runCatching {
+            val obj = JSONObject(json)
+            buildMap {
+                for (key in obj.keys()) {
+                    val value = obj.optDouble(key, 0.0)
+                    if (value > 0.0) put(key, value)
+                }
+            }.takeIf { it.isNotEmpty() }
+        }.getOrNull()
 
     /**
      * Parses a weights JSON object. Each field falls back to the corresponding [Weights] default when missing.
@@ -1451,6 +1484,7 @@ object SmartRaceSolverIntegration {
             forcedEpithets = readStringSet("smartRaceSolverForcedEpithets"),
             targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
             weights = readWeights(),
+            epithetTierMultipliers = readEpithetTierMultipliers(),
         )
 
     private fun solverStateForContribution(
@@ -1469,6 +1503,7 @@ object SmartRaceSolverIntegration {
             raceHistory = wins,
             forcedEpithets = ctx.forcedEpithets,
             targetEpithets = ctx.targetEpithets,
+            epithetTierMultipliers = ctx.epithetTierMultipliers,
             lockedDecisions = emptyMap(),
             weights = ctx.weights,
             deadEpithets = runtimeDeadEpithets,

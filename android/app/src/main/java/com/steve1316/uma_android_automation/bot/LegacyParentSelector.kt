@@ -65,7 +65,15 @@ object LegacyParentSelector {
                 autoSelectAttemptedThisRun = true
                 return true
             }
-            MessageLog.w(TAG, "Preferred parent pair selection failed; falling back to in-game Auto-Select.")
+            MessageLog.w(TAG, "Preferred parent pair selection failed; falling back to factor or in-game Auto-Select.")
+        }
+
+        if (LegacyParentScorer.isFactorSelectionEnabled()) {
+            if (selectBestPairByStrategy(game)) {
+                autoSelectAttemptedThisRun = true
+                return true
+            }
+            MessageLog.w(TAG, "Factor-based parent selection failed; falling back to in-game Auto-Select.")
         }
 
         if (triggerGameAutoSelect(game)) {
@@ -136,6 +144,51 @@ object LegacyParentSelector {
         ButtonBackGreen.click(game.imageUtils)
         game.wait(0.8)
         MessageLog.i(TAG, "Selected preferred legacy parent pair: ${preferredPair.take(2).joinToString(" · ")}")
+        return true
+    }
+
+    private fun selectBestPairByStrategy(game: Game): Boolean {
+        if (!openLegacyPicker(game)) return false
+
+        val context = LegacyParentScorer.contextFromSettings()
+        val candidates = mutableListOf<Pair<ScrollListEntry, Double>>()
+        ScrollList.processWithFallback(
+            game,
+            fallbackComponent = LabelEventProgress,
+            entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
+            keyExtractor = { entry -> ocrParentEntry(game.imageUtils, entry) },
+            onEntry = { _, entry ->
+                val text = ocrParentEntry(game.imageUtils, entry)
+                val score = LegacyParentScorer.score(text, context)
+                if (score > 0.0) {
+                    candidates.add(entry to score)
+                }
+                false
+            },
+        )
+
+        val topEntries =
+            candidates
+                .sortedByDescending { it.second }
+                .distinctBy { (_, entry) -> ocrParentEntry(game.imageUtils, entry) }
+                .take(2)
+
+        if (topEntries.isEmpty()) {
+            ButtonBackGreen.click(game.imageUtils)
+            game.wait(0.5)
+            return false
+        }
+
+        for ((entry, score) in topEntries) {
+            val text = ocrParentEntry(game.imageUtils, entry)
+            MessageLog.i(TAG, "Selecting legacy parent by factors (score=$score, ocr=\"$text\").")
+            game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
+            game.wait(0.8)
+        }
+
+        ButtonBackGreen.click(game.imageUtils)
+        game.wait(0.8)
+        MessageLog.i(TAG, "Selected ${topEntries.size} legacy parent(s) using ${context.strategy} strategy.")
         return true
     }
 

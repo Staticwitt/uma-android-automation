@@ -57,6 +57,7 @@ import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
 import { copyToClipboard } from "../../lib/utils"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
+import { LEGACY_PARENT_SELECTION_STRATEGIES } from "../../lib/legacyParentSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -93,8 +94,12 @@ const ParentFarmingSettings = () => {
         enableAutoStartCareer,
         enableParentFarmingMultiRun,
         parentFarmingMultiRunCount,
+        enableParentFarmingStopOnQualityTarget,
+        parentFarmingQualityTargetScore,
+        enableParentFarmingKeepBestRun,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
+        legacyParentSelectionStrategy,
         supportBorrowPreferredCards,
         ownedSupportCards,
         supportDeckOwnedCards,
@@ -459,8 +464,33 @@ const ParentFarmingSettings = () => {
                                         />
                                         {enableAutoSelectLegacyParents && (
                                             <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm }}>
+                                                <Row
+                                                    title="Factor-aware selection"
+                                                    description={
+                                                        legacyParentNames.some((name) => name.length > 0)
+                                                            ? "Skipped when preferred names are set."
+                                                            : legacyParentSelectionStrategy === "Default"
+                                                              ? "Uses in-game Auto-Select only."
+                                                              : `OCR-scores parent cards for ${LEGACY_PARENT_SELECTION_STRATEGIES.find((option) => option.value === legacyParentSelectionStrategy)?.shortLabel ?? legacyParentSelectionStrategy}.`
+                                                    }
+                                                    right={
+                                                        <CustomSelect
+                                                            searchId="legacy-parent-selection-strategy"
+                                                            searchTitle="Legacy parent selection"
+                                                            searchDescription="How the bot picks a parent pair when no preferred names are configured."
+                                                            width={150}
+                                                            options={LEGACY_PARENT_SELECTION_STRATEGIES.map((option) => ({
+                                                                value: option.value,
+                                                                label: option.shortLabel,
+                                                            }))}
+                                                            value={legacyParentSelectionStrategy || "Default"}
+                                                            onValueChange={(value) => updateRacingSetting("legacyParentSelectionStrategy", value)}
+                                                            placeholder="Default"
+                                                        />
+                                                    }
+                                                />
                                                 <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
-                                                    Optional preferred parent pair (leave blank for in-game Auto-Select only):
+                                                    Optional preferred parent pair (leave blank for factor scoring or Auto-Select):
                                                 </Text>
                                                 <View style={{ flexDirection: "row", gap: SPACING.sm }}>
                                                     <Input
@@ -518,7 +548,7 @@ const ParentFarmingSettings = () => {
                                         />
                                     </SearchableItem>
                                     {enableParentFarmingMultiRun && (
-                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.md }}>
                                             <CustomSlider
                                                 searchId="parent-farming-multi-run-count"
                                                 searchTitle="Careers per session"
@@ -534,6 +564,61 @@ const ParentFarmingSettings = () => {
                                                 showLabels
                                                 description="Each career sends its own run summary when multi-run is enabled."
                                             />
+                                            <SearchableItem
+                                                id="enable-parent-farming-stop-on-quality"
+                                                title="Stop on quality target"
+                                                description="End the multi-run session early when a run reaches the quality score target."
+                                            >
+                                                <Row
+                                                    title="Stop on quality target"
+                                                    description={
+                                                        enableParentFarmingStopOnQualityTarget
+                                                            ? `Stops when parent quality ≥ ${parentFarmingQualityTargetScore} (A grade by default).`
+                                                            : "Runs until career count or manual stop."
+                                                    }
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingStopOnQualityTarget}
+                                                            onCheckedChange={(checked) =>
+                                                                updateRacingSetting("enableParentFarmingStopOnQualityTarget", checked)
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            {enableParentFarmingStopOnQualityTarget && (
+                                                <CustomSlider
+                                                    searchId="parent-farming-quality-target-score"
+                                                    searchTitle="Quality target score"
+                                                    searchDescription="Minimum parent quality score (0–100) to stop multi-run early."
+                                                    label="Quality target (0–100)"
+                                                    min={60}
+                                                    max={95}
+                                                    step={5}
+                                                    value={parentFarmingQualityTargetScore}
+                                                    placeholder={defaultSettings.racing.parentFarmingQualityTargetScore}
+                                                    onValueChange={(value) => updateRacingSetting("parentFarmingQualityTargetScore", value)}
+                                                    showValue
+                                                    showLabels
+                                                    description="S = 90+, A = 80+, B = 70+. Compare scores in run archive."
+                                                />
+                                            )}
+                                            <SearchableItem
+                                                id="enable-parent-farming-keep-best-run"
+                                                title="Keep best run summary"
+                                                description="Log the highest-quality run when the multi-run session completes."
+                                            >
+                                                <Row
+                                                    title="Track session best"
+                                                    description="Logs best quality grade and score when multi-run finishes."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingKeepBestRun}
+                                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingKeepBestRun", checked)}
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
                                         </View>
                                     )}
                                 </Section>

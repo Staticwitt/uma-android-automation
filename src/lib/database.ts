@@ -111,6 +111,7 @@ export class DatabaseManager {
         "smartRaceSolverAptitudes",
         "smartRaceSolverTargetEpithets",
         "smartRaceSolverForcedEpithets",
+        "smartRaceSolverEpithetTiers",
         "smartRaceSolverManualLocks",
         "smartRaceSolverWeights",
     ]

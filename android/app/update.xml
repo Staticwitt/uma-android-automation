@@ -1,21 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.5</latestVersion>
-    <latestVersionCode>95</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.5</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.5/v5.9.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.5/v5.9.5-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.6</latestVersion>
+    <latestVersionCode>96</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.6</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.6/v5.9.6-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.6/v5.9.6-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.5 - Parent farming strategic depth
+v5.9.6 - Parent farming strategic automation (tier 3)
 
 New
 ---
-- Parent quality score (S–D) from epithets, fans, forced routes, race WR, and bonus epithets
-- Run archive ranks by quality, epithet deltas vs previous run, best-run badge per character
-- Strategic goal card: target/forced epithets, solver floor, spark strategy, re-sync from preset
-- Expanded preset drift detection for target epithets and solver weight tuning
+- Epithet priority tiers in solver: forced routes 2×, primary targets 1.5×
+- Factor-aware legacy parent selection (stat/aptitude, skill hints, balanced)
+- Multi-run quality target: stop early when parent quality score is reached
+- Session best-run tracking across multi-run loops
+- Strategic goal card shows epithet tiers and legacy parent strategy
 
-Includes v5.9.4 immediate ROI: auto-equip, auto-start, multi-run, career automation UX.
+Includes v5.9.5 strategic depth and v5.9.4 immediate ROI (auto-equip, auto-start, multi-run, career automation UX).
 
     </releaseNotes>
   </update>

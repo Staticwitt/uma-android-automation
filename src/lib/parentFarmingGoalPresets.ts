@@ -1,6 +1,9 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, type WeightsMap } from "./solver/constants"
 import type { SparkSelectionStrategy } from "./sparkSelection"
+import type { LegacyParentSelectionStrategy } from "./legacyParentSelection"
+import { legacyStrategyFromSparkStrategy } from "./legacyParentSelection"
+import { buildEpithetTiersFromLists } from "./epithetTiers"
 import {
     buildParentFarmingTrainingSettings,
     PARENT_FARMING_GOAL_RACING_BASE,
@@ -19,6 +22,8 @@ export interface ParentFarmingGoalPreset {
     trainingOverrides?: Partial<Settings["training"]>
     /** Inheritance spark picker override for this parent route. */
     sparkSelectionStrategy?: SparkSelectionStrategy
+    /** Legacy parent OCR scoring when no preferred names are set. Defaults from spark strategy. */
+    legacyParentSelectionStrategy?: LegacyParentSelectionStrategy
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
@@ -153,6 +158,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         },
         trainingOverrides: SKILL_HINT_TRAINING,
         sparkSelectionStrategy: "SkillHints",
+        legacyParentSelectionStrategy: "SkillHints",
     },
     {
         key: "medium-long",
@@ -355,17 +361,22 @@ export const applyParentFarmingGoalPresetToRacing = (
         ? mergeNames(parseStringList(racing.smartRaceSolverForcedEpithets), preset.forcedEpithets ?? [], allowedNames)
         : filterAllowed(preset.forcedEpithets ?? [])
     const weights = parseWeights(racing.smartRaceSolverWeights)
+    const sparkSelectionStrategy = preset.sparkSelectionStrategy ?? PARENT_FARMING_GOAL_RACING_BASE.sparkSelectionStrategy
+    const legacyParentSelectionStrategy =
+        preset.legacyParentSelectionStrategy ?? legacyStrategyFromSparkStrategy(sparkSelectionStrategy)
 
     return {
         ...PARENT_FARMING_GOAL_RACING_BASE,
         smartRaceSolverTargetEpithets: JSON.stringify(targetEpithets),
         smartRaceSolverForcedEpithets: JSON.stringify(forcedEpithets),
+        smartRaceSolverEpithetTiers: JSON.stringify(buildEpithetTiersFromLists(forcedEpithets, targetEpithets)),
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...TARGET_PRIORITY_WEIGHTS,
             ...preset.weightOverrides,
         }),
-        sparkSelectionStrategy: preset.sparkSelectionStrategy ?? PARENT_FARMING_GOAL_RACING_BASE.sparkSelectionStrategy,
+        sparkSelectionStrategy,
+        legacyParentSelectionStrategy,
         supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,
