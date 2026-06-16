@@ -1,20 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.12</latestVersion>
-    <latestVersionCode>102</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.12</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.12/v5.9.12-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.12/v5.9.12-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.13</latestVersion>
+    <latestVersionCode>103</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.13</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.13/v5.9.13-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.13/v5.9.13-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.12 - Friend support borrow fix
+v5.9.13 - Parent farming reliability
 
 Fixes
 ---
-- Friend support borrow now runs after legacy parents and retries until confirmed
-- Borrow no longer gets stuck after a failed OCR pick on the first attempt
-- Legacy parent suggestions exclude the trainee Uma (from v5.9.11)
+- Smart Race Solver fuzzy-matches on-screen race names when OCR differs from the plan
+- Parent farming falls back to fan racing when smart race selection fails
+- Forced-epithet fail-fast enabled by default; minimum race gap 1 in base preset
+- In-app updater rejects bad HTTP responses instead of installing failed downloads
 
-Includes v5.9.11 auto-updating support stats and parent farming features.
+Includes v5.9.12 friend support borrow fix and v5.9.11 game data auto-update.
 
     </releaseNotes>
   </update>

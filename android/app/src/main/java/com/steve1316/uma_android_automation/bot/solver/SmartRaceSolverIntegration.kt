@@ -666,7 +666,7 @@ object SmartRaceSolverIntegration {
      */
     internal fun bestFuzzyOnScreenRaceMatch(
         plannedRaceKey: String,
-        plannedGrade: String?,
+        plannedGrade: RaceGrade?,
         candidates: List<RaceData>,
     ): RaceData? {
         val plannedName = raceNameFromKey(plannedRaceKey)
@@ -674,7 +674,7 @@ object SmartRaceSolverIntegration {
         var bestScore = 0.0
         for (candidate in candidates) {
             var score = SupportCardSelection.matchScore(candidate.name, plannedName)
-            if (plannedGrade != null && candidate.grade.equals(plannedGrade, ignoreCase = true)) {
+            if (plannedGrade != null && candidate.grade == plannedGrade) {
                 score += 0.12
             }
             if (score > bestScore) {

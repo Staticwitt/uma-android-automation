@@ -27,7 +27,7 @@ class SmartRaceOnScreenMatchTest {
         val match =
             SmartRaceSolverIntegration.bestFuzzyOnScreenRaceMatch(
                 plannedRaceKey = "Tenno Sho (Spring) (Senior Year Late Apr)",
-                plannedGrade = "G1",
+                plannedGrade = RaceGrade.G1,
                 candidates = listOf(race("Tenno Sho Spring"), race("Oka Sho")),
             )
         assertEquals("Tenno Sho Spring", match?.name)
@@ -38,7 +38,7 @@ class SmartRaceOnScreenMatchTest {
         val match =
             SmartRaceSolverIntegration.bestFuzzyOnScreenRaceMatch(
                 plannedRaceKey = "Japan Cup (Senior Year Late Nov)",
-                plannedGrade = "G1",
+                plannedGrade = RaceGrade.G1,
                 candidates = listOf(race("Oka Sho"), race("Sprinters Stakes")),
             )
         assertNull(match)
