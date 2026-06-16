@@ -2086,25 +2086,55 @@ if __name__ == "__main__":
     logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
     start_time = time.time()
 
-    skill_scraper = SkillScraper()
-    skill_scraper.start()
+    import argparse
+    from manifest_scraper import update_manifest_game_data
 
-    after_race_events = load_after_race_events()
-    character_scraper = CharacterScraper(after_race_events)
-    character_scraper.start()
+    parser = argparse.ArgumentParser(description="Update Uma Musume game data JSON files.")
+    parser.add_argument(
+        "--manifest-only",
+        action="store_true",
+        help="Only refresh manifest-backed files (support stats/types, character list). Skips Selenium.",
+    )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Disable delta scraping and refresh all Selenium-backed data.",
+    )
+    args = parser.parse_args()
 
-    support_card_scraper = SupportCardScraper()
-    support_card_scraper.start()
+    global IS_DELTA
+    if args.full:
+        IS_DELTA = False
 
-    # Races are static so no need to re-scrape every time.
-    # race_scraper = RaceScraper()
-    # race_scraper.start()
+    manifest_result = update_manifest_game_data()
+    versions = manifest_result["versions"]
+    previous_versions = manifest_result["previousVersions"]
+    should_run_selenium = manifest_result["manifestChanged"] or args.full or not args.manifest_only
 
-    epithet_scraper = EpithetScraper()
-    epithet_scraper.start()
+    if args.manifest_only:
+        logging.info("Manifest-only mode complete.")
+    elif should_run_selenium:
+        logging.info("Running Selenium scrapers (manifest changed=%s, full=%s).", manifest_result["manifestChanged"], args.full)
+        skill_scraper = SkillScraper()
+        skill_scraper.start()
 
-    character_preset_scraper = CharacterPresetScraper()
-    character_preset_scraper.start()
+        after_race_events = load_after_race_events()
+        character_scraper = CharacterScraper(after_race_events)
+        character_scraper.start()
+
+        support_card_scraper = SupportCardScraper()
+        support_card_scraper.start()
+
+        epithet_scraper = EpithetScraper()
+        epithet_scraper.start()
+
+        character_preset_scraper = CharacterPresetScraper()
+        character_preset_scraper.start()
+
+        # Re-run manifest stats so new supports.json keys get stats entries.
+        update_manifest_game_data()
+    else:
+        logging.info("Manifest hashes unchanged; skipping Selenium scrapers.")
 
     end_time = round(time.time() - start_time, 2)
     logging.info(f"Total time for processing all applications: {end_time} seconds or {round(end_time / 60, 2)} minutes.")

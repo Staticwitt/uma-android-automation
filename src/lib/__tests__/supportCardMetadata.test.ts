@@ -1,4 +1,9 @@
-import { buildSupportCardMetadata, getSupportCardMetadata, parseSupportOptionRewards } from "../supportCardMetadata"
+import {
+    buildSupportCardMetadata,
+    getSupportCardMetadata,
+    getSupportCardScrapedStats,
+    parseSupportOptionRewards,
+} from "../supportCardMetadata"
 
 describe("supportCardMetadata", () => {
     it("parseSupportOptionRewards extracts stats, hints, and skill points", () => {
@@ -27,5 +32,15 @@ describe("supportCardMetadata", () => {
         expect(meta).toBeDefined()
         expect(meta!.name).toBe("Kitasan Black")
         expect(meta!.eventCount).toBeGreaterThan(0)
+    })
+
+    it("merges scraped manifest stats into metadata", () => {
+        const scraped = getSupportCardScrapedStats("Kitasan Black")
+        expect(scraped).toBeDefined()
+        expect(scraped!.rarity).toBe("SSR")
+        expect(scraped!.specialtyPriority).toBeGreaterThan(0)
+
+        const meta = getSupportCardMetadata("Kitasan Black")
+        expect(meta!.stats?.specialtyPriority).toBe(scraped!.specialtyPriority)
     })
 })

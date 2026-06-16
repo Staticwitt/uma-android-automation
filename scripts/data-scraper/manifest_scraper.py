@@ -1,0 +1,234 @@
+"""GameTora manifest fetchers for support card stats and catalog types.
+
+Uses the public JSON manifest API (no Selenium). Outputs land in src/data/.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import requests
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "src" / "data"
+GAMETORA_MANIFESTS_URL = "https://gametora.com/data/manifests/umamusume.json"
+GAMETORA_MANIFEST_DATA_BASE_URL = "https://gametora.com/data/umamusume"
+
+MANIFEST_TRACK_KEYS = (
+    "characters",
+    "support-cards",
+    "support_effects",
+    "skills",
+)
+
+RARITY_LABEL = {1: "R", 2: "SR", 3: "SSR"}
+
+TYPE_LABEL = {
+    "speed": "Speed",
+    "stamina": "Stamina",
+    "power": "Power",
+    "guts": "Guts",
+    "wit": "Wit",
+    "intelligence": "Wit",
+    "friend": "Groupe",
+    "group": "Groupe",
+}
+
+# GameTora effect id → output field on supportCardStats.json
+EFFECT_FIELDS = {
+    1: "friendshipBonus",
+    2: "moodEffect",
+    8: "trainingEffectiveness",
+    14: "initialFriendship",
+    15: "raceBonus",
+    16: "fanBonus",
+    17: "hintLevel",
+    18: "hintFrequency",
+    19: "specialtyPriority",
+    27: "failureProtection",
+    28: "energyCostReduction",
+}
+
+INIT_STAT_EFFECTS = {
+    9: "speed",
+    10: "stamina",
+    11: "power",
+    12: "guts",
+    13: "wit",
+    30: "skillPoints",
+}
+
+
+def fetch_manifest_index() -> Dict[str, str]:
+    response = requests.get(GAMETORA_MANIFESTS_URL, timeout=60)
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_manifest_blob(manifest_name: str, manifest_index: Optional[Dict[str, str]] = None) -> Any:
+    index = manifest_index or fetch_manifest_index()
+    manifest_id = index[manifest_name]
+    url = f"{GAMETORA_MANIFEST_DATA_BASE_URL}/{manifest_name}.{manifest_id}.json"
+    response = requests.get(url, timeout=120)
+    response.raise_for_status()
+    return response.json()
+
+
+def tracked_manifest_versions(manifest_index: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+    index = manifest_index or fetch_manifest_index()
+    return {key: index[key] for key in MANIFEST_TRACK_KEYS if key in index}
+
+
+def lv50_value(effect_row: List[int]) -> Optional[int]:
+    for value in reversed(effect_row[1:]):
+        if value != -1:
+            return value
+    return None
+
+
+def decode_card_stats(card: Dict[str, Any]) -> Dict[str, Any]:
+    stats: Dict[str, Any] = {
+        "supportId": card.get("support_id"),
+        "variant": card.get("title_en"),
+        "rarity": RARITY_LABEL.get(card.get("rarity"), "R"),
+        "type": TYPE_LABEL.get(card.get("type"), card.get("type", "").title()),
+        "releaseEn": card.get("release_en"),
+    }
+    init_stats: Dict[str, int] = {}
+
+    for row in card.get("effects") or []:
+        effect_id = row[0]
+        value = lv50_value(row)
+        if value is None:
+            continue
+        field = EFFECT_FIELDS.get(effect_id)
+        if field:
+            stats[field] = value
+            continue
+        init_key = INIT_STAT_EFFECTS.get(effect_id)
+        if init_key:
+            init_stats[init_key] = value
+
+    if init_stats:
+        stats["initStats"] = init_stats
+
+    return stats
+
+
+def card_sort_key(card: Dict[str, Any]) -> Tuple[int, str, int]:
+    """Prefer highest rarity, then newest EN release, then highest support id."""
+    rarity = card.get("rarity") or 0
+    release = card.get("release_en") or ""
+    support_id = card.get("support_id") or 0
+    return (rarity, release, support_id)
+
+
+def pick_best_cards(
+    cards: List[Dict[str, Any]],
+    character_names: Optional[set] = None,
+    en_only: bool = True,
+) -> Dict[str, Dict[str, Any]]:
+    """Pick one representative EN card per character name."""
+    filtered: List[Dict[str, Any]] = []
+    for card in cards:
+        name = card.get("char_name")
+        if not name:
+            continue
+        if character_names is not None and name not in character_names:
+            continue
+        if en_only and not card.get("release_en"):
+            continue
+        filtered.append(card)
+
+    by_name: Dict[str, List[Dict[str, Any]]] = {}
+    for card in filtered:
+        by_name.setdefault(card["char_name"], []).append(card)
+
+    best: Dict[str, Dict[str, Any]] = {}
+    for name, variants in by_name.items():
+        chosen = max(variants, key=card_sort_key)
+        best[name] = decode_card_stats(chosen)
+    return best
+
+
+def build_support_card_types(stats: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, str]]:
+    return {
+        name: {"name": name, "type": entry["type"]}
+        for name, entry in stats.items()
+        if entry.get("type")
+    }
+
+
+def load_json(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    with path.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def save_json(path: Path, data: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=4, ensure_ascii=False)
+        handle.write("\n")
+
+
+def released_en_characters(manifest_index: Optional[Dict[str, str]] = None) -> List[str]:
+    chars = fetch_manifest_blob("characters", manifest_index)
+    return sorted(c["en_name"] for c in chars if c.get("playable_en") and c.get("en_name"))
+
+
+def manifest_changed(previous: Dict[str, str], current: Dict[str, str]) -> bool:
+    return any(previous.get(key) != current.get(key) for key in MANIFEST_TRACK_KEYS)
+
+
+def update_manifest_game_data(
+    *,
+    en_only: bool = True,
+    restrict_to_supports_json: bool = True,
+) -> Dict[str, Any]:
+    """Regenerates supportCardStats.json, supportCardTypes.json, manifestVersions.json."""
+    index = fetch_manifest_index()
+    versions = tracked_manifest_versions(index)
+    previous_versions = load_json(DATA_DIR / "manifestVersions.json", {})
+
+    supports_names: Optional[set] = None
+    supports_path = DATA_DIR / "supports.json"
+    if restrict_to_supports_json and supports_path.exists():
+        supports_names = set(load_json(supports_path, {}).keys())
+
+    cards = fetch_manifest_blob("support-cards", index)
+    stats = pick_best_cards(cards, character_names=supports_names, en_only=en_only)
+    types = build_support_card_types(stats)
+
+    save_json(DATA_DIR / "supportCardStats.json", stats)
+    save_json(DATA_DIR / "supportCardTypes.json", types)
+    save_json(DATA_DIR / "manifestVersions.json", versions)
+
+    en_chars = released_en_characters(index)
+    save_json(
+        DATA_DIR / "releasedCharacters.json",
+        {"updatedFromManifest": versions.get("characters"), "characters": en_chars},
+    )
+
+    result = {
+        "manifestChanged": manifest_changed(previous_versions, versions),
+        "previousVersions": previous_versions,
+        "versions": versions,
+        "supportStatsCount": len(stats),
+        "releasedCharacterCount": len(en_chars),
+    }
+    logging.info(
+        "Manifest update: %s support stats, %s EN characters, changed=%s",
+        len(stats),
+        len(en_chars),
+        result["manifestChanged"],
+    )
+    return result
+
+
+if __name__ == "__main__":
+    logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
+    update_manifest_game_data()

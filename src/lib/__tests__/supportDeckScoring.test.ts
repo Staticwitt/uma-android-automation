@@ -2,8 +2,8 @@ import { scoreSupportCardForGoal, rankSupportsForGoal, scoreOwnedSupportDeck } f
 
 describe("supportDeckScoring", () => {
     it("scoreSupportCardForGoal prefers wit cards on skill-hints route", () => {
-        const witScore = scoreSupportCardForGoal("Matikanefukukitaru", "skill-hints")
-        const speedScore = scoreSupportCardForGoal("Silence Suzuka", "skill-hints")
+        const witScore = scoreSupportCardForGoal("Agnes Tachyon", "skill-hints")
+        const speedScore = scoreSupportCardForGoal("Maruzensky", "skill-hints")
         expect(witScore).toBeGreaterThan(speedScore)
     })
 
@@ -33,5 +33,17 @@ describe("supportDeckScoring", () => {
             "mile-sprint",
         )
         expect(sprintDeck).toBeGreaterThan(staminaDeck)
+    })
+
+    it("scoreSupportCardForGoal prefers SSR scraped stats over R cards on same route", () => {
+        const ssrScore = scoreSupportCardForGoal("Kitasan Black", "mile-sprint")
+        const rScore = scoreSupportCardForGoal("Maruzensky", "mile-sprint")
+        expect(ssrScore).toBeGreaterThan(rScore)
+    })
+
+    it("scoreSupportCardForGoal weights hint cards higher on skill-hints route", () => {
+        const hintScore = scoreSupportCardForGoal("Gold Ship", "skill-hints")
+        const speedScore = scoreSupportCardForGoal("Maruzensky", "skill-hints")
+        expect(hintScore).toBeGreaterThan(speedScore)
     })
 })

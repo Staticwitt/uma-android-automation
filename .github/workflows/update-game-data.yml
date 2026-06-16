@@ -1,0 +1,87 @@
+name: Update game data
+
+on:
+  schedule:
+    # Weekly — GameTora manifest updates when new supports/characters ship
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      full_scrape:
+        description: "Run full Selenium scrape (not just manifest + delta)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      manifest_only:
+        description: "Only refresh manifest-backed JSON (fast, no Chrome)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-game-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/data-scraper/requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+
+      - name: Run data scraper
+        run: |
+          ARGS=""
+          if [ "${{ inputs.manifest_only }}" = "true" ]; then
+            ARGS="--manifest-only"
+          elif [ "${{ inputs.full_scrape }}" = "true" ]; then
+            ARGS="--full"
+          fi
+          python scripts/data-scraper/main.py $ARGS
+
+      - name: Run Jest tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn test src/lib/__tests__/supportCardMetadata.test.ts src/lib/__tests__/supportDeckScoring.test.ts src/lib/__tests__/recommendSupportDeck.test.ts
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(data): auto-update game data from GameTora"
+          title: "Auto-update game data (supports, characters, stats)"
+          body: |
+            Automated game data refresh from GameTora manifests and delta scraper.
+
+            Updated files may include:
+            - `supportCardStats.json` / `supportCardTypes.json` (manifest)
+            - `manifestVersions.json` / `releasedCharacters.json`
+            - `supports.json`, `characters.json`, `characterPresets.json` (when Selenium ran)
+
+            Triggered by: ${{ github.event_name }}
+          branch: cursor/auto-game-data-update-002a
+          delete-branch: true
+          labels: |
+            game-data

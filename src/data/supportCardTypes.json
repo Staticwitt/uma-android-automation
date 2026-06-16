@@ -1,0 +1,318 @@
+{
+    "Special Week": {
+        "name": "Special Week",
+        "type": "Speed"
+    },
+    "Silence Suzuka": {
+        "name": "Silence Suzuka",
+        "type": "Speed"
+    },
+    "Tokai Teio": {
+        "name": "Tokai Teio",
+        "type": "Speed"
+    },
+    "Maruzensky": {
+        "name": "Maruzensky",
+        "type": "Speed"
+    },
+    "Oguri Cap": {
+        "name": "Oguri Cap",
+        "type": "Power"
+    },
+    "Gold Ship": {
+        "name": "Gold Ship",
+        "type": "Speed"
+    },
+    "Vodka": {
+        "name": "Vodka",
+        "type": "Power"
+    },
+    "Taiki Shuttle": {
+        "name": "Taiki Shuttle",
+        "type": "Speed"
+    },
+    "Grass Wonder": {
+        "name": "Grass Wonder",
+        "type": "Guts"
+    },
+    "Mejiro McQueen": {
+        "name": "Mejiro McQueen",
+        "type": "Stamina"
+    },
+    "El Condor Pasa": {
+        "name": "El Condor Pasa",
+        "type": "Guts"
+    },
+    "TM Opera O": {
+        "name": "TM Opera O",
+        "type": "Stamina"
+    },
+    "Symboli Rudolf": {
+        "name": "Symboli Rudolf",
+        "type": "Stamina"
+    },
+    "Seiun Sky": {
+        "name": "Seiun Sky",
+        "type": "Wit"
+    },
+    "Rice Shower": {
+        "name": "Rice Shower",
+        "type": "Wit"
+    },
+    "Winning Ticket": {
+        "name": "Winning Ticket",
+        "type": "Stamina"
+    },
+    "Gold City": {
+        "name": "Gold City",
+        "type": "Speed"
+    },
+    "Sakura Bakushin O": {
+        "name": "Sakura Bakushin O",
+        "type": "Guts"
+    },
+    "Super Creek": {
+        "name": "Super Creek",
+        "type": "Stamina"
+    },
+    "Haru Urara": {
+        "name": "Haru Urara",
+        "type": "Power"
+    },
+    "Tazuna Hayakawa": {
+        "name": "Tazuna Hayakawa",
+        "type": "Groupe"
+    },
+    "Aoi Kiryuin": {
+        "name": "Aoi Kiryuin",
+        "type": "Groupe"
+    },
+    "Daiwa Scarlet": {
+        "name": "Daiwa Scarlet",
+        "type": "Power"
+    },
+    "Hishi Amazon": {
+        "name": "Hishi Amazon",
+        "type": "Power"
+    },
+    "Air Groove": {
+        "name": "Air Groove",
+        "type": "Guts"
+    },
+    "Agnes Digital": {
+        "name": "Agnes Digital",
+        "type": "Power"
+    },
+    "Tamamo Cross": {
+        "name": "Tamamo Cross",
+        "type": "Power"
+    },
+    "Fine Motion": {
+        "name": "Fine Motion",
+        "type": "Wit"
+    },
+    "Biwa Hayahide": {
+        "name": "Biwa Hayahide",
+        "type": "Power"
+    },
+    "Mayano Top Gun": {
+        "name": "Mayano Top Gun",
+        "type": "Speed"
+    },
+    "Manhattan Cafe": {
+        "name": "Manhattan Cafe",
+        "type": "Stamina"
+    },
+    "Mihono Bourbon": {
+        "name": "Mihono Bourbon",
+        "type": "Wit"
+    },
+    "Mejiro Ryan": {
+        "name": "Mejiro Ryan",
+        "type": "Guts"
+    },
+    "Yukino Bijin": {
+        "name": "Yukino Bijin",
+        "type": "Guts"
+    },
+    "Ines Fujin": {
+        "name": "Ines Fujin",
+        "type": "Guts"
+    },
+    "Agnes Tachyon": {
+        "name": "Agnes Tachyon",
+        "type": "Wit"
+    },
+    "Air Shakur": {
+        "name": "Air Shakur",
+        "type": "Speed"
+    },
+    "Eishin Flash": {
+        "name": "Eishin Flash",
+        "type": "Speed"
+    },
+    "Smart Falcon": {
+        "name": "Smart Falcon",
+        "type": "Power"
+    },
+    "Narita Taishin": {
+        "name": "Narita Taishin",
+        "type": "Wit"
+    },
+    "Nishino Flower": {
+        "name": "Nishino Flower",
+        "type": "Wit"
+    },
+    "Biko Pegasus": {
+        "name": "Biko Pegasus",
+        "type": "Speed"
+    },
+    "Marvelous Sunday": {
+        "name": "Marvelous Sunday",
+        "type": "Guts"
+    },
+    "Matikanefukukitaru": {
+        "name": "Matikanefukukitaru",
+        "type": "Speed"
+    },
+    "Meisho Doto": {
+        "name": "Meisho Doto",
+        "type": "Stamina"
+    },
+    "Mejiro Dober": {
+        "name": "Mejiro Dober",
+        "type": "Wit"
+    },
+    "Nice Nature": {
+        "name": "Nice Nature",
+        "type": "Wit"
+    },
+    "King Halo": {
+        "name": "King Halo",
+        "type": "Power"
+    },
+    "Fuji Kiseki": {
+        "name": "Fuji Kiseki",
+        "type": "Wit"
+    },
+    "Sweep Tosho": {
+        "name": "Sweep Tosho",
+        "type": "Speed"
+    },
+    "Twin Turbo": {
+        "name": "Twin Turbo",
+        "type": "Speed"
+    },
+    "Daitaku Helios": {
+        "name": "Daitaku Helios",
+        "type": "Power"
+    },
+    "Ikuno Dictus": {
+        "name": "Ikuno Dictus",
+        "type": "Stamina"
+    },
+    "Mejiro Palmer": {
+        "name": "Mejiro Palmer",
+        "type": "Guts"
+    },
+    "Kitasan Black": {
+        "name": "Kitasan Black",
+        "type": "Speed"
+    },
+    "Satono Diamond": {
+        "name": "Satono Diamond",
+        "type": "Wit"
+    },
+    "Matikanetannhauser": {
+        "name": "Matikanetannhauser",
+        "type": "Wit"
+    },
+    "Yaeno Muteki": {
+        "name": "Yaeno Muteki",
+        "type": "Power"
+    },
+    "Zenno Rob Roy": {
+        "name": "Zenno Rob Roy",
+        "type": "Stamina"
+    },
+    "Riko Kashimoto": {
+        "name": "Riko Kashimoto",
+        "type": "Groupe"
+    },
+    "Seeking the Pearl": {
+        "name": "Seeking the Pearl",
+        "type": "Speed"
+    },
+    "Sakura Chiyono O": {
+        "name": "Sakura Chiyono O",
+        "type": "Stamina"
+    },
+    "Kawakami Princess": {
+        "name": "Kawakami Princess",
+        "type": "Power"
+    },
+    "Hishi Akebono": {
+        "name": "Hishi Akebono",
+        "type": "Guts"
+    },
+    "Bamboo Memory": {
+        "name": "Bamboo Memory",
+        "type": "Guts"
+    },
+    "Shinko Windy": {
+        "name": "Shinko Windy",
+        "type": "Speed"
+    },
+    "Nakayama Festa": {
+        "name": "Nakayama Festa",
+        "type": "Stamina"
+    },
+    "Inari One": {
+        "name": "Inari One",
+        "type": "Power"
+    },
+    "Mejiro Ardan": {
+        "name": "Mejiro Ardan",
+        "type": "Wit"
+    },
+    "Tosen Jordan": {
+        "name": "Tosen Jordan",
+        "type": "Speed"
+    },
+    "Sirius Symboli": {
+        "name": "Sirius Symboli",
+        "type": "Wit"
+    },
+    "Narita Brian": {
+        "name": "Narita Brian",
+        "type": "Stamina"
+    },
+    "Curren Chan": {
+        "name": "Curren Chan",
+        "type": "Wit"
+    },
+    "Sasami Anshinzawa": {
+        "name": "Sasami Anshinzawa",
+        "type": "Groupe"
+    },
+    "Admire Vega": {
+        "name": "Admire Vega",
+        "type": "Power"
+    },
+    "Mejiro Bright": {
+        "name": "Mejiro Bright",
+        "type": "Stamina"
+    },
+    "Narita Top Road": {
+        "name": "Narita Top Road",
+        "type": "Speed"
+    },
+    "Mr. C.B.": {
+        "name": "Mr. C.B.",
+        "type": "Wit"
+    },
+    "Team Sirius": {
+        "name": "Team Sirius",
+        "type": "Groupe"
+    }
+}
