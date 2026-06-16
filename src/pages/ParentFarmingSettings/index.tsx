@@ -17,7 +17,7 @@ import { ParentFarmingGoalProgressCard } from "../../components/ParentFarmingGoa
 import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
-import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
+import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry, findParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import {
     applyParentFarmingGoalPreset,
@@ -154,9 +154,17 @@ const ParentFarmingSettings = () => {
         [parentFarmingSupportBorrowOverrides],
     )
 
+    const parentFarmingTraineeName = useMemo(() => {
+        if (parentFarmingBundleKey) {
+            const bundleTrainee = findParentFarmingCharacterBundle(parentFarmingBundleKey)?.characterName
+            if (bundleTrainee) return bundleTrainee
+        }
+        return smartRaceSolverCharacterPreset || ""
+    }, [parentFarmingBundleKey, smartRaceSolverCharacterPreset])
+
     const legacyParentRecommendation = useMemo(
-        () => recommendLegacyParents(parentFarmingGoalPresetKey, legacyParentSelectionStrategy),
-        [parentFarmingGoalPresetKey, legacyParentSelectionStrategy],
+        () => recommendLegacyParents(parentFarmingGoalPresetKey, legacyParentSelectionStrategy, parentFarmingTraineeName),
+        [parentFarmingGoalPresetKey, legacyParentSelectionStrategy, parentFarmingTraineeName],
     )
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
