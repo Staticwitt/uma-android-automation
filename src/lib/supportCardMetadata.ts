@@ -1,6 +1,37 @@
 import supportsData from "../data/supports.json"
+import scrapedStatsData from "../data/supportCardStats.json"
+import manualOverridesData from "../data/supportCardManualOverrides.json"
 
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
+
+export type SupportCardRarity = "SSR" | "SR" | "R"
+
+/** Lv50 MLB bonuses from GameTora manifest (auto-generated). */
+export interface SupportCardScrapedStats {
+    supportId?: number
+    variant?: string
+    rarity: SupportCardRarity
+    type?: SupportCardType
+    releaseEn?: string
+    friendshipBonus?: number
+    trainingEffectiveness?: number
+    specialtyPriority?: number
+    initialFriendship?: number
+    moodEffect?: number
+    hintFrequency?: number
+    hintLevel?: number
+    fanBonus?: number
+    raceBonus?: number
+    failureProtection?: number
+    energyCostReduction?: number
+    initStats?: Partial<Record<"speed" | "stamina" | "power" | "guts" | "wit" | "skillPoints", number>>
+}
+
+/** Hand-edited fields merged on top of scraped stats (preserved across auto-updates). */
+export type SupportCardManualOverrides = Partial<SupportCardScrapedStats> & {
+    uniqueSkill?: string
+    hintSkills?: string[]
+}
 
 export interface SupportCardStatTotals {
     speed: number
@@ -19,14 +50,19 @@ export interface SupportCardMetadata {
     type: SupportCardType | undefined
     /** Best-case totals aggregated across training events (one best option per event). */
     totals: SupportCardStatTotals
-    /** Distinct skill hint names this card can grant (from event text). */
+    /** Distinct skill hint names this card can grant (events + manual). */
     hintSkills: string[]
     eventCount: number
     optionCount: number
+    /** Merged scraped + manual card stats for deck scoring. */
+    stats?: SupportCardScrapedStats & { uniqueSkill?: string; hintSkills?: string[] }
 }
 
 const STAT_KEYS = ["speed", "stamina", "power", "guts", "wit"] as const
 type StatKey = (typeof STAT_KEYS)[number]
+
+const SCRAPED_STATS = scrapedStatsData as Record<string, SupportCardScrapedStats>
+const MANUAL_OVERRIDES = manualOverridesData as Record<string, SupportCardManualOverrides>
 
 const emptyTotals = (): SupportCardStatTotals => ({
     speed: 0,
@@ -124,8 +160,37 @@ export const parseSupportOptionRewards = (text: string): { totals: SupportCardSt
     return { totals, hints }
 }
 
+export const mergeSupportCardStats = (
+    name: string,
+    scraped?: SupportCardScrapedStats,
+    manual?: SupportCardManualOverrides,
+): (SupportCardScrapedStats & { uniqueSkill?: string; hintSkills?: string[] }) | undefined => {
+    if (!scraped && !manual) return undefined
+    const { hintSkills: manualHints, uniqueSkill, ...manualFields } = manual ?? {}
+    const merged: SupportCardScrapedStats & { uniqueSkill?: string; hintSkills?: string[] } = {
+        ...(scraped ?? { rarity: "R" as SupportCardRarity }),
+        ...manualFields,
+        type: manualFields.type ?? scraped?.type ?? supportCardType(name),
+    }
+    if (uniqueSkill) merged.uniqueSkill = uniqueSkill
+    if (manualHints?.length) merged.hintSkills = manualHints
+    return merged
+}
+
+const mergeHintSkills = (eventHints: string[], stats?: SupportCardMetadata["stats"]): string[] => {
+    const merged = new Set<string>(eventHints)
+    if (stats?.uniqueSkill) merged.add(stats.uniqueSkill)
+    for (const hint of stats?.hintSkills ?? []) merged.add(hint)
+    return [...merged]
+}
+
 /** Aggregates all events for one support card into structured metadata. */
-export const buildSupportCardMetadata = (name: string, events: Record<string, string[]>): SupportCardMetadata => {
+export const buildSupportCardMetadata = (
+    name: string,
+    events: Record<string, string[]>,
+    scraped?: SupportCardScrapedStats,
+    manual?: SupportCardManualOverrides,
+): SupportCardMetadata => {
     let eventCount = 0
     let optionCount = 0
     let aggregated = emptyTotals()
@@ -156,31 +221,44 @@ export const buildSupportCardMetadata = (name: string, events: Record<string, st
     }
 
     const sortedHints = [...hintSkills.entries()].sort((a, b) => b[1] - a[1]).map(([hintName]) => hintName)
+    const stats = mergeSupportCardStats(name, scraped, manual)
 
     return {
         name,
-        type: supportCardType(name),
+        type: stats?.type ?? supportCardType(name),
         totals: aggregated,
-        hintSkills: sortedHints,
+        hintSkills: mergeHintSkills(sortedHints, stats),
         eventCount,
         optionCount,
+        stats,
     }
 }
 
 const SUPPORT_EVENTS = supportsData as Record<string, Record<string, string[]>>
 
 const metadataIndex: Record<string, SupportCardMetadata> = Object.fromEntries(
-    Object.entries(SUPPORT_EVENTS).map(([name, events]) => [name, buildSupportCardMetadata(name, events)]),
+    Object.entries(SUPPORT_EVENTS).map(([name, events]) => [
+        name,
+        buildSupportCardMetadata(name, events, SCRAPED_STATS[name], MANUAL_OVERRIDES[name]),
+    ]),
 )
 
 export const getSupportCardMetadata = (name: string): SupportCardMetadata | undefined => metadataIndex[name]
 
+export const getSupportCardScrapedStats = (name: string): SupportCardScrapedStats | undefined => SCRAPED_STATS[name]
+
 export const listSupportCardMetadata = (): SupportCardMetadata[] => Object.values(metadataIndex)
+
+const RARITY_LABEL: Record<SupportCardRarity, string> = { SSR: "SSR", SR: "SR", R: "R" }
 
 /** One-line summary for UI tooltips and deck notes. */
 export const formatSupportCardMetadataSummary = (meta: SupportCardMetadata): string => {
     const parts: string[] = []
+    if (meta.stats?.rarity) parts.push(RARITY_LABEL[meta.stats.rarity])
     if (meta.type) parts.push(meta.type)
+    if (meta.stats?.friendshipBonus) parts.push(`Friendship ${meta.stats.friendshipBonus}%`)
+    if (meta.stats?.specialtyPriority) parts.push(`Spec ${meta.stats.specialtyPriority}`)
+    if (meta.stats?.hintFrequency) parts.push(`Hints ${meta.stats.hintFrequency}%`)
     if (meta.totals.hintPoints > 0) parts.push(`${meta.totals.hintPoints} hint pts`)
     if (meta.totals.skillPoints > 0) parts.push(`${meta.totals.skillPoints} SP`)
     const topStat = STAT_KEYS.map((key) => ({ key, value: meta.totals[key] }))
