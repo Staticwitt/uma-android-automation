@@ -25,6 +25,11 @@ import {
     scoreParentRunArchiveEntry,
 } from "../lib/parentQuality"
 import { copyToClipboard } from "../lib/utils"
+import {
+    exportHorseJsonForUmaTools,
+    exportRunForUmaTools,
+    exportRunForUmaToolsCsv,
+} from "../lib/umaToolsExport"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -96,6 +101,21 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         Alert.alert("Copied", "Run summary copied to clipboard.")
     }, [])
 
+    const handleCopyUmaToolsJson = useCallback(async (run: ParentRunArchiveEntry) => {
+        await copyToClipboard(exportHorseJsonForUmaTools(run))
+        Alert.alert("Copied", "Umalator horse JSON copied to clipboard.")
+    }, [])
+
+    const handleCopyUmaToolsCsv = useCallback(async (run: ParentRunArchiveEntry) => {
+        await copyToClipboard(exportRunForUmaToolsCsv(run))
+        Alert.alert("Copied", "Umalator CSV row copied to clipboard.")
+    }, [])
+
+    const handleCopyUmaToolsFull = useCallback(async (run: ParentRunArchiveEntry) => {
+        await copyToClipboard(exportRunForUmaTools(run))
+        Alert.alert("Copied", "Uma-tools export JSON copied to clipboard.")
+    }, [])
+
     const styles = useMemo(
         () =>
             StyleSheet.create({
@@ -115,6 +135,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                 detail: { ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginTop: SPACING.sm },
                 empty: { ...TYPE.body, color: colors.textMuted, textAlign: "center", marginTop: SPACING.lg },
                 copyBtn: { ...TYPE.caption, color: colors.brand, fontWeight: "600", marginTop: SPACING.sm },
+                copyRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.md, marginTop: SPACING.sm },
             }),
         [colors],
     )
@@ -211,9 +232,20 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                                 <Text>Sparks: {run.sparkPicks.map((pick) => `#${pick.pickIndex + 1} ${pick.strategy}`).join(" · ")}</Text>
                                             )}
                                             {run.trainingBias ? <Text>Bias: {run.trainingBias}</Text> : null}
-                                            <Pressable onPress={() => handleCopyRun(run)} accessibilityRole="button">
-                                                <Text style={styles.copyBtn}>Copy run summary</Text>
-                                            </Pressable>
+                                            <View style={styles.copyRow}>
+                                                <Pressable onPress={() => handleCopyRun(run)} accessibilityRole="button">
+                                                    <Text style={styles.copyBtn}>Copy run summary</Text>
+                                                </Pressable>
+                                                <Pressable onPress={() => handleCopyUmaToolsJson(run)} accessibilityRole="button">
+                                                    <Text style={styles.copyBtn}>Copy for Umalator</Text>
+                                                </Pressable>
+                                                <Pressable onPress={() => handleCopyUmaToolsCsv(run)} accessibilityRole="button">
+                                                    <Text style={styles.copyBtn}>Copy CSV row</Text>
+                                                </Pressable>
+                                                <Pressable onPress={() => handleCopyUmaToolsFull(run)} accessibilityRole="button">
+                                                    <Text style={styles.copyBtn}>Export uma-tools JSON</Text>
+                                                </Pressable>
+                                            </View>
                                         </View>
                                     )}
                                 </Pressable>

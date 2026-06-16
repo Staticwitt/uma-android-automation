@@ -17,6 +17,12 @@ export interface ParentRunStats {
     wit: number
 }
 
+export interface ParentRunAptitudeMaps {
+    distanceAptitudes?: Partial<Record<"SPRINT" | "MILE" | "MEDIUM" | "LONG", string>>
+    surfaceAptitudes?: Partial<Record<"TURF" | "DIRT", string>>
+    styleAptitudes?: Partial<Record<"FRONT_RUNNER" | "PACE_CHASER" | "LATE_SURGER" | "END_CLOSER", string>>
+}
+
 export interface ParentRunArchiveEntry {
     id: string
     completedAtMs: number
@@ -43,6 +49,9 @@ export interface ParentRunArchiveEntry {
     fanClass: string
     skillPoints: number
     stats: ParentRunStats
+    distanceAptitudes?: ParentRunAptitudeMaps["distanceAptitudes"]
+    surfaceAptitudes?: ParentRunAptitudeMaps["surfaceAptitudes"]
+    styleAptitudes?: ParentRunAptitudeMaps["styleAptitudes"]
     qualityScore?: number
     qualityGrade?: ParentQualityGrade
     qualityBreakdown?: ParentQualityBreakdown
@@ -71,6 +80,16 @@ const parseSparkPicks = (value: unknown): ParentRunSparkPick[] => {
             }
         })
         .filter((pick): pick is ParentRunSparkPick => pick !== null)
+}
+
+const parseAptitudeMap = (value: unknown): Record<string, string> => {
+    if (!value || typeof value !== "object") return {}
+    const obj = value as Record<string, unknown>
+    const result: Record<string, string> = {}
+    for (const [key, raw] of Object.entries(obj)) {
+        if (typeof raw === "string") result[key] = raw
+    }
+    return result
 }
 
 const parseStats = (value: unknown): ParentRunStats => {
@@ -121,6 +140,9 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     fanClass: typeof entry.fanClass === "string" ? entry.fanClass : "",
                     skillPoints: typeof entry.skillPoints === "number" ? entry.skillPoints : 0,
                     stats: parseStats(entry.stats),
+                    distanceAptitudes: parseAptitudeMap(entry.distanceAptitudes) as ParentRunArchiveEntry["distanceAptitudes"],
+                    surfaceAptitudes: parseAptitudeMap(entry.surfaceAptitudes) as ParentRunArchiveEntry["surfaceAptitudes"],
+                    styleAptitudes: parseAptitudeMap(entry.styleAptitudes) as ParentRunArchiveEntry["styleAptitudes"],
                     qualityScore: typeof entry.qualityScore === "number" ? entry.qualityScore : undefined,
                     qualityGrade:
                         entry.qualityGrade === "S" ||

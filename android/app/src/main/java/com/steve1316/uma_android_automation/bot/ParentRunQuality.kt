@@ -83,5 +83,10 @@ object ParentRunQuality {
             .put("bonusScore", breakdown.bonusScore)
             .put("total", breakdown.total)
 
+    fun formatLabel(result: Result): String = "${result.grade} · ${result.score}/100"
+
+    /** Mid-career quality projection from live trainee + solver epithet snapshot at [currentTurn]. */
+    fun estimateLive(input: ParentRunSummaryInput): Result = score(input)
+
     private fun round1(value: Double): Double = kotlin.math.round(value * 10.0) / 10.0
 }

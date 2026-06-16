@@ -130,6 +130,16 @@ object ParentDiscordNotifier {
         fields.add(DiscordEmbedField("Races", "${raceStats.wins}W / ${raceStats.losses}L", inline = true))
         fields.add(DiscordEmbedField("Runtime", runtime, inline = true))
 
+        val qualityInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs = null, epithetTurn = date.day)
+        val projectedQuality = ParentRunQuality.estimateLive(qualityInput)
+        fields.add(
+            DiscordEmbedField(
+                "Projected quality",
+                ParentRunQuality.formatLabel(projectedQuality),
+                inline = true,
+            ),
+        )
+
         if (ParentFarmingRunLoop.isEnabled()) {
             val completed = ParentFarmingRunLoop.sessionRunsCompleted()
             val target = ParentFarmingRunLoop.targetRunCount()
@@ -145,7 +155,7 @@ object ParentDiscordNotifier {
         }
 
         if (includeEpithetDetail) {
-            val snapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(game.scenario)
+            val snapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(game.scenario, date.day)
             if (snapshot != null) {
                 val targetTotal = snapshot.completedTargets.size + snapshot.incompleteTargets.size
                 if (targetTotal > 0) {

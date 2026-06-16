@@ -40,5 +40,6 @@ class ParentRunQualityTest {
         assertTrue(result.score >= 85)
         assertEquals("S", result.grade)
         assertEquals(20.0, result.breakdown.forcedScore)
+        assertEquals("S · ${result.score}/100", ParentRunQuality.formatLabel(result))
     }
 }

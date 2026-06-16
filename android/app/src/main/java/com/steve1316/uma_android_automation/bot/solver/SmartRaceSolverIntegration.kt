@@ -222,10 +222,10 @@ object SmartRaceSolverIntegration {
      * @param scenario Active campaign scenario.
      * @return Snapshot, or null when epithet/race data is unavailable.
      */
-    fun snapshotParentRunEpithets(scenario: String): ParentRunEpithetSnapshot? {
+    fun snapshotParentRunEpithets(scenario: String, currentTurn: TurnNumber = 72): ParentRunEpithetSnapshot? {
         val epithets = loadEpithets() ?: return null
         val racesByTurn = loadAllRaces() ?: return null
-        val state = newSolverState(currentTurn = 72, scenario = scenario, epithets = epithets, racesByTurn = racesByTurn)
+        val state = newSolverState(currentTurn = currentTurn, scenario = scenario, epithets = epithets, racesByTurn = racesByTurn)
         val classified = EpithetTracker.classifyAll(state)
         val targets = state.targetEpithets
 

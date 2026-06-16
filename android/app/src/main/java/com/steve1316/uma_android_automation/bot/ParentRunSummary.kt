@@ -65,7 +65,7 @@ object ParentRunSummary {
     fun discordMarkdownFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String =
         buildDiscordMarkdown(inputFromSettings(trainee, scenario, elapsedMs))
 
-    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): ParentRunSummaryInput {
+    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?, epithetTurn: TurnNumber = 72): ParentRunSummaryInput {
         val weightsJson = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
         val weights = parseWeights(weightsJson)
         val profileName =
@@ -77,7 +77,7 @@ object ParentRunSummary {
         val goalPresetLabel =
             runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetLabel") }
                 .getOrElse { "" }
-        val epithetSnapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(scenario)
+        val epithetSnapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(scenario, epithetTurn)
         return ParentRunSummaryInput(
             trainee = trainee,
             scenario = scenario,
