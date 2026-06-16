@@ -170,7 +170,7 @@ object LegacyParentSelector {
         val topEntries =
             candidates
                 .sortedByDescending { it.second }
-                .distinctBy { (_, entry) -> ocrParentEntry(game.imageUtils, entry) }
+                .distinctBy { (entry, _) -> ocrParentEntry(game.imageUtils, entry) }
                 .take(2)
 
         if (topEntries.isEmpty()) {
