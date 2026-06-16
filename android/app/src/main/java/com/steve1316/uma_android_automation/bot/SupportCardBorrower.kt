@@ -22,10 +22,16 @@ object SupportCardBorrower {
     private const val OCR_WIDTH_FRACTION = 0.22
     private const val OCR_HEIGHT_FRACTION = 0.10
 
-    @Volatile private var borrowAttemptedThisRun = false
+    /** Friend borrow slot on career selection (right of the four owned slots). */
+    private const val FRIEND_SLOT_X_FRACTION = 0.86
+    private const val FRIEND_SLOT_Y_FRACTION = 0.56
+    private const val FRIEND_SLOT_OCR_WIDTH_FRACTION = 0.16
+    private const val FRIEND_SLOT_OCR_HEIGHT_FRACTION = 0.08
+
+    @Volatile private var borrowCompletedThisRun = false
 
     fun resetForNewRun() {
-        borrowAttemptedThisRun = false
+        borrowCompletedThisRun = false
     }
 
     fun isEnabled(): Boolean = SettingsHelper.getBooleanSetting("racing", "enableAutoBorrowSupportCard")
@@ -33,13 +39,25 @@ object SupportCardBorrower {
     /**
      * Opens the borrow flow when the career-selection button is visible.
      *
-     * @return True when borrow was initiated or already completed this run.
+     * @return True when borrow was initiated this iteration.
      */
     fun tryOpenBorrowDialog(game: Game): Boolean {
-        if (!isEnabled() || borrowAttemptedThisRun) return false
+        if (!isEnabled() || borrowCompletedThisRun) return false
+
+        val preferredNames = preferredNames()
+        if (preferredNames.isEmpty()) {
+            MessageLog.w(TAG, "No preferred support cards configured; skipping borrow.")
+            return false
+        }
+
+        if (isFriendSupportSatisfied(game, preferredNames)) {
+            borrowCompletedThisRun = true
+            MessageLog.i(TAG, "Friend support already matches borrow list; skipping borrow dialog.")
+            return false
+        }
+
         if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
 
-        borrowAttemptedThisRun = true
         val owned = SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"))
         if (owned.isNotEmpty() && !OwnedSupportDeckEquipper.isEnabled()) {
             MessageLog.i(TAG, "Recommended owned slots (equip manually or enable auto-equip): ${owned.joinToString(" · ")}")
@@ -59,12 +77,7 @@ object SupportCardBorrower {
      * @return True when a card was selected.
      */
     fun selectPreferredCard(game: Game, sourceBitmap: Bitmap): Boolean {
-        val preferredNames =
-            rotatedPreferredNames(
-                SupportCardSelection.filterTraineeFromSupportNames(
-                    SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")),
-                ),
-            )
+        val preferredNames = preferredNames()
         if (preferredNames.isEmpty()) {
             MessageLog.w(TAG, "No preferred support cards configured; skipping borrow selection.")
             return false
@@ -117,6 +130,26 @@ object SupportCardBorrower {
         return true
     }
 
+    fun confirmBorrow(game: Game): Boolean {
+        if (ButtonOk.click(game.imageUtils)) {
+            borrowCompletedThisRun = true
+            MessageLog.i(TAG, "Confirmed support card borrow.")
+            game.waitForLoading()
+            return true
+        }
+        MessageLog.w(TAG, "Failed to confirm support card borrow.")
+        return false
+    }
+
+    private fun preferredNames(): List<String> =
+        rotatedPreferredNames(
+            SupportCardSelection.filterTraineeFromSupportNames(
+                SupportCardSelection.readStringList(
+                    SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards"),
+                ),
+            ),
+        )
+
     private fun rotatedPreferredNames(names: List<String>): List<String> {
         if (names.isEmpty()) return names
         if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowRotation", false)) return names
@@ -125,13 +158,24 @@ object SupportCardBorrower {
         return names.drop(offset) + names.take(offset)
     }
 
-    fun confirmBorrow(game: Game): Boolean {
-        if (ButtonOk.click(game.imageUtils)) {
-            MessageLog.i(TAG, "Confirmed support card borrow.")
-            game.waitForLoading()
-            return true
+    /** True when the friend slot on career selection already shows a preferred borrow card. */
+    internal fun isFriendSupportSatisfied(game: Game, preferredNames: List<String>): Boolean {
+        if (preferredNames.isEmpty()) return false
+        val imageUtils = game.imageUtils
+        val centerX = SharedData.displayWidth * FRIEND_SLOT_X_FRACTION
+        val centerY = SharedData.displayHeight * FRIEND_SLOT_Y_FRACTION
+        val ocrText =
+            SupportCardSelection.ocrRegion(
+                imageUtils,
+                imageUtils.getSourceBitmap(),
+                centerX,
+                centerY,
+                FRIEND_SLOT_OCR_WIDTH_FRACTION,
+                FRIEND_SLOT_OCR_HEIGHT_FRACTION,
+                "friend_support_slot",
+            )
+        return preferredNames.any { name ->
+            SupportCardSelection.matchScore(ocrText, name) >= SupportCardSelection.MIN_NAME_MATCH_SCORE
         }
-        MessageLog.w(TAG, "Failed to confirm support card borrow.")
-        return false
     }
 }

@@ -2156,11 +2156,11 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
-            if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
+            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null
             }
 
-            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+            if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
                 return null
             }
 
