@@ -100,7 +100,7 @@ export const ParentFarmingCareerAutomationCard = ({ settings, onEnableFullAutoma
                     <Text style={styles.badgeText}>{ready ? "READY" : fullAutomation ? "NEEDS SETUP" : "PARTIAL"}</Text>
                 </View>
             </View>
-            <Text style={styles.flow}>Bot order: equip owned → borrow friend → legacy parents → start career → train</Text>
+            <Text style={styles.flow}>Bot order: equip owned → legacy parents → borrow friend → start career → train</Text>
             {steps.map((step) => (
                 <View key={step.id} style={styles.stepRow}>
                     <Text style={[styles.stepGlyph, { color: statusColor(step.status, colors) }]}>{statusGlyph(step.status)}</Text>

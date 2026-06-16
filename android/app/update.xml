@@ -1,20 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.11</latestVersion>
-    <latestVersionCode>101</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.11</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.11/v5.9.11-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.11/v5.9.11-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.12</latestVersion>
+    <latestVersionCode>102</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.12</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.12/v5.9.12-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.12/v5.9.12-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.11 - Auto-updating support stats and character data
+v5.9.12 - Friend support borrow fix
 
-New
+Fixes
 ---
-- Support card stats and types auto-generated from GameTora manifest (friendship, hints, specialty priority)
-- Weekly GitHub Action refreshes game data and opens a PR when new supports/characters ship
-- Deck scoring uses scraped Lv50 stats; manual overrides file preserved across updates
+- Friend support borrow now runs after legacy parents and retries until confirmed
+- Borrow no longer gets stuck after a failed OCR pick on the first attempt
+- Legacy parent suggestions exclude the trainee Uma (from v5.9.11)
 
-Includes v5.9.10 event metadata scoring and earlier parent farming features.
+Includes v5.9.11 auto-updating support stats and parent farming features.
 
     </releaseNotes>
   </update>
