@@ -818,6 +818,8 @@ object SmartRaceSolverIntegration {
         if (newlyDead.isEmpty()) return
         runtimeDeadEpithets = runtimeDeadEpithets + newlyDead
         MessageLog.i(TAG, "Marked ${newlyDead.size} epithet(s) dead after losing \"$lostRaceName\": ${newlyDead.sorted().joinToString()}")
+        val forced = readStringSet("smartRaceSolverForcedEpithets")
+        ParentFarmingForcedEpithetGuard.onDeadEpithets(newlyDead, forced)
     }
 
     /**

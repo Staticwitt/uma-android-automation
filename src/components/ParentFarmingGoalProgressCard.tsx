@@ -5,6 +5,7 @@ import type { Settings } from "../context/BotStateContext"
 import { formatSparkStrategyLabel } from "../lib/sparkSelection"
 import { buildEpithetTiersFromRacing, formatEpithetTierSummary } from "../lib/epithetTiers"
 import { formatLegacyParentStrategyLabel } from "../lib/legacyParentSelection"
+import { ParentFarmingSolverPreview } from "./ParentFarmingSolverPreview"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -116,6 +117,9 @@ export const ParentFarmingGoalProgressCard = ({
                 Legacy parents: {formatLegacyParentStrategyLabel(racing.legacyParentSelectionStrategy)}
             </Text>
             <Text style={styles.row}>Epithet tiers: {epithetTierSummary}</Text>
+            {racing.enableParentFarmingStopOnQualityTarget ? (
+                <Text style={styles.row}>Multi-run quality target: ≥ {racing.parentFarmingQualityTargetScore} (stop early)</Text>
+            ) : null}
             <Text style={styles.row}>
                 Training: {training.preferredDistanceOverride === "Default" ? "Auto" : training.preferredDistanceOverride || "Auto"} · stat targets{" "}
                 {training.disableStatTargets ? "off" : "on"}
@@ -143,6 +147,7 @@ export const ParentFarmingGoalProgressCard = ({
                     ))}
                 </View>
             )}
+            <ParentFarmingSolverPreview settings={settings} onOpenSolver={onOpenSolver} />
             <Text style={styles.row}>
                 Parent quality is scored after each career (epithets 40% · fans 25% · forced routes 20% · race WR 10% · extras 5%). Compare runs in history.
             </Text>

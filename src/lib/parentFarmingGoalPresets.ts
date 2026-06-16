@@ -24,6 +24,8 @@ export interface ParentFarmingGoalPreset {
     sparkSelectionStrategy?: SparkSelectionStrategy
     /** Legacy parent OCR scoring when no preferred names are set. Defaults from spark strategy. */
     legacyParentSelectionStrategy?: LegacyParentSelectionStrategy
+    /** Optional multi-run quality target applied with the preset (enables stop-on-quality). */
+    qualityTargetScore?: number
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
@@ -97,6 +99,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             minimumFanTarget: 120000,
         },
         trainingOverrides: G1_FAN_TRAINING,
+        qualityTargetScore: 80,
     },
     {
         key: "classic-crown",
@@ -109,6 +112,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...QUALITY_ROUTE_WEIGHTS,
         },
         trainingOverrides: LONG_STAMINA_TRAINING,
+        qualityTargetScore: 90,
     },
     {
         key: "triple-tiara",
@@ -121,6 +125,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...QUALITY_ROUTE_WEIGHTS,
         },
         trainingOverrides: MILE_QUEEN_TRAINING,
+        qualityTargetScore: 90,
     },
     {
         key: "mile-sprint",
@@ -159,6 +164,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         trainingOverrides: SKILL_HINT_TRAINING,
         sparkSelectionStrategy: "SkillHints",
         legacyParentSelectionStrategy: "SkillHints",
+        qualityTargetScore: 85,
     },
     {
         key: "medium-long",
@@ -377,6 +383,12 @@ export const applyParentFarmingGoalPresetToRacing = (
         }),
         sparkSelectionStrategy,
         legacyParentSelectionStrategy,
+        ...(preset.qualityTargetScore != null
+            ? {
+                  enableParentFarmingStopOnQualityTarget: true,
+                  parentFarmingQualityTargetScore: preset.qualityTargetScore,
+              }
+            : {}),
         supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,

@@ -52,4 +52,17 @@ class LegacyParentScorerTest {
         val statOnly = LegacyParentScorer.score("Speed sprint", context)
         assertTrue(balanced > statOnly)
     }
+
+    @Test
+    fun parsedStatValuesIncreaseScore() {
+        val context =
+            LegacyParentScorer.Context(
+                strategy = "StatAndAptitude",
+                statPriorities = listOf("Speed", "Stamina"),
+                preferSkillHints = false,
+            )
+        val withValues = LegacyParentScorer.score("Speed 1200 · Stamina 900 · sprint A", context)
+        val keywordsOnly = LegacyParentScorer.score("Speed · Stamina · sprint", context)
+        assertTrue(withValues > keywordsOnly)
+    }
 }

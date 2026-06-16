@@ -2,6 +2,8 @@ import type { Settings } from "../context/BotStateContext"
 import { resolveParentFarmingSettings } from "./parentFarmingResolver"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 import { PARENT_FARMING_CHARACTER_BUNDLES } from "./parentFarmingCharacterBundles"
+import { buildEpithetTiersFromRacing } from "./epithetTiers"
+import { applyParentFarmingGoalPresetToRacing, findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
 
 const TRAINING_DRIFT_KEYS: Array<keyof Settings["training"]> = [
     "preferredDistanceOverride",
@@ -129,6 +131,41 @@ export const hasParentFarmingTargetWeightDrift = (settings: Settings): boolean =
     }
 }
 
+const tierMapsEqual = (left: Record<string, number>, right: Record<string, number>): boolean => {
+    const leftKeys = Object.keys(left).sort()
+    const rightKeys = Object.keys(right).sort()
+    if (leftKeys.length !== rightKeys.length) return false
+    return leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key])
+}
+
+/** Whether epithet tier multipliers differ from the resolved preset. */
+export const hasParentFarmingEpithetTierDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    return !tierMapsEqual(buildEpithetTiersFromRacing(settings.racing), buildEpithetTiersFromRacing(resolved.racing))
+}
+
+/** Whether legacy parent strategy differs from the resolved preset. */
+export const hasParentFarmingLegacyStrategyDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const resolved = resolveParentFarmingSettings(settings)
+    return settings.racing.legacyParentSelectionStrategy !== resolved.racing.legacyParentSelectionStrategy
+}
+
+/** Whether quality target settings differ from the active goal preset defaults. */
+export const hasParentFarmingQualityTargetDrift = (settings: Settings): boolean => {
+    if (!settings.racing.enableParentFarmingMode) return false
+    const presetKey = settings.racing.parentFarmingGoalPresetKey
+    if (!presetKey) return false
+    const preset = findParentFarmingGoalPreset(presetKey)
+    if (!preset?.qualityTargetScore) return false
+    const resolved = applyParentFarmingGoalPresetToRacing(settings.racing, preset)
+    return (
+        settings.racing.enableParentFarmingStopOnQualityTarget !== resolved.enableParentFarmingStopOnQualityTarget ||
+        settings.racing.parentFarmingQualityTargetScore !== resolved.parentFarmingQualityTargetScore
+    )
+}
+
 /** Whether auto-equip is on but no owned deck slots are saved. */
 export const hasParentFarmingAutoEquipWarning = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
@@ -211,6 +248,15 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
             warnings.push(
                 "Solver fan weight or fan floor differs from the active parent-farming preset. Fan-weighted epithet scoring may not match your goal.",
             )
+        }
+        if (hasParentFarmingEpithetTierDrift(settings)) {
+            warnings.push("Epithet priority tiers differ from the active preset. Re-sync to restore forced/primary weighting.")
+        }
+        if (hasParentFarmingLegacyStrategyDrift(settings)) {
+            warnings.push("Legacy parent selection strategy differs from the active preset.")
+        }
+        if (hasParentFarmingQualityTargetDrift(settings)) {
+            warnings.push("Multi-run quality target differs from the active goal preset default.")
         }
         if (hasParentFarmingAutoEquipWarning(settings)) {
             warnings.push("Auto-equip is on but no owned support slots are saved. Apply full deck or pick a character setup.")

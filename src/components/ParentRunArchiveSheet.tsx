@@ -5,12 +5,16 @@ import { SheetModal } from "./ui/sheet-modal"
 import { ModalFooterChip } from "./ui/modal-list"
 import { Input } from "./ui/input"
 import {
+    buildQualityTrendForCharacter,
     clearParentRunArchive,
+    exportParentRunArchiveJson,
     findPreviousRunForCharacter,
     formatFanClassLabel,
     formatFansDelta,
     formatParentRunDuration,
+    formatParentRunExportEntry,
     formatParentRunTimestamp,
+    formatQualityTrendLine,
     loadParentRunArchive,
     type ParentRunArchiveEntry,
 } from "../lib/parentRunArchive"
@@ -20,6 +24,7 @@ import {
     formatQualityLabel,
     scoreParentRunArchiveEntry,
 } from "../lib/parentQuality"
+import { copyToClipboard } from "../lib/utils"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
 import { RADII } from "../lib/radii"
@@ -29,9 +34,6 @@ interface ParentRunArchiveSheetProps {
     onClose: () => void
 }
 
-/**
- * Browse persisted parent-farming run history with simple comparison vs the previous run for the same character.
- */
 export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveSheetProps) => {
     const { colors } = useTheme()
     const [runs, setRuns] = useState<ParentRunArchiveEntry[]>([])
@@ -61,13 +63,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         const q = search.trim().toLowerCase()
         if (!q) return runs
         return runs.filter((run) => {
-            const haystack = [
-                run.traineeName,
-                run.characterPreset,
-                run.bundleLabel,
-                run.goalPresetLabel,
-                run.scenario,
-            ]
+            const haystack = [run.traineeName, run.characterPreset, run.bundleLabel, run.goalPresetLabel, run.scenario]
                 .join(" ")
                 .toLowerCase()
             return haystack.includes(q)
@@ -89,6 +85,17 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         ])
     }, [])
 
+    const handleExport = useCallback(async () => {
+        const json = await exportParentRunArchiveJson()
+        await copyToClipboard(json)
+        Alert.alert("Copied", "Parent run archive JSON copied to clipboard.")
+    }, [])
+
+    const handleCopyRun = useCallback(async (run: ParentRunArchiveEntry) => {
+        await copyToClipboard(formatParentRunExportEntry(run))
+        Alert.alert("Copied", "Run summary copied to clipboard.")
+    }, [])
+
     const styles = useMemo(
         () =>
             StyleSheet.create({
@@ -104,10 +111,10 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                 title: { ...TYPE.body, color: colors.text, fontWeight: "600" },
                 meta: { ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs },
                 compare: { ...TYPE.caption, color: colors.brand, marginTop: SPACING.xs },
-                quality: { ...TYPE.caption, color: colors.brand, fontWeight: "700", marginTop: SPACING.xs },
                 best: { ...TYPE.caption, color: colors.warning ?? colors.textMuted, marginTop: SPACING.xs },
                 detail: { ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginTop: SPACING.sm },
                 empty: { ...TYPE.body, color: colors.textMuted, textAlign: "center", marginTop: SPACING.lg },
+                copyBtn: { ...TYPE.caption, color: colors.brand, fontWeight: "600", marginTop: SPACING.sm },
             }),
         [colors],
     )
@@ -123,7 +130,8 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
     )
 
     const footer = (
-        <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end" }}>
+        <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <ModalFooterChip label="Export JSON" onPress={handleExport} tone="neutral" />
             <ModalFooterChip label="Close" onPress={onClose} tone="neutral" />
             <ModalFooterChip label="Clear history" onPress={handleClear} tone="danger" />
         </View>
@@ -148,6 +156,8 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                             const characterKey = run.characterPreset || run.traineeName
                             const bestForCharacter = characterKey ? findBestRunForCharacter(runs, characterKey) : null
                             const epithetDelta = previous ? formatEpithetDelta(run, previous) : null
+                            const trendRuns = characterKey ? buildQualityTrendForCharacter(runs, characterKey) : []
+                            const trendLine = formatQualityTrendLine(trendRuns)
                             return (
                                 <Pressable
                                     key={run.id}
@@ -164,19 +174,18 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                         {formatParentRunTimestamp(run.completedAtMs)}
                                         {duration ? ` · ${duration}` : ""}
                                         {run.scenario ? ` · ${run.scenario}` : ""}
+                                        {run.sessionRunIndex ? ` · session run ${run.sessionRunIndex}` : ""}
                                     </Text>
                                     {run.bundleLabel ? <Text style={styles.meta}>{run.bundleLabel}</Text> : null}
                                     <Text style={styles.meta}>
                                         Targets: {run.completedTargetEpithets.length} completed
-                                        {run.incompleteTargetEpithets.length > 0
-                                            ? ` · ${run.incompleteTargetEpithets.length} incomplete`
-                                            : ""}
+                                        {run.incompleteTargetEpithets.length > 0 ? ` · ${run.incompleteTargetEpithets.length} incomplete` : ""}
                                         · {run.raceWins}W/{run.raceLosses}L
                                     </Text>
-                                    {previous ? (
-                                        <Text style={styles.compare}>{formatFansDelta(run.fans, previous.fans)}</Text>
-                                    ) : null}
+                                    {trendLine ? <Text style={styles.compare}>Trend: {trendLine}</Text> : null}
+                                    {previous ? <Text style={styles.compare}>{formatFansDelta(run.fans, previous.fans)}</Text> : null}
                                     {epithetDelta ? <Text style={styles.compare}>{epithetDelta}</Text> : null}
+                                    {run.isSessionBest ? <Text style={styles.best}>Session best run</Text> : null}
                                     {bestForCharacter?.id === run.id && runs.filter((r) => (r.characterPreset || r.traineeName) === characterKey).length > 1 ? (
                                         <Text style={styles.best}>Best quality for {characterKey}</Text>
                                     ) : null}
@@ -188,26 +197,23 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                             <Text>
                                                 Fans: {run.fans.toLocaleString()} ({formatFanClassLabel(run.fanClass)})
                                             </Text>
-                                            <Text>Stats: Sp {run.stats.speed} Sta {run.stats.stamina} Pow {run.stats.power} Gut {run.stats.guts} Wit {run.stats.wit}</Text>
+                                            <Text>
+                                                Stats: Sp {run.stats.speed} Sta {run.stats.stamina} Pow {run.stats.power} Gut {run.stats.guts} Wit {run.stats.wit}
+                                            </Text>
                                             <Text>Skill points: {run.skillPoints}</Text>
-                                            {run.completedTargetEpithets.length > 0 && (
-                                                <Text>Completed: {run.completedTargetEpithets.join(" · ")}</Text>
-                                            )}
-                                            {run.incompleteTargetEpithets.length > 0 && (
-                                                <Text>Missed: {run.incompleteTargetEpithets.join(" · ")}</Text>
-                                            )}
+                                            {run.inheritanceSummary ? <Text>Inheritance: {run.inheritanceSummary}</Text> : null}
+                                            {run.completedTargetEpithets.length > 0 && <Text>Completed: {run.completedTargetEpithets.join(" · ")}</Text>}
+                                            {run.incompleteTargetEpithets.length > 0 && <Text>Missed: {run.incompleteTargetEpithets.join(" · ")}</Text>}
                                             {run.extraCompletedEpithets.length > 0 && (
                                                 <Text>Other epithets: {run.extraCompletedEpithets.slice(0, 6).join(" · ")}</Text>
                                             )}
                                             {run.sparkPicks.length > 0 && (
-                                                <Text>
-                                                    Sparks:{" "}
-                                                    {run.sparkPicks
-                                                        .map((pick) => `#${pick.pickIndex + 1} ${pick.strategy}`)
-                                                        .join(" · ")}
-                                                </Text>
+                                                <Text>Sparks: {run.sparkPicks.map((pick) => `#${pick.pickIndex + 1} ${pick.strategy}`).join(" · ")}</Text>
                                             )}
                                             {run.trainingBias ? <Text>Bias: {run.trainingBias}</Text> : null}
+                                            <Pressable onPress={() => handleCopyRun(run)} accessibilityRole="button">
+                                                <Text style={styles.copyBtn}>Copy run summary</Text>
+                                            </Pressable>
                                         </View>
                                     )}
                                 </Pressable>

@@ -130,6 +130,20 @@ object ParentDiscordNotifier {
         fields.add(DiscordEmbedField("Races", "${raceStats.wins}W / ${raceStats.losses}L", inline = true))
         fields.add(DiscordEmbedField("Runtime", runtime, inline = true))
 
+        if (ParentFarmingRunLoop.isEnabled()) {
+            val completed = ParentFarmingRunLoop.sessionRunsCompleted()
+            val target = ParentFarmingRunLoop.targetRunCount()
+            val sessionLine = if (target > 0) "Run ${completed + 1}/$target" else "Run ${completed + 1} (unlimited)"
+            val best = ParentFarmingRunLoop.sessionBestQualitySummary()
+            fields.add(
+                DiscordEmbedField(
+                    "Multi-run",
+                    if (best.isNotEmpty()) "$sessionLine · best $best" else sessionLine,
+                    inline = false,
+                ),
+            )
+        }
+
         if (includeEpithetDetail) {
             val snapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(game.scenario)
             if (snapshot != null) {
@@ -160,6 +174,24 @@ object ParentDiscordNotifier {
             colorRgb = DiscordEmbedColors.BLURPLE,
             fields = fields,
             footer = MessageLog.getSystemTimeString(),
+        )
+    }
+
+    fun sendMultiRunSessionComplete(sessionRunsCompleted: Int, sessionTarget: Int, bestSummary: String) {
+        if (!DiscordUtils.enableDiscordNotifications) return
+        val targetLabel = if (sessionTarget > 0) "$sessionRunsCompleted/$sessionTarget careers" else "$sessionRunsCompleted careers"
+        AppDiscordNotifications.sendEmbed(
+            DiscordEmbedSpec(
+                title = "Parent farming session complete",
+                description = "Best run: $bestSummary",
+                colorRgb = DiscordEmbedColors.GREEN,
+                fields =
+                    listOf(
+                        DiscordEmbedField("Session", targetLabel, inline = true),
+                        DiscordEmbedField("Best quality", bestSummary, inline = true),
+                    ),
+                footer = MessageLog.getSystemTimeString(),
+            ),
         )
     }
 }

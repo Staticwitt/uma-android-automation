@@ -1,22 +1,28 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.6</latestVersion>
-    <latestVersionCode>96</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.6</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.6/v5.9.6-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.6/v5.9.6-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.7</latestVersion>
+    <latestVersionCode>97</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.7</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.7/v5.9.7-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.7/v5.9.7-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.6 - Parent farming strategic automation (tier 3)
+v5.9.7 - Parent farming follow-up pack
 
 New
 ---
-- Epithet priority tiers in solver: forced routes 2×, primary targets 1.5×
-- Factor-aware legacy parent selection (stat/aptitude, skill hints, balanced)
-- Multi-run quality target: stop early when parent quality score is reached
-- Session best-run tracking across multi-run loops
-- Strategic goal card shows epithet tiers and legacy parent strategy
+- Session best run badge in archive + Discord session-complete summary
+- Forced epithet fail-fast (stop multi-run when must-complete routes fail)
+- Preset-specific quality targets (Classic/Tiara S-tier, Skill Hint 85, G1 fans 80)
+- Legacy parent recommendations with one-tap apply
+- Richer legacy parent OCR (stat values + aptitude grades)
+- Borrow rotation across multi-run sessions
+- Mini solver preview on strategic goal card
+- Archive quality trends, export JSON, copy run summary
+- Post-career inheritance summary in archive and Discord
+- Drift detection for epithet tiers, legacy strategy, and quality targets
+- Discord live status shows multi-run progress and session best
 
-Includes v5.9.5 strategic depth and v5.9.4 immediate ROI (auto-equip, auto-start, multi-run, career automation UX).
+Includes v5.9.6 tier-3 automation and earlier parent farming ROI/UX/strategic depth.
 
     </releaseNotes>
   </update>

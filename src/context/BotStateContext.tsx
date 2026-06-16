@@ -100,6 +100,10 @@ export interface Settings {
         parentFarmingQualityTargetScore: number
         /** Log session-best run when multi-run completes. */
         enableParentFarmingKeepBestRun: boolean
+        /** Stop multi-run when a forced epithet route becomes unreachable or is missed. */
+        enableParentFarmingStopOnForcedEpithetFail: boolean
+        /** Rotate friend borrow priority each run in a multi-run session. */
+        enableParentFarmingBorrowRotation: boolean
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
         enableAutoSelectLegacyParents: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
@@ -335,6 +339,8 @@ export const defaultSettings: Settings = {
         enableParentFarmingStopOnQualityTarget: false,
         parentFarmingQualityTargetScore: 80,
         enableParentFarmingKeepBestRun: true,
+        enableParentFarmingStopOnForcedEpithetFail: false,
+        enableParentFarmingBorrowRotation: false,
         enableAutoSelectLegacyParents: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",

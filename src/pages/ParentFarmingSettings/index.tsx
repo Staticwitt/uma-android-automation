@@ -38,7 +38,11 @@ import {
     hasParentFarmingForcedEpithetDrift,
     hasParentFarmingSparkStrategyDrift,
     hasParentFarmingSolverWeightDrift,
+    hasParentFarmingEpithetTierDrift,
+    hasParentFarmingLegacyStrategyDrift,
+    hasParentFarmingQualityTargetDrift,
 } from "../../lib/parentFarmingDrift"
+import { recommendLegacyParents, formatLegacyParentRecommendation } from "../../lib/legacyParentRecommendations"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -97,6 +101,8 @@ const ParentFarmingSettings = () => {
         enableParentFarmingStopOnQualityTarget,
         parentFarmingQualityTargetScore,
         enableParentFarmingKeepBestRun,
+        enableParentFarmingStopOnForcedEpithetFail,
+        enableParentFarmingBorrowRotation,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
@@ -148,6 +154,11 @@ const ParentFarmingSettings = () => {
         [parentFarmingSupportBorrowOverrides],
     )
 
+    const legacyParentRecommendation = useMemo(
+        () => recommendLegacyParents(parentFarmingGoalPresetKey, legacyParentSelectionStrategy),
+        [parentFarmingGoalPresetKey, legacyParentSelectionStrategy],
+    )
+
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
 
     const showPresetReSync = useMemo(
@@ -158,7 +169,10 @@ const ParentFarmingSettings = () => {
                 hasParentFarmingTrainingDrift(settings) ||
                 hasParentFarmingForcedEpithetDrift(settings) ||
                 hasParentFarmingSparkStrategyDrift(settings) ||
-                hasParentFarmingSolverWeightDrift(settings)),
+                hasParentFarmingSolverWeightDrift(settings) ||
+                hasParentFarmingEpithetTierDrift(settings) ||
+                hasParentFarmingLegacyStrategyDrift(settings) ||
+                hasParentFarmingQualityTargetDrift(settings)),
         [enableParentFarmingMode, settings],
     )
 
@@ -295,6 +309,13 @@ const ParentFarmingSettings = () => {
         },
         [updateRacing],
     )
+
+    const applyLegacyParentRecommendation = useCallback(() => {
+        updateRacingSetting(
+            "legacyParentPreferredPair",
+            JSON.stringify([legacyParentRecommendation.parentOne, legacyParentRecommendation.parentTwo]),
+        )
+    }, [legacyParentRecommendation, updateRacingSetting])
 
     const updateLegacyParentName = useCallback(
         (index: number, value: string) => {
@@ -506,6 +527,24 @@ const ParentFarmingSettings = () => {
                                                         style={{ flex: 1 }}
                                                     />
                                                 </View>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Suggested: {formatLegacyParentRecommendation(legacyParentRecommendation)}
+                                                </Text>
+                                                <Pressable
+                                                    onPress={applyLegacyParentRecommendation}
+                                                    style={{
+                                                        alignSelf: "flex-start",
+                                                        paddingVertical: SPACING.sm,
+                                                        paddingHorizontal: SPACING.md,
+                                                        borderRadius: RADII.md,
+                                                        borderWidth: 1,
+                                                        borderColor: colors.brandBorder,
+                                                        backgroundColor: colors.brandSubtle,
+                                                    }}
+                                                    accessibilityRole="button"
+                                                >
+                                                    <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply suggested pair</Text>
+                                                </Pressable>
                                             </View>
                                         )}
                                     </SearchableItem>
@@ -615,6 +654,40 @@ const ParentFarmingSettings = () => {
                                                         <Switch
                                                             checked={enableParentFarmingKeepBestRun}
                                                             onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingKeepBestRun", checked)}
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            <SearchableItem
+                                                id="enable-parent-farming-borrow-rotation"
+                                                title="Rotate borrow priority"
+                                                description="Shift friend borrow priority each run in a multi-run session."
+                                            >
+                                                <Row
+                                                    title="Rotate borrow each run"
+                                                    description="Uses the next support in your borrow list on each career restart."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingBorrowRotation}
+                                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBorrowRotation", checked)}
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            <SearchableItem
+                                                id="enable-parent-farming-stop-on-forced-fail"
+                                                title="Stop on forced epithet fail"
+                                                description="Stop multi-run when a forced epithet route is missed or becomes unreachable."
+                                            >
+                                                <Row
+                                                    title="Forced epithet fail-fast"
+                                                    description="Stops the session when a must-complete epithet fails or dies mid-career."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingStopOnForcedEpithetFail}
+                                                            onCheckedChange={(checked) =>
+                                                                updateRacingSetting("enableParentFarmingStopOnForcedEpithetFail", checked)
+                                                            }
                                                         />
                                                     }
                                                 />

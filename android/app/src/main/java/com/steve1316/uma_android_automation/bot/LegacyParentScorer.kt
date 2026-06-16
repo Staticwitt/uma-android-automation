@@ -17,6 +17,7 @@ object LegacyParentScorer {
             "golden",
             "gold",
             "spark",
+            "★",
         )
 
     private val APTITUDE_KEYWORDS = listOf("sprint", "mile", "medium", "long", "turf", "dirt")
@@ -24,12 +25,18 @@ object LegacyParentScorer {
     private val STAT_KEYWORDS =
         mapOf(
             "speed" to "Speed",
+            "spd" to "Speed",
             "stamina" to "Stamina",
+            "sta" to "Stamina",
             "power" to "Power",
+            "pow" to "Power",
             "guts" to "Guts",
             "wit" to "Wit",
             "wisdom" to "Wit",
         )
+
+    private val APTITUDE_GRADE_PATTERN = Regex("(?i)\\b([sabcdefg])\\b")
+    private val STAT_VALUE_PATTERN = Regex("(?i)(speed|stamina|power|guts|wit|wisdom|spd|sta|pow)\\D{0,8}(\\d{2,4})")
 
     data class Context(
         val strategy: String,
@@ -92,6 +99,44 @@ object LegacyParentScorer {
             }
         }
 
+        total += scoreParsedStatValues(lower, context)
+        total += scoreParsedAptitudeGrades(lower, context)
+
         return total
+    }
+
+    private fun scoreParsedStatValues(lower: String, context: Context): Double {
+        var bonus = 0.0
+        for (match in STAT_VALUE_PATTERN.findAll(lower)) {
+            val keyword = match.groupValues[1]
+            val value = match.groupValues[2].toIntOrNull() ?: continue
+            val statName = STAT_KEYWORDS[keyword.lowercase()] ?: continue
+            val priorityIndex = context.statPriorities.indexOf(statName)
+            if (priorityIndex < 0) continue
+            val weight =
+                when (context.strategy) {
+                    "StatAndAptitude" -> 0.35
+                    "Balanced" -> 0.2
+                    else -> 0.08
+                }
+            bonus += value * weight * (1.0 - priorityIndex * 0.12)
+        }
+        return bonus
+    }
+
+    private fun scoreParsedAptitudeGrades(lower: String, context: Context): Double {
+        val gradeValues = mapOf("s" to 7, "a" to 6, "b" to 5, "c" to 4, "d" to 3, "e" to 2, "f" to 1, "g" to 0)
+        var bonus = 0.0
+        for (match in APTITUDE_GRADE_PATTERN.findAll(lower)) {
+            val grade = match.groupValues[1].lowercase()
+            val value = gradeValues[grade] ?: continue
+            bonus +=
+                when (context.strategy) {
+                    "StatAndAptitude" -> value * 8.0
+                    "Balanced" -> value * 5.0
+                    else -> value * 2.0
+                }
+        }
+        return bonus
     }
 }

@@ -60,7 +60,9 @@ object SupportCardBorrower {
      */
     fun selectPreferredCard(game: Game, sourceBitmap: Bitmap): Boolean {
         val preferredNames =
-            SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards"))
+            rotatedPreferredNames(
+                SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")),
+            )
         if (preferredNames.isEmpty()) {
             MessageLog.w(TAG, "No preferred support cards configured; skipping borrow selection.")
             return false
@@ -110,6 +112,14 @@ object SupportCardBorrower {
         game.tap(tapX, tapY, taps = 1)
         game.wait(0.8)
         return true
+    }
+
+    private fun rotatedPreferredNames(names: List<String>): List<String> {
+        if (names.isEmpty()) return names
+        if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowRotation", false)) return names
+        val offset = ParentFarmingRunLoop.borrowRotationOffset() % names.size
+        if (offset == 0) return names
+        return names.drop(offset) + names.take(offset)
     }
 
     fun confirmBorrow(game: Game): Boolean {

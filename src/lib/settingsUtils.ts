@@ -285,6 +285,14 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.smartRaceSolverEpithetTiers = ""
             anyMigrated = true
         }
+        if (typeof racing.enableParentFarmingStopOnForcedEpithetFail !== "boolean") {
+            racing.enableParentFarmingStopOnForcedEpithetFail = false
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingBorrowRotation !== "boolean") {
+            racing.enableParentFarmingBorrowRotation = false
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

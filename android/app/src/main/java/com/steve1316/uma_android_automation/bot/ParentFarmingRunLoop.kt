@@ -9,24 +9,38 @@ import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonCompleteCareer
 import com.steve1316.uma_android_automation.components.ButtonToHome
 import com.steve1316.uma_android_automation.types.GameDate
+import java.util.UUID
 
 /**
- * Extended multi-run session state: quality targets and keep-best tracking.
+ * Extended multi-run session state: quality targets, keep-best tracking, borrow rotation, and session metadata.
  */
 object ParentFarmingRunLoop {
     private const val TAG = "[PF_MULTI_RUN]"
 
+    @Volatile private var sessionId: String = ""
     @Volatile private var sessionRunsCompleted = 0
     @Volatile private var sessionBestQualityScore = 0
     @Volatile private var sessionBestQualityGrade = ""
     @Volatile private var sessionBestRunIndex = 0
+    @Volatile private var borrowRotationOffset = 0
 
     fun resetSession() {
+        sessionId = UUID.randomUUID().toString()
         sessionRunsCompleted = 0
         sessionBestQualityScore = 0
         sessionBestQualityGrade = ""
         sessionBestRunIndex = 0
+        borrowRotationOffset = 0
+        ParentFarmingForcedEpithetGuard.reset()
     }
+
+    fun sessionId(): String = sessionId
+
+    fun sessionRunIndexForArchive(): Int = sessionRunsCompleted + 1
+
+    fun borrowRotationOffset(): Int = borrowRotationOffset
+
+    fun sessionBestRunIndex(): Int = sessionBestRunIndex
 
     fun isEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
@@ -61,11 +75,9 @@ object ParentFarmingRunLoop {
     private fun keepBestRunEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingKeepBestRun", true)
 
-    /**
-     * After a career ends, optionally navigates back to career selection and resets campaign state.
-     *
-     * @return True when the main loop should continue for another run.
-     */
+    private fun borrowRotationEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowRotation", false)
+
     fun tryContinueAfterCareerEnd(campaign: Campaign, game: Game, summaryInput: ParentRunSummaryInput? = null): Boolean {
         if (!isEnabled()) return false
 
@@ -79,12 +91,16 @@ object ParentFarmingRunLoop {
                 "Parent run $sessionRunsCompleted quality: ${quality.grade} (${quality.score}/100).${sessionBestQualitySummary().let { if (it.isNotEmpty()) " Session best: $it." else "" }}",
             )
             if (qualityTargetEnabled() && quality.score >= qualityTargetScore()) {
-                MessageLog.i(
-                    TAG,
-                    "Quality target ${qualityTargetScore()} reached (${quality.grade} ${quality.score}); stopping multi-run.",
-                )
+                MessageLog.i(TAG, "Quality target ${qualityTargetScore()} reached; stopping multi-run.")
+                finalizeSession(game)
                 return false
             }
+        }
+
+        if (summaryInput != null && shouldStopForForcedEpithetFailure(summaryInput)) {
+            MessageLog.w(TAG, "Forced epithet fail-fast: stopping multi-run after run $sessionRunsCompleted.")
+            finalizeSession(game)
+            return false
         }
 
         MessageLog.i(
@@ -93,12 +109,7 @@ object ParentFarmingRunLoop {
         )
 
         if (!shouldContinueAfterRun()) {
-            if (keepBestRunEnabled() && sessionBestQualityScore > 0) {
-                MessageLog.i(
-                    TAG,
-                    "Multi-run complete. Best session run: ${sessionBestQualitySummary()}.",
-                )
-            }
+            finalizeSession(game)
             MessageLog.i(TAG, "Multi-run target reached; stopping bot.")
             return false
         }
@@ -107,6 +118,7 @@ object ParentFarmingRunLoop {
 
         if (!navigateBackToCareerSelection(campaign, game)) {
             MessageLog.w(TAG, "Could not return to career selection; stopping multi-run loop.")
+            finalizeSession(game)
             return false
         }
 
@@ -116,6 +128,29 @@ object ParentFarmingRunLoop {
             ParentDiscordNotifier.maybeSendParentRunStart(game.scenario)
         }
         return true
+    }
+
+    private fun shouldStopForForcedEpithetFailure(input: ParentRunSummaryInput): Boolean {
+        val completed = (input.completedTargetEpithets + input.extraCompletedEpithets).toSet()
+        return ParentFarmingForcedEpithetGuard.shouldStopMultiRunAfterCareer(input.forcedEpithets, completed)
+    }
+
+    private fun finalizeSession(game: Game) {
+        if (keepBestRunEnabled() && sessionBestQualityScore > 0) {
+            MessageLog.i(TAG, "Multi-run complete. Best session run: ${sessionBestQualitySummary()}.")
+            ParentRunArchive.markSessionBest(game.myContext, sessionId, sessionBestRunIndex)
+        }
+        maybeSendSessionCompleteDiscord(game)
+    }
+
+    private fun maybeSendSessionCompleteDiscord(game: Game) {
+        if (!DiscordUtils.enableDiscordNotifications || !keepBestRunEnabled()) return
+        if (sessionBestQualityScore <= 0) return
+        ParentDiscordNotifier.sendMultiRunSessionComplete(
+            sessionRunsCompleted = sessionRunsCompleted,
+            sessionTarget = targetRunCount(),
+            bestSummary = sessionBestQualitySummary(),
+        )
     }
 
     private fun updateSessionBest(quality: ParentRunQuality.Result) {
@@ -171,11 +206,16 @@ object ParentFarmingRunLoop {
         game.taskEndDiscordEmbed = null
         game.taskEndDiscordMessage = null
 
+        if (borrowRotationEnabled()) {
+            borrowRotationOffset++
+        }
+
         SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()
         OwnedSupportDeckEquipper.resetForNewRun()
         SmartRaceSolverIntegration.reset()
         ParentDiscordNotifier.reset()
+        ParentFarmingForcedEpithetGuard.reset()
 
         campaign.date = GameDate(day = 1)
         campaign.resetForNextParentRun()
