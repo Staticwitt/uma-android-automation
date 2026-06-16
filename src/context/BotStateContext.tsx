@@ -84,6 +84,14 @@ export interface Settings {
         sparkSelectionStrategy: string
         /** Auto-borrow a friend support card at career selection before training. */
         enableAutoBorrowSupportCard: boolean
+        /** Auto-equip four owned support slots at career selection from saved deck. */
+        enableAutoEquipOwnedSupportDeck: boolean
+        /** Tap Start Career on final confirmation when parent farming mode is on. */
+        enableAutoStartCareer: boolean
+        /** Run multiple parent-farming careers in one bot session. */
+        enableParentFarmingMultiRun: boolean
+        /** Target careers per session (0 = until manually stopped). */
+        parentFarmingMultiRunCount: number
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
         enableAutoSelectLegacyParents: boolean
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
@@ -309,6 +317,10 @@ export const defaultSettings: Settings = {
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
         enableAutoBorrowSupportCard: false,
+        enableAutoEquipOwnedSupportDeck: false,
+        enableAutoStartCareer: false,
+        enableParentFarmingMultiRun: false,
+        parentFarmingMultiRunCount: 3,
         enableAutoSelectLegacyParents: false,
         legacyParentPreferredPair: "[]",
         supportBorrowPreferredCards: "[]",

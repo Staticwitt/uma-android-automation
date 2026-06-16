@@ -1,21 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.3</latestVersion>
-    <latestVersionCode>93</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.3</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.3/v5.9.3-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.3/v5.9.3-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.4</latestVersion>
+    <latestVersionCode>94</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.4</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.4/v5.9.4-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.4/v5.9.4-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.3 - x86_64 APK for emulators
+v5.9.4 - Parent farming immediate ROI
 
-Releases
+New
 ---
-- Publish x86_64 split APK alongside arm64-v8a (Android emulator / x86 devices)
-- In-app updater picks the correct ABI automatically
+- Auto-equip owned support deck at career selection (OCR + scroll-list matching)
+- Auto-start career on final confirmation
+- Multi-run parent farming loop (configurable count; 0 = until stopped)
+- Shared SupportCardSelection helper for borrow and owned-equip flows
 
-Fixes (from v5.9.2)
----
-- Parent Farming settings crash (missing ParentFarmingSetupTabs import)
+Career selection order: owned equip → friend borrow → legacy parents → auto-start → training loop.
 
     </releaseNotes>
   </update>

@@ -75,6 +75,10 @@ const ParentFarmingSettings = () => {
         enableParentRunArchive,
         sparkSelectionStrategy,
         enableAutoBorrowSupportCard,
+        enableAutoEquipOwnedSupportDeck,
+        enableAutoStartCareer,
+        enableParentFarmingMultiRun,
+        parentFarmingMultiRunCount,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         supportBorrowPreferredCards,
@@ -327,7 +331,7 @@ const ParentFarmingSettings = () => {
                             </SearchableItem>
                             {!enableParentFarmingMode && (
                                 <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-borrow supports and legacy parent auto-select.
+                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-equip, auto-borrow, legacy parent auto-select, and optional auto-start.
                                 </InfoContainer>
                             )}
                             <ParentFarmingActivePresetChip settings={settings} />
@@ -396,6 +400,26 @@ const ParentFarmingSettings = () => {
                                         />
                                     </SearchableItem>
                                     <SearchableItem
+                                        id="enable-auto-equip-owned-support-deck"
+                                        title="Auto-equip owned support deck"
+                                        description="Equip four saved owned slots at career selection before borrowing a friend card."
+                                    >
+                                        <Row
+                                            title="Auto-equip owned supports"
+                                            description={
+                                                parseOwnedSupportCards(supportDeckOwnedCards).length > 0
+                                                    ? `Slots: ${parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}`
+                                                    : "Apply a setup to save owned support slots first."
+                                            }
+                                            right={
+                                                <Switch
+                                                    checked={enableAutoEquipOwnedSupportDeck}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableAutoEquipOwnedSupportDeck", checked)}
+                                                />
+                                            }
+                                        />
+                                    </SearchableItem>
+                                    <SearchableItem
                                         id="enable-auto-select-legacy-parents"
                                         title="Auto-select legacy parents"
                                         description="Use in-game Auto-Select or OCR a preferred parent pair at career selection."
@@ -435,6 +459,22 @@ const ParentFarmingSettings = () => {
                                                 </View>
                                             </View>
                                         )}
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="enable-auto-start-career"
+                                        title="Auto-start career"
+                                        description="Tap Start Career on final confirmation after supports and parents are set."
+                                    >
+                                        <Row
+                                            title="Auto-start career"
+                                            description="Requires parent farming mode. Skips manual Start Career tap."
+                                            right={
+                                                <Switch
+                                                    checked={enableAutoStartCareer}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableAutoStartCareer", checked)}
+                                                />
+                                            }
+                                        />
                                     </SearchableItem>
                                     <SearchableItem
                                         id="character-support-finder"
@@ -571,6 +611,50 @@ const ParentFarmingSettings = () => {
                                             </Pressable>
                                         </View>
                                     </SearchableItem>
+                                </Section>
+
+                                <Section label="Multi-run session">
+                                    <SearchableItem
+                                        id="enable-parent-farming-multi-run"
+                                        title="Multi-run parent farming"
+                                        description="After each career ends, return to career selection and start another run in the same bot session."
+                                    >
+                                        <Row
+                                            title="Multi-run loop"
+                                            description={
+                                                enableParentFarmingMultiRun
+                                                    ? parentFarmingMultiRunCount <= 0
+                                                        ? "Runs until you stop the bot manually."
+                                                        : `Target: ${parentFarmingMultiRunCount} career${parentFarmingMultiRunCount === 1 ? "" : "s"} per session.`
+                                                    : "Single career per bot start (default)."
+                                            }
+                                            right={
+                                                <Switch
+                                                    checked={enableParentFarmingMultiRun}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingMultiRun", checked)}
+                                                />
+                                            }
+                                        />
+                                    </SearchableItem>
+                                    {enableParentFarmingMultiRun && (
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                            <CustomSlider
+                                                searchId="parent-farming-multi-run-count"
+                                                searchTitle="Careers per session"
+                                                searchDescription="Number of parent runs before the bot stops. Set to 0 for unlimited until manually stopped."
+                                                label="Careers per session (0 = unlimited)"
+                                                min={0}
+                                                max={20}
+                                                step={1}
+                                                value={parentFarmingMultiRunCount}
+                                                placeholder={defaultSettings.racing.parentFarmingMultiRunCount}
+                                                onValueChange={(value) => updateRacingSetting("parentFarmingMultiRunCount", value)}
+                                                showValue
+                                                showLabels
+                                                description="Each career sends its own run summary when multi-run is enabled."
+                                            />
+                                        </View>
+                                    )}
                                 </Section>
 
                                 <Section label="Fan target">

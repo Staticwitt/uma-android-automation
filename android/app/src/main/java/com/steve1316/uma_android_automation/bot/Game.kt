@@ -247,8 +247,10 @@ class Game(val myContext: Context) {
         runStartTimeMillis = System.currentTimeMillis()
         val startTime: Long = runStartTimeMillis
         ParentDiscordNotifier.reset()
+        ParentFarmingRunLoop.resetSession()
         SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()
+        OwnedSupportDeckEquipper.resetForNewRun()
 
         // Print current app settings at the start of the run.
         try {
