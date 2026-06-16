@@ -16,7 +16,6 @@ import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import com.steve1316.uma_android_automation.utils.ScrollListEntryDetectionConfig
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
-import org.json.JSONArray
 
 /**
  * Auto-selects the legacy parent pair at career selection via the in-game Auto-Select button,
@@ -159,6 +158,7 @@ object LegacyParentSelector {
             keyExtractor = { entry -> ocrParentEntry(game.imageUtils, entry) },
             onEntry = { _, entry ->
                 val text = ocrParentEntry(game.imageUtils, entry)
+                if (ocrLooksLikeTrainee(text)) return@processWithFallback false
                 val score = LegacyParentScorer.score(text, context)
                 if (score > 0.0) {
                     candidates.add(entry to score)
@@ -205,6 +205,10 @@ object LegacyParentSelector {
     }
 
     private fun findAndTapParentName(game: Game, name: String): Boolean {
+        if (SupportCardSelection.isTraineeCharacter(name)) {
+            MessageLog.w(TAG, "Refusing to select trainee \"$name\" as legacy parent.")
+            return false
+        }
         var tapped = false
         ScrollList.processWithFallback(
             game,
@@ -294,17 +298,16 @@ object LegacyParentSelector {
         return false
     }
 
-    private fun readPreferredPair(): List<String> {
-        val json = SettingsHelper.getStringSetting("racing", "legacyParentPreferredPair")
-        if (json.isEmpty()) return emptyList()
-        return runCatching {
-            val array = JSONArray(json)
-            buildList {
-                for (i in 0 until array.length()) {
-                    val value = array.optString(i)
-                    if (value.isNotBlank()) add(value)
-                }
-            }
-        }.getOrElse { emptyList() }
+    private fun readPreferredPair(): List<String> =
+        SupportCardSelection.filterTraineeFromSupportNames(
+            SupportCardSelection.readStringList(
+                SettingsHelper.getStringSetting("racing", "legacyParentPreferredPair"),
+            ),
+        )
+
+    private fun ocrLooksLikeTrainee(ocrText: String): Boolean {
+        val trainee = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").trim()
+        if (trainee.isEmpty()) return false
+        return SupportCardSelection.matchScore(ocrText, trainee) >= MIN_NAME_MATCH_SCORE
     }
 }
