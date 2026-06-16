@@ -1,21 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.3</latestVersion>
-    <latestVersionCode>93</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.3</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.3/v5.9.3-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.3/v5.9.3-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.8</latestVersion>
+    <latestVersionCode>98</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.8</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.8/v5.9.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.8/v5.9.8-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.3 - x86_64 APK for emulators
+v5.9.8 - Uma-tools export + Discord projected quality
 
-Releases
+New
 ---
-- Publish x86_64 split APK alongside arm64-v8a (Android emulator / x86 devices)
-- In-app updater picks the correct ABI automatically
+- Parent run archive: Copy for Umalator (horse JSON), CSV row, and full uma-tools export
+- Discord live status: projected parent quality grade (S–D) at current turn
+- Mid-career epithet snapshot uses current turn instead of end-of-career turn 72
 
-Fixes (from v5.9.2)
----
-- Parent Farming settings crash (missing ParentFarmingSetupTabs import)
+Includes v5.9.7 parent farming follow-up pack and earlier strategic depth features.
 
     </releaseNotes>
   </update>

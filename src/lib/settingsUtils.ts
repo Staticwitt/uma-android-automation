@@ -249,6 +249,50 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.legacyParentPreferredPair = "[]"
             anyMigrated = true
         }
+        if (typeof racing.enableAutoEquipOwnedSupportDeck !== "boolean") {
+            racing.enableAutoEquipOwnedSupportDeck = false
+            anyMigrated = true
+        }
+        if (typeof racing.enableAutoStartCareer !== "boolean") {
+            racing.enableAutoStartCareer = false
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingMultiRun !== "boolean") {
+            racing.enableParentFarmingMultiRun = false
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingMultiRunCount !== "number") {
+            racing.parentFarmingMultiRunCount = 3
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingStopOnQualityTarget !== "boolean") {
+            racing.enableParentFarmingStopOnQualityTarget = false
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingQualityTargetScore !== "number") {
+            racing.parentFarmingQualityTargetScore = 80
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingKeepBestRun !== "boolean") {
+            racing.enableParentFarmingKeepBestRun = true
+            anyMigrated = true
+        }
+        if (typeof racing.legacyParentSelectionStrategy !== "string") {
+            racing.legacyParentSelectionStrategy = "Default"
+            anyMigrated = true
+        }
+        if (typeof racing.smartRaceSolverEpithetTiers !== "string") {
+            racing.smartRaceSolverEpithetTiers = ""
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingStopOnForcedEpithetFail !== "boolean") {
+            racing.enableParentFarmingStopOnForcedEpithetFail = false
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingBorrowRotation !== "boolean") {
+            racing.enableParentFarmingBorrowRotation = false
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

@@ -25,6 +25,7 @@ const sampleRun = (id: string, character: string, fans: number, completedAtMs: n
     traineeName: character,
     sparkStrategy: "StatAndAptitude",
     targetEpithets: [],
+    forcedEpithets: [],
     completedTargetEpithets: [],
     incompleteTargetEpithets: [],
     extraCompletedEpithets: [],

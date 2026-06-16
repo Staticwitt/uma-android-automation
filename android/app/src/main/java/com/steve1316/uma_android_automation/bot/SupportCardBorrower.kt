@@ -6,9 +6,6 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.ButtonBorrowSupportCard
 import com.steve1316.uma_android_automation.components.ButtonOk
-import net.ricecode.similarity.JaroWinklerStrategy
-import net.ricecode.similarity.StringSimilarityServiceImpl
-import org.json.JSONArray
 
 /**
  * Auto-borrows a friend support card at career selection using OCR + preset priority lists from React Native settings.
@@ -25,11 +22,7 @@ object SupportCardBorrower {
     private const val OCR_WIDTH_FRACTION = 0.22
     private const val OCR_HEIGHT_FRACTION = 0.10
 
-    private const val MIN_NAME_MATCH_SCORE = 0.82
-
     @Volatile private var borrowAttemptedThisRun = false
-
-    private val similarity = StringSimilarityServiceImpl(JaroWinklerStrategy())
 
     fun resetForNewRun() {
         borrowAttemptedThisRun = false
@@ -47,7 +40,10 @@ object SupportCardBorrower {
         if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
 
         borrowAttemptedThisRun = true
-        logRecommendedOwnedDeck()
+        val owned = SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"))
+        if (owned.isNotEmpty() && !OwnedSupportDeckEquipper.isEnabled()) {
+            MessageLog.i(TAG, "Recommended owned slots (equip manually or enable auto-equip): ${owned.joinToString(" · ")}")
+        }
         if (ButtonBorrowSupportCard.click(game.imageUtils)) {
             MessageLog.i(TAG, "Opened Borrow Card dialog.")
             game.wait(1.0)
@@ -58,20 +54,21 @@ object SupportCardBorrower {
     }
 
     /**
-     * OCRs visible borrow slots and taps the best match from [readPreferredNames].
+     * OCRs visible borrow slots and taps the best match from preferred names.
      *
      * @return True when a card was selected.
      */
     fun selectPreferredCard(game: Game, sourceBitmap: Bitmap): Boolean {
-        val preferredNames = readPreferredNames()
+        val preferredNames =
+            rotatedPreferredNames(
+                SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")),
+            )
         if (preferredNames.isEmpty()) {
             MessageLog.w(TAG, "No preferred support cards configured; skipping borrow selection.")
             return false
         }
 
         val imageUtils = game.imageUtils
-        val ocrWidth = (SharedData.displayWidth * OCR_WIDTH_FRACTION).toInt()
-        val ocrHeight = (SharedData.displayHeight * OCR_HEIGHT_FRACTION).toInt()
         var bestSlot = -1
         var bestScore = 0.0
         var bestName = ""
@@ -80,30 +77,18 @@ object SupportCardBorrower {
         for (index in CARD_SLOT_X_FRACTIONS.indices) {
             val centerX = SharedData.displayWidth * CARD_SLOT_X_FRACTIONS[index]
             val centerY = SharedData.displayHeight * CARD_SLOT_Y_FRACTION
-            val cropX = imageUtils.relX(centerX, -(ocrWidth / 2))
-            val cropY = imageUtils.relY(centerY, -(ocrHeight / 2))
             val ocrText =
-                imageUtils.performOCROnRegion(
+                SupportCardSelection.ocrRegion(
+                    imageUtils,
                     sourceBitmap,
-                    cropX,
-                    cropY,
-                    ocrWidth,
-                    ocrHeight,
-                    useThreshold = false,
-                    useGrayscale = true,
-                    scale = 2.0,
-                    ocrEngine = "tesseract",
-                    debugName = "support_borrow_slot_$index",
+                    centerX,
+                    centerY,
+                    OCR_WIDTH_FRACTION,
+                    OCR_HEIGHT_FRACTION,
+                    "support_borrow_slot_$index",
                 )
-            val normalizedOcr = ocrText.lowercase()
             for (name in preferredNames) {
-                val needle = name.lowercase()
-                if (!ocrMightMatchName(normalizedOcr, needle)) continue
-                val score =
-                    when {
-                        normalizedOcr.contains(needle) -> 1.0
-                        else -> similarity.score(needle, normalizedOcr)
-                    }
+                val score = SupportCardSelection.matchScore(ocrText, name)
                 if (score > bestScore) {
                     bestScore = score
                     bestSlot = index
@@ -113,7 +98,7 @@ object SupportCardBorrower {
             }
         }
 
-        if (bestSlot < 0 || bestScore < MIN_NAME_MATCH_SCORE) {
+        if (bestSlot < 0 || bestScore < SupportCardSelection.MIN_NAME_MATCH_SCORE) {
             MessageLog.w(
                 TAG,
                 "No borrow match above threshold (best=$bestScore for \"$bestText\"). Preferred: ${preferredNames.joinToString()}",
@@ -129,6 +114,14 @@ object SupportCardBorrower {
         return true
     }
 
+    private fun rotatedPreferredNames(names: List<String>): List<String> {
+        if (names.isEmpty()) return names
+        if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowRotation", false)) return names
+        val offset = ParentFarmingRunLoop.borrowRotationOffset() % names.size
+        if (offset == 0) return names
+        return names.drop(offset) + names.take(offset)
+    }
+
     fun confirmBorrow(game: Game): Boolean {
         if (ButtonOk.click(game.imageUtils)) {
             MessageLog.i(TAG, "Confirmed support card borrow.")
@@ -137,54 +130,5 @@ object SupportCardBorrower {
         }
         MessageLog.w(TAG, "Failed to confirm support card borrow.")
         return false
-    }
-
-    /** Skips expensive similarity when OCR text shares no token overlap with the support name. */
-    private fun ocrMightMatchName(normalizedOcr: String, needle: String): Boolean {
-        if (needle.isEmpty()) return false
-        if (normalizedOcr.contains(needle)) return true
-        if (needle.length < 3) return true
-        for (i in 0..needle.length - 3) {
-            if (normalizedOcr.contains(needle.substring(i, i + 3))) return true
-        }
-        return false
-    }
-
-    private fun readPreferredNames(): List<String> {
-        val json = SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards")
-        if (json.isEmpty()) return emptyList()
-        return runCatching {
-            val array = JSONArray(json)
-            buildList {
-                for (i in 0 until array.length()) {
-                    val value = array.optString(i)
-                    if (value.isNotBlank()) add(value)
-                }
-            }
-        }.getOrElse { emptyList() }
-    }
-
-    private fun readRecommendedOwnedDeck(): List<String> {
-        val json = SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards")
-        if (json.isEmpty()) return emptyList()
-        return runCatching {
-            val array = JSONArray(json)
-            buildList {
-                for (i in 0 until array.length()) {
-                    val value = array.optString(i)
-                    if (value.isNotBlank()) add(value)
-                }
-            }
-        }.getOrElse { emptyList() }
-    }
-
-  /** Logs saved owned-slot recommendations; career deck selection is still manual. */
-    private fun logRecommendedOwnedDeck() {
-        val owned = readRecommendedOwnedDeck()
-        if (owned.isEmpty()) return
-        MessageLog.i(
-            TAG,
-            "Recommended owned support slots (equip manually before borrow): ${owned.joinToString(" · ")}",
-        )
     }
 }

@@ -12,6 +12,8 @@ import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInvento
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
+import { ParentFarmingCareerAutomationCard } from "../../components/ParentFarmingCareerAutomationCard"
+import { ParentFarmingGoalProgressCard } from "../../components/ParentFarmingGoalProgressCard"
 import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
@@ -23,8 +25,24 @@ import {
     enableParentFarmingCharacterBundle,
 } from "../../lib/parentFarmingResolver"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import {
+    PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
+    buildFullDeckApplyRacingPatch,
+} from "../../lib/parentFarmingCareerAutomation"
 import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
-import { applyParentFarmingPreset, disableParentFarmingMode } from "../../lib/parentFarmingPreset"
+import { applyParentFarmingPreset, disableParentFarmingMode, refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
+import {
+    hasParentFarmingTargetEpithetDrift,
+    hasParentFarmingTargetWeightDrift,
+    hasParentFarmingTrainingDrift,
+    hasParentFarmingForcedEpithetDrift,
+    hasParentFarmingSparkStrategyDrift,
+    hasParentFarmingSolverWeightDrift,
+    hasParentFarmingEpithetTierDrift,
+    hasParentFarmingLegacyStrategyDrift,
+    hasParentFarmingQualityTargetDrift,
+} from "../../lib/parentFarmingDrift"
+import { recommendLegacyParents, formatLegacyParentRecommendation } from "../../lib/legacyParentRecommendations"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -43,6 +61,7 @@ import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
 import { copyToClipboard } from "../../lib/utils"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
+import { LEGACY_PARENT_SELECTION_STRATEGIES } from "../../lib/legacyParentSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -75,8 +94,18 @@ const ParentFarmingSettings = () => {
         enableParentRunArchive,
         sparkSelectionStrategy,
         enableAutoBorrowSupportCard,
+        enableAutoEquipOwnedSupportDeck,
+        enableAutoStartCareer,
+        enableParentFarmingMultiRun,
+        parentFarmingMultiRunCount,
+        enableParentFarmingStopOnQualityTarget,
+        parentFarmingQualityTargetScore,
+        enableParentFarmingKeepBestRun,
+        enableParentFarmingStopOnForcedEpithetFail,
+        enableParentFarmingBorrowRotation,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
+        legacyParentSelectionStrategy,
         supportBorrowPreferredCards,
         ownedSupportCards,
         supportDeckOwnedCards,
@@ -125,7 +154,35 @@ const ParentFarmingSettings = () => {
         [parentFarmingSupportBorrowOverrides],
     )
 
+    const legacyParentRecommendation = useMemo(
+        () => recommendLegacyParents(parentFarmingGoalPresetKey, legacyParentSelectionStrategy),
+        [parentFarmingGoalPresetKey, legacyParentSelectionStrategy],
+    )
+
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
+
+    const showPresetReSync = useMemo(
+        () =>
+            enableParentFarmingMode &&
+            (hasParentFarmingTargetEpithetDrift(settings) ||
+                hasParentFarmingTargetWeightDrift(settings) ||
+                hasParentFarmingTrainingDrift(settings) ||
+                hasParentFarmingForcedEpithetDrift(settings) ||
+                hasParentFarmingSparkStrategyDrift(settings) ||
+                hasParentFarmingSolverWeightDrift(settings) ||
+                hasParentFarmingEpithetTierDrift(settings) ||
+                hasParentFarmingLegacyStrategyDrift(settings) ||
+                hasParentFarmingQualityTargetDrift(settings)),
+        [enableParentFarmingMode, settings],
+    )
+
+    const reSyncFromPreset = useCallback(() => {
+        setSettings((prev) => refreshParentFarmingSettings(prev))
+    }, [setSettings])
+
+    const openSmartRaceSolver = useCallback(() => {
+        navigation.navigate("SmartRaceSolverSettings" as never)
+    }, [navigation])
 
     const allowedEpithetNames = useMemo(
         () => buildAllowedEpithetNamesForParentBundle(general?.scenario || "Trackblazer", smartRaceSolverCharacterPreset || "Special Week"),
@@ -232,24 +289,19 @@ const ParentFarmingSettings = () => {
         (characterName: string, ownedCards: string[], borrowOrder: string[]) => {
             setSettings((prev) => {
                 const preset = findCharacterPresetEntry(characterName)
+                const aptitudesJson = preset ? JSON.stringify(aptitudesFromCharacterPreset(preset)) : undefined
                 return {
                     ...prev,
-                    racing: {
-                        ...prev.racing,
-                        supportBorrowPreferredCards: JSON.stringify(borrowOrder),
-                        supportDeckOwnedCards: JSON.stringify(ownedCards),
-                        ownedSupportCards: JSON.stringify(ownedCards),
-                        smartRaceSolverCharacterPreset: characterName,
-                        enableAutoBorrowSupportCard: true,
-                        ...(preset
-                            ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
-                            : {}),
-                    },
+                    racing: buildFullDeckApplyRacingPatch(prev.racing, ownedCards, borrowOrder, characterName, aptitudesJson),
                 }
             })
         },
         [setSettings],
     )
+
+    const enableFullCareerAutomation = useCallback(() => {
+        updateRacing((prev) => ({ ...prev, ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS }))
+    }, [updateRacing])
 
     const updateRacingSetting = useCallback(
         (key: keyof Settings["racing"], value: unknown) => {
@@ -257,6 +309,13 @@ const ParentFarmingSettings = () => {
         },
         [updateRacing],
     )
+
+    const applyLegacyParentRecommendation = useCallback(() => {
+        updateRacingSetting(
+            "legacyParentPreferredPair",
+            JSON.stringify([legacyParentRecommendation.parentOne, legacyParentRecommendation.parentTwo]),
+        )
+    }, [legacyParentRecommendation, updateRacingSetting])
 
     const updateLegacyParentName = useCallback(
         (index: number, value: string) => {
@@ -327,10 +386,21 @@ const ParentFarmingSettings = () => {
                             </SearchableItem>
                             {!enableParentFarmingMode && (
                                 <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
-                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-borrow supports and legacy parent auto-select.
+                                    Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-equip, auto-borrow, legacy parent auto-select, and optional auto-start.
                                 </InfoContainer>
                             )}
                             <ParentFarmingActivePresetChip settings={settings} />
+                            {enableParentFarmingMode && (
+                                <ParentFarmingCareerAutomationCard settings={settings} onEnableFullAutomation={enableFullCareerAutomation} />
+                            )}
+                            {enableParentFarmingMode && (
+                                <ParentFarmingGoalProgressCard
+                                    settings={settings}
+                                    onOpenSolver={openSmartRaceSolver}
+                                    onReSyncPreset={reSyncFromPreset}
+                                    showReSync={showPresetReSync}
+                                />
+                            )}
                             {parentFarmingDriftWarnings.length > 0 && (
                                 <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {parentFarmingDriftWarnings.join("\n\n")}
@@ -353,24 +423,23 @@ const ParentFarmingSettings = () => {
                                     </View>
                                 </Section>
 
-                                <Section label="Inheritance & supports">
-                                    <SearchableItem id="spark-selection-strategy" title="Spark selection" description="How the bot picks one of three inheritance sparks.">
+                                <Section label="Career selection">
+                                    <SearchableItem
+                                        id="enable-auto-equip-owned-support-deck"
+                                        title="Auto-equip owned support deck"
+                                        description="Equip four saved owned slots at career selection before borrowing a friend card."
+                                    >
                                         <Row
-                                            title="Spark selection"
-                                            description="Goal presets set this automatically (e.g. Skill Hint → skill hints)."
+                                            title="Auto-equip owned supports"
+                                            description={
+                                                parseOwnedSupportCards(supportDeckOwnedCards).length > 0
+                                                    ? `Slots: ${parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}`
+                                                    : "Apply full deck below to save owned support slots."
+                                            }
                                             right={
-                                                <CustomSelect
-                                                    searchId="spark-selection-strategy"
-                                                    searchTitle="Spark Selection Strategy"
-                                                    searchDescription="How the bot picks inheritance sparks before confirming inheritance."
-                                                    width={150}
-                                                    options={SPARK_SELECTION_STRATEGIES.map((option) => ({
-                                                        value: option.value,
-                                                        label: option.shortLabel,
-                                                    }))}
-                                                    value={sparkSelectionStrategy || "Default"}
-                                                    onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
-                                                    placeholder="Default"
+                                                <Switch
+                                                    checked={enableAutoEquipOwnedSupportDeck}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableAutoEquipOwnedSupportDeck", checked)}
                                                 />
                                             }
                                         />
@@ -385,7 +454,7 @@ const ParentFarmingSettings = () => {
                                             description={
                                                 supportBorrowNames.length > 0
                                                     ? `Priority: ${supportBorrowNames.slice(0, 3).join(" → ")}${supportBorrowNames.length > 3 ? " …" : ""}`
-                                                    : "Apply a setup to load a support priority list."
+                                                    : "Apply a setup or full deck to load a borrow list."
                                             }
                                             right={
                                                 <Switch
@@ -416,8 +485,33 @@ const ParentFarmingSettings = () => {
                                         />
                                         {enableAutoSelectLegacyParents && (
                                             <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.sm }}>
+                                                <Row
+                                                    title="Factor-aware selection"
+                                                    description={
+                                                        legacyParentNames.some((name) => name.length > 0)
+                                                            ? "Skipped when preferred names are set."
+                                                            : legacyParentSelectionStrategy === "Default"
+                                                              ? "Uses in-game Auto-Select only."
+                                                              : `OCR-scores parent cards for ${LEGACY_PARENT_SELECTION_STRATEGIES.find((option) => option.value === legacyParentSelectionStrategy)?.shortLabel ?? legacyParentSelectionStrategy}.`
+                                                    }
+                                                    right={
+                                                        <CustomSelect
+                                                            searchId="legacy-parent-selection-strategy"
+                                                            searchTitle="Legacy parent selection"
+                                                            searchDescription="How the bot picks a parent pair when no preferred names are configured."
+                                                            width={150}
+                                                            options={LEGACY_PARENT_SELECTION_STRATEGIES.map((option) => ({
+                                                                value: option.value,
+                                                                label: option.shortLabel,
+                                                            }))}
+                                                            value={legacyParentSelectionStrategy || "Default"}
+                                                            onValueChange={(value) => updateRacingSetting("legacyParentSelectionStrategy", value)}
+                                                            placeholder="Default"
+                                                        />
+                                                    }
+                                                />
                                                 <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
-                                                    Optional preferred parent pair (leave blank for in-game Auto-Select only):
+                                                    Optional preferred parent pair (leave blank for factor scoring or Auto-Select):
                                                 </Text>
                                                 <View style={{ flexDirection: "row", gap: SPACING.sm }}>
                                                     <Input
@@ -433,8 +527,196 @@ const ParentFarmingSettings = () => {
                                                         style={{ flex: 1 }}
                                                     />
                                                 </View>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Suggested: {formatLegacyParentRecommendation(legacyParentRecommendation)}
+                                                </Text>
+                                                <Pressable
+                                                    onPress={applyLegacyParentRecommendation}
+                                                    style={{
+                                                        alignSelf: "flex-start",
+                                                        paddingVertical: SPACING.sm,
+                                                        paddingHorizontal: SPACING.md,
+                                                        borderRadius: RADII.md,
+                                                        borderWidth: 1,
+                                                        borderColor: colors.brandBorder,
+                                                        backgroundColor: colors.brandSubtle,
+                                                    }}
+                                                    accessibilityRole="button"
+                                                >
+                                                    <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply suggested pair</Text>
+                                                </Pressable>
                                             </View>
                                         )}
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="enable-auto-start-career"
+                                        title="Auto-start career"
+                                        description="Tap Start Career on final confirmation after supports and parents are set."
+                                    >
+                                        <Row
+                                            title="Auto-start career"
+                                            description="Skips the manual Start Career tap on final confirmation."
+                                            right={
+                                                <Switch
+                                                    checked={enableAutoStartCareer}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableAutoStartCareer", checked)}
+                                                />
+                                            }
+                                        />
+                                    </SearchableItem>
+                                    <SearchableItem
+                                        id="enable-parent-farming-multi-run"
+                                        title="Multi-run parent farming"
+                                        description="After each career ends, return to career selection and start another run in the same bot session."
+                                    >
+                                        <Row
+                                            title="Multi-run loop"
+                                            description={
+                                                enableParentFarmingMultiRun
+                                                    ? parentFarmingMultiRunCount <= 0
+                                                        ? "Runs until you stop the bot manually."
+                                                        : `Target: ${parentFarmingMultiRunCount} career${parentFarmingMultiRunCount === 1 ? "" : "s"} per session.`
+                                                    : "Single career per bot start (default)."
+                                            }
+                                            right={
+                                                <Switch
+                                                    checked={enableParentFarmingMultiRun}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingMultiRun", checked)}
+                                                />
+                                            }
+                                        />
+                                    </SearchableItem>
+                                    {enableParentFarmingMultiRun && (
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, gap: SPACING.md }}>
+                                            <CustomSlider
+                                                searchId="parent-farming-multi-run-count"
+                                                searchTitle="Careers per session"
+                                                searchDescription="Number of parent runs before the bot stops. Set to 0 for unlimited until manually stopped."
+                                                label="Careers per session (0 = unlimited)"
+                                                min={0}
+                                                max={20}
+                                                step={1}
+                                                value={parentFarmingMultiRunCount}
+                                                placeholder={defaultSettings.racing.parentFarmingMultiRunCount}
+                                                onValueChange={(value) => updateRacingSetting("parentFarmingMultiRunCount", value)}
+                                                showValue
+                                                showLabels
+                                                description="Each career sends its own run summary when multi-run is enabled."
+                                            />
+                                            <SearchableItem
+                                                id="enable-parent-farming-stop-on-quality"
+                                                title="Stop on quality target"
+                                                description="End the multi-run session early when a run reaches the quality score target."
+                                            >
+                                                <Row
+                                                    title="Stop on quality target"
+                                                    description={
+                                                        enableParentFarmingStopOnQualityTarget
+                                                            ? `Stops when parent quality ≥ ${parentFarmingQualityTargetScore} (A grade by default).`
+                                                            : "Runs until career count or manual stop."
+                                                    }
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingStopOnQualityTarget}
+                                                            onCheckedChange={(checked) =>
+                                                                updateRacingSetting("enableParentFarmingStopOnQualityTarget", checked)
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            {enableParentFarmingStopOnQualityTarget && (
+                                                <CustomSlider
+                                                    searchId="parent-farming-quality-target-score"
+                                                    searchTitle="Quality target score"
+                                                    searchDescription="Minimum parent quality score (0–100) to stop multi-run early."
+                                                    label="Quality target (0–100)"
+                                                    min={60}
+                                                    max={95}
+                                                    step={5}
+                                                    value={parentFarmingQualityTargetScore}
+                                                    placeholder={defaultSettings.racing.parentFarmingQualityTargetScore}
+                                                    onValueChange={(value) => updateRacingSetting("parentFarmingQualityTargetScore", value)}
+                                                    showValue
+                                                    showLabels
+                                                    description="S = 90+, A = 80+, B = 70+. Compare scores in run archive."
+                                                />
+                                            )}
+                                            <SearchableItem
+                                                id="enable-parent-farming-keep-best-run"
+                                                title="Keep best run summary"
+                                                description="Log the highest-quality run when the multi-run session completes."
+                                            >
+                                                <Row
+                                                    title="Track session best"
+                                                    description="Logs best quality grade and score when multi-run finishes."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingKeepBestRun}
+                                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingKeepBestRun", checked)}
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            <SearchableItem
+                                                id="enable-parent-farming-borrow-rotation"
+                                                title="Rotate borrow priority"
+                                                description="Shift friend borrow priority each run in a multi-run session."
+                                            >
+                                                <Row
+                                                    title="Rotate borrow each run"
+                                                    description="Uses the next support in your borrow list on each career restart."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingBorrowRotation}
+                                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBorrowRotation", checked)}
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                            <SearchableItem
+                                                id="enable-parent-farming-stop-on-forced-fail"
+                                                title="Stop on forced epithet fail"
+                                                description="Stop multi-run when a forced epithet route is missed or becomes unreachable."
+                                            >
+                                                <Row
+                                                    title="Forced epithet fail-fast"
+                                                    description="Stops the session when a must-complete epithet fails or dies mid-career."
+                                                    right={
+                                                        <Switch
+                                                            checked={enableParentFarmingStopOnForcedEpithetFail}
+                                                            onCheckedChange={(checked) =>
+                                                                updateRacingSetting("enableParentFarmingStopOnForcedEpithetFail", checked)
+                                                            }
+                                                        />
+                                                    }
+                                                />
+                                            </SearchableItem>
+                                        </View>
+                                    )}
+                                </Section>
+
+                                <Section label="Inheritance & supports">
+                                    <SearchableItem id="spark-selection-strategy" title="Spark selection" description="How the bot picks one of three inheritance sparks.">
+                                        <Row
+                                            title="Spark selection"
+                                            description="Goal presets set this automatically (e.g. Skill Hint → skill hints)."
+                                            right={
+                                                <CustomSelect
+                                                    searchId="spark-selection-strategy"
+                                                    searchTitle="Spark Selection Strategy"
+                                                    searchDescription="How the bot picks inheritance sparks before confirming inheritance."
+                                                    width={150}
+                                                    options={SPARK_SELECTION_STRATEGIES.map((option) => ({
+                                                        value: option.value,
+                                                        label: option.shortLabel,
+                                                    }))}
+                                                    value={sparkSelectionStrategy || "Default"}
+                                                    onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
+                                                    placeholder="Default"
+                                                />
+                                            }
+                                        />
                                     </SearchableItem>
                                     <SearchableItem
                                         id="character-support-finder"
@@ -483,7 +765,7 @@ const ParentFarmingSettings = () => {
                                                                 borderColor: colors.brandBorder,
                                                             }}
                                                         >
-                                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply full deck</Text>
+                                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Apply full deck + automation</Text>
                                                         </Pressable>
                                                     <Pressable
                                                         onPress={() =>

@@ -1,6 +1,9 @@
 import type { Settings } from "../context/BotStateContext"
 import { DEFAULT_WEIGHTS, type WeightsMap } from "./solver/constants"
 import type { SparkSelectionStrategy } from "./sparkSelection"
+import type { LegacyParentSelectionStrategy } from "./legacyParentSelection"
+import { legacyStrategyFromSparkStrategy } from "./legacyParentSelection"
+import { buildEpithetTiersFromLists } from "./epithetTiers"
 import {
     buildParentFarmingTrainingSettings,
     PARENT_FARMING_GOAL_RACING_BASE,
@@ -19,6 +22,10 @@ export interface ParentFarmingGoalPreset {
     trainingOverrides?: Partial<Settings["training"]>
     /** Inheritance spark picker override for this parent route. */
     sparkSelectionStrategy?: SparkSelectionStrategy
+    /** Legacy parent OCR scoring when no preferred names are set. Defaults from spark strategy. */
+    legacyParentSelectionStrategy?: LegacyParentSelectionStrategy
+    /** Optional multi-run quality target applied with the preset (enables stop-on-quality). */
+    qualityTargetScore?: number
 }
 
 const TARGET_PRIORITY_WEIGHTS: Partial<WeightsMap> = {
@@ -92,6 +99,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             minimumFanTarget: 120000,
         },
         trainingOverrides: G1_FAN_TRAINING,
+        qualityTargetScore: 80,
     },
     {
         key: "classic-crown",
@@ -104,6 +112,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...QUALITY_ROUTE_WEIGHTS,
         },
         trainingOverrides: LONG_STAMINA_TRAINING,
+        qualityTargetScore: 90,
     },
     {
         key: "triple-tiara",
@@ -116,6 +125,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...QUALITY_ROUTE_WEIGHTS,
         },
         trainingOverrides: MILE_QUEEN_TRAINING,
+        qualityTargetScore: 90,
     },
     {
         key: "mile-sprint",
@@ -153,6 +163,8 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         },
         trainingOverrides: SKILL_HINT_TRAINING,
         sparkSelectionStrategy: "SkillHints",
+        legacyParentSelectionStrategy: "SkillHints",
+        qualityTargetScore: 85,
     },
     {
         key: "medium-long",
@@ -355,17 +367,28 @@ export const applyParentFarmingGoalPresetToRacing = (
         ? mergeNames(parseStringList(racing.smartRaceSolverForcedEpithets), preset.forcedEpithets ?? [], allowedNames)
         : filterAllowed(preset.forcedEpithets ?? [])
     const weights = parseWeights(racing.smartRaceSolverWeights)
+    const sparkSelectionStrategy = preset.sparkSelectionStrategy ?? PARENT_FARMING_GOAL_RACING_BASE.sparkSelectionStrategy
+    const legacyParentSelectionStrategy =
+        preset.legacyParentSelectionStrategy ?? legacyStrategyFromSparkStrategy(sparkSelectionStrategy)
 
     return {
         ...PARENT_FARMING_GOAL_RACING_BASE,
         smartRaceSolverTargetEpithets: JSON.stringify(targetEpithets),
         smartRaceSolverForcedEpithets: JSON.stringify(forcedEpithets),
+        smartRaceSolverEpithetTiers: JSON.stringify(buildEpithetTiersFromLists(forcedEpithets, targetEpithets)),
         smartRaceSolverWeights: JSON.stringify({
             ...weights,
             ...TARGET_PRIORITY_WEIGHTS,
             ...preset.weightOverrides,
         }),
-        sparkSelectionStrategy: preset.sparkSelectionStrategy ?? PARENT_FARMING_GOAL_RACING_BASE.sparkSelectionStrategy,
+        sparkSelectionStrategy,
+        legacyParentSelectionStrategy,
+        ...(preset.qualityTargetScore != null
+            ? {
+                  enableParentFarmingStopOnQualityTarget: true,
+                  parentFarmingQualityTargetScore: preset.qualityTargetScore,
+              }
+            : {}),
         supportBorrowPreferredCards: JSON.stringify(findSupportBorrowPreset(preset.key)),
         parentFarmingGoalPresetKey: preset.key,
         parentFarmingGoalPresetLabel: preset.label,

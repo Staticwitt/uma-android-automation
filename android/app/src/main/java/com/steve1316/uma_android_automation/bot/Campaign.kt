@@ -64,6 +64,7 @@ import com.steve1316.uma_android_automation.components.LabelRecreationUmamusume
 import com.steve1316.uma_android_automation.components.LabelScheduledRace
 import com.steve1316.uma_android_automation.components.LabelStatTableHeaderSkillPoints
 import com.steve1316.uma_android_automation.components.LabelUmamusumeClassFans
+import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.BoundingBox
 import com.steve1316.uma_android_automation.types.DateMonth
 import com.steve1316.uma_android_automation.types.DatePhase
@@ -585,6 +586,14 @@ abstract class Campaign(game: Game) : Task(game) {
             "confirm_auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
                     LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                } else {
+                    result.dialog.close(game.imageUtils)
+                }
+            }
+
+            "final_confirmation" -> {
+                if (CareerSelectionAutomation.shouldAutoStartCareer()) {
+                    CareerSelectionAutomation.tryStartCareer(game)
                 } else {
                     result.dialog.close(game.imageUtils)
                 }
@@ -2080,6 +2089,57 @@ abstract class Campaign(game: Game) : Task(game) {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /** Resets per-run campaign and trainee state before another parent-farming career in the same session. */
+    fun resetForNextParentRun() {
+        with(trainee) {
+            name = ""
+            skillPoints = 120
+            fans = 1
+            mood = Mood.NORMAL
+            energy = 100
+            megaphoneTurnCounter = 0
+            fanCountClass = FanCountClass.DEBUT
+            statTrackLocation = null
+            stats.speed = -1
+            stats.stamina = -1
+            stats.power = -1
+            stats.guts = -1
+            stats.wit = -1
+            bHasUpdatedAptitudes = false
+            bHasUpdatedStats = false
+            bHasUpdatedSkillPoints = false
+            bTemporaryRunningStyleAptitudesUpdated = false
+            bHasSetRunningStyle = false
+            trackSurfaceAptitudes.keys.forEach { trackSurfaceAptitudes[it] = Aptitude.G }
+            trackDistanceAptitudes.keys.forEach { trackDistanceAptitudes[it] = Aptitude.G }
+            runningStyleAptitudes.keys.forEach { runningStyleAptitudes[it] = Aptitude.G }
+            currentPositiveStatuses.clear()
+            currentNegativeStatuses.clear()
+        }
+
+        bForcedWitTraining = false
+        forcedTargetMood = null
+        recreationDateCompleted = false
+        stopAtDateInitialTurnNumber = -1
+        stopBeforeFinalsInitialTurnNumber = -1
+        bNeedToCheckFans = true
+        bHasTriedCheckingFansToday = false
+        bHasHandledSkillPointCheck = false
+        bHasHandledPreFinalsCheck = false
+        bHasCheckedForMaidenRaceToday = false
+        bHasCheckedDateThisTurn = false
+        consecutiveButtonCancelMatches = 0
+
+        racing.encounteredRacingPopup = false
+        racing.hasFanRequirement = false
+        racing.hasTrophyRequirement = false
+        racing.hasPreOpOrAboveRequirement = false
+        racing.hasG3OrAboveRequirement = false
+        racing.hasInsufficientGoalRacePtsRequirement = false
+        racing.detectedMandatoryRaceCheck = false
+        racing.bRetriedCurrentRace = false
+    }
+
     /**
      * Executes the main processing loop for the campaign task.
      *
@@ -2092,11 +2152,19 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
+            if (OwnedSupportDeckEquipper.tryEquipOwnedDeck(game)) {
+                return null
+            }
+
             if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
                 return null
             }
 
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+                return null
+            }
+
+            if (CareerSelectionAutomation.tryStartCareer(game)) {
                 return null
             }
 
@@ -2169,12 +2237,18 @@ abstract class Campaign(game: Game) : Task(game) {
                 // Print the final Trainee information.
                 trainee.logInfo()
 
+                val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
+                val summaryInput =
+                    if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
+                        ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
+                    } else {
+                        null
+                    }
+
                 if (
-                    SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
+                    summaryInput != null &&
                     SettingsHelper.getBooleanSetting("racing", "enableParentRunSummary", true)
                 ) {
-                    val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
-                    val summaryInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
                     val summary = ParentRunSummary.build(summaryInput)
                     ParentRunSummary.logSummary(summary)
                     game.taskEndDiscordEmbed = ParentRunSummary.buildDiscordEmbed(summaryInput)
@@ -2182,6 +2256,12 @@ abstract class Campaign(game: Game) : Task(game) {
                     if (SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
                         ParentRunArchive.append(game.myContext, summaryInput)
                     }
+                } else if (summaryInput != null && SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
+                    ParentRunArchive.append(game.myContext, summaryInput)
+                }
+
+                if (ParentFarmingRunLoop.tryContinueAfterCareerEnd(this, game, summaryInput)) {
+                    return null
                 }
 
                 return TaskResult.Success(

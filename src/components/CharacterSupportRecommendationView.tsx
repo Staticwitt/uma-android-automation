@@ -118,7 +118,7 @@ export const CharacterSupportRecommendationView = ({ recommendation }: Character
                 </Pressable>
             )}
             <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
-                Owned support slots are saved for manual equip at career selection; friend borrow is automated.
+                Apply full deck saves owned slots and turns on career automation (equip, borrow, parents, start).
             </Text>
         </View>
     )

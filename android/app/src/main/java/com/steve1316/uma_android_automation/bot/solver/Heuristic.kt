@@ -199,7 +199,14 @@ object Heuristic {
         // Forced epithets are still surfaced via the feasibility check in [keepTopK]. Targeted
         // epithets get an additional weight boost via [Weights.targetEpithetMultiplier].
         val epithetGain =
-            newlyCompleted.sumOf { ScoringFunctions.epithetContribution(it, state.weights, it.name in state.targetEpithets) }
+            newlyCompleted.sumOf {
+                ScoringFunctions.epithetContribution(
+                    it,
+                    state.weights,
+                    it.name in state.targetEpithets,
+                    state.epithetTierMultipliers[it.name] ?: 1.0,
+                )
+            }
         val summer = ScoringFunctions.summerBlockPenalty(turn, state)
         val consec = ScoringFunctions.consecutiveRacePenalty(newConsec, turn, state.weights)
 

@@ -24,12 +24,14 @@ object ParentRunArchive {
 
     /**
      * Appends a run record built from [input]. Newest entries are stored first.
+     *
+     * @param isSessionBest When true, marks this entry as the best run in the current multi-run session.
      */
-    fun append(context: Context, input: ParentRunSummaryInput) {
+    fun append(context: Context, input: ParentRunSummaryInput, isSessionBest: Boolean = false) {
         try {
             val file = archiveFile(context)
             val records = readArray(file)
-            val entry = recordFromInput(input)
+            val entry = recordFromInput(input, isSessionBest)
             val updated = JSONArray()
             updated.put(entry)
             for (i in 0 until records.length()) {
@@ -56,8 +58,28 @@ object ParentRunArchive {
         }.onFailure { MessageLog.w(TAG, "Failed to clear parent run archive: ${it.message}") }
     }
 
-    internal fun recordFromInput(input: ParentRunSummaryInput): JSONObject {
+    /** Marks the best run in a multi-run session after the session completes. */
+    fun markSessionBest(context: Context, sessionId: String, sessionRunIndex: Int) {
+        if (sessionId.isEmpty() || sessionRunIndex <= 0) return
+        try {
+            val file = archiveFile(context)
+            val records = readArray(file)
+            var updated = false
+            for (i in 0 until records.length()) {
+                val entry = records.getJSONObject(i)
+                if (entry.optString("sessionId") != sessionId) continue
+                entry.put("isSessionBest", entry.optInt("sessionRunIndex", 0) == sessionRunIndex)
+                updated = true
+            }
+            if (updated) writeArray(file, records)
+        } catch (t: Throwable) {
+            MessageLog.w(TAG, "Failed to mark session best run: ${t.message}")
+        }
+    }
+
+    internal fun recordFromInput(input: ParentRunSummaryInput, isSessionBest: Boolean = false): JSONObject {
         val trainee = input.trainee
+        val quality = ParentRunQuality.score(input)
         val sparks = JSONArray()
         for (pick in input.sparkPicks) {
             sparks.put(
@@ -78,6 +100,7 @@ object ParentRunArchive {
             .put("traineeName", trainee.name)
             .put("sparkStrategy", input.sparkStrategy)
             .put("targetEpithets", JSONArray(input.targetEpithets))
+            .put("forcedEpithets", JSONArray(input.forcedEpithets))
             .put("completedTargetEpithets", JSONArray(input.completedTargetEpithets))
             .put("incompleteTargetEpithets", JSONArray(input.incompleteTargetEpithets))
             .put("extraCompletedEpithets", JSONArray(input.extraCompletedEpithets))
@@ -105,6 +128,14 @@ object ParentRunArchive {
             .put("surfaceAptitudes", aptitudesJson(TrackSurface.entries) { trainee.trackSurfaceAptitudes[it]?.name ?: "" })
             .put("distanceAptitudes", aptitudesJson(TrackDistance.entries) { trainee.trackDistanceAptitudes[it]?.name ?: "" })
             .put("styleAptitudes", aptitudesJson(RunningStyle.entries) { trainee.runningStyleAptitudes[it]?.name ?: "" })
+            .put("qualityScore", quality.score)
+            .put("qualityGrade", quality.grade)
+            .put("qualityBreakdown", ParentRunQuality.breakdownToJson(quality.breakdown))
+            .put("sessionId", input.sessionId)
+            .put("sessionRunIndex", input.sessionRunIndex)
+            .put("sessionRunTarget", input.sessionRunTarget)
+            .put("isSessionBest", isSessionBest)
+            .put("inheritanceSummary", input.inheritanceSummary)
     }
 
     private fun <T : Enum<T>> aptitudesJson(entries: List<T>, value: (T) -> String): JSONObject {

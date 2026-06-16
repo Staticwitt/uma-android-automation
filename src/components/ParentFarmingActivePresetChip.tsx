@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import type { Settings } from "../context/BotStateContext"
 import { getParentFarmingActiveLabels, formatParentFarmingTrainingBias } from "../lib/parentFarmingDrift"
+import { formatCareerAutomationSummary } from "../lib/parentFarmingCareerAutomation"
 import { formatSupportBorrowPreview, resolveActiveSupportBorrowCards } from "../lib/parentFarmingSupportBorrow"
 import { formatSparkStrategyLabel } from "../lib/sparkSelection"
 import { TYPE } from "../lib/type"
@@ -58,6 +59,7 @@ export const ParentFarmingActivePresetChip = ({ settings }: ParentFarmingActiveP
             <Text style={styles.muted}>Training: {formatParentFarmingTrainingBias(settings.training)}</Text>
             <Text style={styles.muted}>Sparks: {sparkLabel}</Text>
             <Text style={styles.muted}>Supports: {formatSupportBorrowPreview(supports)}</Text>
+            <Text style={styles.muted}>Career automation: {formatCareerAutomationSummary(settings)}</Text>
         </View>
     )
 }

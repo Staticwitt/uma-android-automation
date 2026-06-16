@@ -155,6 +155,7 @@ object ScoringFunctions {
         epithet: Epithet,
         weights: Weights,
         isTarget: Boolean = false,
+        epithetTierMultiplier: Double = 1.0,
     ): Double {
         val (kind, amount) = EpithetFilters.rewardFromBullets(epithet.bullets)
         val base =
@@ -164,7 +165,8 @@ object ScoringFunctions {
                 else -> 0.0
             }
         val targetMultiplier = if (isTarget) weights.targetEpithetMultiplier.coerceAtLeast(1.0) else 1.0
-        return base * weights.epithetValue * targetMultiplier
+        val tierMultiplier = epithetTierMultiplier.coerceAtLeast(0.0)
+        return base * weights.epithetValue * targetMultiplier * tierMultiplier
     }
 
     /**

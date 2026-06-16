@@ -1,5 +1,8 @@
 import { NativeModules } from "react-native"
 
+import type { ParentQualityBreakdown, ParentQualityGrade } from "./parentQuality"
+import { formatQualityLabel, scoreParentRunArchiveEntry } from "./parentQuality"
+
 export interface ParentRunSparkPick {
     pickIndex: number
     strategy: string
@@ -14,6 +17,12 @@ export interface ParentRunStats {
     wit: number
 }
 
+export interface ParentRunAptitudeMaps {
+    distanceAptitudes?: Partial<Record<"SPRINT" | "MILE" | "MEDIUM" | "LONG", string>>
+    surfaceAptitudes?: Partial<Record<"TURF" | "DIRT", string>>
+    styleAptitudes?: Partial<Record<"FRONT_RUNNER" | "PACE_CHASER" | "LATE_SURGER" | "END_CLOSER", string>>
+}
+
 export interface ParentRunArchiveEntry {
     id: string
     completedAtMs: number
@@ -25,6 +34,7 @@ export interface ParentRunArchiveEntry {
     traineeName: string
     sparkStrategy: string
     targetEpithets: string[]
+    forcedEpithets: string[]
     completedTargetEpithets: string[]
     incompleteTargetEpithets: string[]
     extraCompletedEpithets: string[]
@@ -39,6 +49,17 @@ export interface ParentRunArchiveEntry {
     fanClass: string
     skillPoints: number
     stats: ParentRunStats
+    distanceAptitudes?: ParentRunAptitudeMaps["distanceAptitudes"]
+    surfaceAptitudes?: ParentRunAptitudeMaps["surfaceAptitudes"]
+    styleAptitudes?: ParentRunAptitudeMaps["styleAptitudes"]
+    qualityScore?: number
+    qualityGrade?: ParentQualityGrade
+    qualityBreakdown?: ParentQualityBreakdown
+    sessionId?: string
+    sessionRunIndex?: number
+    sessionRunTarget?: number
+    isSessionBest?: boolean
+    inheritanceSummary?: string
 }
 
 const parseStringArray = (value: unknown): string[] => {
@@ -61,6 +82,16 @@ const parseSparkPicks = (value: unknown): ParentRunSparkPick[] => {
         .filter((pick): pick is ParentRunSparkPick => pick !== null)
 }
 
+const parseAptitudeMap = (value: unknown): Record<string, string> => {
+    if (!value || typeof value !== "object") return {}
+    const obj = value as Record<string, unknown>
+    const result: Record<string, string> = {}
+    for (const [key, raw] of Object.entries(obj)) {
+        if (typeof raw === "string") result[key] = raw
+    }
+    return result
+}
+
 const parseStats = (value: unknown): ParentRunStats => {
     const stats = (value && typeof value === "object" ? value : {}) as Record<string, unknown>
     const num = (key: string) => (typeof stats[key] === "number" ? (stats[key] as number) : 0)
@@ -78,7 +109,7 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
         const parsed = JSON.parse(json || "[]")
         if (!Array.isArray(parsed)) return []
         return parsed
-            .map((raw) => {
+            .map((raw): ParentRunArchiveEntry | null => {
                 if (!raw || typeof raw !== "object") return null
                 const entry = raw as Record<string, unknown>
                 const id = typeof entry.id === "string" ? entry.id : ""
@@ -94,6 +125,7 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     traineeName: typeof entry.traineeName === "string" ? entry.traineeName : "",
                     sparkStrategy: typeof entry.sparkStrategy === "string" ? entry.sparkStrategy : "",
                     targetEpithets: parseStringArray(entry.targetEpithets),
+                    forcedEpithets: parseStringArray(entry.forcedEpithets),
                     completedTargetEpithets: parseStringArray(entry.completedTargetEpithets),
                     incompleteTargetEpithets: parseStringArray(entry.incompleteTargetEpithets),
                     extraCompletedEpithets: parseStringArray(entry.extraCompletedEpithets),
@@ -108,6 +140,27 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     fanClass: typeof entry.fanClass === "string" ? entry.fanClass : "",
                     skillPoints: typeof entry.skillPoints === "number" ? entry.skillPoints : 0,
                     stats: parseStats(entry.stats),
+                    distanceAptitudes: parseAptitudeMap(entry.distanceAptitudes) as ParentRunArchiveEntry["distanceAptitudes"],
+                    surfaceAptitudes: parseAptitudeMap(entry.surfaceAptitudes) as ParentRunArchiveEntry["surfaceAptitudes"],
+                    styleAptitudes: parseAptitudeMap(entry.styleAptitudes) as ParentRunArchiveEntry["styleAptitudes"],
+                    qualityScore: typeof entry.qualityScore === "number" ? entry.qualityScore : undefined,
+                    qualityGrade:
+                        entry.qualityGrade === "S" ||
+                        entry.qualityGrade === "A" ||
+                        entry.qualityGrade === "B" ||
+                        entry.qualityGrade === "C" ||
+                        entry.qualityGrade === "D"
+                            ? entry.qualityGrade
+                            : undefined,
+                    qualityBreakdown:
+                        entry.qualityBreakdown && typeof entry.qualityBreakdown === "object"
+                            ? (entry.qualityBreakdown as ParentQualityBreakdown)
+                            : undefined,
+                    sessionId: typeof entry.sessionId === "string" ? entry.sessionId : undefined,
+                    sessionRunIndex: typeof entry.sessionRunIndex === "number" ? entry.sessionRunIndex : undefined,
+                    sessionRunTarget: typeof entry.sessionRunTarget === "number" ? entry.sessionRunTarget : undefined,
+                    isSessionBest: typeof entry.isSessionBest === "boolean" ? entry.isSessionBest : undefined,
+                    inheritanceSummary: typeof entry.inheritanceSummary === "string" ? entry.inheritanceSummary : undefined,
                 }
             })
             .filter((entry): entry is ParentRunArchiveEntry => entry !== null)
@@ -123,6 +176,25 @@ export const loadParentRunArchive = async (): Promise<ParentRunArchiveEntry[]> =
 
 export const clearParentRunArchive = async (): Promise<void> => {
     await NativeModules.StartModule.clearParentRunArchive()
+}
+
+export const exportParentRunArchiveJson = async (): Promise<string> => {
+    const entries = await loadParentRunArchive()
+    return JSON.stringify(entries, null, 2)
+}
+
+export const formatParentRunExportEntry = (entry: ParentRunArchiveEntry): string => {
+    const quality = formatQualityLabel(scoreParentRunArchiveEntry(entry))
+    const parts = [
+        entry.traineeName || entry.characterPreset,
+        quality,
+        `${entry.fans.toLocaleString()} fans`,
+        `${entry.raceWins}W/${entry.raceLosses}L`,
+        entry.completedTargetEpithets.length > 0 ? `done: ${entry.completedTargetEpithets.join(", ")}` : "",
+        entry.incompleteTargetEpithets.length > 0 ? `missed: ${entry.incompleteTargetEpithets.join(", ")}` : "",
+        entry.inheritanceSummary ? `inheritance: ${entry.inheritanceSummary}` : "",
+    ].filter(Boolean)
+    return parts.join(" · ")
 }
 
 export const formatParentRunTimestamp = (completedAtMs: number): string => {
@@ -145,7 +217,6 @@ export const formatParentRunDuration = (elapsedMs: number): string | null => {
 
 export const formatFanClassLabel = (fanClass: string): string => fanClass.replace(/_/g, " ")
 
-/** Finds the next older run for the same character preset (for simple comparison). */
 export const findPreviousRunForCharacter = (
     runs: ParentRunArchiveEntry[],
     current: ParentRunArchiveEntry,
@@ -159,6 +230,40 @@ export const findPreviousRunForCharacter = (
         if (candidateKey && candidateKey === key) return candidate
     }
     return null
+}
+
+export const findBestRunInSession = (runs: ParentRunArchiveEntry[], sessionId: string): ParentRunArchiveEntry | null => {
+    const sessionRuns = runs.filter((run) => run.sessionId === sessionId)
+    if (sessionRuns.length === 0) return null
+    const marked = sessionRuns.find((run) => run.isSessionBest)
+    if (marked) return marked
+    return sessionRuns.reduce((best, run) =>
+        scoreParentRunArchiveEntry(run).score > scoreParentRunArchiveEntry(best).score ? run : best,
+    )
+}
+
+export const buildQualityTrendForCharacter = (
+    runs: ParentRunArchiveEntry[],
+    characterKey: string,
+    limit = 10,
+): ParentRunArchiveEntry[] =>
+    runs
+        .filter((run) => (run.characterPreset || run.traineeName) === characterKey)
+        .slice(0, limit)
+        .reverse()
+
+export const formatQualityTrendLine = (runs: ParentRunArchiveEntry[]): string => {
+    if (runs.length === 0) return ""
+    return runs
+        .map((run) => {
+            const score = scoreParentRunArchiveEntry(run).score
+            if (score >= 90) return "S"
+            if (score >= 80) return "A"
+            if (score >= 70) return "B"
+            if (score >= 60) return "C"
+            return "D"
+        })
+        .join(" → ")
 }
 
 export const formatFansDelta = (current: number, previous: number): string => {

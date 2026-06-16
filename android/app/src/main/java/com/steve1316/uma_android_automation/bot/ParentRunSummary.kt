@@ -24,6 +24,7 @@ data class ParentRunSummaryInput(
     val characterPreset: String,
     val sparkStrategy: String,
     val targetEpithets: List<String>,
+    val forcedEpithets: List<String> = emptyList(),
     val completedTargetEpithets: List<String>,
     val incompleteTargetEpithets: List<String>,
     val extraCompletedEpithets: List<String>,
@@ -35,6 +36,10 @@ data class ParentRunSummaryInput(
     val raceStats: RunRaceStats,
     val elapsedMs: Long?,
     val trainingBias: String = "",
+    val sessionId: String = "",
+    val sessionRunIndex: Int = 0,
+    val sessionRunTarget: Int = 0,
+    val inheritanceSummary: String = "",
 )
 
 /**
@@ -60,7 +65,7 @@ object ParentRunSummary {
     fun discordMarkdownFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String =
         buildDiscordMarkdown(inputFromSettings(trainee, scenario, elapsedMs))
 
-    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): ParentRunSummaryInput {
+    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?, epithetTurn: TurnNumber = 72): ParentRunSummaryInput {
         val weightsJson = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
         val weights = parseWeights(weightsJson)
         val profileName =
@@ -72,7 +77,7 @@ object ParentRunSummary {
         val goalPresetLabel =
             runCatching { SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetLabel") }
                 .getOrElse { "" }
-        val epithetSnapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(scenario)
+        val epithetSnapshot = SmartRaceSolverIntegration.snapshotParentRunEpithets(scenario, epithetTurn)
         return ParentRunSummaryInput(
             trainee = trainee,
             scenario = scenario,
@@ -82,6 +87,7 @@ object ParentRunSummary {
             characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset"),
             sparkStrategy = SettingsHelper.getStringSetting("racing", "sparkSelectionStrategy").ifEmpty { "Default" },
             targetEpithets = readStringList("smartRaceSolverTargetEpithets"),
+            forcedEpithets = readStringList("smartRaceSolverForcedEpithets"),
             completedTargetEpithets = epithetSnapshot?.completedTargets ?: emptyList(),
             incompleteTargetEpithets = epithetSnapshot?.incompleteTargets ?: emptyList(),
             extraCompletedEpithets = epithetSnapshot?.extraCompleted ?: emptyList(),
@@ -93,7 +99,42 @@ object ParentRunSummary {
             raceStats = SmartRaceSolverIntegration.snapshotRaceStats(),
             elapsedMs = elapsedMs,
             trainingBias = formatTrainingBiasFromSettings(),
+            sessionId = ParentFarmingRunLoop.sessionId(),
+            sessionRunIndex = ParentFarmingRunLoop.sessionRunIndexForArchive(),
+            sessionRunTarget = ParentFarmingRunLoop.targetRunCount(),
+            inheritanceSummary = formatInheritanceSummary(trainee, SparkPickHistory.snapshot()),
         )
+    }
+
+    internal fun formatInheritanceSummary(trainee: Trainee, sparkPicks: List<SparkPickHistory.Record>): String {
+        val parts = mutableListOf<String>()
+        if (sparkPicks.isNotEmpty()) {
+            val picks =
+                sparkPicks.joinToString(" · ") { pick ->
+                    val option = pick.optionTexts.getOrNull(pick.pickIndex)?.take(48) ?: "?"
+                    "inheritance #${pick.pickIndex + 1}: $option"
+                }
+            parts.add(picks)
+        }
+        val statLine =
+            listOf(
+                "Sp ${trainee.stats.speed}",
+                "Sta ${trainee.stats.stamina}",
+                "Pow ${trainee.stats.power}",
+                "Gut ${trainee.stats.guts}",
+                "Wit ${trainee.stats.wit}",
+            ).joinToString(" · ")
+        parts.add(statLine)
+        val aptitudes =
+            listOf(
+                trainee.trackDistanceAptitudes[TrackDistance.MEDIUM]?.name?.let { "Med $it" },
+                trainee.trackSurfaceAptitudes[TrackSurface.TURF]?.name?.let { "Turf $it" },
+                trainee.trackSurfaceAptitudes[TrackSurface.DIRT]?.name?.let { "Dirt $it" },
+            ).filterNotNull()
+        if (aptitudes.isNotEmpty()) {
+            parts.add(aptitudes.joinToString(" · "))
+        }
+        return parts.joinToString(" | ")
     }
 
     private fun formatTrainingBiasFromSettings(): String {
@@ -145,8 +186,16 @@ object ParentRunSummary {
             lines.add("Training bias: ${input.trainingBias}")
         }
         lines.add(formatTargetEpithets(input.targetEpithets))
+        if (input.forcedEpithets.isNotEmpty()) {
+            lines.add("Forced epithets: ${input.forcedEpithets.joinToString(", ")}")
+        }
         lines.addAll(formatEpithetResults(input))
+        val quality = ParentRunQuality.score(input)
+        lines.add("Parent quality: ${quality.grade} (${quality.score}/100)")
         lines.addAll(formatSparkPicks(input.sparkPicks))
+        if (input.inheritanceSummary.isNotEmpty()) {
+            lines.add("Inheritance: ${input.inheritanceSummary}")
+        }
         lines.add("Races: ${input.raceStats.wins} wins, ${input.raceStats.losses} losses")
         lines.add("Fans: ${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})")
         lines.add("Skill points: ${trainee.skillPoints}")
@@ -337,6 +386,20 @@ object ParentRunSummary {
         val sparkText = formatSparkPicks(input.sparkPicks).joinToString("\n")
         if (sparkText.isNotEmpty()) {
             fields.add(DiscordEmbedField("Inheritance sparks", sparkText, inline = false))
+        }
+        if (input.inheritanceSummary.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Inheritance summary", input.inheritanceSummary, inline = false))
+        }
+        val quality = ParentRunQuality.score(input)
+        fields.add(DiscordEmbedField("Quality", "${quality.grade} · ${quality.score}/100", inline = true))
+        if (input.sessionRunIndex > 0) {
+            val sessionLabel =
+                if (input.sessionRunTarget > 0) {
+                    "Run ${input.sessionRunIndex}/${input.sessionRunTarget}"
+                } else {
+                    "Run ${input.sessionRunIndex}"
+                }
+            fields.add(DiscordEmbedField("Session", sessionLabel, inline = true))
         }
         fields.add(DiscordEmbedField("Surface", formatSurfaceAptitudes(trainee).removePrefix("Surface: "), inline = true))
         fields.add(DiscordEmbedField("Distance", formatDistanceAptitudes(trainee).removePrefix("Distance: "), inline = true))
