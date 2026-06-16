@@ -1,0 +1,231 @@
+{
+    "Kitasan Black": {
+        "rarity": "SSR",
+        "variant": "Fire at My Heels",
+        "uniqueSkill": "Professor of Curvature",
+        "uniquePerk": "Training Effectiveness and Specialty Priority",
+        "friendshipBonus": 25,
+        "moodEffect": 30,
+        "trainingEffectiveness": 15,
+        "initialFriendship": 35,
+        "raceBonus": 5,
+        "fanBonus": 15,
+        "hintLevel": 2,
+        "hintFrequency": 30,
+        "specialtyPriority": 100,
+        "initStats": { "power": 1 }
+    },
+    "Super Creek": {
+        "rarity": "SSR",
+        "variant": "Piece of Mind",
+        "uniqueSkill": "Swinging Maestro",
+        "uniquePerk": "Friendship Bonus and Specialty Priority",
+        "friendshipBonus": 35,
+        "trainingEffectiveness": 15,
+        "initialFriendship": 30,
+        "raceBonus": 10,
+        "fanBonus": 20,
+        "specialtyPriority": 55,
+        "initStats": { "stamina": 35 }
+    },
+    "Silence Suzuka": {
+        "rarity": "SSR",
+        "variant": "Beyond This Shining Moment",
+        "uniqueSkill": "Unrestrained",
+        "uniquePerk": "Mood Effect and Hint Frequency",
+        "friendshipBonus": 35,
+        "moodEffect": 45,
+        "initialFriendship": 25,
+        "raceBonus": 5,
+        "fanBonus": 15,
+        "hintFrequency": 40,
+        "specialtyPriority": 65,
+        "initStats": { "speed": 30, "skillPoints": 1 }
+    },
+    "Maruzensky": {
+        "rarity": "R",
+        "variant": "Tracen Academy",
+        "friendshipBonus": 10,
+        "trainingEffectiveness": 5,
+        "initialFriendship": 10,
+        "specialtyPriority": 10,
+        "hintLevel": 1,
+        "hintFrequency": 10
+    },
+    "Grass Wonder": {
+        "rarity": "SSR",
+        "variant": "Fairest Fleur",
+        "uniqueSkill": "Soft Step",
+        "uniquePerk": "Friendship Bonus and Specialty Priority",
+        "friendshipBonus": 35,
+        "initialFriendship": 25,
+        "specialtyPriority": 65,
+        "initStats": { "guts": 30 }
+    },
+    "Gold Ship": {
+        "rarity": "SSR",
+        "variant": "Breakaway Battleship",
+        "uniqueSkill": "Corner Connoisseur",
+        "uniquePerk": "Training Effectiveness and Initial Friendship Gauge",
+        "friendshipBonus": 45,
+        "moodEffect": 30,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 45,
+        "hintLevel": 4,
+        "hintFrequency": 60,
+        "initStats": { "stamina": 30 }
+    },
+    "Matikanefukukitaru": {
+        "rarity": "SSR",
+        "variant": "Touching Sleeves Is Good Luck! ♪",
+        "uniqueSkill": "Super Lucky Seven",
+        "uniquePerk": "Mood Effect and Failure Protection",
+        "friendshipBonus": 20,
+        "moodEffect": 45,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 20,
+        "raceBonus": 10,
+        "fanBonus": 15,
+        "failureProtection": 10,
+        "energyCostReduction": 10,
+        "initStats": { "speed": 30, "stamina": 30, "power": 30, "guts": 30, "wit": 30 }
+    },
+    "Mejiro McQueen": {
+        "rarity": "SSR",
+        "variant": "Your Team Ace",
+        "uniqueSkill": "Stamina to Spare",
+        "uniquePerk": "Hint Level and Hint Frequency",
+        "friendshipBonus": 30,
+        "hintLevel": 2,
+        "hintFrequency": 10
+    },
+    "Oguri Cap": {
+        "rarity": "SSR",
+        "variant": "Get Lots of Hugs for Me",
+        "uniqueSkill": "Corner Acceleration ◯",
+        "uniquePerk": "Mood Effect and Training Effectiveness",
+        "friendshipBonus": 25,
+        "moodEffect": 60,
+        "trainingEffectiveness": 10
+    },
+    "Seiun Sky": {
+        "rarity": "SSR",
+        "variant": "Paint the Sky Red",
+        "uniqueSkill": "Subdued Pace Chasers",
+        "uniquePerk": "Friendship Bonus and Training Effectiveness",
+        "friendshipBonus": 35,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 30
+    },
+    "Special Week": {
+        "rarity": "SSR",
+        "variant": "The Setting Sun and Rising Stars",
+        "uniqueSkill": "Outer Swell",
+        "uniquePerk": "Friendship Bonus and Specialty Priority",
+        "friendshipBonus": 35,
+        "specialtyPriority": 30
+    },
+    "Symboli Rudolf": {
+        "rarity": "SSR",
+        "variant": "Enchaînement",
+        "uniqueSkill": "Burning Soul",
+        "uniquePerk": "Initial Stats scale with deck types",
+        "friendshipBonus": 25,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 20,
+        "raceBonus": 10,
+        "fanBonus": 15,
+        "hintLevel": 3,
+        "hintFrequency": 50,
+        "specialtyPriority": 35,
+        "initStats": { "guts": 1 }
+    },
+    "Vodka": {
+        "rarity": "SSR",
+        "variant": "Wild Rider",
+        "uniqueSkill": "Shrewd Step",
+        "uniquePerk": "Friendship Bonus and Hint Frequency",
+        "friendshipBonus": 35,
+        "hintLevel": 3,
+        "hintFrequency": 60
+    },
+    "King Halo": {
+        "rarity": "SSR",
+        "variant": "Tonight, We Waltz",
+        "uniqueSkill": "Pace Strategy",
+        "uniquePerk": "Friendship Bonus and Initial Power",
+        "friendshipBonus": 30,
+        "hintLevel": 3,
+        "initStats": { "power": 30 }
+    },
+    "Air Groove": {
+        "rarity": "SR",
+        "variant": "Nothing Escapes the Vice Prez",
+        "friendshipBonus": 18,
+        "trainingEffectiveness": 8,
+        "initialFriendship": 15,
+        "hintLevel": 2,
+        "hintFrequency": 25
+    },
+    "Daiwa Scarlet": {
+        "rarity": "SSR",
+        "variant": "Mini☆Vacation",
+        "uniqueSkill": "Pace Chaser Savvy ◯",
+        "uniquePerk": "Initial Power and Hint Frequency",
+        "friendshipBonus": 25,
+        "hintLevel": 3,
+        "hintFrequency": 40,
+        "initStats": { "power": 30 }
+    },
+    "Biwa Hayahide": {
+        "rarity": "SSR",
+        "variant": "Our Resounding Steps",
+        "uniqueSkill": "Homestretch Haste",
+        "uniquePerk": "Friendship Bonus and Mood Effect",
+        "friendshipBonus": 20,
+        "moodEffect": 15,
+        "trainingEffectiveness": 5
+    },
+    "Haru Urara": {
+        "rarity": "SSR",
+        "variant": "Urara's Day Off!",
+        "uniqueSkill": "Guts to Spare",
+        "uniquePerk": "Mood Effect and Training Effectiveness",
+        "friendshipBonus": 20,
+        "moodEffect": 30,
+        "trainingEffectiveness": 15,
+        "initStats": { "guts": 35 }
+    },
+    "Tokai Teio": {
+        "rarity": "SSR",
+        "variant": "Dream Big!",
+        "uniqueSkill": "Straightaway Adept",
+        "uniquePerk": "Mood Effect and Race Bonus",
+        "friendshipBonus": 25,
+        "moodEffect": 60,
+        "raceBonus": 10,
+        "fanBonus": 15
+    },
+    "Agnes Digital": {
+        "rarity": "SSR",
+        "variant": "A Fan's Joy",
+        "uniqueSkill": "Dirt Expert",
+        "uniquePerk": "Mood Effect and Hint Frequency",
+        "friendshipBonus": 25,
+        "moodEffect": 30,
+        "hintLevel": 3,
+        "hintFrequency": 70
+    },
+    "Agnes Tachyon": {
+        "rarity": "SR",
+        "variant": "Experimental Studies on Subject A",
+        "uniqueSkill": "Focus",
+        "uniquePerk": "Hint Level and Hint Frequency",
+        "friendshipBonus": 18,
+        "trainingEffectiveness": 8,
+        "initialFriendship": 15,
+        "hintLevel": 2,
+        "hintFrequency": 30,
+        "initStats": { "wit": 10 }
+    }
+}

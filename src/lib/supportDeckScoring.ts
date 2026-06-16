@@ -13,7 +13,29 @@ export interface SupportGoalScoringProfile {
     typeTargets: SupportTypeTargets
     /** Bonus when a card's hint skill name contains any keyword (case-insensitive). */
     hintKeywordBonus: Array<{ keywords: string[]; bonus: number }>
+    /** Weights for curated manual card stats (Lv50 MLB). */
+    friendshipWeight?: number
+    trainingEffectivenessWeight?: number
+    specialtyPriorityWeight?: number
+    initialFriendshipWeight?: number
+    fanBonusWeight?: number
+    hintFrequencyWeight?: number
+    hintLevelWeight?: number
+    initStatWeight?: number
 }
+
+const DEFAULT_MANUAL_WEIGHTS = {
+    friendshipWeight: 0.25,
+    trainingEffectivenessWeight: 0.2,
+    specialtyPriorityWeight: 0.15,
+    initialFriendshipWeight: 0.1,
+    fanBonusWeight: 0.15,
+    hintFrequencyWeight: 0.2,
+    hintLevelWeight: 1.0,
+    initStatWeight: 0.03,
+} as const
+
+const RARITY_SCORE: Record<"SSR" | "SR" | "R", number> = { SSR: 6, SR: 2, R: 0 }
 
 /** Parent-farming goal → how much each support trait matters for deck ranking. */
 export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringProfile> = {
@@ -25,6 +47,7 @@ export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringPro
         moodWeight: 0.2,
         typeTargets: { Speed: 2, Wit: 2 },
         hintKeywordBonus: [{ keywords: ["fan", "popularity", "media"], bonus: 8 }],
+        fanBonusWeight: 0.45,
     },
     "mile-sprint": {
         statWeights: { speed: 1.8, power: 0.6, wit: 0.5 },
@@ -37,6 +60,8 @@ export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringPro
             { keywords: ["sprint", "mile", "front", "pace", "late", "end closer"], bonus: 6 },
             { keywords: ["straightaway", "corner"], bonus: 3 },
         ],
+        specialtyPriorityWeight: 0.25,
+        initStatWeight: 0.05,
     },
     "classic-crown": {
         statWeights: { stamina: 1.8, power: 0.7, guts: 0.6, wit: 0.4 },
@@ -67,6 +92,7 @@ export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringPro
             { keywords: ["dirt", "wet", "rainy", "mud", "heavy"], bonus: 8 },
             { keywords: ["power", "guts"], bonus: 4 },
         ],
+        hintFrequencyWeight: 0.35,
     },
     "skill-hints": {
         statWeights: { wit: 1.5, speed: 0.4 },
@@ -76,6 +102,8 @@ export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringPro
         moodWeight: 0.1,
         typeTargets: { Wit: 3, Speed: 1 },
         hintKeywordBonus: [{ keywords: ["hint", "skill", "focus", "savvy"], bonus: 4 }],
+        hintFrequencyWeight: 0.45,
+        hintLevelWeight: 2.5,
     },
     "medium-long": {
         statWeights: { stamina: 1.5, speed: 0.7, wit: 0.5 },
@@ -147,6 +175,16 @@ export const SUPPORT_TYPE_TARGETS_BY_GOAL: Record<string, SupportTypeTargets> = 
     Object.entries(SUPPORT_GOAL_SCORING_PROFILES).map(([key, profile]) => [key, profile.typeTargets]),
 )
 
+const resolveManualWeights = (profile: SupportGoalScoringProfile) => ({
+    ...DEFAULT_MANUAL_WEIGHTS,
+    ...Object.fromEntries(
+        Object.entries(DEFAULT_MANUAL_WEIGHTS).map(([key]) => [
+            key,
+            profile[key as keyof typeof DEFAULT_MANUAL_WEIGHTS] ?? DEFAULT_MANUAL_WEIGHTS[key as keyof typeof DEFAULT_MANUAL_WEIGHTS],
+        ]),
+    ),
+})
+
 const defaultProfile = (): SupportGoalScoringProfile => SUPPORT_GOAL_SCORING_PROFILES["g1-fans"]
 
 export const getSupportGoalScoringProfile = (goalPresetKey: string): SupportGoalScoringProfile =>
@@ -173,7 +211,35 @@ const scoreHintKeywords = (meta: SupportCardMetadata, profile: SupportGoalScorin
     return bonus
 }
 
-/** Scores one support card for a parent-farming goal using parsed event metadata. */
+const scoreManualStats = (meta: SupportCardMetadata, profile: SupportGoalScoringProfile): number => {
+    const manual = meta.manual
+    if (!manual) return 0
+
+    const weights = resolveManualWeights(profile)
+    let score = 0
+    if (manual.friendshipBonus) score += manual.friendshipBonus * weights.friendshipWeight
+    if (manual.trainingEffectiveness) score += manual.trainingEffectiveness * weights.trainingEffectivenessWeight
+    if (manual.specialtyPriority) score += manual.specialtyPriority * weights.specialtyPriorityWeight * 0.1
+    if (manual.initialFriendship) score += manual.initialFriendship * weights.initialFriendshipWeight * 0.15
+    if (manual.moodEffect) score += manual.moodEffect * profile.moodWeight * 0.08
+    if (manual.fanBonus) score += manual.fanBonus * weights.fanBonusWeight
+    if (manual.raceBonus) score += manual.raceBonus * 0.12
+    if (manual.hintFrequency) score += manual.hintFrequency * weights.hintFrequencyWeight
+    if (manual.hintLevel) score += manual.hintLevel * weights.hintLevelWeight
+    if (manual.failureProtection) score += manual.failureProtection * 0.08
+    if (manual.energyCostReduction) score += manual.energyCostReduction * profile.energyWeight * 0.05
+    score += RARITY_SCORE[manual.rarity]
+
+    for (const [stat, value] of Object.entries(manual.initStats ?? {})) {
+        if (!value) continue
+        const statWeight = profile.statWeights[stat as keyof typeof profile.statWeights] ?? 0.4
+        score += value * statWeight * weights.initStatWeight
+    }
+
+    return score
+}
+
+/** Scores one support card for a parent-farming goal using event + manual metadata. */
 export const scoreSupportCardForGoal = (name: string, goalPresetKey: string, presetBonus = 0): number => {
     const meta = getSupportCardMetadata(name)
     const profile = getSupportGoalScoringProfile(goalPresetKey)
@@ -195,6 +261,7 @@ export const scoreSupportCardForGoal = (name: string, goalPresetKey: string, pre
     score += meta.totals.energy * profile.energyWeight * 0.05
     score += meta.totals.mood * profile.moodWeight * 0.5
     score += scoreHintKeywords(meta, profile)
+    score += scoreManualStats(meta, profile)
     score += Math.min(meta.eventCount, 12) * 0.5
     return score
 }

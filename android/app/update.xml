@@ -1,20 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.10</latestVersion>
-    <latestVersionCode>100</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.10</url>
-            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.10/v5.9.10-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.10/v5.9.10-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.11</latestVersion>
+    <latestVersionCode>101</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.11</url>
+            <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.11/v5.9.11-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.11/v5.9.11-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.10 - Support card metadata deck scoring
+v5.9.11 - Manual support card stats for deck scoring
 
 New
 ---
-- Parses support training events into stats, hint points, and skill lists per card
-- Deck recommendations and borrow order rank cards by route fit (not just Speed/Stamina type)
-- Support finder UI shows per-card metadata summary (hints, SP, top stat)
+- Curated Lv50 MLB stats for 21 parent-farming support cards (friendship, hints, specialty priority, init stats)
+- Deck scoring weights manual stats by route (fan bonus on G1 routes, hint frequency on skill-hints, etc.)
+- Support finder shows rarity and key manual bonuses in metadata summary
 
-Includes v5.9.9 trainee exclusion fix and earlier parent farming features.
+Includes v5.9.10 event metadata scoring and v5.9.9 trainee exclusion fix.
 
     </releaseNotes>
   </update>

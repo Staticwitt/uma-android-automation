@@ -1,6 +1,33 @@
 import supportsData from "../data/supports.json"
+import manualData from "../data/supportCardManual.json"
 
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
+
+export type SupportCardRarity = "SSR" | "SR" | "R"
+
+/** Curated Lv50 MLB bonuses from manual JSON (percent unless noted). */
+export interface SupportCardManualStats {
+    rarity: SupportCardRarity
+    /** In-game card variant label (for UI/debug). */
+    variant?: string
+    uniqueSkill?: string
+    uniquePerk?: string
+    friendshipBonus?: number
+    trainingEffectiveness?: number
+    specialtyPriority?: number
+    initialFriendship?: number
+    moodEffect?: number
+    hintFrequency?: number
+    hintLevel?: number
+    fanBonus?: number
+    raceBonus?: number
+    failureProtection?: number
+    energyCostReduction?: number
+    /** Flat init stat bonuses at career start (Lv50). */
+    initStats?: Partial<Record<"speed" | "stamina" | "power" | "guts" | "wit" | "skillPoints", number>>
+    /** Extra hint skills beyond event parsing. */
+    hintSkills?: string[]
+}
 
 export interface SupportCardStatTotals {
     speed: number
@@ -19,10 +46,12 @@ export interface SupportCardMetadata {
     type: SupportCardType | undefined
     /** Best-case totals aggregated across training events (one best option per event). */
     totals: SupportCardStatTotals
-    /** Distinct skill hint names this card can grant (from event text). */
+    /** Distinct skill hint names this card can grant (events + manual). */
     hintSkills: string[]
     eventCount: number
     optionCount: number
+    /** Curated card stats when present in supportCardManual.json. */
+    manual?: SupportCardManualStats
 }
 
 const STAT_KEYS = ["speed", "stamina", "power", "guts", "wit"] as const
@@ -124,8 +153,29 @@ export const parseSupportOptionRewards = (text: string): { totals: SupportCardSt
     return { totals, hints }
 }
 
+const mergeHintSkills = (eventHints: string[], manual?: SupportCardManualStats): string[] => {
+    const merged = new Set<string>()
+    for (const hint of eventHints) merged.add(hint)
+    if (manual?.uniqueSkill) merged.add(manual.uniqueSkill)
+    for (const hint of manual?.hintSkills ?? []) merged.add(hint)
+    return [...merged]
+}
+
+const applyManualStats = (meta: SupportCardMetadata, manual?: SupportCardManualStats): SupportCardMetadata => {
+    if (!manual) return meta
+    return {
+        ...meta,
+        manual,
+        hintSkills: mergeHintSkills(meta.hintSkills, manual),
+    }
+}
+
 /** Aggregates all events for one support card into structured metadata. */
-export const buildSupportCardMetadata = (name: string, events: Record<string, string[]>): SupportCardMetadata => {
+export const buildSupportCardMetadata = (
+    name: string,
+    events: Record<string, string[]>,
+    manual?: SupportCardManualStats,
+): SupportCardMetadata => {
     let eventCount = 0
     let optionCount = 0
     let aggregated = emptyTotals()
@@ -157,30 +207,47 @@ export const buildSupportCardMetadata = (name: string, events: Record<string, st
 
     const sortedHints = [...hintSkills.entries()].sort((a, b) => b[1] - a[1]).map(([hintName]) => hintName)
 
-    return {
-        name,
-        type: supportCardType(name),
-        totals: aggregated,
-        hintSkills: sortedHints,
-        eventCount,
-        optionCount,
-    }
+    return applyManualStats(
+        {
+            name,
+            type: supportCardType(name),
+            totals: aggregated,
+            hintSkills: sortedHints,
+            eventCount,
+            optionCount,
+        },
+        manual,
+    )
 }
 
 const SUPPORT_EVENTS = supportsData as Record<string, Record<string, string[]>>
+const MANUAL_STATS = manualData as Record<string, SupportCardManualStats>
 
 const metadataIndex: Record<string, SupportCardMetadata> = Object.fromEntries(
-    Object.entries(SUPPORT_EVENTS).map(([name, events]) => [name, buildSupportCardMetadata(name, events)]),
+    Object.entries(SUPPORT_EVENTS).map(([name, events]) => [
+        name,
+        buildSupportCardMetadata(name, events, MANUAL_STATS[name]),
+    ]),
 )
 
 export const getSupportCardMetadata = (name: string): SupportCardMetadata | undefined => metadataIndex[name]
 
+export const getSupportCardManualStats = (name: string): SupportCardManualStats | undefined => MANUAL_STATS[name]
+
 export const listSupportCardMetadata = (): SupportCardMetadata[] => Object.values(metadataIndex)
+
+export const listManualSupportCardStats = (): SupportCardManualStats[] => Object.values(MANUAL_STATS)
+
+const RARITY_LABEL: Record<SupportCardRarity, string> = { SSR: "SSR", SR: "SR", R: "R" }
 
 /** One-line summary for UI tooltips and deck notes. */
 export const formatSupportCardMetadataSummary = (meta: SupportCardMetadata): string => {
     const parts: string[] = []
+    if (meta.manual?.rarity) parts.push(RARITY_LABEL[meta.manual.rarity])
     if (meta.type) parts.push(meta.type)
+    if (meta.manual?.friendshipBonus) parts.push(`Friendship ${meta.manual.friendshipBonus}%`)
+    if (meta.manual?.specialtyPriority) parts.push(`Spec ${meta.manual.specialtyPriority}`)
+    if (meta.manual?.hintFrequency) parts.push(`Hints ${meta.manual.hintFrequency}%`)
     if (meta.totals.hintPoints > 0) parts.push(`${meta.totals.hintPoints} hint pts`)
     if (meta.totals.skillPoints > 0) parts.push(`${meta.totals.skillPoints} SP`)
     const topStat = STAT_KEYS.map((key) => ({ key, value: meta.totals[key] }))

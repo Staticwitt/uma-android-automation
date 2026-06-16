@@ -1,4 +1,9 @@
-import { buildSupportCardMetadata, getSupportCardMetadata, parseSupportOptionRewards } from "../supportCardMetadata"
+import {
+    buildSupportCardMetadata,
+    getSupportCardManualStats,
+    getSupportCardMetadata,
+    parseSupportOptionRewards,
+} from "../supportCardMetadata"
 
 describe("supportCardMetadata", () => {
     it("parseSupportOptionRewards extracts stats, hints, and skill points", () => {
@@ -27,5 +32,22 @@ describe("supportCardMetadata", () => {
         expect(meta).toBeDefined()
         expect(meta!.name).toBe("Kitasan Black")
         expect(meta!.eventCount).toBeGreaterThan(0)
+    })
+
+    it("merges manual stats and unique skills into metadata", () => {
+        const manual = getSupportCardManualStats("Kitasan Black")
+        expect(manual).toBeDefined()
+        expect(manual!.rarity).toBe("SSR")
+        expect(manual!.specialtyPriority).toBeGreaterThan(0)
+
+        const meta = getSupportCardMetadata("Kitasan Black")
+        expect(meta!.manual).toEqual(manual)
+        expect(meta!.hintSkills).toContain("Professor of Curvature")
+    })
+
+    it("buildSupportCardMetadata merges manual hint skills", () => {
+        const manual = getSupportCardManualStats("Gold Ship")
+        const meta = buildSupportCardMetadata("Gold Ship", {}, manual)
+        expect(meta.hintSkills).toContain("Corner Connoisseur")
     })
 })
