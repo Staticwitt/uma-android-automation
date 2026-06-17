@@ -1,27 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.21</latestVersion>
-    <latestVersionCode>111</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.21</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.21/v5.9.21-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.21/v5.9.21-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.22</latestVersion>
+    <latestVersionCode>112</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.22</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.22/v5.9.22-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.22/v5.9.22-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.21 - App performance optimizations
+v5.9.22 - Parent farming major enhancement pack
 
-Performance
+Parent farming
 ---
-- Lazy-load settings sub-pages and Chat to reduce cold-start bundle work
-- Deferred first paint on heavy settings screens (Settings misc, Chat, etc.)
-- Memoized parent-farming bundle grid cards and narrower context subscriptions
-- Chat recent questions use FlashList; Skills plan list uses FlashList via CustomScrollView
-- Search registry skips runtime registration for statically indexed settings ids
-
-CI / quality
----
-- ESLint in CI (0 errors), perf-nav validation workflow, Gradle cache on CI
-- Typecheck fixes for solver preview cache import and parent-farming resolver
-
-Includes v5.9.20 dark mode toggle fix and v5.9.19 settings UI overhaul.
+- Smarter spark / white-factor picking in Kotlin and TS scorers
+- Auto feasibility preview on the Parent Farming page when setup changes
+- URA Finals and Unity Aoharu goal presets plus character bundles
+- Multi-goal queue for multi-run sessions (patches settings between careers)
+- Richer live progress in message log (fans, W/L, projected quality, goals)
+- Stronger factor-parent / legacy white-factor selection logic
+- One-tap best owned support deck when applying character bundles
+- Cross-profile parent farming analytics dashboard
 
     </releaseNotes>
   </update>
