@@ -103,8 +103,9 @@ class ScoringFunctionsTest {
     }
 
     @Test
-    fun restValueIsZero() {
+    fun restValueIsLowAtFullEnergy() {
         assertEquals(0.0, ScoringFunctions.restValue(w), 1e-9)
+        assertTrue(ScoringFunctions.restValue(w, energy = 20) > ScoringFunctions.trainValue(w))
     }
 
     @Test

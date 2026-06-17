@@ -1306,15 +1306,20 @@ class Trackblazer(game: Game) : Campaign(game) {
             }
         }
 
-        // Smart Race Solver pre-check: the solver's role is binary - either "race race-X today" or "no race today". When the solver picks
-        // a race we defer to the racing flow. Otherwise we fall through to the legacy main-screen loop for training / rest decisions only;
-        // the extra-race fallback is suppressed downstream in checkEligibilityToStartExtraRacingProcess() so unscheduled turns never race.
+        // Smart Race Solver pre-check: race when planned; honor explicit Rest; otherwise fall through to training/rest.
         if (racing.enableSmartRaceSolver && !racing.enableForceRacing) {
-            val solverRaceKey = SmartRaceSolverIntegration.peekRaceKeyForTurn(currentTurn = date.day, scenario = game.scenario)
-            if (solverRaceKey != null) {
-                MessageLog.i(TAG, "[TRACKBLAZER] Smart Race Solver has \"$solverRaceKey\" planned for turn ${date.day}; deferring to racing flow.")
-                decisionTracer.recordActionChoice(MainScreenAction.RACE, "Smart Race Solver planned race \"$solverRaceKey\" for this turn")
-                return MainScreenAction.RACE
+            when (val solverDecision = SmartRaceSolverIntegration.peekDecisionForTurn(currentTurn = date.day, scenario = game.scenario)) {
+                is com.steve1316.uma_android_automation.bot.solver.Decision.RaceDecision -> {
+                    MessageLog.i(TAG, "[TRACKBLAZER] Smart Race Solver has \"${solverDecision.raceKey}\" planned for turn ${date.day}; deferring to racing flow.")
+                    decisionTracer.recordActionChoice(MainScreenAction.RACE, "Smart Race Solver planned race \"${solverDecision.raceKey}\" for this turn")
+                    return MainScreenAction.RACE
+                }
+                com.steve1316.uma_android_automation.bot.solver.Decision.Rest -> {
+                    MessageLog.i(TAG, "[TRACKBLAZER] Smart Race Solver planned Rest for turn ${date.day}.")
+                    decisionTracer.recordActionChoice(MainScreenAction.REST, "Smart Race Solver planned Rest for this turn")
+                    return MainScreenAction.REST
+                }
+                else -> Unit
             }
         }
 

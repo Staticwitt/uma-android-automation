@@ -1,7 +1,7 @@
 import { useMemo, useContext, useState, useEffect, useRef, useCallback, ReactNode } from "react"
 import { Dimensions, InteractionManager, View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native"
 import { Divider } from "react-native-paper"
-import { previewSchedule, SchedulePreview, ScheduleEntry, SolverConfigSnapshot } from "../../lib/solver/preview"
+import { previewSchedule, getLiveCalendarSnapshot, parseLiveCalendarSnapshot, SchedulePreview, ScheduleEntry, SolverConfigSnapshot } from "../../lib/solver/preview"
 import {
     APTITUDE_RANKS,
     AptitudeMap,
@@ -245,6 +245,9 @@ const SmartRaceSolverSettings = () => {
     const [fanWeightInput, setFanWeightInput] = useState(weights.fanWeight.toString())
     const [minimumRaceGapTurnsInput, setMinimumRaceGapTurnsInput] = useState(weights.minimumRaceGapTurns.toString())
     const [minimumFanTargetInput, setMinimumFanTargetInput] = useState((weights.minimumFanTarget ?? 0).toString())
+    const [assumedRaceWinRateInput, setAssumedRaceWinRateInput] = useState((weights.assumedRaceWinRate ?? 1).toString())
+    const [minWinRateGuardInput, setMinWinRateGuardInput] = useState((weights.minWinRateGuard ?? 0).toString())
+    const [energyRestValueInput, setEnergyRestValueInput] = useState((weights.energyRestValue ?? 2).toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
@@ -257,8 +260,11 @@ const SmartRaceSolverSettings = () => {
     useEffect(() => setFanWeightInput(weights.fanWeight.toString()), [weights.fanWeight])
     useEffect(() => setMinimumRaceGapTurnsInput(weights.minimumRaceGapTurns.toString()), [weights.minimumRaceGapTurns])
     useEffect(() => setMinimumFanTargetInput(String(weights.minimumFanTarget ?? 0)), [weights.minimumFanTarget])
+    useEffect(() => setAssumedRaceWinRateInput(String(weights.assumedRaceWinRate ?? 1)), [weights.assumedRaceWinRate])
+    useEffect(() => setMinWinRateGuardInput(String(weights.minWinRateGuard ?? 0)), [weights.minWinRateGuard])
+    useEffect(() => setEnergyRestValueInput(String(weights.energyRestValue ?? 2)), [weights.energyRestValue])
 
-    /** Derived optimization mode. Mode is not persisted - it falls out of the weights so the radio toggle and the slider can never disagree. */
+    const [liveRunActive, setLiveRunActive] = useState(false)
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
 
     const [presetSearch, setPresetSearch] = useState("")
@@ -330,6 +336,50 @@ const SmartRaceSolverSettings = () => {
     const [preview, setPreview] = useState<SchedulePreview | null>(lastPreviewCache?.preview ?? null)
     const [previewLoading, setPreviewLoading] = useState(false)
     const [previewError, setPreviewError] = useState<string | null>(null)
+
+    /** Polls the active bot run for WIN/LOSE overlays and replanned decisions without Recalculate. */
+    useFocusEffect(
+        useCallback(() => {
+            if (!enableSmartRaceSolver) {
+                setLiveRunActive(false)
+                return () => {}
+            }
+            let cancelled = false
+            const refreshLive = async () => {
+                try {
+                    const raw = await getLiveCalendarSnapshot()
+                    if (cancelled || !raw) {
+                        if (!cancelled) setLiveRunActive(false)
+                        return
+                    }
+                    const live = parseLiveCalendarSnapshot(raw)
+                    setLiveRunActive(true)
+                    setPreview((prev) => ({
+                        ...live,
+                        projectedEpithets: live.projectedEpithets.length > 0 ? live.projectedEpithets : (prev?.projectedEpithets ?? []),
+                        totalScore: live.totalScore > 0 ? live.totalScore : (prev?.totalScore ?? 0),
+                    }))
+                    setPreviewError(null)
+                } catch {
+                    if (!cancelled) setLiveRunActive(false)
+                }
+            }
+            refreshLive()
+            const timer = setInterval(refreshLive, 3000)
+            return () => {
+                cancelled = true
+                clearInterval(timer)
+            }
+        }, [enableSmartRaceSolver]),
+    )
+
+    const runResultByTurn = useMemo(() => {
+        const map = new Map<number, "WIN" | "LOSE">()
+        for (const row of preview?.results ?? []) {
+            map.set(row.turn, row.outcome)
+        }
+        return map
+    }, [preview?.results])
 
     // Two-phase mount: render the master toggle first, then the heavy sections one tick later.
     const [showHeavySections, setShowHeavySections] = useState(false)
@@ -1012,6 +1062,16 @@ const SmartRaceSolverSettings = () => {
                     shadowOffset: { width: 0, height: 0 },
                     elevation: 4,
                 },
+                calendarOutcomePill: {
+                    alignSelf: "center",
+                    borderRadius: RADII.sm,
+                    marginTop: 2,
+                    paddingHorizontal: 4,
+                    paddingVertical: 1,
+                },
+                calendarOutcomeWin: { backgroundColor: "#16a34a" },
+                calendarOutcomeLose: { backgroundColor: "#dc2626" },
+                calendarOutcomeText: { color: "#fff", fontSize: 8, fontWeight: "700" },
                 epithetCardName: { fontSize: 13, fontWeight: "700", color: colors.text, marginBottom: 2 },
                 epithetCardReward: { fontSize: 11, color: colors.text, marginBottom: 1 },
                 epithetCardCondition: { fontSize: 11, color: colors.textMuted, fontStyle: "italic" },
@@ -1187,6 +1247,7 @@ const SmartRaceSolverSettings = () => {
     const renderCalendarCell = (turn: number, turnInYear: number) => {
         const entry = preview?.decisions[String(turn)]
         const isRace = entry?.type === "Race"
+        const runOutcome = runResultByTurn.get(turn)
         const color = isRace ? (GRADE_COLORS[entry.grade ?? ""] ?? colors.brand) : null
         const shortRaceName = isRace ? shortenRaceName(entry.name ?? entry.raceKey ?? "") : ""
         const dateLabel = turnDateLabel(turnInYear)
@@ -1211,6 +1272,11 @@ const SmartRaceSolverSettings = () => {
                 <View style={[styles.calendarBadge, { backgroundColor: color! }]}>
                     <Text style={styles.calendarBadgeText}>{(entry.grade ?? "").replace("PRE_OP", "Pre").replace("FINALE", "Fin").replace("MAIDEN", "Mdn").replace("DEBUT", "Dbt")}</Text>
                 </View>
+                {runOutcome && (
+                    <View style={[styles.calendarOutcomePill, runOutcome === "WIN" ? styles.calendarOutcomeWin : styles.calendarOutcomeLose]}>
+                        <Text style={styles.calendarOutcomeText}>{runOutcome}</Text>
+                    </View>
+                )}
                 <Text style={styles.calendarRaceName} numberOfLines={2} ellipsizeMode="tail">
                     {shortRaceName}
                 </Text>
@@ -1304,7 +1370,7 @@ const SmartRaceSolverSettings = () => {
     // Memoized 72-cell grid: rebuild only when the preview, locks, summer-blackout weight, or highlight change.
     // Other settings refresh inside popovers when next opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const calendarYearCards = useMemo(() => YEAR_LABELS.map(renderYearCard), [preview, manualLocks, weights.allowSummerRacing, highlightedEpithet, contributingTurnsForHighlight])
+    const calendarYearCards = useMemo(() => YEAR_LABELS.map(renderYearCard), [preview, manualLocks, weights.allowSummerRacing, highlightedEpithet, contributingTurnsForHighlight, runResultByTurn])
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1859,6 +1925,51 @@ const SmartRaceSolverSettings = () => {
                                                     </Pressable>
 
                                                     <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Assumed Race Win Rate</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={assumedRaceWinRateInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setAssumedRaceWinRateInput(t)}
+                                                            onBlur={() => updateWeight("assumedRaceWinRate", Math.min(1, Math.max(0, parseFloat(assumedRaceWinRateInput) || 1)))}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="1.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Pessimism dial (0..1) applied to aptitude-based win estimates when scoring races and epithets. 1.0 trusts the model fully; 0.7 plans for occasional upsets.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Win Rate Guard (min P(win))</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={minWinRateGuardInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setMinWinRateGuardInput(t)}
+                                                            onBlur={() => updateWeight("minWinRateGuard", Math.min(1, Math.max(0, parseFloat(minWinRateGuardInput) || 0)))}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Hard floor on estimated P(win). Races below this threshold are excluded from the schedule and skipped at runtime. 0 disables.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Energy Rest Value</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={energyRestValueInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setEnergyRestValueInput(t)}
+                                                            onBlur={() => updateWeight("energyRestValue", parseFloat(energyRestValueInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="2.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Score bonus for planning Rest when energy is low. Higher values produce more recovery turns in the schedule.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
                                                         <Text style={styles.inputLabel}>Minimum Race Gap Turns</Text>
                                                         <Input
                                                             style={styles.input}
@@ -1965,12 +2076,18 @@ const SmartRaceSolverSettings = () => {
                                         condition={enableSmartRaceSolver}
                                         parentId="enable-smart-race-solver"
                                         title="Schedule Preview"
-                                        description="Solver's initial schedule across the 72-turn career, computed from the current configuration. Does not account for in-run wins or losses."
+                                        description="72-turn schedule from the solver. During an active bot run, WIN/LOSE pills and replans sync automatically without Recalculate."
                                     >
                                         <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
                                             <Text style={styles.description}>
-                                                Solver's initial schedule across the 72-turn career, computed from the current configuration. Does not account for in-run wins or losses.
+                                                72-turn schedule from the solver. Tap Recalculate after changing settings. While a bot run is active, confirmed wins and losses overlay on the
+                                                calendar automatically and the plan replans after losses without another Recalculate.
                                             </Text>
+                                            {liveRunActive && preview?.currentTurn != null && (
+                                                <InfoCallout style={{ marginTop: 8 }}>
+                                                    <Text style={TYPE.body}>Live run sync active — turn {preview.currentTurn}. Calendar shows actual results and the locked-in plan.</Text>
+                                                </InfoCallout>
+                                            )}
                                             {!previewLoading && !previewError && preview && previewStats && (
                                                 <Text style={[styles.inputDescription, { fontStyle: "italic", marginTop: 2 }]}>
                                                     Note: Projected Fan Gain is the raw sum of each scheduled race's base fan reward and does not factor in in-game fan bonuses and other fan sources.

@@ -1,6 +1,7 @@
 package com.steve1316.uma_android_automation.bot.solver
 
 import com.steve1316.uma_android_automation.types.Aptitude
+import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
@@ -90,6 +91,10 @@ data class Aptitudes(
  *   for a race to be eligible.
  * @property includeOpAndPreOp When true, OP/Pre-OP races are eligible (subject to the threshold).
  * @property allowSummerRacing When true, Classic/Senior summer turns are not hard-blocked.
+ * @property assumedRaceWinRate Pessimism dial (0..1) scaling race/epithet expected value by estimated P(win). 1.0 = full aptitude-based estimate.
+ * @property minWinRateGuard Hard floor on P(win) for eligible races. 0 disables the guard.
+ * @property lowEnergyRacePenalty Extra objective penalty when racing below [EnergyModel.LOW_ENERGY_THRESHOLD].
+ * @property energyRestValue Score bonus for planning Rest when energy is low.
  */
 data class Weights(
     val raceValue: Double = 1.0,
@@ -108,6 +113,10 @@ data class Weights(
     val aptitudeThreshold: Aptitude = Aptitude.C,
     val includeOpAndPreOp: Boolean = false,
     val allowSummerRacing: Boolean = false,
+    val assumedRaceWinRate: Double = 1.0,
+    val minWinRateGuard: Double = 0.0,
+    val lowEnergyRacePenalty: Double = 4.0,
+    val energyRestValue: Double = 2.0,
 )
 
 /**
@@ -197,6 +206,8 @@ data class RaceLossRecord(
  * @property lockedDecisions User-locked turn -> decision overrides.
  * @property summerBlockTurns No-race turns. Defaults to [DEFAULT_SUMMER_BLOCKS].
  * @property weights Active scoring weights.
+ * @property initialEnergy Trainee energy (0..100) at solve time. Preview defaults to 100.
+ * @property initialMood Trainee mood at solve time. Preview defaults to [Mood.NORMAL].
  */
 data class SolverState(
     val currentTurn: TurnNumber,
@@ -217,6 +228,8 @@ data class SolverState(
     val weights: Weights = Weights(),
     /** Current trainee fan count at solve time. Used for [Weights.minimumFanTarget] gating. */
     val currentFans: Int = 0,
+    val initialEnergy: Int = EnergyModel.MAX_ENERGY,
+    val initialMood: Mood = Mood.NORMAL,
 ) {
     val epithetsByName: Map<String, Epithet> by lazy { epithets.associateBy { it.name } }
 

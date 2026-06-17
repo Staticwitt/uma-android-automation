@@ -79,6 +79,7 @@ internal object TestFixtures {
         aptitudes: Aptitudes = Aptitudes.DEFAULT_A,
         weights: Weights = Weights(),
         scenario: String = "Trackblazer",
+        initialEnergy: Int = EnergyModel.MAX_ENERGY,
     ): SolverState =
         SolverState(
             currentTurn = currentTurn,
@@ -94,6 +95,7 @@ internal object TestFixtures {
             targetEpithets = targetEpithets,
             lockedDecisions = lockedDecisions,
             weights = weights,
+            initialEnergy = initialEnergy,
         )
 
     /** All-G aptitudes, used to test the eligibility filter. */
