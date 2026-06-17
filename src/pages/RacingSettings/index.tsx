@@ -244,22 +244,23 @@ const RacingSettings = () => {
                                 title="Spark Selection Strategy"
                                 description="How the bot picks inheritance sparks before confirming inheritance."
                             >
-                                <View style={{ padding: SPACING.md }}>
-                                    <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600", marginBottom: SPACING.xs }}>Spark Selection Strategy</Text>
-                                    <Text style={{ ...TYPE.caption, color: colors.textMuted, marginBottom: SPACING.sm, lineHeight: 18 }}>
-                                        OCRs the three inheritance spark options and taps the best match. Parent Farming Mode sets Stat & aptitude; use Skill hints for white-factor
-                                        farming.
-                                    </Text>
-                                    <CustomSelect
-                                        searchId="spark-selection-strategy"
-                                        searchTitle="Spark Selection Strategy"
-                                        searchDescription="How the bot picks inheritance sparks before confirming inheritance."
-                                        width={260}
-                                        options={SPARK_SELECTION_STRATEGIES.map((option) => ({ value: option.value, label: option.label }))}
-                                        value={sparkSelectionStrategy || "Default"}
-                                        onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
-                                        placeholder="Default"
+                                <View>
+                                    <Row
+                                        title="Spark Selection Strategy"
+                                        description="OCRs the three inheritance spark options and taps the best match. Parent Farming Mode sets Stat & aptitude; use Skill hints for white-factor farming."
                                     />
+                                    <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md }}>
+                                        <CustomSelect
+                                            searchId="spark-selection-strategy"
+                                            searchTitle="Spark Selection Strategy"
+                                            searchDescription="How the bot picks inheritance sparks before confirming inheritance."
+                                            width="100%"
+                                            options={SPARK_SELECTION_STRATEGIES.map((option) => ({ value: option.value, label: option.label }))}
+                                            value={sparkSelectionStrategy || "Default"}
+                                            onValueChange={(value) => updateRacingSetting("sparkSelectionStrategy", value)}
+                                            placeholder="Default"
+                                        />
+                                    </View>
                                 </View>
                             </SearchableItem>
                             <ParentFarmingBundlesSection

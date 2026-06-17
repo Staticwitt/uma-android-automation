@@ -101,13 +101,21 @@ const Settings = () => {
     // navigator animation has painted. `runAfterInteractions` fires when the JS-side scheduler
     // considers itself idle, so we don't fight the navigation transition. Net: the page first
     // paint dropped 27 % (1065 → 782 ms) on a calibrated emulator harness.
-    const [showHeavySections, setShowHeavySections] = useState(false)
+    const [showMiscToggles, setShowMiscToggles] = useState(false)
+    const [showMiscDetails, setShowMiscDetails] = useState(false)
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
-            setShowHeavySections(true)
+            setShowMiscToggles(true)
         })
         return () => handle.cancel()
     }, [])
+    useEffect(() => {
+        if (!showMiscToggles) return
+        const handle = InteractionManager.runAfterInteractions(() => {
+            setShowMiscDetails(true)
+        })
+        return () => handle.cancel()
+    }, [showMiscToggles])
 
     const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
 
@@ -223,28 +231,58 @@ const Settings = () => {
         )
     }
 
-    const renderMiscSettings = () => {
-        return (
-            <View>
-                <Section label="MISC">
-                    <SearchableItem id="settings-stop-before-finals" title="Stop before Finals" description="Pause to buy skills before the final races">
-                        <Row
-                            title="Stop before Finals"
-                            description="Pause to buy skills before the final races"
-                            right={<Switch checked={general.enableStopBeforeFinals} onCheckedChange={(checked) => updateGeneral({ enableStopBeforeFinals: checked })} />}
-                        />
-                    </SearchableItem>
+    const renderMiscToggles = () => (
+        <Section label="MISC">
+            <SearchableItem id="settings-stop-before-finals" title="Stop before Finals" description="Pause to buy skills before the final races">
+                <Row
+                    title="Stop before Finals"
+                    description="Pause to buy skills before the final races"
+                    right={<Switch checked={general.enableStopBeforeFinals} onCheckedChange={(checked) => updateGeneral({ enableStopBeforeFinals: checked })} />}
+                />
+            </SearchableItem>
 
-                    <SearchableItem id="settings-stop-at-date" title="Stop at Date" description="Stop on one or more specified dates">
-                        <Row
-                            title="Stop at Date"
-                            description="Stop on one or more specified dates"
-                            right={<Switch checked={general.enableStopAtDate} onCheckedChange={(checked) => updateGeneral({ enableStopAtDate: checked })} />}
-                        />
-                    </SearchableItem>
+            <SearchableItem id="settings-stop-at-date" title="Stop at Date" description="Stop on one or more specified dates">
+                <Row
+                    title="Stop at Date"
+                    description="Stop on one or more specified dates"
+                    right={<Switch checked={general.enableStopAtDate} onCheckedChange={(checked) => updateGeneral({ enableStopAtDate: checked })} />}
+                />
+            </SearchableItem>
 
-                    {general.enableStopAtDate && (
-                        <SearchableItem id="settings-target-dates" title="Target Dates" description="Stops the bot on the specified dates." parentId="settings-stop-at-date">
+            <SearchableItem id="settings-crane-game-attempt" title="Enable Crane Game Attempt" description="Attempt to complete the crane game instead of stopping">
+                <Row
+                    title="Enable Crane Game Attempt"
+                    description="Attempt to complete the crane game instead of stopping"
+                    right={<Switch checked={general.enableCraneGameAttempt} onCheckedChange={(checked) => updateGeneral({ enableCraneGameAttempt: checked })} />}
+                />
+            </SearchableItem>
+
+            <SearchableItem
+                id="settings-enable-swipe-based-scrolling"
+                title="Enable Swipe-Based Scrolling"
+                description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
+            >
+                <Row
+                    title="Enable Swipe-Based Scrolling"
+                    description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
+                    right={<Switch checked={general.enableSwipeBasedScrolling} onCheckedChange={(checked) => updateGeneral({ enableSwipeBasedScrolling: checked })} />}
+                />
+            </SearchableItem>
+
+            <SearchableItem id="settings-enable-settings-display" title="Enable Settings Display in Message Log" description="Show current bot configuration in the message log">
+                <Row
+                    title="Enable Settings Display in Message Log"
+                    description="Show current bot configuration in the message log"
+                    right={<Switch checked={misc.enableSettingsDisplay} onCheckedChange={(checked) => updateMisc({ enableSettingsDisplay: checked })} />}
+                />
+            </SearchableItem>
+        </Section>
+    )
+
+    const renderMiscDetails = () => (
+        <View>
+            {general.enableStopAtDate && (
+                <SearchableItem id="settings-target-dates" title="Target Dates" description="Stops the bot on the specified dates." parentId="settings-stop-at-date">
                             <View style={{ padding: SPACING.md, gap: SPACING.sm }}>
                                 {general.stopAtDates.map((dateStr, index) => {
                                     const parts = dateStr.split(" ")
@@ -313,35 +351,6 @@ const Settings = () => {
                             </View>
                         </SearchableItem>
                     )}
-
-                    <SearchableItem id="settings-crane-game-attempt" title="Enable Crane Game Attempt" description="Attempt to complete the crane game instead of stopping">
-                        <Row
-                            title="Enable Crane Game Attempt"
-                            description="Attempt to complete the crane game instead of stopping"
-                            right={<Switch checked={general.enableCraneGameAttempt} onCheckedChange={(checked) => updateGeneral({ enableCraneGameAttempt: checked })} />}
-                        />
-                    </SearchableItem>
-
-                    <SearchableItem
-                        id="settings-enable-swipe-based-scrolling"
-                        title="Enable Swipe-Based Scrolling"
-                        description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
-                    >
-                        <Row
-                            title="Enable Swipe-Based Scrolling"
-                            description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
-                            right={<Switch checked={general.enableSwipeBasedScrolling} onCheckedChange={(checked) => updateGeneral({ enableSwipeBasedScrolling: checked })} />}
-                        />
-                    </SearchableItem>
-
-                    <SearchableItem id="settings-enable-settings-display" title="Enable Settings Display in Message Log" description="Show current bot configuration in the message log">
-                        <Row
-                            title="Enable Settings Display in Message Log"
-                            description="Show current bot configuration in the message log"
-                            right={<Switch checked={misc.enableSettingsDisplay} onCheckedChange={(checked) => updateMisc({ enableSettingsDisplay: checked })} />}
-                        />
-                    </SearchableItem>
-                </Section>
 
                 <Section label="WAIT DELAY">
                     <View style={{ padding: SPACING.md }}>
@@ -430,8 +439,7 @@ const Settings = () => {
                     </View>
                 </WarningContainer>
             </View>
-        )
-    }
+    )
 
     //////////////////////////////////////////////////
     //////////////////////////////////////////////////
@@ -443,7 +451,8 @@ const Settings = () => {
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         {renderNavigationSections()}
-                        {showHeavySections && renderMiscSettings()}
+                        {showMiscToggles && renderMiscToggles()}
+                        {showMiscDetails && renderMiscDetails()}
                     </View>
                 </ScrollView>
             </SearchPageProvider>

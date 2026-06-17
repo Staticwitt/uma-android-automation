@@ -38,7 +38,7 @@ export const deepMerge = <T extends Record<string, any>>(target: T, source: Part
  * - `trainingEvent.{characterEventData,supportEventData,scenarioEventData}` — bundled JSON event data
  *   written once at bootstrap by `populateEventData`; only consumed by Kotlin.
  */
-export const DB_OWNED_KEYS: ReadonlyArray<readonly [string, string]> = [
+export const DB_OWNED_KEYS: readonly (readonly [string, string])[] = [
     ["misc", "formattedSettingsString"],
     ["racing", "racesData"],
     ["racing", "epithetsData"],
@@ -82,7 +82,7 @@ export const stripDbOwnedKeys = (settings: Record<string, any>): Record<string, 
  * @returns An array of objects in the format `{ category: string; key: string; value: any }`.
  */
 export const convertSettingsToBatch = (settings: Record<string, any>) => {
-    const batch: Array<{ category: string; key: string; value: any }> = []
+    const batch: { category: string; key: string; value: any }[] = []
 
     Object.entries(settings).forEach(([category, categorySettings]) => {
         Object.entries(categorySettings).forEach(([key, value]) => {

@@ -198,7 +198,7 @@ const TrainingEventSettings = () => {
      * Filters out excluded events and events with fewer than two options.
      */
     const allEvents = useMemo(() => {
-        const events: Array<{ key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" | "scenario" }> = []
+        const events: { key: string; characterOrSupport: string; eventName: string; options: string[]; type: "character" | "support" | "scenario" }[] = []
 
         // Add all character events from the data file.
         Object.keys(charactersData).forEach((characterName) => {
@@ -350,7 +350,7 @@ const TrainingEventSettings = () => {
      * Retrieve a list of all current character and support event overrides.
      */
     const currentOverrides = useMemo(() => {
-        const overrides: Array<{ key: string; characterOrSupport: string; eventName: string; optionIndex: number; options: string[] }> = []
+        const overrides: { key: string; characterOrSupport: string; eventName: string; optionIndex: number; options: string[] }[] = []
         const characterOverrides = characterEventOverrides || {}
         const supportOverrides = supportEventOverrides || {}
 

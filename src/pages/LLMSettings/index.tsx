@@ -51,7 +51,7 @@ const CUSTOM_URL_SENTINEL = "__custom__"
 
 /** Known Qwen 2.5 Instruct GGUF models for llama.rn. All Q4_K_M quants - the size/quality sweet spot. Sizes
  *  verified against the official Qwen Hugging Face repos. These repos are public (no HF token required). */
-const MODEL_PRESETS: Array<{ label: string; detail: string; url: string }> = [
+const MODEL_PRESETS: { label: string; detail: string; url: string }[] = [
     {
         label: "Qwen 2.5 0.5B Instruct (491 MB, fast, weak summaries)",
         detail: "Smallest option. Runs on almost any phone, but paraphrasing quality is limited.",

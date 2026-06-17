@@ -40,7 +40,7 @@ export interface EpithetEntry {
     /** Character gate, e.g. `["Yaeno Muteki"]`. Empty means available to every character. Derived from standalone `<name> only` bullets. */
     characters?: string[]
     /** Structured race-condition matchers used by the solver. Optional only for fixtures / test scaffolding. Production data always carries this. */
-    matchers?: Array<Record<string, unknown>>
+    matchers?: Record<string, unknown>[]
 }
 
 export interface CharacterPresetEntry {
@@ -135,7 +135,7 @@ export const APTITUDE_RANKS = ["S", "A", "B", "C", "D", "E", "F", "G"]
 
 export const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-export const YEAR_LABELS: Array<{ name: string; startTurn: number }> = [
+export const YEAR_LABELS: { name: string; startTurn: number }[] = [
     { name: "Junior", startTurn: 1 },
     { name: "Classic", startTurn: 25 },
     { name: "Senior", startTurn: 49 },

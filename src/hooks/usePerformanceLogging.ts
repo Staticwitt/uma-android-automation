@@ -42,7 +42,7 @@ export const usePerformanceLogging = (componentName: string) => {
         const endTiming = startTiming(`${componentName}_commit`, "ui")
         endTiming({ renderCount: renderCount.current, duration_ms: Number(duration.toFixed(2)) })
         if (duration >= SLOW_COMMIT_WARN_MS) {
-            // eslint-disable-next-line no-console
+             
             console.warn(`[SLOW-COMMIT] ${componentName} commit took ${duration.toFixed(0)}ms (renderCount=${renderCount.current})`)
         }
     })

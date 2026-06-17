@@ -411,24 +411,25 @@ const TrainingSettings = () => {
     ) => {
         const content = (
             <View>
-                <Pressable style={styles.selectorRow} onPress={() => setModalVisible(true)} android_ripple={{ color: colors.ripple, foreground: true }}>
-                    <View style={styles.selectorMain}>
-                        <Text style={styles.selectorTitle}>{title}</Text>
-                        {description ? <Text style={styles.selectorDescription}>{description}</Text> : null}
-                        {selectedStats.length === 0 ? (
-                            <Text style={styles.selectorEmpty}>None</Text>
-                        ) : (
-                            <View style={styles.selectorChips}>
-                                {selectedStats.map((stat) => (
-                                    <View key={stat} style={styles.selectorChip}>
-                                        <Text style={styles.selectorChipText}>{stat}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-                </Pressable>
+                <Row
+                    title={title}
+                    description={description}
+                    right={<Ionicons name="chevron-forward" size={16} color={colors.textMuted} />}
+                    onPress={() => setModalVisible(true)}
+                />
+                <View style={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm }}>
+                    {selectedStats.length === 0 ? (
+                        <Text style={styles.selectorEmpty}>None</Text>
+                    ) : (
+                        <View style={styles.selectorChips}>
+                            {selectedStats.map((stat) => (
+                                <View key={stat} style={styles.selectorChip}>
+                                    <Text style={styles.selectorChipText}>{stat}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                </View>
 
                 <SheetModal
                     visible={modalVisible}

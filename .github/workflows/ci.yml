@@ -24,9 +24,11 @@ jobs:
       - name: Typecheck
         run: yarn typecheck
 
+      - name: Validate perf navigation harness
+        run: yarn perf:nav:validate
+
       - name: Lint
         run: yarn lint
-        continue-on-error: true
 
       - name: Run JS tests
         run: yarn test

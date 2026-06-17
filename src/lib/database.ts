@@ -123,7 +123,7 @@ export class DatabaseManager {
     private isInitializing = false
     private initializationPromise: Promise<void> | null = null
     private isTransactionActive = false
-    private transactionQueue: Array<() => Promise<void>> = []
+    private transactionQueue: (() => Promise<void>)[] = []
 
     /**
      * Serialize a value to a string for storage.
@@ -519,7 +519,7 @@ export class DatabaseManager {
      * @param settings - The settings to save.
      * @returns A promise that resolves when the settings are saved.
      */
-    async saveSettingsBatch(settings: Array<{ category: string; key: string; value: any }>): Promise<void> {
+    async saveSettingsBatch(settings: { category: string; key: string; value: any }[]): Promise<void> {
         const endTiming = startTiming("database_save_settings_batch", "database")
 
         this.ensureInitialized()
@@ -658,7 +658,7 @@ export class DatabaseManager {
      * @param races - The races to save.
      * @returns A promise that resolves when the races are saved.
      */
-    async saveRacesBatch(races: Array<Omit<DatabaseRace, "id">>): Promise<void> {
+    async saveRacesBatch(races: Omit<DatabaseRace, "id">[]): Promise<void> {
         const endTiming = startTiming("database_save_races_batch", "database")
 
         this.ensureInitialized()
@@ -752,7 +752,7 @@ export class DatabaseManager {
      * @param skills - The skills to save.
      * @returns A promise that resolves when the skills are saved.
      */
-    async saveSkillsBatch(skills: Array<Omit<DatabaseSkill, "id">>): Promise<void> {
+    async saveSkillsBatch(skills: Omit<DatabaseSkill, "id">[]): Promise<void> {
         const endTiming = startTiming("database_save_skills_batch", "database")
 
         this.ensureInitialized()

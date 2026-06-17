@@ -734,9 +734,9 @@ export const SettingsRevisionContext = createContext(0)
  */
 const SettingsSnapshotPublisher = ({ children }: { children: ReactNode }) => {
     const snapshot = useSettingsSnapshot()
-    _latestSettingsSnapshot = snapshot
     const [revision, setRevision] = useState(0)
     useEffect(() => {
+        _latestSettingsSnapshot = snapshot
         setRevision((r) => r + 1)
     }, [snapshot])
     return <SettingsRevisionContext.Provider value={revision}>{children}</SettingsRevisionContext.Provider>

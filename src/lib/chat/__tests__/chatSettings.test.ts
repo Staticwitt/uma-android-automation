@@ -1,3 +1,5 @@
+import { CHAT_CATEGORY, DEFAULTS, SETTING_KEYS, loadChatTuning, saveTuning, trimToCap } from "../chatSettings"
+
 const mockLoadSetting = jest.fn()
 const mockSaveSetting = jest.fn()
 
@@ -7,8 +9,6 @@ jest.mock("../../database", () => ({
         saveSetting: (...args: any[]) => mockSaveSetting(...args),
     },
 }))
-
-import { CHAT_CATEGORY, DEFAULTS, SETTING_KEYS, loadChatTuning, saveTuning, trimToCap } from "../chatSettings"
 
 describe("chatSettings", () => {
     beforeEach(() => {

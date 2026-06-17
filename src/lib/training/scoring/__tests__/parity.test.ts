@@ -13,18 +13,18 @@ import {
 } from ".."
 
 const fixturesDir = path.join(__dirname, "..", "__fixtures__")
-const inputs = JSON.parse(fs.readFileSync(path.join(fixturesDir, "parity-inputs.json"), "utf8")) as Array<{
+const inputs = JSON.parse(fs.readFileSync(path.join(fixturesDir, "parity-inputs.json"), "utf8")) as {
     id: string
     config: any
     training: any
-}>
-const expected = JSON.parse(fs.readFileSync(path.join(fixturesDir, "parity-fixtures.json"), "utf8")) as Array<{
+}[]
+const expected = JSON.parse(fs.readFileSync(path.join(fixturesDir, "parity-fixtures.json"), "utf8")) as {
     id: string
     statEfficiency: number
     relationship: number
     misc: number
     raw: number
-}>
+}[]
 
 function hydrateConfig(raw: any): TrainingConfig {
     return {

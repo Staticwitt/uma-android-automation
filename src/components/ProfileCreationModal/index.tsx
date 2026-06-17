@@ -103,10 +103,10 @@ const ProfileCreationModal: React.FC<ProfileCreationModalProps> = ({ visible, on
         [colors]
     )
 
-    const snapshotRows = useMemo<Array<{ key: string; value: string; mono?: boolean }>>(() => {
+    const snapshotRows = useMemo<{ key: string; value: string; mono?: boolean }[]>(() => {
         const yesNo = (b: boolean) => (b ? "On" : "Off")
         const joinOrNone = (arr: string[]) => (arr.length > 0 ? arr.join(", ") : "None")
-        const rows: Array<{ key: string; value: string; mono?: boolean }> = [
+        const rows: { key: string; value: string; mono?: boolean }[] = [
             { key: "BLACKLIST", value: joinOrNone(currentTrainingSettings.trainingBlacklist) },
             { key: "PRIORITY", value: joinOrNone(currentTrainingSettings.statPrioritization) },
             { key: "EVENT PRIORITY", value: joinOrNone(currentTrainingSettings.eventChoiceStatPriority) },

@@ -361,6 +361,16 @@ const measureColdStart = async (): Promise<number> => {
  * @returns A promise that resolves once the harness has finished printing its summary.
  */
 const main = async () => {
+    if (process.argv.includes("--validate-only")) {
+        for (const sc of SCENARIOS) {
+            if (!sc.route || !sc.name) {
+                throw new Error(`Invalid navigation scenario: ${JSON.stringify(sc)}`)
+            }
+        }
+        console.log(`perf-nav: validated ${SCENARIOS.length} navigation scenarios`)
+        return
+    }
+
     console.log(`Targeting ${DEVICE} (${PACKAGE})`)
     const coldStartMs = await measureColdStart()
     // Give the post-mount cascade time to finish before we start probing nav.
