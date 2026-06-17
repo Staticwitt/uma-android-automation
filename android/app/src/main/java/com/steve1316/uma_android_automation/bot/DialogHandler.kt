@@ -257,17 +257,7 @@ open class DialogHandler(val game: Game) {
             }
 
             "purchase_alarm_clock" -> {
-                val racing = (game.task as? Campaign)?.racing
-                if (racing?.canUseCaratRaceRetry() == true) {
-                    MessageLog.i(TAG, "[RACE] Confirming carat purchase for Alarm Clock (race retry)...")
-                    if (dialog.ok(game.imageUtils)) {
-                        racing.recordCaratRaceRetrySpend()
-                        game.wait(1.0)
-                    } else {
-                        MessageLog.w(TAG, "[WARN] handleDialogs:: Failed to confirm carat Alarm Clock purchase. Closing dialog.")
-                        dialog.close(game.imageUtils)
-                    }
-                } else {
+                if ((game.task as? Campaign)?.handlePurchaseAlarmClockDialog(dialog) != true) {
                     throw InterruptedException("Ran out of alarm clocks. Stopping bot...")
                 }
             }

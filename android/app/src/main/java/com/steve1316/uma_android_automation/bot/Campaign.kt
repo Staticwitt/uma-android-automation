@@ -766,6 +766,24 @@ abstract class Campaign(game: Game) : Task(game) {
     }
 
     /**
+     * Confirms a carat-funded Alarm Clock purchase when [Racing.canUseCaratRaceRetry] is enabled.
+     *
+     * @return True when the dialog was handled (including a failed OK click that closed the dialog).
+     */
+    fun handlePurchaseAlarmClockDialog(dialog: DialogInterface): Boolean {
+        if (!racing.canUseCaratRaceRetry()) return false
+        MessageLog.i(TAG, "[RACE] Confirming carat purchase for Alarm Clock (race retry)...")
+        if (dialog.ok(game.imageUtils)) {
+            racing.recordCaratRaceRetrySpend()
+            game.wait(1.0)
+            return true
+        }
+        MessageLog.w(TAG, "[WARN] handlePurchaseAlarmClockDialog:: Failed to confirm carat Alarm Clock purchase. Closing dialog.")
+        dialog.close(game.imageUtils)
+        return true
+    }
+
+    /**
      * Handles the consecutive race warning dialog using hook methods for extensibility.
      *
      * @param dialog The detected dialog.
