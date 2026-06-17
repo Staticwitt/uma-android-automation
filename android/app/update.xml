@@ -1,21 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.15</latestVersion>
-    <latestVersionCode>105</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.15</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.15/v5.9.15-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.15/v5.9.15-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.16</latestVersion>
+    <latestVersionCode>106</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.16</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.16/v5.9.16-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.16/v5.9.16-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.15 - Discord live status and solver alerts
+v5.9.16 - Carat-funded race retry
 
 Features
 ---
-- Parent farming live Discord embeds now show energy and mood
-- Race loss alerts when a smart-solver race does not finish 1st
-- Win-rate guard alerts when P(win) is below the guard floor
-- New Discord Settings toggles for race and guard alerts (default on)
+- Optional setting to spend carats on Alarm Clock race retries when item retries are exhausted
+- Per-career cap for carat-funded retries (default 5, 0 = unlimited)
+- Works for mandatory races, Try Again dialogs, Trackblazer, and inline retry buttons
 
-Includes v5.9.14 Smart Race Solver energy, win-rate guard, and live preview.
+Includes v5.9.15 Discord live status and solver alerts.
 
     </releaseNotes>
   </update>
