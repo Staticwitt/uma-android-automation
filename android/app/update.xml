@@ -1,21 +1,27 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.20</latestVersion>
-    <latestVersionCode>110</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.20</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.20/v5.9.20-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.20/v5.9.20-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.21</latestVersion>
+    <latestVersionCode>111</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.21</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.21/v5.9.21-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.21/v5.9.21-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.20 - Dark mode toggle fix
+v5.9.21 - App performance optimizations
 
-Fixes
+Performance
 ---
-- Dark mode toggle now persists your choice across app restarts
-- Manual theme selection no longer resets when the OS theme changes
-- NativeWind/Tailwind styles follow dark mode reliably
-- New Dark Mode switch under Settings → MISC (header moon/sun toggle still works)
+- Lazy-load settings sub-pages and Chat to reduce cold-start bundle work
+- Deferred first paint on heavy settings screens (Settings misc, Chat, etc.)
+- Memoized parent-farming bundle grid cards and narrower context subscriptions
+- Chat recent questions use FlashList; Skills plan list uses FlashList via CustomScrollView
+- Search registry skips runtime registration for statically indexed settings ids
 
-Includes v5.9.19 settings UI overhaul.
+CI / quality
+---
+- ESLint in CI (0 errors), perf-nav validation workflow, Gradle cache on CI
+- Typecheck fixes for solver preview cache import and parent-farming resolver
+
+Includes v5.9.20 dark mode toggle fix and v5.9.19 settings UI overhaul.
 
     </releaseNotes>
   </update>

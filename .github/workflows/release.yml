@@ -90,7 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: "v${{ steps.version.outputs.version }} — Parent farming reliability bundle"
+          name: "v${{ steps.version.outputs.version }} — App performance optimizations"
           body: ${{ steps.notes.outputs.body }}
           files: |
             ${{ steps.apks.outputs.arm64 }}
