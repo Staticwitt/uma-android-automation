@@ -21,6 +21,7 @@ import { loadDeviceCapabilities, shouldSuggestX8664Variant } from "../../lib/cha
 import HeroStatusCard, { HeroStatus } from "../../components/HeroStatusCard"
 import { useProfileContext, DEFAULT_PROFILE_NAME } from "../../context/ProfileContext"
 import { SPACING } from "../../lib/spacing"
+import { DeviceMetrics, SUPPORTED_DISPLAY_PROFILE_LABELS } from "../../lib/displayProfile"
 
 const styles = StyleSheet.create({
     root: {
@@ -81,7 +82,7 @@ const Home = () => {
     const [showNotReadyDialog, setShowNotReadyDialog] = useState<boolean>(false)
     const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
     const [snackbarMessage, setSnackbarMessage] = useState<string>("")
-    const [deviceMetrics, setDeviceMetrics] = useState<{ width: number; height: number; dpi: number } | null>(null)
+    const [deviceMetrics, setDeviceMetrics] = useState<DeviceMetrics | null>(null)
     const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null)
     const [showPermissionDialog, setShowPermissionDialog] = useState<boolean>(false)
     const [abiMismatch, setAbiMismatch] = useState<boolean>(false)
@@ -160,14 +161,10 @@ const Home = () => {
             const metrics = await StartModule.getDeviceDimensions()
             setDeviceMetrics(metrics)
 
-            const { width, height, dpi } = metrics
-            const isConfig1 = width === 1080 && height === 1920 && dpi === 240
-            const isConfig2 = width === 1080 && height === 2340 && dpi === 450
-
-            if (isConfig1 || isConfig2) {
+            if (metrics.supportedDisplay) {
                 setUnsupportedReason(null)
             } else {
-                setUnsupportedReason(`unsupported configuration: ${width}x${height} @ ${dpi} DPI`)
+                setUnsupportedReason(`unsupported configuration: ${metrics.width}x${metrics.height} @ ${metrics.dpi} DPI`)
             }
         } catch (error) {
             logErrorWithTimestamp("[Home] Failed to fetch device dimensions:", error)
@@ -278,19 +275,22 @@ const Home = () => {
     const renderStatus = (): React.ReactElement | null => {
         const warningSections: string[] = []
         if (unsupportedReason) {
-            warningSections.push(`Current Display: ${deviceMetrics?.width}x${deviceMetrics?.height} (${deviceMetrics?.dpi} DPI).
+            const profileLine =
+                deviceMetrics?.displayProfileLabel != null && deviceMetrics.displayProfileLabel.length > 0
+                    ? `\n\nRecognized profile: ${deviceMetrics.displayProfileLabel}`
+                    : ""
+            const scaleLine =
+                deviceMetrics?.recommendedTemplateScale != null && deviceMetrics.recommendedTemplateScale !== 1
+                    ? `\nRecommended template scale: ${deviceMetrics.recommendedTemplateScale.toFixed(2)} (applied automatically when Auto Display Profile Tuning is on and custom scale is 1.0).`
+                    : ""
+            warningSections.push(`Current Display: ${deviceMetrics?.width}x${deviceMetrics?.height} (${deviceMetrics?.dpi} DPI).${profileLine}${scaleLine}
 
 Warning: Performance may be degraded due to ${unsupportedReason}.
 
-Supported Configurations:
-• 1080x1920 @ 240 DPI
-• 1080x2340 @ 450 DPI
+Supported profiles:
+${SUPPORTED_DISPLAY_PROFILE_LABELS.map((label) => `• ${label}`).join("\n")}
 
-Note: Height is not as important to meet as the width. In addition, DPI is tied to the width and height together. How to calculate your specific DPI:
-
-DPI = sqrt(width^2 + height^2) / diagonal
-
-where width and height of the screen is in pixels, and diagonal is the diagonal size of the physical screen in inches.`)
+Note: Width matters more than height for template matching. Run in portrait. For unrecognized panels, use Debug Settings → Basic Template Matching Test, or force 1080×1920 via adb (see README).`)
         }
         if (abiMismatch) {
             warningSections.push(`Installed Build: arm64-v8a

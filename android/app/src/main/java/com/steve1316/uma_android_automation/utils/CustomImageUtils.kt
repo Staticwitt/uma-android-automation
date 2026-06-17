@@ -72,6 +72,39 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     /** Custom scale factor for template matching. */
     override var customScale: Double = SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble()
 
+    /**
+     * Applies display-profile template scale when auto-tuning is enabled (e.g. Samsung Tab S10 FE).
+     * Call after [SharedData] dimensions are known (at bot start).
+     */
+    fun applyDisplayProfileTuning() {
+        val userScale = SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble()
+        val autoTune = SettingsHelper.getBooleanSetting("debug", "enableAutoDisplayProfileTuning", true)
+        val effectiveScale =
+            DisplayProfileRegistry.resolveEffectiveTemplateScale(
+                width = SharedData.displayWidth,
+                height = SharedData.displayHeight,
+                dpi = SharedData.displayDPI,
+                userScale = userScale,
+                autoTuneEnabled = autoTune,
+            )
+        customScale = effectiveScale
+        val profile =
+            DisplayProfileRegistry.match(
+                SharedData.displayWidth,
+                SharedData.displayHeight,
+                SharedData.displayDPI,
+            )
+        when {
+            profile != null && effectiveScale != userScale ->
+                MessageLog.i(
+                    TAG,
+                    "[DISPLAY] Applied \"${profile.label}\" template scale $effectiveScale (profile auto-tune).",
+                )
+            profile != null ->
+                MessageLog.i(TAG, "[DISPLAY] Recognized display profile: ${profile.label}.")
+        }
+    }
+
     /** Maximum allowed value for a single stat. */
     private val manualStatCap: Int = SettingsHelper.getIntSetting("training", "manualStatCap")
 

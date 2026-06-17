@@ -18,7 +18,7 @@ This project is purely for educational purposes to learn about Android automatio
 # Requirements
 
 - Android Device or Emulator (Nougat 7.0+)
-    - Hard requirement for Android phones is 1080p and 240 DPI or 450 DPI (for Samsung phones). If your device do not meet these, you can try the `Basic Template Matching Test` in the Settings under the `Debug Tests` section to determine the best scale to use in the `Custom Scale for Template Matching` setting. If not, then you can also try the [To set the phone's resolution to 1080p (faster and more accurate)](#to-set-the-phones-resolution-to-1080p-faster-and-more-accurate) section to forcibly set the display resolution and DPI of your Android phone. Note that may come with the side-effect of your device UI being scrunched in or zoomed out.
+    - Hard requirement for Android phones is 1080p and 240 DPI or 450 DPI (for Samsung phones). **Samsung Galaxy Tab S10 FE** (1440×2304 portrait) is also supported natively with automatic template scale tuning — see [Tablets (Samsung Tab S10 FE)](#tablets-samsung-tab-s10-fe). If your device do not meet these, you can try the `Basic Template Matching Test` in the Settings under the `Debug Tests` section to determine the best scale to use in the `Custom Scale for Template Matching` setting. If not, then you can also try the [To set the phone's resolution to 1080p (faster and more accurate)](#to-set-the-phones-resolution-to-1080p-faster-and-more-accurate) section to forcibly set the display resolution and DPI of your Android phone. Note that may come with the side-effect of your device UI being scrunched in or zoomed out.
     - Tested emulators are Bluestacks 5 (Pie 64-bit, but other versions should work) and MuMu. The following setup is required:
         - Portrait Mode needs to be forced on always.
         - Bluestacks itself needs to be updated to the latest version to avoid Uma Musume crashing.
@@ -132,6 +132,18 @@ Alternatively, you can do the same on a computer if you cannot get the above to 
 
 > [!TIP]
 > Use 1.0 scaling and an 80% confidence threshold for best results in 1080p natively.
+
+## Tablets (Samsung Tab S10 FE)
+
+The **Galaxy Tab S10 FE** (10.9", **1440×2304** portrait, ~340 DPI) is a supported display profile. You do **not** need to force `1080×1920` if you use a recent build with display profile tuning.
+
+1. Install the **arm64-v8a** release APK.
+2. Keep **Auto Display Profile Tuning** enabled in **Debug Settings** (default on). At bot start it applies template scale **~1.33** (1440÷1080) when custom scale is still **1.0**.
+3. Run Uma Musume in **portrait**, **full screen** (no split-screen / DeX). In-game graphics: **Standard**.
+4. On the app **Home** screen you should see a green checkmark when the Tab profile is recognized (no unsupported-display warning).
+5. If matching is still off, run **Basic Template Matching Test** and adjust **Custom Scale** manually (disables auto-tune override while scale ≠ 1.0).
+
+Optional fallback: `adb shell wm size 1080x1920 && adb shell wm density 240` (revert with `wm size reset && wm density reset`).
 
 # For Developers
 

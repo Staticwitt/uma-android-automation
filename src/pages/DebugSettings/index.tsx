@@ -459,6 +459,22 @@ const DebugSettings = () => {
                                     description="Manually set the scale to do template matching. The Basic Template Matching Test can help find your recommended scale. Making it too low or too high will cause the bot to match on too little or too many things as false positives."
                                 />
                             </View>
+                            <SearchableItem
+                                id="enable-auto-display-profile-tuning"
+                                title="Auto Display Profile Tuning"
+                                description="When enabled, applies a recommended template scale for recognized devices (e.g. Samsung Galaxy Tab S10 FE at 1440×2304) if custom scale is still 1.0."
+                            >
+                                <Row
+                                    title="Auto Display Profile Tuning"
+                                    description="Apply known display profiles (Tab S10 FE, etc.) at bot start"
+                                    right={
+                                        <Switch
+                                            checked={debug.enableAutoDisplayProfileTuning ?? true}
+                                            onCheckedChange={(checked) => updateDebug({ enableAutoDisplayProfileTuning: checked })}
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
                             <View style={styles.hostPad}>
                                 <CustomSlider
                                     searchId="ocr-threshold"

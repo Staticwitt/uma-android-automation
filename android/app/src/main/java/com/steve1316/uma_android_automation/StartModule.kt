@@ -571,6 +571,16 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             map.putInt("width", metrics.widthPixels)
             map.putInt("height", metrics.heightPixels)
             map.putInt("dpi", metrics.densityDpi)
+            val profile =
+                com.steve1316.uma_android_automation.utils.DisplayProfileRegistry.match(
+                    metrics.widthPixels,
+                    metrics.heightPixels,
+                    metrics.densityDpi,
+                )
+            map.putBoolean("supportedDisplay", profile != null)
+            map.putString("displayProfileId", profile?.id ?: "")
+            map.putString("displayProfileLabel", profile?.label ?: "")
+            map.putDouble("recommendedTemplateScale", profile?.templateScale ?: 1.0)
             promise.resolve(map)
         } catch (e: Exception) {
             promise.reject("DEVICE_INFO_ERROR", "Failed to retrieve device dimensions: ${e.message}")

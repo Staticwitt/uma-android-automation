@@ -221,6 +221,7 @@ export interface Settings {
         ocrThreshold: number
         templateMatchConfidence: number
         templateMatchCustomScale: number
+        enableAutoDisplayProfileTuning: boolean
         debugMode_startTemplateMatchingTest: boolean
         debugMode_startSingleTrainingOCRTest: boolean
         debugMode_startComprehensiveTrainingOCRTest: boolean
@@ -515,6 +516,7 @@ export const defaultSettings: Settings = {
         ocrThreshold: 230,
         templateMatchConfidence: 0.8,
         templateMatchCustomScale: 1.0,
+        enableAutoDisplayProfileTuning: true,
         debugMode_startTemplateMatchingTest: false,
         debugMode_startSingleTrainingOCRTest: false,
         debugMode_startComprehensiveTrainingOCRTest: false,

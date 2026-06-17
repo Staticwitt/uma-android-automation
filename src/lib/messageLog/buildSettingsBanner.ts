@@ -265,6 +265,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔍 OCR Threshold: ${settings.debug.ocrThreshold}
 🔍 Minimum Template Match Confidence: ${settings.debug.templateMatchConfidence}
 🔍 Custom Scale: ${settings.debug.templateMatchCustomScale}
+🔍 Auto Display Profile Tuning: ${settings.debug.enableAutoDisplayProfileTuning !== false ? "✅" : "❌"}
 💻 Remote Log Viewer: ${settings.debug.enableRemoteLogViewer ? "✅" : "❌"}
 📹 Enable Screen Recording: ${
         settings.debug.enableScreenRecording ? `✅ (${settings.debug.recordingBitRate} Mbps, ${settings.debug.recordingFrameRate} FPS, ${settings.debug.recordingResolutionScale}x scale)` : "❌"

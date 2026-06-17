@@ -21,6 +21,7 @@ import com.steve1316.uma_android_automation.bot.campaigns.UraFinale
 import com.steve1316.uma_android_automation.components.LabelConnecting
 import com.steve1316.uma_android_automation.components.LabelNowLoading
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
+import com.steve1316.uma_android_automation.utils.DisplayProfileRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.opencv.core.Point
@@ -273,17 +274,24 @@ class Game(val myContext: Context) {
         }
 
         // Print device and version information.
+        imageUtils.applyDisplayProfileTuning()
         MessageLog.i(TAG, "[INFO] Device Information: ${SharedData.displayWidth}x${SharedData.displayHeight}, DPI ${SharedData.displayDPI}")
-        val isConfig1 = SharedData.displayWidth == 1080 && SharedData.displayHeight == 1920 && SharedData.displayDPI == 240
-        val isConfig2 = SharedData.displayWidth == 1080 && SharedData.displayHeight == 2340 && SharedData.displayDPI == 450
-        if (!isConfig1 && !isConfig2) {
+        val displayProfile =
+            DisplayProfileRegistry.match(
+                SharedData.displayWidth,
+                SharedData.displayHeight,
+                SharedData.displayDPI,
+            )
+        if (displayProfile == null) {
             MessageLog.w(
                 TAG,
-                "[WARN] ⚠️ Bot performance will be severely degraded since display configuration is not 1080x1920 @ 240 DPI or 1080x2340 @ 450 DPI unless an appropriate scale is set for your device.",
+                "[WARN] ⚠️ Bot performance may be degraded on unrecognized display ${SharedData.displayWidth}x${SharedData.displayHeight} @ ${SharedData.displayDPI} DPI. Use Debug Settings to tune template scale, or force 1080×1920 via adb.",
             )
         }
         if (debugMode) MessageLog.w(TAG, "[WARN] ⚠️ Debug Mode is enabled. All bot operations will be significantly slower as a result.")
-        if (SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble() != 1.0) {
+        if (SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble() != imageUtils.customScale) {
+            MessageLog.i(TAG, "[INFO] Effective template match scale: ${imageUtils.customScale}")
+        } else if (SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble() != 1.0) {
             MessageLog.w(
                 TAG,
                 "[WARN] Manual scale has been set to ${SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble()}",

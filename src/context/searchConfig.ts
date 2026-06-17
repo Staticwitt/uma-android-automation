@@ -1003,6 +1003,13 @@ const searchConfig: SearchOption[] = [
         page: "DebugSettings",
     },
     {
+        id: "enable-auto-display-profile-tuning",
+        title: "Auto Display Profile Tuning",
+        description:
+            "When enabled, applies a recommended template scale for recognized devices (e.g. Samsung Galaxy Tab S10 FE at 1440×2304) if custom scale is still 1.0.",
+        page: "DebugSettings",
+    },
+    {
         id: "enable-screen-recording",
         title: "Enable Screen Recording",
         description:
