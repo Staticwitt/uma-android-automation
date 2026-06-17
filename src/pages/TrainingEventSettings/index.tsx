@@ -1,5 +1,6 @@
 import { useContext, useState, useMemo, useCallback, useRef } from "react"
 import { View, Text, ScrollView, StyleSheet, Pressable, TextInput } from "react-native"
+import TabStrip from "../../components/ui/tab-strip"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
@@ -26,7 +27,6 @@ import charactersData from "../../data/characters.json"
 import supportsData from "../../data/supports.json"
 import scenariosData from "../../data/scenarios.json"
 
-// List of events that are already covered in Special Event Overrides and should be excluded.
 const excludedEventNames = new Set([
     "Acupuncture (Just an Acupuncturist, No Worries! ☆)",
     "New Year's Resolutions",
@@ -49,6 +49,14 @@ const excludedEventNames = new Set([
     "A Team at Last",
 ])
 
+const EVENT_TAB_ITEMS = [
+    { key: "general", label: "General" },
+    { key: "overrides", label: "Overrides" },
+    { key: "special", label: "Special" },
+] as const
+
+type EventTabKey = (typeof EVENT_TAB_ITEMS)[number]["key"]
+
 /**
  * The Training Event Settings page.
  * Allows configuration of special event option overrides (holiday, race results,
@@ -61,6 +69,8 @@ const TrainingEventSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const { trainingEvent, updateTrainingEvent } = useContext(TrainingEventContext)
     const scrollViewRef = useRef<ScrollView>(null)
+    const [activeTab, setActiveTab] = useState<EventTabKey>("general")
+    const onTabChange = useCallback((key: string) => setActiveTab(key as EventTabKey), [])
 
     // Merge current training event settings with defaults to handle missing properties.
     const {
@@ -588,6 +598,12 @@ const TrainingEventSettings = () => {
                 <PageHeader title="Training Event Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
+                        <View style={{ padding: SPACING.md, paddingBottom: 0 }}>
+                            <TabStrip items={[...EVENT_TAB_ITEMS]} activeKey={activeTab} onChange={onTabChange} />
+                        </View>
+
+                        {activeTab === "general" && (
+                        <>
                         <Section label="General">
                             <SearchableItem
                                 id="prioritize-energy-options"
@@ -654,7 +670,11 @@ const TrainingEventSettings = () => {
                                 />
                             </SearchableItem>
                         </Section>
+                        </>
+                        )}
 
+                        {activeTab === "overrides" && (
+                        <>
                         <Section label="Training Event Option Overrides">
                             <View style={{ padding: SPACING.md }}>
                                 <SearchableItem
@@ -734,6 +754,10 @@ const TrainingEventSettings = () => {
                             </View>
                         )}
 
+                        </>
+                        )}
+
+                        {activeTab === "special" && (
                         <Section label="Special Event Overrides">
                             <SearchableItem
                                 id="special-event-overrides"
@@ -977,6 +1001,7 @@ const TrainingEventSettings = () => {
                                 )}
                             </View>
                         </Section>
+                        )}
                     </View>
                 </ScrollView>
             </SearchPageProvider>

@@ -15,12 +15,14 @@ import { RADII } from "../lib/radii"
 interface ParentFarmingBundleGridProps {
     scenario: string
     onApply: (bundle: ParentFarmingCharacterBundle) => void
+    /** When false, omits the intro description (parent section already explains). Default true. */
+    showDescription?: boolean
 }
 
 /**
  * Grid of one-tap parent-farming character + goal bundles.
  */
-export const ParentFarmingBundleGrid = ({ scenario, onApply }: ParentFarmingBundleGridProps) => {
+export const ParentFarmingBundleGrid = ({ scenario, onApply, showDescription = true }: ParentFarmingBundleGridProps) => {
     const { colors } = useTheme()
 
     const styles = useMemo(
@@ -47,9 +49,11 @@ export const ParentFarmingBundleGrid = ({ scenario, onApply }: ParentFarmingBund
 
     return (
         <View>
-            <Text style={styles.description}>
-                One tap applies Parent Farming Mode, the character preset and aptitudes, goal epithets and solver weights, and training distance bias. Manual race locks are cleared.
-            </Text>
+            {showDescription && (
+                <Text style={styles.description}>
+                    One tap applies Parent Farming Mode, the character preset and aptitudes, goal epithets and solver weights, and training distance bias. Manual race locks are cleared.
+                </Text>
+            )}
             <View style={styles.grid}>
                 {PARENT_FARMING_CHARACTER_BUNDLES.map((bundle) => {
                     const goalPreset = findParentFarmingGoalPreset(bundle.goalPresetKey)
