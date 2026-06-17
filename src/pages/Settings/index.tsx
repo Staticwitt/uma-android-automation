@@ -35,7 +35,7 @@ const Settings = () => {
 
     const { defaultSettings } = useContext(BotMetaContext)
     const { general, misc, updateGeneral, updateMisc } = useContext(GeneralMiscContext)
-    const { colors } = useTheme()
+    const { colors, isDark, setTheme } = useTheme()
 
     const { openDataDirectory, resetSettings } = useSettings()
     const { handleImportSettings, handleExportSettings, showImportDialog, setShowImportDialog, showResetDialog, setShowResetDialog } = useSettingsFileManager()
@@ -188,6 +188,13 @@ const Settings = () => {
         return (
             <View>
                 <Section label="MISC">
+                    <SettingRow
+                        id="settings-dark-mode"
+                        title="Dark Mode"
+                        description="Use dark theme across the app. Your choice is saved and won't follow system theme changes."
+                        right={<Switch checked={isDark} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} />}
+                    />
+
                     <SettingRow
                         id="settings-stop-before-finals"
                         title="Stop before Finals"

@@ -17,6 +17,12 @@ const searchConfig: SearchOption[] = [
     // Settings (SettingsMain)
     // ============================================================
     {
+        id: "settings-dark-mode",
+        title: "Dark Mode",
+        description: "Use dark theme across the app",
+        page: "SettingsMain",
+    },
+    {
         id: "settings-stop-before-finals",
         title: "Stop before Finals",
         description: "Pause to buy skills before the final races",

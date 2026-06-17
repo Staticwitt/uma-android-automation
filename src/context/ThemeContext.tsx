@@ -1,9 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { useColorScheme } from "react-native"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 import { THEME } from "../lib/theme"
 import { syncNativeWindColorScheme } from "../lib/nativeWindTheme"
 
 type Theme = "light" | "dark"
+
+const THEME_STORAGE_KEY = "@uma-app/theme"
 
 /**
  * Context value interface for the Theme provider.
@@ -12,9 +15,9 @@ type Theme = "light" | "dark"
 interface ThemeContextType {
     /** The current active theme ("light" or "dark"). */
     theme: Theme
-    /** Setter for the theme value. */
+    /** Setter for the theme value. Persists the user's choice. */
     setTheme: (theme: Theme) => void
-    /** Toggles between light and dark themes. */
+    /** Toggles between light and dark themes. Persists the user's choice. */
     toggleTheme: () => void
     /** Whether the current theme is dark mode. */
     isDark: boolean
@@ -43,34 +46,68 @@ interface ThemeProviderProps {
 
 /**
  * Provider component for the Theme context.
- * Initializes the theme based on the device's system color scheme
- * and provides theme state and toggle functionality to child components.
+ * Initializes from saved preference, then device color scheme, and keeps NativeWind in sync.
+ * Once the user toggles theme manually, the choice is persisted and no longer follows system changes.
  * @param children The children of the provider.
  * @returns The theme provider.
  */
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const systemColorScheme = useColorScheme()
-    const [theme, setTheme] = useState<Theme>("light")
+    const followSystemRef = useRef(true)
+    const [theme, setThemeState] = useState<Theme>(() => (systemColorScheme === "dark" ? "dark" : "light"))
+    const [hydrated, setHydrated] = useState(false)
 
-    // Initialize theme based on system preference. RN 0.85 added "unspecified" to ColorSchemeName, which we treat as no preference and leave the default.
-    useEffect(() => {
-        if (systemColorScheme === "light" || systemColorScheme === "dark") {
-            setTheme(systemColorScheme)
+    const applyTheme = useCallback((next: Theme, persist: boolean) => {
+        setThemeState(next)
+        syncNativeWindColorScheme(next)
+        if (persist) {
+            followSystemRef.current = false
+            void AsyncStorage.setItem(THEME_STORAGE_KEY, next)
         }
-    }, [systemColorScheme])
-
-    useEffect(() => {
-        syncNativeWindColorScheme(theme)
-    }, [theme])
-
-    /**
-     * Toggles between light and dark themes.
-     */
-    const toggleTheme = useCallback(() => {
-        setTheme((prev) => (prev === "light" ? "dark" : "light"))
     }, [])
 
-    // Memoize the provider value to prevent cascading re-renders.
+    useEffect(() => {
+        let cancelled = false
+        void (async () => {
+            try {
+                const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY)
+                if (cancelled) return
+                if (stored === "light" || stored === "dark") {
+                    followSystemRef.current = false
+                    applyTheme(stored, false)
+                } else if (systemColorScheme === "light" || systemColorScheme === "dark") {
+                    applyTheme(systemColorScheme, false)
+                }
+            } finally {
+                if (!cancelled) setHydrated(true)
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+        // Hydrate saved preference once on mount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [applyTheme])
+
+    useEffect(() => {
+        if (!hydrated || !followSystemRef.current) return
+        if (systemColorScheme === "light" || systemColorScheme === "dark") {
+            applyTheme(systemColorScheme, false)
+        }
+    }, [applyTheme, hydrated, systemColorScheme])
+
+    const setTheme = useCallback((next: Theme) => applyTheme(next, true), [applyTheme])
+
+    const toggleTheme = useCallback(() => {
+        setThemeState((prev) => {
+            const next = prev === "light" ? "dark" : "light"
+            followSystemRef.current = false
+            syncNativeWindColorScheme(next)
+            void AsyncStorage.setItem(THEME_STORAGE_KEY, next)
+            return next
+        })
+    }, [])
+
     const value = useMemo<ThemeContextType>(() => {
         const isDark = theme === "dark"
         const colors = THEME[theme]
@@ -81,7 +118,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             isDark,
             colors,
         }
-    }, [theme, toggleTheme])
+    }, [theme, setTheme, toggleTheme])
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
