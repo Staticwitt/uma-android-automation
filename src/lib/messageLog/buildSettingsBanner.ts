@@ -1,6 +1,6 @@
 import { Settings } from "../../context/BotStateContext"
 import { PARENT_FARMING_MODE_LABEL } from "../parentFarmingPreset"
-import { formatParentFarmingTrainingBias, getParentFarmingActiveLabels } from "../parentFarmingDrift"
+import { formatParentFarmingTrainingBias, formatParentFarmingReliabilitySummary, getParentFarmingActiveLabels } from "../parentFarmingDrift"
 import { SCORING_CONSTANTS_CATALOG } from "../training/scoringConstantsCatalog"
 
 /**
@@ -168,6 +168,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
                   if (smartRaceSolverMinimumFanTarget > 0) {
                       lines.push(`\n\t👥 Solver fan floor: ${smartRaceSolverMinimumFanTarget}`)
                   }
+                  const reliability = formatParentFarmingReliabilitySummary(settings)
+                  if (reliability) lines.push(`\n\t🛡️ Reliability: ${reliability}`)
                   return lines.join("")
               })()
             : ""

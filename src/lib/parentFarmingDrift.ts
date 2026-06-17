@@ -275,3 +275,15 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
 
     return warnings
 }
+
+/** Whether any parent-farming reliability toggles differ from resolver defaults. */
+export const formatParentFarmingReliabilitySummary = (settings: Settings): string => {
+    const { racing } = settings
+    if (!racing.enableParentFarmingMode) return ""
+    const parts: string[] = []
+    if (racing.enableParentFarmingFullUnattended) parts.push("full unattended")
+    if (racing.enableParentFarmingAutoDowngradeForcedEpithets) parts.push("auto-downgrade forced")
+    if (racing.enableParentFarmingAdaptiveMultiRun) parts.push("adaptive multi-run")
+    if (racing.enableParentFarmingLockPreset) parts.push("lock preset")
+    return parts.length > 0 ? parts.join(" · ") : "defaults"
+}

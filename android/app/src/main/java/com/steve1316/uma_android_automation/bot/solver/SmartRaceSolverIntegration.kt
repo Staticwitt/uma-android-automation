@@ -1240,8 +1240,15 @@ object SmartRaceSolverIntegration {
      */
     private fun readWeights(): Weights {
         val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
-        if (json.isEmpty()) return Weights()
-        return runCatching { parseWeightsObj(JSONObject(json)) }.getOrElse { Weights() }
+        val base =
+            if (json.isEmpty()) {
+                Weights()
+            } else {
+                runCatching { parseWeightsObj(JSONObject(json)) }.getOrElse { Weights() }
+            }
+        val (guard, fanFloor) =
+            ParentFarmingAdaptiveMultiRun.applyWeightAdjustments(base.minWinRateGuard, base.minimumFanTarget)
+        return base.copy(minWinRateGuard = guard, minimumFanTarget = fanFloor)
     }
 
     private fun readEpithetTierMultipliers(): Map<String, Double> {

@@ -61,10 +61,20 @@ object LegacyParentScorer {
         var total = 0.0
 
         val skillSignal = SKILL_KEYWORDS.any { lower.contains(it) }
+        val blueFactorSignal = lower.contains("blue") || lower.contains("青")
         when (context.strategy) {
-            "SkillHints" -> if (skillSignal) total += 200.0
-            "Balanced" -> if (skillSignal) total += 80.0
-            "StatAndAptitude" -> if (skillSignal && context.preferSkillHints) total += 45.0
+            "SkillHints" -> {
+                if (skillSignal) total += 200.0
+                if (blueFactorSignal) total += 40.0
+            }
+            "Balanced" -> {
+                if (skillSignal) total += 80.0
+                if (blueFactorSignal) total += 25.0
+            }
+            "StatAndAptitude" -> {
+                if (skillSignal && context.preferSkillHints) total += 45.0
+                if (blueFactorSignal) total += 15.0
+            }
         }
 
         for ((index, stat) in context.statPriorities.withIndex()) {

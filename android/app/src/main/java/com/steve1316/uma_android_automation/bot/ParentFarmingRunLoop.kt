@@ -97,6 +97,9 @@ object ParentFarmingRunLoop {
                 finalizeSession(game)
                 return false
             }
+            if (quality.score < 70) {
+                ParentFarmingAdaptiveMultiRun.notePoorRunQuality(quality.score)
+            }
         }
 
         if (summaryInput != null) {

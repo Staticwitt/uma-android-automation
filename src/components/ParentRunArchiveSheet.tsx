@@ -23,7 +23,9 @@ import {
     formatEpithetDelta,
     formatQualityLabel,
     scoreParentRunArchiveEntry,
+    type ParentQualityBreakdown,
 } from "../lib/parentQuality"
+import { formatParentFarmingSessionSummary, latestSessionId } from "../lib/parentFarmingSessionSummary"
 import { copyToClipboard } from "../lib/utils"
 import {
     exportHorseJsonForUmaTools,
@@ -38,6 +40,30 @@ interface ParentRunArchiveSheetProps {
     visible: boolean
     onClose: () => void
 }
+
+const QUALITY_BAR_MAX = 35
+
+const renderQualityBar = (label: string, value: number, color: string) => (
+    <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <Text style={{ width: 72, fontSize: 11 }}>{label}</Text>
+        <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: "rgba(128,128,128,0.2)" }}>
+            <View style={{ width: `${Math.min(100, (value / QUALITY_BAR_MAX) * 100)}%`, height: 8, borderRadius: 4, backgroundColor: color }} />
+        </View>
+        <Text style={{ width: 28, fontSize: 11, textAlign: "right" }}>{value.toFixed(1)}</Text>
+    </View>
+)
+
+const renderQualityBreakdown = (breakdown: ParentQualityBreakdown, colors: ReturnType<typeof useTheme>["colors"]) => (
+    <View style={{ marginTop: 8 }}>
+        <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>Quality breakdown</Text>
+        {renderQualityBar("Epithets", breakdown.epithetScore, colors.brand)}
+        {renderQualityBar("Fans", breakdown.fanScore, colors.brand)}
+        {renderQualityBar("Forced", breakdown.forcedScore, colors.warning ?? colors.brand)}
+        {renderQualityBar("Races", breakdown.raceScore, colors.textMuted)}
+        {renderQualityBar("Sparks", breakdown.sparkScore, colors.brand)}
+        {renderQualityBar("Bonus", breakdown.bonusScore, colors.textMuted)}
+    </View>
+)
 
 export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveSheetProps) => {
     const { colors } = useTheme()
@@ -116,6 +142,17 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         Alert.alert("Copied", "Uma-tools export JSON copied to clipboard.")
     }, [])
 
+    const handleCopySessionSummary = useCallback(async () => {
+        const sessionId = latestSessionId(runs)
+        if (!sessionId) {
+            Alert.alert("No session", "No multi-run session found in saved runs.")
+            return
+        }
+        const text = formatParentFarmingSessionSummary(runs, sessionId)
+        await copyToClipboard(text)
+        Alert.alert("Copied", "Session summary copied to clipboard.")
+    }, [runs])
+
     const styles = useMemo(
         () =>
             StyleSheet.create({
@@ -152,6 +189,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
 
     const footer = (
         <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <ModalFooterChip label="Copy session summary" onPress={handleCopySessionSummary} tone="neutral" />
             <ModalFooterChip label="Export JSON" onPress={handleExport} tone="neutral" />
             <ModalFooterChip label="Close" onPress={onClose} tone="neutral" />
             <ModalFooterChip label="Clear history" onPress={handleClear} tone="danger" />
@@ -213,6 +251,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                     {expanded && (
                                         <View style={styles.detail}>
                                             <Text>Quality: {formatQualityLabel(quality)}</Text>
+                                            {renderQualityBreakdown(quality.breakdown, colors)}
                                             <Text>Goal: {run.goalPresetLabel || run.characterPreset}</Text>
                                             <Text>Spark: {run.sparkStrategy}</Text>
                                             <Text>

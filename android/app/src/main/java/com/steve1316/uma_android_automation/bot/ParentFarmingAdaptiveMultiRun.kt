@@ -11,8 +11,14 @@ object ParentFarmingAdaptiveMultiRun {
 
     private val downgradedForced = linkedSetOf<String>()
 
+    @Volatile private var minWinRateGuardRelaxation: Double = 0.0
+
+    @Volatile private var minimumFanTargetRelaxation: Int = 0
+
     fun reset() {
         downgradedForced.clear()
+        minWinRateGuardRelaxation = 0.0
+        minimumFanTargetRelaxation = 0
     }
 
     fun isEnabled(): Boolean =
@@ -43,5 +49,19 @@ object ParentFarmingAdaptiveMultiRun {
         if (!isEnabled() || forcedEpithets.isEmpty()) return
         val missed = forcedEpithets.filter { it !in completedEpithets }
         noteForcedFailures(missed)
+    }
+
+    /** After a poor run, relax win-rate guard and fan floor for the next career. */
+    fun notePoorRunQuality(score: Int) {
+        if (!isEnabled() || score >= 70) return
+        minWinRateGuardRelaxation = 0.05
+        minimumFanTargetRelaxation = 10_000
+        MessageLog.i(TAG, "Adaptive multi-run: relaxing min win-rate guard by 0.05 and fan floor by 10k after score $score.")
+    }
+
+    fun applyWeightAdjustments(minWinRateGuard: Double, minimumFanTarget: Int): Pair<Double, Int> {
+        val adjustedGuard = (minWinRateGuard - minWinRateGuardRelaxation).coerceAtLeast(0.0)
+        val adjustedFanFloor = (minimumFanTarget - minimumFanTargetRelaxation).coerceAtLeast(0)
+        return adjustedGuard to adjustedFanFloor
     }
 }

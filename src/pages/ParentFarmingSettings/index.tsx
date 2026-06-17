@@ -5,6 +5,10 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
+import {
+    assessParentFarmingPreviewFeasibility,
+    formatPreviewFeasibilitySummary,
+} from "../../lib/parentFarmingPreviewFeasibility"
 import { applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
 import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
@@ -77,7 +81,7 @@ const ParentFarmingSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
     const { setSettings } = useContext(BotMetaContext)
-    const { general } = useContext(GeneralMiscContext)
+    const { general, updateGeneral } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
@@ -88,6 +92,7 @@ const ParentFarmingSettings = () => {
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
     const [archiveOpen, setArchiveOpen] = useState(false)
+    const [previewRunning, setPreviewRunning] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
@@ -388,6 +393,29 @@ const ParentFarmingSettings = () => {
     )
 
     const solverNavDisabled = enableForceRacing || enableUserInGameRaceAgenda
+    const activeScenario = general?.scenario || "Trackblazer"
+    const needsTrackblazerNudge = enableParentFarmingMode && activeScenario !== "Trackblazer"
+
+    const runPreviewCheck = useCallback(async () => {
+        setPreviewRunning(true)
+        try {
+            const result = await assessParentFarmingPreviewFeasibility(settings)
+            const summary = formatPreviewFeasibilitySummary(result)
+            const detail =
+                result.issues.length > 0
+                    ? `\n\n${formatFeasibilityIssues(result.issues).join("\n")}`
+                    : "\n\nNo static or solver issues detected."
+            Alert.alert("Solver preview check", `${summary}${detail}`)
+        } catch (error) {
+            Alert.alert("Solver preview check", error instanceof Error ? error.message : String(error))
+        } finally {
+            setPreviewRunning(false)
+        }
+    }, [settings])
+
+    const applyTrackblazerScenario = useCallback(() => {
+        updateGeneral({ scenario: "Trackblazer" })
+    }, [updateGeneral])
 
     const styles = useMemo(
         () =>
@@ -458,6 +486,15 @@ const ParentFarmingSettings = () => {
                             {parentFarmingFeasibilityWarnings.length > 0 && (
                                 <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {parentFarmingFeasibilityWarnings.join("\n\n")}
+                                    {needsTrackblazerNudge && (
+                                        <Pressable
+                                            onPress={applyTrackblazerScenario}
+                                            style={{ marginTop: SPACING.sm, alignSelf: "flex-start" }}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Switch to Trackblazer</Text>
+                                        </Pressable>
+                                    )}
                                 </WarningContainer>
                             )}
                         </Section>
@@ -525,6 +562,35 @@ const ParentFarmingSettings = () => {
                                             />
                                         }
                                     />
+                                </SearchableItem>
+                                <SearchableItem
+                                    id="parent-farming-preview-feasibility"
+                                    title="Run solver preview check"
+                                    description="Validates the parent-farming setup with a live Smart Race Solver preview before starting the bot."
+                                >
+                                    <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                        <Pressable
+                                            onPress={runPreviewCheck}
+                                            disabled={previewRunning}
+                                            style={{
+                                                padding: SPACING.md,
+                                                borderRadius: RADII.md,
+                                                borderWidth: 1,
+                                                borderColor: colors.brandBorder,
+                                                backgroundColor: colors.brandSubtle,
+                                                opacity: previewRunning ? 0.6 : 1,
+                                            }}
+                                            android_ripple={{ color: colors.ripple, foreground: true }}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>
+                                                {previewRunning ? "Running preview…" : "Run solver preview check"}
+                                            </Text>
+                                            <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                Combines static feasibility checks with a full 72-turn solver schedule preview.
+                                            </Text>
+                                        </Pressable>
+                                    </View>
                                 </SearchableItem>
                             </Section>
                         )}
