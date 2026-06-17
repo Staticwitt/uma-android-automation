@@ -31,7 +31,7 @@ export interface ScoringConstantEntry {
 const D = DEFAULT_TRAINING_SCORING_CONSTANTS
 
 /** Catalog driving the Advanced section's slider rows. Order within each group is the rendered order. */
-export const SCORING_CONSTANTS_CATALOG: ReadonlyArray<ScoringConstantEntry> = [
+export const SCORING_CONSTANTS_CATALOG: readonly ScoringConstantEntry[] = [
     // Priority group
     {
         key: "priorityCoefficient",

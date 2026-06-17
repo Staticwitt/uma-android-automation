@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
  * @param entries Filtered list of catalog entries belonging to the Misc tab.
  * @returns Ordered list of `{ subgroup, entries }` ready to render.
  */
-export function groupBySubgroup(entries: ReadonlyArray<ScoringConstantEntry>): Array<{ subgroup: MiscSubgroup; entries: ScoringConstantEntry[] }> {
+export function groupBySubgroup(entries: readonly ScoringConstantEntry[]): { subgroup: MiscSubgroup; entries: ScoringConstantEntry[] }[] {
     const buckets = new Map<MiscSubgroup, ScoringConstantEntry[]>()
     for (const sg of SUBGROUP_ORDER) buckets.set(sg, [])
     for (const entry of entries) {

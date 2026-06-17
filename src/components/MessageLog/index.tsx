@@ -1,6 +1,6 @@
 import { useContext, useState, useMemo, useCallback, memo, useEffect, useRef } from "react"
 import { MessageLogDataContext } from "../../context/MessageLogContext"
-import { BotMetaContext, useSettingsSnapshot } from "../../context/BotStateContext"
+import { BotMetaContext, DebugContext, GeneralMiscContext, SettingsRevisionContext, getLatestSettingsSnapshot } from "../../context/BotStateContext"
 import { useSettings } from "../../context/SettingsContext"
 import { databaseManager } from "../../lib/database"
 import { buildSettingsBanner } from "../../lib/messageLog/buildSettingsBanner"
@@ -192,7 +192,9 @@ const MessageLog = () => {
     const styles = useMemo(() => createStyles(colors), [colors])
     const mlc = useContext(MessageLogDataContext)
     const { appName, appVersion, setSettings } = useContext(BotMetaContext)
-    const settings = useSettingsSnapshot()
+    const { misc } = useContext(GeneralMiscContext)
+    const { debug } = useContext(DebugContext)
+    const settingsRevision = useContext(SettingsRevisionContext)
     const { saveSettingsImmediate } = useSettings()
     const [searchQuery, setSearchQuery] = useState("")
     const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -203,7 +205,7 @@ const MessageLog = () => {
     const [contentHeight, setContentHeight] = useState(0)
     const [viewportHeight, setViewportHeight] = useState(0)
 
-    const fontSize = settings.misc.messageLogFontSize
+    const fontSize = misc.messageLogFontSize
     const maxFontSize = 24
     const minFontSize = 8
 
@@ -241,18 +243,18 @@ const MessageLog = () => {
     // sluggish once the user imported a populated settings file. We now compute it 250ms after the last settings
     // change, off the toggle's render commit. The intro/log path keeps using the previous
     // value until the new one lands; downstream memos bail out via `Object.is`.
-    const [formattedSettingsString, setFormattedSettingsString] = useState<string>(() => buildSettingsBanner(settings))
+    const [formattedSettingsString, setFormattedSettingsString] = useState<string>(() => buildSettingsBanner(getLatestSettingsSnapshot()))
     const formattedStringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     useEffect(() => {
         if (formattedStringTimerRef.current) clearTimeout(formattedStringTimerRef.current)
         formattedStringTimerRef.current = setTimeout(() => {
-            const next = buildSettingsBanner(settings)
+            const next = buildSettingsBanner(getLatestSettingsSnapshot())
             setFormattedSettingsString((prev) => (prev === next ? prev : next))
         }, 250)
         return () => {
             if (formattedStringTimerRef.current) clearTimeout(formattedStringTimerRef.current)
         }
-    }, [settings])
+    }, [settingsRevision])
 
     // Persist the formatted string directly to SQLite. The Kotlin runtime is the only consumer
     // (via SettingsHelper.getStringSetting), so writing through `setSettings` would just trigger
@@ -283,8 +285,8 @@ const MessageLog = () => {
         }
 
         // Only include settings string if enabled and no logs exist yet.
-        return settings.misc.enableSettingsDisplay ? `${baseMessage}\n\n${formattedSettingsString}` : baseMessage
-    }, [appName, appVersion, settings.misc.enableSettingsDisplay, formattedSettingsString, mlc.messageLog.length])
+        return misc.enableSettingsDisplay ? `${baseMessage}\n\n${formattedSettingsString}` : baseMessage
+    }, [appName, appVersion, misc.enableSettingsDisplay, formattedSettingsString, mlc.messageLog.length])
 
     /**
      * Process log messages with color coding and virtualization while sorting them by timestamp.
@@ -540,26 +542,28 @@ const MessageLog = () => {
      */
     const increaseFontSize = useCallback(async () => {
         const newFontSize = Math.min(fontSize + 1, maxFontSize)
+        const current = getLatestSettingsSnapshot()
         const updatedSettings = {
-            ...settings,
-            misc: { ...settings.misc, messageLogFontSize: newFontSize },
+            ...current,
+            misc: { ...current.misc, messageLogFontSize: newFontSize },
         }
         setSettings(updatedSettings)
         await saveSettingsImmediate(updatedSettings)
-    }, [fontSize, settings, setSettings, saveSettingsImmediate])
+    }, [fontSize, setSettings, saveSettingsImmediate])
 
     /**
      * Decrease font size and then save it to the settings.
      */
     const decreaseFontSize = useCallback(async () => {
         const newFontSize = Math.max(fontSize - 1, minFontSize)
+        const current = getLatestSettingsSnapshot()
         const updatedSettings = {
-            ...settings,
-            misc: { ...settings.misc, messageLogFontSize: newFontSize },
+            ...current,
+            misc: { ...current.misc, messageLogFontSize: newFontSize },
         }
         setSettings(updatedSettings)
         await saveSettingsImmediate(updatedSettings)
-    }, [fontSize, settings, setSettings, saveSettingsImmediate])
+    }, [fontSize, setSettings, saveSettingsImmediate])
 
     /**
      * Clear search query.
@@ -601,8 +605,8 @@ const MessageLog = () => {
      * @returns The rendered log item.
      */
     const renderLogItem = useCallback(
-        ({ item }: { item: LogMessage }) => <LogItem item={item} fontSize={fontSize} onLongPress={handleLongPress} enableMessageIdDisplay={settings.debug.enableMessageIdDisplay} />,
-        [fontSize, handleLongPress, settings.debug.enableMessageIdDisplay]
+        ({ item }: { item: LogMessage }) => <LogItem item={item} fontSize={fontSize} onLongPress={handleLongPress} enableMessageIdDisplay={debug.enableMessageIdDisplay} />,
+        [fontSize, handleLongPress, debug.enableMessageIdDisplay]
     )
 
     /**

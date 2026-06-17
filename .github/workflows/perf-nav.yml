@@ -1,0 +1,28 @@
+name: Performance Navigation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 0"
+
+jobs:
+  perf-nav:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Validate harness config
+        run: yarn perf:nav:validate
+
+      - name: Run navigation perf harness
+        run: yarn perf:nav
+        continue-on-error: true

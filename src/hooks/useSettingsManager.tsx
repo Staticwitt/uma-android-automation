@@ -77,7 +77,7 @@ export const useSettingsManager = () => {
                     toPersist = current
                 } else {
                     toPersist = {}
-                    for (const key of Object.keys(current) as Array<keyof Settings>) {
+                    for (const key of Object.keys(current) as (keyof Settings)[]) {
                         if (current[key] !== last[key]) {
                             toPersist[key as string] = current[key]
                         }
@@ -228,7 +228,7 @@ export const useSettingsManager = () => {
      * @param fileUri - The URI/path to the JSON settings file.
      * @returns A promise that resolves with the imported settings and profiles.
      */
-    const loadFromJSONFile = async (fileUri: string): Promise<{ settings: Settings; profiles?: Array<{ id: number; name: string; settings: any; created_at: string; updated_at: string }> }> => {
+    const loadFromJSONFile = async (fileUri: string): Promise<{ settings: Settings; profiles?: { id: number; name: string; settings: any; created_at: string; updated_at: string }[] }> => {
         try {
             const data = await new File(fileUri).text()
             const parsed: any = JSON.parse(data)
@@ -354,7 +354,7 @@ export const useSettingsManager = () => {
 
         try {
             // Fetch all profiles from database.
-            let profiles: Array<{ id: number; name: string; settings: any; created_at: string; updated_at: string }> = []
+            let profiles: { id: number; name: string; settings: any; created_at: string; updated_at: string }[] = []
             try {
                 if (databaseManager.isInitialized()) {
                     const dbProfiles = await databaseManager.getAllProfiles()

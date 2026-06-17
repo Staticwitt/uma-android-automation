@@ -412,7 +412,6 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                                 data: filteredSkills,
                                 renderItem: renderSkillItem,
                                 keyExtractor: skillKeyExtractor,
-                                estimatedItemSize: 104,
                                 extraData: selectionExtraData,
                                 nestedScrollEnabled: true,
                             }}

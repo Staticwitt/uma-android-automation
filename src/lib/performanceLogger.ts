@@ -206,7 +206,7 @@ export const startJsThreadBlockDetector = (thresholdMs = 100): (() => void) => {
         const now = performance.now()
         const gap = now - last
         if (gap >= thresholdMs) {
-            // eslint-disable-next-line no-console
+             
             console.warn(`[BLOCK] JS thread blocked for ${gap.toFixed(0)}ms`)
         }
         last = now

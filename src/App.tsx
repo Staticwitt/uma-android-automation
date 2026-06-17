@@ -16,23 +16,9 @@ import { ToastProvider } from "./context/ToastContext"
 import { SearchProvider } from "./context/SearchRegistryContext"
 import { ProfileProvider } from "./context/ProfileContext"
 import { useBootstrap } from "./hooks/useBootstrap"
+import { lazyGetComponent } from "./navigation/lazyScreens"
 import Home from "./pages/Home"
 import Settings from "./pages/Settings"
-import TrainingLanding from "./pages/TrainingLanding"
-import RacingLanding from "./pages/RacingLanding"
-import TrainingSettings from "./pages/TrainingSettings"
-import TrainingEventSettings from "./pages/TrainingEventSettings"
-import RacingSettings from "./pages/RacingSettings"
-import ParentFarmingSettings from "./pages/ParentFarmingSettings"
-import SmartRaceSolverSettings from "./pages/SmartRaceSolverSettings"
-import Skills from "./pages/Skills"
-import EventLogVisualizer from "./pages/EventLogVisualizer"
-import ImportSettingsPreview from "./pages/ImportSettingsPreview"
-import ScenarioOverridesSettings from "./pages/ScenarioOverridesSettings"
-import DebugSettings from "./pages/DebugSettings"
-import DiscordSettings from "./pages/DiscordSettings"
-import LLMSettings from "./pages/LLMSettings"
-import Chat from "./pages/Chat"
 import DrawerContent from "./components/DrawerContent"
 import { NAV_THEME } from "./lib/navTheme"
 
@@ -54,20 +40,20 @@ function SettingsStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
             <Stack.Screen name="SettingsMain" component={Settings} />
-            <Stack.Screen name="TrainingLanding" component={TrainingLanding} />
-            <Stack.Screen name="RacingLanding" component={RacingLanding} />
-            <Stack.Screen name="TrainingSettings" component={TrainingSettings} />
-            <Stack.Screen name="TrainingEventSettings" component={TrainingEventSettings} />
-            <Stack.Screen name="RacingSettings" component={RacingSettings} />
-            <Stack.Screen name="ParentFarmingSettings" component={ParentFarmingSettings} />
-            <Stack.Screen name="SmartRaceSolverSettings" component={SmartRaceSolverSettings} />
-            <Stack.Screen name="Skills" component={Skills} initialParams={{ tab: "skillPointCheck" }} />
-            <Stack.Screen name="EventLogVisualizer" component={EventLogVisualizer} />
-            <Stack.Screen name="ImportSettingsPreview" component={ImportSettingsPreview} />
-            <Stack.Screen name="ScenarioOverridesSettings" component={ScenarioOverridesSettings} />
-            <Stack.Screen name="DebugSettings" component={DebugSettings} />
-            <Stack.Screen name="DiscordSettings" component={DiscordSettings} />
-            <Stack.Screen name="LLMSettings" component={LLMSettings} />
+            <Stack.Screen name="TrainingLanding" getComponent={lazyGetComponent(() => require("./pages/TrainingLanding").default)} />
+            <Stack.Screen name="RacingLanding" getComponent={lazyGetComponent(() => require("./pages/RacingLanding").default)} />
+            <Stack.Screen name="TrainingSettings" getComponent={lazyGetComponent(() => require("./pages/TrainingSettings").default)} />
+            <Stack.Screen name="TrainingEventSettings" getComponent={lazyGetComponent(() => require("./pages/TrainingEventSettings").default)} />
+            <Stack.Screen name="RacingSettings" getComponent={lazyGetComponent(() => require("./pages/RacingSettings").default)} />
+            <Stack.Screen name="ParentFarmingSettings" getComponent={lazyGetComponent(() => require("./pages/ParentFarmingSettings").default)} />
+            <Stack.Screen name="SmartRaceSolverSettings" getComponent={lazyGetComponent(() => require("./pages/SmartRaceSolverSettings").default)} />
+            <Stack.Screen name="Skills" getComponent={lazyGetComponent(() => require("./pages/Skills").default)} initialParams={{ tab: "skillPointCheck" }} />
+            <Stack.Screen name="EventLogVisualizer" getComponent={lazyGetComponent(() => require("./pages/EventLogVisualizer").default)} />
+            <Stack.Screen name="ImportSettingsPreview" getComponent={lazyGetComponent(() => require("./pages/ImportSettingsPreview").default)} />
+            <Stack.Screen name="ScenarioOverridesSettings" getComponent={lazyGetComponent(() => require("./pages/ScenarioOverridesSettings").default)} />
+            <Stack.Screen name="DebugSettings" getComponent={lazyGetComponent(() => require("./pages/DebugSettings").default)} />
+            <Stack.Screen name="DiscordSettings" getComponent={lazyGetComponent(() => require("./pages/DiscordSettings").default)} />
+            <Stack.Screen name="LLMSettings" getComponent={lazyGetComponent(() => require("./pages/LLMSettings").default)} />
         </Stack.Navigator>
     )
 }
@@ -96,7 +82,7 @@ function MainDrawer() {
         >
             <Drawer.Screen name="Home" component={Home} />
             <Drawer.Screen name="Settings" component={SettingsStack} />
-            <Drawer.Screen name="Chat" component={Chat} />
+            <Drawer.Screen name="Chat" getComponent={lazyGetComponent(() => require("./pages/Chat").default)} />
         </Drawer.Navigator>
     )
 }

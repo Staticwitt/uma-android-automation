@@ -150,9 +150,9 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
         }
     }
     const existingLegacy = parseLegacyPair(racingSeed.legacyParentPreferredPair)
-    const legacyParentPreferredPair =
+    const legacyParentPreferredPair: string =
         existingLegacy.some((name) => name.trim().length > 0)
-            ? racingSeed.legacyParentPreferredPair
+            ? (racingSeed.legacyParentPreferredPair ?? "")
             : JSON.stringify([legacyRecommendation.parentOne, legacyRecommendation.parentTwo])
 
     let resolved: Settings = {
@@ -163,7 +163,7 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
             ...racingSeed,
             ...PARENT_FARMING_GOAL_RACING_BASE,
             ...goalRacing,
-            smartRaceSolverWeights: smartRaceSolverWeights ?? goalRacing.smartRaceSolverWeights,
+            smartRaceSolverWeights: smartRaceSolverWeights ?? goalRacing.smartRaceSolverWeights ?? racingSeed.smartRaceSolverWeights,
             supportBorrowPreferredCards,
             legacyParentPreferredPair,
             enableParentFarmingMode: true,

@@ -35,7 +35,7 @@ function fromKtStatName(s: KtStatName): StatName {
 /** Convert a TS `Partial<Record<StatName, number>>` to a `KtMap<StatName, number>` keyed by `ns.StatName` instances. */
 function toKtStatMap(record: Partial<Record<StatName, number>>): KtMap<KtStatName, number> {
     const m = new Map<KtStatName, number>()
-    for (const [key, value] of Object.entries(record) as Array<[StatName, number | undefined]>) {
+    for (const [key, value] of Object.entries(record) as [StatName, number | undefined][]) {
         if (value !== undefined) m.set(toKtStatName(key), value)
     }
     return collections.KtMap.fromJsMap(m)
@@ -52,12 +52,12 @@ function fromKtStatMap(ktMap: KtMap<KtStatName, number>): Record<StatName, numbe
 }
 
 /** Convert a TS `StatName[]` (or list with nulls) to a `KtList`. */
-function toKtStatList(arr: ReadonlyArray<StatName>): KtList<KtStatName> {
+function toKtStatList(arr: readonly StatName[]): KtList<KtStatName> {
     return collections.KtList.fromJsArray(arr.map(toKtStatName))
 }
 
 /** Convert a TS `(StatName | null)[]` to a `KtList`. */
-function toKtNullableStatList(arr: ReadonlyArray<StatName | null>): KtList<KtStatName | null> {
+function toKtNullableStatList(arr: readonly (StatName | null)[]): KtList<KtStatName | null> {
     return collections.KtList.fromJsArray(arr.map(toKtStatNameNullable))
 }
 

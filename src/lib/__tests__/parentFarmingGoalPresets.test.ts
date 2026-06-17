@@ -53,7 +53,7 @@ const createTrainingSettings = (): Settings["training"] =>
         preferredDistanceOverride: "Default",
         enablePrioritizeSkillHints: false,
         disableStatTargets: false,
-    }) as Settings["training"]
+    }) as unknown as Settings["training"]
 
 describe("parentFarmingGoalPresets", () => {
     it("adds preset targets and weights without removing existing selections", () => {

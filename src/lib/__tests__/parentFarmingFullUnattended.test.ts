@@ -6,7 +6,7 @@ describe("parentFarmingFullUnattended", () => {
         const settings = {
             racing: { enableParentFarmingFullUnattended: true },
             skills: { plans: { careerComplete: { enabled: false } } },
-        } as Settings
+        } as unknown as Settings
 
         const result = applyParentFarmingFullUnattended(settings)
         expect(result.racing.enableCaratRaceRetry).toBe(true)

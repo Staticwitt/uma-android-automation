@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import type { SchedulePreview } from "./solver/preview"
+import type { SchedulePreview } from "./preview"
 
 const PREVIEW_CACHE_KEY = "smartRaceSolverPreviewCache"
 

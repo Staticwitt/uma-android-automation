@@ -316,7 +316,7 @@ export const conditionLabelsForRaceAndEpithet = (race: RaceEntry, ep: EpithetEnt
  * @returns Progress for the matcher, or null when the matcher type isn't progress-trackable.
  */
 const matcherProgress = (upToTurn: number, matcher: Record<string, unknown>, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): MatcherProgress | null => {
-    const winsUpTo: Array<{ turn: number; race: RaceEntry }> = []
+    const winsUpTo: { turn: number; race: RaceEntry }[] = []
     for (const [turnStr, dec] of Object.entries(preview.decisions)) {
         const t = parseInt(turnStr, 10)
         if (Number.isNaN(t) || t > upToTurn) continue
@@ -496,7 +496,7 @@ export const pendingPrerequisitesForEpithet = (
  */
 export const turnsContributingToEpithet = (ep: EpithetEntry, preview: SchedulePreview, racesByKey: Record<string, RaceEntry>): Set<number> => {
     const contributing = new Set<number>()
-    const winsOrdered: Array<{ turn: number; race: RaceEntry }> = []
+    const winsOrdered: { turn: number; race: RaceEntry }[] = []
     for (const [turnStr, dec] of Object.entries(preview.decisions)) {
         const t = parseInt(turnStr, 10)
         if (Number.isNaN(t)) continue

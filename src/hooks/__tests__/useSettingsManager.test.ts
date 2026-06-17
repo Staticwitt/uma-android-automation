@@ -1,4 +1,5 @@
 import { deepMerge, convertSettingsToBatch, applyMigrations } from "../../lib/settingsUtils"
+import { PARENT_FARMING_RESOLVER_REVISION } from "../../lib/parentFarmingConstants"
 
 // ===========================================================================
 // deepMerge
@@ -217,7 +218,7 @@ describe("applyMigrations", () => {
         expect(anyMigrated).toBe(true)
         expect(migrated.training.disableStatTargets).toBe(true)
         expect(migrated.training.preferredDistanceOverride).toBe("Mile")
-        expect(migrated.racing.parentFarmingResolverRevision).toBe(1)
+        expect(migrated.racing.parentFarmingResolverRevision).toBe(PARENT_FARMING_RESOLVER_REVISION)
     })
 
     it("is idempotent: running twice produces same result", () => {

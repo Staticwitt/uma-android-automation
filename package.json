@@ -25,7 +25,8 @@
         "build:doc-index": "tsx scripts/build-doc-index.ts",
         "build:scoring": "cd android && ./gradlew --settings-file scoring-settings.gradle :scoring-shared:jsNodeProductionLibraryDistribution",
         "scrape:data": "python scripts/data-scraper/main.py",
-        "perf:nav": "tsx scripts/perf-nav-test.ts"
+        "perf:nav": "tsx scripts/perf-nav-test.ts",
+        "perf:nav:validate": "tsx scripts/perf-nav-test.ts --validate-only"
     },
     "dependencies": {
         "@expo-google-fonts/geist": "^0.4.2",

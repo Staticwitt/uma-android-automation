@@ -1,4 +1,4 @@
-import { createContext, useState, useMemo, useCallback, useContext } from "react"
+import { createContext, useState, useMemo, useCallback, useContext, useEffect, type ReactNode } from "react"
 import { startTiming } from "../lib/performanceLogger"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
 
@@ -778,8 +778,7 @@ export const BotStateProvider = ({ children }: any): React.ReactElement => {
                                     <DiscordContext.Provider value={discordValue}>
                                         <ChatContext.Provider value={chatValue}>
                                             <ScenarioOverridesContext.Provider value={scenarioOverridesValue}>
-                                                <SettingsSnapshotPublisher />
-                                                {children}
+                                                <SettingsSnapshotPublisher>{children}</SettingsSnapshotPublisher>
                                             </ScenarioOverridesContext.Provider>
                                         </ChatContext.Provider>
                                     </DiscordContext.Provider>
@@ -795,9 +794,9 @@ export const BotStateProvider = ({ children }: any): React.ReactElement => {
 
 /**
  * Subscribes to every slice context and returns a `Settings` snapshot. Used by the
- * three remaining full-settings consumers (`useSettingsManager`, `useSettingsFileManager`,
- * `MessageLog`'s formatted-string memo) that genuinely need cross-slice reads. The
- * returned object identity changes whenever any slice changes, mirroring the legacy
+ * three remaining full-settings consumers (`useSettingsManager`, `useSettingsFileManager`)
+ * that genuinely need cross-slice reads. MessageLog reads `getLatestSettingsSnapshot()` via
+ * `SettingsRevisionContext` instead. The returned object identity changes whenever any slice changes, mirroring the legacy
  * aggregate `BotStateContext.settings` it replaces.
  *
  * @returns A `Settings` object assembled from every slice context's current value.
@@ -829,12 +828,19 @@ export const useSettingsSnapshot = (): Settings => {
 let _latestSettingsSnapshot: Settings = defaultSettings
 export const getLatestSettingsSnapshot = (): Settings => _latestSettingsSnapshot
 
+/** Monotonic counter bumped whenever any settings slice changes. Lightweight alternative to `useSettingsSnapshot` for banner refresh. */
+export const SettingsRevisionContext = createContext(0)
+
 /**
- * Internal: publishes the live snapshot to `_latestSettingsSnapshot` so non-rendering callers
- * can read it via `getLatestSettingsSnapshot()`. Mounted once inside `BotStateProvider`.
+ * Publishes the live snapshot to `_latestSettingsSnapshot` and bumps `SettingsRevisionContext` so
+ * consumers like MessageLog can debounce banner rebuilds without subscribing to every slice.
  */
-const SettingsSnapshotPublisher = (): null => {
+const SettingsSnapshotPublisher = ({ children }: { children: ReactNode }) => {
     const snapshot = useSettingsSnapshot()
-    _latestSettingsSnapshot = snapshot
-    return null
+    const [revision, setRevision] = useState(0)
+    useEffect(() => {
+        _latestSettingsSnapshot = snapshot
+        setRevision((r) => r + 1)
+    }, [snapshot])
+    return <SettingsRevisionContext.Provider value={revision}>{children}</SettingsRevisionContext.Provider>
 }

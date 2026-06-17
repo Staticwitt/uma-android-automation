@@ -31,7 +31,7 @@ export interface DeviceCapabilities {
 export type AccelerationTier = "v8.2-dotprod" | "v8-baseline" | "x86_64" | "unknown"
 
 /** Approximate free-RAM requirement for each chat-model preset, keyed by a substring of the preset URL. */
-export const PRESET_RAM_REQUIREMENTS_BYTES: Array<{ urlSubstring: string; requiredAvailRamBytes: number; label: string }> = [
+export const PRESET_RAM_REQUIREMENTS_BYTES: { urlSubstring: string; requiredAvailRamBytes: number; label: string }[] = [
     { urlSubstring: "Qwen2.5-0.5B-Instruct", requiredAvailRamBytes: 1 * 1024 * 1024 * 1024, label: "Qwen 2.5 0.5B" },
     { urlSubstring: "Qwen2.5-1.5B-Instruct", requiredAvailRamBytes: 2 * 1024 * 1024 * 1024, label: "Qwen 2.5 1.5B" },
     { urlSubstring: "Qwen2.5-3B-Instruct", requiredAvailRamBytes: 4 * 1024 * 1024 * 1024, label: "Qwen 2.5 3B" },

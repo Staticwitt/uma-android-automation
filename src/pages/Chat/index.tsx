@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { View, ScrollView, StyleSheet, TextInput, Text, NativeModules, Pressable, KeyboardAvoidingView } from "react-native"
+import { FlashList } from "@shopify/flash-list"
 import { useFocusEffect } from "@react-navigation/native"
 import { type MarkedStyles } from "react-native-marked"
 import type { UserTheme } from "react-native-marked/dist/typescript/theme/types"
@@ -480,16 +481,20 @@ const Chat = () => {
                             </Pressable>
                         }
                     >
-                        <View style={{ padding: SPACING.md }}>
-                            <View style={styles.historyChipRow}>
-                                {history.map((q) => (
-                                    <Pressable key={q} style={styles.historyChip} onPress={() => handleHistoryTap(q)} android_ripple={{ color: colors.ripple, foreground: true }}>
+                        <View style={{ padding: SPACING.md, minHeight: Math.min(history.length * 44, 220) }}>
+                            <FlashList
+                                data={history}
+                                scrollEnabled={false}
+                                numColumns={2}
+                                keyExtractor={(q) => q}
+                                renderItem={({ item: q }) => (
+                                    <Pressable style={styles.historyChip} onPress={() => handleHistoryTap(q)} android_ripple={{ color: colors.ripple, foreground: true }}>
                                         <Text style={styles.historyChipText} numberOfLines={1}>
                                             {q}
                                         </Text>
                                     </Pressable>
-                                ))}
-                            </View>
+                                )}
+                            />
                         </View>
                     </Section>
                 )}

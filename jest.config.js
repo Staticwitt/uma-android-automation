@@ -15,6 +15,7 @@ module.exports = {
             modulePathIgnorePatterns: ignoreKotlinJsIntermediates,
             moduleNameMapper: {
                 "^@/(.*)$": "<rootDir>/$1",
+                "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock",
             },
             modulePaths: ["<rootDir>/src"],
             transform: {
@@ -39,6 +40,7 @@ module.exports = {
             modulePathIgnorePatterns: ignoreKotlinJsIntermediates,
             moduleNameMapper: {
                 "^@/(.*)$": "<rootDir>/$1",
+                "^@react-native-async-storage/async-storage$": "@react-native-async-storage/async-storage/jest/async-storage-mock",
             },
             modulePaths: ["<rootDir>/src"],
         },

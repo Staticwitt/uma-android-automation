@@ -76,7 +76,7 @@ export const useProfileManager = (onError?: (message: string) => void) => {
             }
 
             // Compare all keys in the category.
-            const categoryKeys = Object.keys(profileCategory) as Array<keyof typeof profileCategory>
+            const categoryKeys = Object.keys(profileCategory) as (keyof typeof profileCategory)[]
             for (const key of categoryKeys) {
                 const currentValue = (currentCategory as any)[key]
                 const profileValue = (profileCategory as any)[key]

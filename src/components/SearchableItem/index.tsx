@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from "@react-navigation/native"
 import { useTheme } from "../../context/ThemeContext"
 import { useSearchRegistry } from "../../context/SearchRegistryContext"
 import { useSearchPage } from "../../context/SearchPageContext"
+import { isStaticSearchItem } from "../../context/searchConfig"
 
 interface SearchableItemProps {
     /** The unique identifier for this item. */
@@ -198,6 +199,9 @@ const SearchableItem = ({ id, title, description, page, children, scrollViewRef,
     const finalDescription = derivedDescription || ""
 
     useEffect(() => {
+        // Skip runtime registration when the static search config already owns this id.
+        if (isStaticSearchItem(id)) return
+
         // Automatically register this item into the global search index on mount.
         // We defer this until after interactions (like the drawer opening/closing or page mounting)
         // have finished to reduce the UI lag during transitions.
@@ -225,4 +229,4 @@ const SearchableItem = ({ id, title, description, page, children, scrollViewRef,
     )
 }
 
-export default SearchableItem
+export default React.memo(SearchableItem)
