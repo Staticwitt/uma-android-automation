@@ -56,6 +56,8 @@ const RacingSettings = () => {
         daysToRunExtraRaces,
         disableRaceRetries,
         enableFreeRaceRetry,
+        enableCaratRaceRetry,
+        maxCaratRaceRetriesPerRun,
         enableCompleteCareerOnFailure,
         enableStopOnMandatoryRaces,
         enableForceRacing,
@@ -256,6 +258,37 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableFreeRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)} />}
                                 />
                             </SearchableItem>
+                            <SearchableItem
+                                id="enable-carat-race-retry"
+                                title="Spend Carats for Race Retry"
+                                description="When enabled, the bot may buy an Alarm Clock with carats to retry a failed race after item retries are exhausted."
+                            >
+                                <Row
+                                    title="Spend Carats for Race Retry"
+                                    description="Confirm Purchase Alarm Clock dialogs to retry with carats"
+                                    right={<Switch checked={enableCaratRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableCaratRaceRetry", checked)} />}
+                                />
+                            </SearchableItem>
+                            {enableCaratRaceRetry && (
+                                <View style={{ padding: SPACING.md }}>
+                                    <CustomSlider
+                                        searchId="maxCaratRaceRetriesPerRun"
+                                        value={maxCaratRaceRetriesPerRun ?? 5}
+                                        placeholder={5}
+                                        onValueChange={(value) => updateRacingSetting("maxCaratRaceRetriesPerRun", value)}
+                                        min={0}
+                                        max={10}
+                                        step={1}
+                                        label="Max Carat Race Retries per Career"
+                                        showValue={true}
+                                        showLabels={true}
+                                        description="Cap carat-funded race retries per career (0 = unlimited)."
+                                    />
+                                    <WarningContainer style={{ marginTop: SPACING.sm }}>
+                                        Spends premium carats to buy Alarm Clock race retries. Real-money Purchase Carats dialogs are still blocked.
+                                    </WarningContainer>
+                                </View>
+                            )}
                             <SearchableItem
                                 id="enable-complete-career-on-failure"
                                 title="Complete Career on Failure"

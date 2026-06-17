@@ -399,6 +399,19 @@ const searchConfig: SearchOption[] = [
         parentId: "disable-race-retries",
     },
     {
+        id: "enable-carat-race-retry",
+        title: "Spend Carats for Race Retry",
+        description: "When enabled, the bot may buy an Alarm Clock with carats to retry a failed race after item retries are exhausted.",
+        page: "RacingSettings",
+    },
+    {
+        id: "maxCaratRaceRetriesPerRun",
+        title: "Max Carat Race Retries per Career",
+        description: "Cap carat-funded race retries per career (0 = unlimited).",
+        page: "RacingSettings",
+        parentId: "enable-carat-race-retry",
+    },
+    {
         id: "enable-complete-career-on-failure",
         title: "Complete Career on Failure",
         description: "When enabled, the bot will proceed to the career completion screen when a mandatory race fails and retries are exhausted.",

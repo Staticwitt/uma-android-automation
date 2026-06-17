@@ -180,6 +180,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 ⚡ Ignore Low Energy Racing Block: ${settings.racing.ignoreLowEnergyRacingBlock ? "✅" : "❌"}
 🔄 Disable Race Retries: ${settings.racing.disableRaceRetries ? "✅" : "❌"}
 \t🔄 Allow Daily Free Race Retry: ${settings.racing.enableFreeRaceRetry ? "✅" : "❌"}
+\t💎 Spend Carats for Race Retry: ${settings.racing.enableCaratRaceRetry ? "✅" : "❌"}
+\t💎 Max Carat Race Retries: ${settings.racing.maxCaratRaceRetriesPerRun ?? 5}${settings.racing.enableCaratRaceRetry ? "" : " (off)"}
 🏳️ Complete Career on Failure: ${settings.racing.enableCompleteCareerOnFailure ? "✅" : "❌"}
 🏁 Stop on Mandatory Race: ${settings.racing.enableStopOnMandatoryRaces ? "✅" : "❌"}
 🏃 Force Racing Every Day: ${settings.racing.enableForceRacing ? "✅" : "❌"}

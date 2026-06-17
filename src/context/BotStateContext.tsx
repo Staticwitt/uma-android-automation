@@ -54,6 +54,8 @@ export interface Settings {
         daysToRunExtraRaces: number
         disableRaceRetries: boolean
         enableFreeRaceRetry: boolean
+        enableCaratRaceRetry: boolean
+        maxCaratRaceRetriesPerRun: number
         enableCompleteCareerOnFailure: boolean
         enableStopOnMandatoryRaces: boolean
         enableForceRacing: boolean
@@ -305,6 +307,8 @@ export const defaultSettings: Settings = {
         daysToRunExtraRaces: 5,
         disableRaceRetries: false,
         enableFreeRaceRetry: false,
+        enableCaratRaceRetry: false,
+        maxCaratRaceRetriesPerRun: 5,
         enableCompleteCareerOnFailure: false,
         enableStopOnMandatoryRaces: false,
         enableForceRacing: false,

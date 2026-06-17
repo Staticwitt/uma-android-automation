@@ -26,7 +26,9 @@ import com.steve1316.uma_android_automation.components.ButtonRaceResults
 import com.steve1316.uma_android_automation.components.ButtonRaces
 import com.steve1316.uma_android_automation.components.ButtonSeeResults
 import com.steve1316.uma_android_automation.components.ButtonSkip
+import com.steve1316.uma_android_automation.components.ButtonTryAgain
 import com.steve1316.uma_android_automation.components.ButtonTryAgainAlt
+import com.steve1316.uma_android_automation.components.DialogInterface
 import com.steve1316.uma_android_automation.components.ButtonInterface
 import com.steve1316.uma_android_automation.components.ButtonViewResults
 import com.steve1316.uma_android_automation.components.IconRaceAgendaEmpty
@@ -85,6 +87,15 @@ class Racing(private val game: Game, private val campaign: Campaign) {
 
     /** Whether to automatically complete the career on a failure. */
     internal val enableCompleteCareerOnFailure: Boolean = SettingsHelper.getBooleanSetting("racing", "enableCompleteCareerOnFailure")
+
+    /** Whether to buy Alarm Clock race retries with carats when items are exhausted. */
+    internal val enableCaratRaceRetry: Boolean = SettingsHelper.getBooleanSetting("racing", "enableCaratRaceRetry", false)
+
+    /** Maximum carat-funded race retries per career (0 = unlimited). */
+    private val maxCaratRaceRetriesPerRun: Int = SettingsHelper.getIntSetting("racing", "maxCaratRaceRetriesPerRun", 5)
+
+    /** Carat-funded race retries confirmed this career. */
+    internal var caratRaceRetriesUsed: Int = 0
 
     /** Whether to force the bot to race extra races regardless of other conditions. */
     val enableForceRacing = SettingsHelper.getBooleanSetting("racing", "enableForceRacing")
@@ -1159,6 +1170,47 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         }
     }
 
+    internal fun canUseCaratRaceRetry(): Boolean =
+        RaceCaratRetry.canSpend(enableCaratRaceRetry, maxCaratRaceRetriesPerRun, caratRaceRetriesUsed)
+
+    internal fun recordCaratRaceRetrySpend() {
+        caratRaceRetriesUsed++
+        MessageLog.i(
+            TAG,
+            "[RACE] Confirmed carat spend for race retry (${RaceCaratRetry.formatBudgetLabel(caratRaceRetriesUsed, maxCaratRaceRetriesPerRun)} this career).",
+        )
+    }
+
+    /**
+     * Clicks Try Again when item retries are exhausted and handles the Purchase Alarm Clock dialog if it appears.
+     *
+     * @param dialog Optional Try Again dialog from [Campaign.handleTryAgainDialog].
+     * @param sourceBitmap Optional bitmap for inline [ButtonTryAgainAlt] detection.
+     * @return True when Try Again was clicked.
+     */
+    internal fun attemptCaratFundedRetry(dialog: DialogInterface? = null, sourceBitmap: Bitmap? = null): Boolean {
+        if (!canUseCaratRaceRetry()) return false
+        MessageLog.i(TAG, "[RACE] Attempting carat-funded race retry...")
+        val clicked =
+            when {
+                dialog != null -> dialog.ok(game.imageUtils)
+                sourceBitmap != null -> ButtonTryAgainAlt.click(game.imageUtils, sourceBitmap = sourceBitmap)
+                else -> ButtonTryAgainAlt.click(game.imageUtils) || ButtonTryAgain.click(game.imageUtils)
+            }
+        if (!clicked) return false
+        game.wait(1.0)
+        campaign.tryHandleAllDialogs()
+        return true
+    }
+
+    private fun hasRetryBudget(): Boolean = raceRetries > 0 || canUseCaratRaceRetry()
+
+    private fun consumeRetryAfterClick(usedItemRetry: Boolean) {
+        if (usedItemRetry) {
+            raceRetries--
+        }
+    }
+
     /**
      * Executes the race with retry logic.
      *
@@ -1228,7 +1280,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                     if (!disableRaceRetries &&
                         lastRaceGrade != null &&
                         retryEligibleGrades.contains(lastRaceGrade) &&
-                        raceRetries > 0 &&
+                        hasRetryBudget() &&
                         retriesThisRace < maxRetriesPerRace &&
                         ButtonTryAgainAlt.checkDisabled(game.imageUtils) == false
                     ) {
@@ -1236,14 +1288,18 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         if (ButtonTryAgainAlt.click(game.imageUtils)) {
                             game.wait(3.0)
                             retriesThisRace++
-                            raceRetries--
+                            val usedItemRetry = raceRetries > 0
+                            consumeRetryAfterClick(usedItemRetry)
+                            if (!usedItemRetry) {
+                                campaign.tryHandleAllDialogs()
+                            }
                         }
                     } else if (!disableRaceRetries &&
                         lastRaceIsRival &&
                         lastRaceGrade != null &&
                         retryEligibleGrades.contains(lastRaceGrade) &&
                         !bRetriedCurrentRace &&
-                        raceRetries > 0 &&
+                        hasRetryBudget() &&
                         retriesThisRace < maxRetriesPerRace &&
                         ButtonTryAgainAlt.checkDisabled(game.imageUtils) == false
                     ) {
@@ -1252,7 +1308,11 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         if (ButtonTryAgainAlt.click(game.imageUtils)) {
                             game.wait(3.0)
                             retriesThisRace++
-                            raceRetries--
+                            val usedItemRetry = raceRetries > 0
+                            consumeRetryAfterClick(usedItemRetry)
+                            if (!usedItemRetry) {
+                                campaign.tryHandleAllDialogs()
+                            }
                         }
                     } else {
                         MessageLog.i(TAG, "[RACE] No retries remaining or eligible race conditions not met.")
@@ -1262,7 +1322,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 !disableRaceRetries &&
                     lastRaceGrade != null &&
                     retryEligibleGrades.contains(lastRaceGrade) &&
-                    raceRetries > 0 &&
+                    hasRetryBudget() &&
                     retriesThisRace < maxRetriesPerRace &&
                     ButtonTryAgainAlt.checkDisabled(
                         game.imageUtils,
@@ -1272,7 +1332,11 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                     if (ButtonTryAgainAlt.click(game.imageUtils, sourceBitmap = bitmap)) {
                         game.wait(3.0)
                         retriesThisRace++
-                        raceRetries--
+                        val usedItemRetry = raceRetries > 0
+                        consumeRetryAfterClick(usedItemRetry)
+                        if (!usedItemRetry) {
+                            campaign.tryHandleAllDialogs()
+                        }
                     }
                 }
 
@@ -1281,7 +1345,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                     lastRaceGrade != null &&
                     retryEligibleGrades.contains(lastRaceGrade) &&
                     !bRetriedCurrentRace &&
-                    raceRetries > 0 &&
+                    hasRetryBudget() &&
                     retriesThisRace < maxRetriesPerRace &&
                     ButtonTryAgainAlt.checkDisabled(
                         game.imageUtils,
@@ -1292,7 +1356,11 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                     if (ButtonTryAgainAlt.click(game.imageUtils, sourceBitmap = bitmap)) {
                         game.wait(3.0)
                         retriesThisRace++
-                        raceRetries--
+                        val usedItemRetry = raceRetries > 0
+                        consumeRetryAfterClick(usedItemRetry)
+                        if (!usedItemRetry) {
+                            campaign.tryHandleAllDialogs()
+                        }
                     }
                 }
 

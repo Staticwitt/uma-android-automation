@@ -759,6 +759,9 @@ abstract class Campaign(game: Game) : Task(game) {
             ButtonTryAgain.click(game.imageUtils)
             return true
         }
+        if (racing.attemptCaratFundedRetry(dialog)) {
+            return true
+        }
         return false
     }
 
@@ -837,6 +840,11 @@ abstract class Campaign(game: Game) : Task(game) {
                 // Manually set retries to -1 to break the race retry loop.
                 racing.raceRetries = -1
                 dialog.close(game.imageUtils)
+                game.wait(0.5)
+                return DialogHandlerResult.Handled(dialog)
+            }
+            if (racing.attemptCaratFundedRetry(dialog)) {
+                MessageLog.i(TAG, "[RACE] Failed mandatory race. Attempting carat-funded retry...")
                 game.wait(0.5)
                 return DialogHandlerResult.Handled(dialog)
             }

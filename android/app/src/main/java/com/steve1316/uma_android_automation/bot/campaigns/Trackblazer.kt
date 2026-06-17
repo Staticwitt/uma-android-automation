@@ -919,6 +919,16 @@ class Trackblazer(game: Game) : Campaign(game) {
         }
 
         MessageLog.w(TAG, "[WARN] shouldRetryRace:: No retries remaining or G1/G2/G3/Rival race conditions not met.")
+        val gradeEligible =
+            racing.lastRaceGrade != null && racing.retryEligibleGrades.contains(racing.lastRaceGrade)
+        val rivalEligible =
+            racing.lastRaceIsRival && !racing.bRetriedCurrentRace && gradeEligible
+        if ((gradeEligible || rivalEligible) && racing.attemptCaratFundedRetry(dialog)) {
+            if (rivalEligible) {
+                racing.bRetriedCurrentRace = true
+            }
+            return true
+        }
         return false
     }
 
