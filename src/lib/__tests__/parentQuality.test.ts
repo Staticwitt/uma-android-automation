@@ -41,12 +41,25 @@ describe("parentQuality", () => {
         expect(gradeFromScore(81)).toBe("A")
     })
 
-    it("weights epithets, fans, and forced routes", () => {
-        const result = scoreParentRun(baseEntry())
+    it("weights epithets, fans, forced routes, and spark picks", () => {
+        const result = scoreParentRun({
+            targetEpithets: baseEntry().targetEpithets,
+            forcedEpithets: baseEntry().forcedEpithets,
+            completedTargetEpithets: baseEntry().completedTargetEpithets,
+            incompleteTargetEpithets: baseEntry().incompleteTargetEpithets,
+            extraCompletedEpithets: baseEntry().extraCompletedEpithets,
+            fans: baseEntry().fans,
+            minimumFanTarget: baseEntry().minimumFanTarget,
+            raceWins: baseEntry().raceWins,
+            raceLosses: baseEntry().raceLosses,
+            sparkPicks: [{ pickIndex: 0, strategy: "SkillHints", optionTexts: ["Top Pick hint +1"] }],
+            sparkStrategy: "SkillHints",
+        })
         expect(result.score).toBeGreaterThan(50)
         expect(result.score).toBeLessThanOrEqual(100)
         expect(result.breakdown.epithetScore).toBeGreaterThan(0)
         expect(result.breakdown.forcedScore).toBe(20)
+        expect(result.breakdown.sparkScore).toBeGreaterThan(0)
     })
 
     it("finds best run for character", () => {

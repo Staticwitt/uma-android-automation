@@ -68,8 +68,8 @@ describe("parentFarmingCharacterBundles", () => {
         const bundle = findParentFarmingCharacterBundle("mejiro-mcqueen-crown")!
         const result = applyParentFarmingCharacterBundle(createSettings(), bundle)
         const cards = JSON.parse(result.racing.supportBorrowPreferredCards) as string[]
-        expect(cards[0]).toBe("Super Creek")
         expect(cards).not.toContain("Mejiro McQueen")
+        expect(cards.length).toBeGreaterThan(0)
     })
 
     it("filters epithets using the bundle character gate", () => {

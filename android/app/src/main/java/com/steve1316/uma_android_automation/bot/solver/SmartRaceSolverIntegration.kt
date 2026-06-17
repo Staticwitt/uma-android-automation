@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.uma_android_automation.bot.DiscordSolverNotifier
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.ParentFarmingAdaptiveMultiRun
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
 import com.steve1316.uma_android_automation.bot.SupportCardSelection
 import com.steve1316.uma_android_automation.bot.RunRaceStats
@@ -940,8 +941,8 @@ object SmartRaceSolverIntegration {
             racesByTurn = racesByTurn,
             epithets = epithetsForActiveContext(epithets, scenario),
             raceHistory = raceHistorySnapshot,
-            forcedEpithets = readStringSet("smartRaceSolverForcedEpithets"),
-            targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
+            forcedEpithets = readEffectiveForcedEpithets(),
+            targetEpithets = readEffectiveTargetEpithets(),
             epithetTierMultipliers = readEpithetTierMultipliers(),
             lockedDecisions = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn),
             weights = readWeights(),
@@ -996,6 +997,10 @@ object SmartRaceSolverIntegration {
         MessageLog.i(TAG, "Marked ${newlyDead.size} epithet(s) dead after losing \"$lostRaceName\": ${newlyDead.sorted().joinToString()}")
         val forced = readStringSet("smartRaceSolverForcedEpithets")
         ParentFarmingForcedEpithetGuard.onDeadEpithets(newlyDead, forced)
+        val deadForced = newlyDead.intersect(forced)
+        if (ParentFarmingAdaptiveMultiRun.isEnabled()) {
+            deadForced.forEach { ParentFarmingAdaptiveMultiRun.onDeadForcedEpithet(it) }
+        }
     }
 
     /**
@@ -1222,6 +1227,12 @@ object SmartRaceSolverIntegration {
         }.getOrElse { emptySet() }
     }
 
+    private fun readEffectiveForcedEpithets(): Set<String> =
+        ParentFarmingAdaptiveMultiRun.effectiveForcedEpithets(readStringSet("smartRaceSolverForcedEpithets"))
+
+    private fun readEffectiveTargetEpithets(): Set<String> =
+        readStringSet("smartRaceSolverTargetEpithets") + ParentFarmingAdaptiveMultiRun.extraTargetEpithets()
+
     /**
      * Reads the user's saved scoring weights from settings.
      *
@@ -1242,8 +1253,8 @@ object SmartRaceSolverIntegration {
     }
 
     private fun autoEpithetTierMultipliers(): Map<String, Double> {
-        val forced = readStringSet("smartRaceSolverForcedEpithets")
-        val targets = readStringSet("smartRaceSolverTargetEpithets")
+        val forced = readEffectiveForcedEpithets()
+        val targets = readEffectiveTargetEpithets()
         val map = linkedMapOf<String, Double>()
         for (name in forced) map[name] = 2.0
         for (name in targets) {
@@ -1663,8 +1674,8 @@ object SmartRaceSolverIntegration {
         ContributionSolverContext(
             characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").ifEmpty { null },
             aptitudes = effectiveAptitudes(),
-            forcedEpithets = readStringSet("smartRaceSolverForcedEpithets"),
-            targetEpithets = readStringSet("smartRaceSolverTargetEpithets"),
+            forcedEpithets = readEffectiveForcedEpithets(),
+            targetEpithets = readEffectiveTargetEpithets(),
             weights = readWeights(),
             epithetTierMultipliers = readEpithetTierMultipliers(),
         )

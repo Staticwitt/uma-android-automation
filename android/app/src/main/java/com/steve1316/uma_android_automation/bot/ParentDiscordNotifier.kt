@@ -210,4 +210,16 @@ object ParentDiscordNotifier {
             ),
         )
     }
+
+    fun sendQualityTargetReached(score: Int, grade: String, runIndex: Int) {
+        if (!DiscordUtils.enableDiscordNotifications || !isParentFarmingRun()) return
+        AppDiscordNotifications.sendEmbed(
+            DiscordEmbedSpec(
+                title = "Parent quality target reached",
+                description = "$grade · $score/100 after run $runIndex",
+                colorRgb = DiscordEmbedColors.GREEN,
+                footer = MessageLog.getSystemTimeString(),
+            ),
+        )
+    }
 }

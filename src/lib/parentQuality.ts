@@ -1,10 +1,12 @@
 import type { ParentRunArchiveEntry } from "./parentRunArchive"
+import type { ParentRunSparkPick } from "./parentRunArchive"
 
 export interface ParentQualityBreakdown {
     epithetScore: number
     fanScore: number
     forcedScore: number
     raceScore: number
+    sparkScore: number
     bonusScore: number
     total: number
 }
@@ -27,6 +29,30 @@ export interface ParentQualityInput {
     minimumFanTarget: number
     raceWins: number
     raceLosses: number
+    sparkPicks?: ParentRunSparkPick[]
+    sparkStrategy?: string
+}
+
+const SPARK_HINT_KEYWORDS = ["hint", "skill", "white", "unique", "factor", "golden", "gold"]
+
+/** Scores inheritance spark picks (0–5) based on strategy alignment and hint/factor signals. */
+export const scoreSparkPicks = (sparkPicks: ParentRunSparkPick[] | undefined, sparkStrategy?: string): number => {
+    if (!sparkPicks || sparkPicks.length === 0) return 2.5
+
+    let total = 0
+    for (const pick of sparkPicks) {
+        const text = pick.optionTexts[pick.pickIndex]?.toLowerCase() ?? ""
+        let pickScore = 1.0
+        const hasHintSignal = SPARK_HINT_KEYWORDS.some((keyword) => text.includes(keyword))
+        if (sparkStrategy === "SkillHints" && hasHintSignal) pickScore += 2.5
+        else if (sparkStrategy === "Balanced" && hasHintSignal) pickScore += 1.5
+        else if (sparkStrategy === "StatAndAptitude" && hasHintSignal) pickScore += 0.75
+        if (/%/.test(text)) pickScore += 0.5
+        total += pickScore
+    }
+
+    const average = total / sparkPicks.length
+    return Math.min(5, Math.max(0, average))
 }
 
 const DEFAULT_FAN_BENCHMARK = 120_000
@@ -44,11 +70,11 @@ export const gradeFromScore = (score: number): ParentQualityGrade => {
 }
 
 /**
- * Composite parent quality score (0–100) weighting epithets, fans, forced routes, race efficiency, and extras.
+ * Composite parent quality score (0–100) weighting epithets, fans, forced routes, race efficiency, sparks, and extras.
  */
 export const scoreParentRun = (input: ParentQualityInput): ParentQualityResult => {
     const targetCount = Math.max(1, input.targetEpithets.length)
-    const epithetScore = (input.completedTargetEpithets.length / targetCount) * 40
+    const epithetScore = (input.completedTargetEpithets.length / targetCount) * 35
 
     const fanFloor = input.minimumFanTarget > 0 ? input.minimumFanTarget : DEFAULT_FAN_BENCHMARK
     const fanScore = Math.min(1, input.fans / fanFloor) * 25
@@ -63,9 +89,10 @@ export const scoreParentRun = (input: ParentQualityInput): ParentQualityResult =
     const totalRaces = input.raceWins + input.raceLosses
     const raceScore = totalRaces > 0 ? (input.raceWins / totalRaces) * 10 : 5
 
+    const sparkScore = scoreSparkPicks(input.sparkPicks, input.sparkStrategy)
     const bonusScore = Math.min(5, input.extraCompletedEpithets.length)
 
-    const total = Math.round(epithetScore + fanScore + forcedScore + raceScore + bonusScore)
+    const total = Math.round(epithetScore + fanScore + forcedScore + raceScore + sparkScore + bonusScore)
     const score = Math.min(100, Math.max(0, total))
 
     return {
@@ -76,6 +103,7 @@ export const scoreParentRun = (input: ParentQualityInput): ParentQualityResult =
             fanScore: Math.round(fanScore * 10) / 10,
             forcedScore: Math.round(forcedScore * 10) / 10,
             raceScore: Math.round(raceScore * 10) / 10,
+            sparkScore: Math.round(sparkScore * 10) / 10,
             bonusScore: Math.round(bonusScore * 10) / 10,
             total: score,
         },
@@ -92,6 +120,7 @@ export const scoreParentRunArchiveEntry = (entry: ParentRunArchiveEntry): Parent
                 fanScore: 0,
                 forcedScore: 0,
                 raceScore: 0,
+                sparkScore: 0,
                 bonusScore: 0,
                 total: entry.qualityScore,
             },
@@ -108,6 +137,8 @@ export const scoreParentRunArchiveEntry = (entry: ParentRunArchiveEntry): Parent
         minimumFanTarget: entry.minimumFanTarget,
         raceWins: entry.raceWins,
         raceLosses: entry.raceLosses,
+        sparkPicks: entry.sparkPicks,
+        sparkStrategy: entry.sparkStrategy,
     })
 }
 

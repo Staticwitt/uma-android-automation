@@ -7,6 +7,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.components.ButtonInheritance
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
+import com.steve1316.uma_android_automation.utils.DisplayProfileRegistry
 
 /**
  * Reads the three inheritance spark options and taps the best match before confirming inheritance.
@@ -44,8 +45,9 @@ object SparkSelector {
         val scores = mutableListOf<Pair<Int, Double>>()
         val optionTexts = mutableListOf<String>()
 
-        val ocrWidth = (SharedData.displayWidth * OCR_WIDTH_FRACTION).toInt()
-        val ocrHeight = (SharedData.displayHeight * OCR_HEIGHT_FRACTION).toInt()
+        val ocrScale = DisplayProfileRegistry.sparkOcrScale(SharedData.displayWidth, SharedData.displayHeight, SharedData.displayDPI)
+        val ocrWidth = (SharedData.displayWidth * OCR_WIDTH_FRACTION * ocrScale).toInt()
+        val ocrHeight = (SharedData.displayHeight * OCR_HEIGHT_FRACTION * ocrScale).toInt()
 
         for (index in 0 until SPARK_SLOT_X_FRACTIONS.size) {
             val centerX = SharedData.displayWidth * SPARK_SLOT_X_FRACTIONS[index]
@@ -113,6 +115,21 @@ object SparkSelector {
                     scale = 2.0,
                     ocrEngine = "mlkit",
                     debugName = "${debugName}_retry",
+                )
+        }
+        if (ocrText.isBlank()) {
+            ocrText =
+                imageUtils.performOCROnRegion(
+                    sourceBitmap,
+                    cropX,
+                    cropY,
+                    ocrWidth,
+                    ocrHeight,
+                    useThreshold = true,
+                    useGrayscale = true,
+                    scale = 2.5,
+                    ocrEngine = "mlkit",
+                    debugName = "${debugName}_threshold",
                 )
         }
         return ocrText

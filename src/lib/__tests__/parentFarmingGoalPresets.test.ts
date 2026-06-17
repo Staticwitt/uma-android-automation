@@ -108,7 +108,7 @@ describe("parentFarmingGoalPresets", () => {
         expect(racingResult.ignoreConsecutiveRaceWarning).toBe(true)
         expect(racingResult.sparkSelectionStrategy).toBe("StatAndAptitude")
         expect(weights.minimumFanTarget).toBe(120000)
-        expect(weights.minimumRaceGapTurns).toBe(0)
+        expect(weights.minimumRaceGapTurns).toBe(1)
     })
 
     it("applies goal-specific spark selection strategies", () => {
@@ -124,8 +124,10 @@ describe("parentFarmingGoalPresets", () => {
     it("applyParentFarmingGoalPreset updates racing and training slices", () => {
         const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "stayer-stamina")!
         const settings = {
+            general: { scenario: "Trackblazer" },
             racing: createRacingSettings(),
             training: createTrainingSettings(),
+            skills: { enableSkillPointCheck: false, plans: {} },
         } as Settings
 
         const result = applyParentFarmingGoalPreset(settings, preset)

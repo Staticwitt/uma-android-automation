@@ -24,6 +24,10 @@ import {
     parseSupportBorrowOverrides,
     resolveSupportBorrowCardsForBundle,
 } from "./parentFarmingSupportBorrow"
+import { autoDowngradeInfeasibleForcedEpithets } from "./parentFarmingFeasibility"
+import { applyParentFarmingFullUnattended } from "./parentFarmingFullUnattended"
+import { recommendLegacyParents } from "./legacyParentRecommendations"
+import { captureParentFarmingSnapshot } from "./parentFarmingSnapshot"
 
 export { PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, PARENT_FARMING_RESOLVER_REVISION } from "./parentFarmingConstants"
 
@@ -57,8 +61,9 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
     const goalPreset = findParentFarmingGoalPreset(goalKey)
 
     const general = {
-        ...settings.general,
+        ...(settings.general ?? { scenario: "Trackblazer" }),
         enableStopBeforeFinals: false,
+        scenario: settings.general?.scenario || "Trackblazer",
     }
     const skills = {
         ...settings.skills,
@@ -66,7 +71,7 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
     }
 
     if (!goalPreset) {
-        return {
+        let fallback: Settings = {
             ...settings,
             general,
             skills,
@@ -74,12 +79,17 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
                 ...settings.racing,
                 ...buildParentFarmingRacingSettings(settings.racing),
                 parentFarmingResolverRevision: PARENT_FARMING_RESOLVER_REVISION,
+                parentFarmingSettingsSnapshot:
+                    settings.racing.parentFarmingSettingsSnapshot || captureParentFarmingSnapshot(settings),
             },
             training: {
                 ...settings.training,
                 ...buildParentFarmingTrainingSettings(settings.training),
             },
         }
+        fallback = autoDowngradeInfeasibleForcedEpithets(fallback)
+        fallback = applyParentFarmingFullUnattended(fallback)
+        return fallback
     }
 
     const mergeEpithets = options?.mergeEpithets ?? !bundle
@@ -125,7 +135,27 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
         ? JSON.stringify(resolveSupportBorrowCardsForBundle(bundle, borrowOverrides))
         : goalRacing.supportBorrowPreferredCards ?? "[]"
 
-    return {
+    const traineeName = bundle?.characterName ?? racingSeed.smartRaceSolverCharacterPreset
+    const legacyRecommendation = recommendLegacyParents(
+        goalPreset.key,
+        goalRacing.legacyParentSelectionStrategy ?? racingSeed.legacyParentSelectionStrategy,
+        traineeName,
+    )
+    const parseLegacyPair = (json: string | undefined): string[] => {
+        try {
+            const parsed = JSON.parse(json || "[]")
+            return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : []
+        } catch {
+            return []
+        }
+    }
+    const existingLegacy = parseLegacyPair(racingSeed.legacyParentPreferredPair)
+    const legacyParentPreferredPair =
+        existingLegacy.some((name) => name.trim().length > 0)
+            ? racingSeed.legacyParentPreferredPair
+            : JSON.stringify([legacyRecommendation.parentOne, legacyRecommendation.parentTwo])
+
+    let resolved: Settings = {
         ...settings,
         general,
         skills,
@@ -135,18 +165,25 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
             ...goalRacing,
             smartRaceSolverWeights: smartRaceSolverWeights ?? goalRacing.smartRaceSolverWeights,
             supportBorrowPreferredCards,
+            legacyParentPreferredPair,
             enableParentFarmingMode: true,
             parentFarmingGoalPresetKey: goalPreset.key,
             parentFarmingGoalPresetLabel: goalPreset.label,
             parentFarmingBundleKey: bundle?.key ?? "",
             parentFarmingBundleLabel: bundle?.label ?? "",
             parentFarmingResolverRevision: PARENT_FARMING_RESOLVER_REVISION,
+            parentFarmingSettingsSnapshot:
+                settings.racing.parentFarmingSettingsSnapshot || captureParentFarmingSnapshot(settings),
         },
         training: {
             ...settings.training,
             ...trainingPartial,
         },
     }
+
+    resolved = autoDowngradeInfeasibleForcedEpithets(resolved)
+    resolved = applyParentFarmingFullUnattended(resolved)
+    return resolved
 }
 
 /** Enables parent farming and resolves slices from stored keys or the default goal preset. */

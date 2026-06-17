@@ -10,7 +10,7 @@ export const PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY = "g1-fans"
 /**
  * Bump when preset definitions change so `applyMigrations` re-resolves active parent-farming profiles.
  */
-export const PARENT_FARMING_RESOLVER_REVISION = 7
+export const PARENT_FARMING_RESOLVER_REVISION = 8
 
 /** Solver tuning for parent-farming runs: prefer race-heavy G1/fan/epithet value without fully force-racing every turn. */
 export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
@@ -21,6 +21,8 @@ export const PARENT_FARMING_SOLVER_WEIGHT_OVERRIDES: Partial<WeightsMap> = {
     raceCostPct: 75.0,
     includeOpAndPreOp: false,
     allowSummerRacing: false,
+    minWinRateGuard: 0.72,
+    assumedRaceWinRate: 0.92,
 }
 
 /** Racing flags shared by parent farming mode and goal-preset application. */
@@ -42,6 +44,10 @@ export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
     enableAutoStartCareer: true,
     enableAutoSelectLegacyParents: true,
     legacyParentSelectionStrategy: PARENT_FARMING_LEGACY_PARENT_SELECTION_STRATEGY,
+    enableParentFarmingFullUnattended: true,
+    enableParentFarmingAutoDowngradeForcedEpithets: true,
+    enableParentFarmingAdaptiveMultiRun: true,
+    enableParentFarmingLockPreset: false,
 }
 
 /** Shared parent-farming training defaults applied before goal-specific overrides. */

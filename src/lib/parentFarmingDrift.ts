@@ -1,5 +1,6 @@
 import type { Settings } from "../context/BotStateContext"
 import { resolveParentFarmingSettings } from "./parentFarmingResolver"
+import { assessParentFarmingFeasibility, formatFeasibilityIssues } from "./parentFarmingFeasibility"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 import { PARENT_FARMING_CHARACTER_BUNDLES } from "./parentFarmingCharacterBundles"
 import { buildEpithetTiersFromRacing } from "./epithetTiers"
@@ -269,6 +270,7 @@ export const detectParentFarmingDrift = (settings: Settings): string[] => {
                 "Auto-borrow is on but owned support inventory is empty. Add owned cards for better deck recommendations (friend borrow still runs).",
             )
         }
+        warnings.push(...formatFeasibilityIssues(assessParentFarmingFeasibility(settings)))
     }
 
     return warnings

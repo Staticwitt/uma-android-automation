@@ -156,6 +156,30 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         goalPresetKey: "turf-allrounder",
         supportBorrowCards: bundleBorrow("turf-allrounder", ["Matikanefukukitaru", "Symboli Rudolf", "Super Creek", "Kitasan Black"]),
     },
+    {
+        key: "kitasan-black-skill-hints",
+        label: "Kitasan Black — Skill Hint Parent",
+        description: "White-factor and hint-reward epithets with skill-hint spark picking.",
+        characterName: "Kitasan Black",
+        goalPresetKey: "skill-hints",
+        supportBorrowCards: bundleBorrow("skill-hints", ["Kitasan Black", "Agnes Tachyon", "Super Creek", "Symboli Rudolf"]),
+    },
+    {
+        key: "special-week-junior",
+        label: "Special Week — Junior Star Parent",
+        description: "Junior showcase epithets and early G1 history for flexible parents.",
+        characterName: "Special Week",
+        goalPresetKey: "junior-star",
+        supportBorrowCards: bundleBorrow("junior-star", ["Special Week", "Kitasan Black", "Oguri Cap", "Gold Ship"]),
+    },
+    {
+        key: "mejiro-derby-stayer",
+        label: "Mejiro McQueen — Derby Stayer Parent",
+        description: "Derby Dreamer and stayer epithets for classic stamina parents.",
+        characterName: "Mejiro McQueen",
+        goalPresetKey: "derby-stayer-line",
+        supportBorrowCards: bundleBorrow("derby-stayer-line", ["Mejiro McQueen", "Super Creek", "Biwa Hayahide", "Symboli Rudolf"]),
+    },
 ]
 
 /** Builds aptitude grades from a bundled character preset entry. */
