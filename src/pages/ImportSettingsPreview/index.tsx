@@ -5,7 +5,7 @@ import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import { SettingsChange } from "../../hooks/useSettingsFileManager"
 import { useSettings } from "../../context/SettingsContext"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { Section } from "../../components/ui/section"
 import { TYPE } from "../../lib/type"
@@ -158,7 +158,7 @@ const ImportSettingsPreview = () => {
 
     return (
         <View style={styles.root}>
-            <PageHeader title="Import Settings Preview" />
+            <DomainHeader breadcrumb="Tools" title="Import Preview" subtitle="Review setting changes before applying an import." />
             <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
                 {changes.length === 0 ? (
                     <View style={styles.noChangesContainer}>

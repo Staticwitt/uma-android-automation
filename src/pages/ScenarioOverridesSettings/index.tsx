@@ -7,7 +7,7 @@ import { ScenarioOverridesContext, BotMetaContext, Settings } from "../../contex
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSlider from "../../components/CustomSlider"
 import CustomButton from "../../components/CustomButton"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { Input } from "../../components/ui/input"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
@@ -201,7 +201,7 @@ const ScenarioOverridesSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="ScenarioOverridesSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Scenario Overrides Settings" />
+                <DomainHeader breadcrumb="Scenario" title="Scenario Overrides" subtitle="Campaign-specific behavior overrides." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         <View style={{ marginBottom: SPACING.lg }}>

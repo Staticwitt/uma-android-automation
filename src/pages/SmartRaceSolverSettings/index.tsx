@@ -64,6 +64,7 @@ import { Section } from "../../components/ui/section"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
+import TabStrip, { type TabStripItem } from "../../components/ui/tab-strip"
 import { applyParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
 import { refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
 import { applyGeneralSolverPreset, GENERAL_SOLVER_PRESET_LABEL, GENERAL_SOLVER_PRESET_SUMMARY } from "../../lib/generalSolverPreset"
@@ -84,6 +85,15 @@ let lastPreviewCache: { key: string; preview: SchedulePreview } | null = null
 // Tracks whether the bundled races/epithets JSON has been shipped to Kotlin.
 // After the first bridge call Kotlin caches its own copy, so subsequent calls omit the payload and save ~150KB of marshalling.
 let bridgeDataPrimed = false
+
+type SolverSectionTab = "all" | "setup" | "scoring" | "preview"
+
+const SOLVER_SECTION_TABS: TabStripItem[] = [
+    { key: "all", label: "All" },
+    { key: "setup", label: "Setup" },
+    { key: "scoring", label: "Scoring" },
+    { key: "preview", label: "Preview" },
+]
 
 /**
  * Smart Race Solver settings page. Lets the user configure aptitudes, target/forced epithets,
@@ -364,6 +374,8 @@ const SmartRaceSolverSettings = () => {
 
     // Two-phase mount: render the master toggle first, then the heavy sections one tick later.
     const [showHeavySections, setShowHeavySections] = useState(false)
+    const [activeSection, setActiveSection] = useState<SolverSectionTab>("all")
+    const showSection = useCallback((key: SolverSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
     useEffect(() => {
         const handle = InteractionManager.runAfterInteractions(() => {
             setShowHeavySections(true)
@@ -1465,6 +1477,12 @@ const SmartRaceSolverSettings = () => {
 
                         {enableSmartRaceSolver && showHeavySections && (
                             <>
+                                <View style={{ marginBottom: SPACING.md, paddingHorizontal: SPACING.xs }}>
+                                    <TabStrip items={SOLVER_SECTION_TABS} activeKey={activeSection} onChange={(key) => setActiveSection(key as SolverSectionTab)} />
+                                </View>
+
+                                {showSection("setup") && (
+                                <>
                                 {/* Character preset */}
                                 <Section label="Character Preset">
                                     <SearchableItem
@@ -1829,6 +1847,11 @@ const SmartRaceSolverSettings = () => {
                                     </Section>
                                 )}
 
+                                </>
+                                )}
+
+                                {showSection("scoring") && (
+                                <>
                                 {/* Optimization mode */}
                                 <Section label="Optimization Mode">
                                     <SearchableItem
@@ -2098,7 +2121,11 @@ const SmartRaceSolverSettings = () => {
                                         </View>
                                     </SearchableItem>
                                 </Section>
+                                </>
+                                )}
 
+                                {showSection("preview") && (
+                                <>
                                 {/* Schedule preview calendar */}
                                 <Section label="Schedule Preview">
                                     <SearchableItem
@@ -2398,6 +2425,8 @@ const SmartRaceSolverSettings = () => {
                                         </View>
                                     </SearchableItem>
                                 </Section>
+                                </>
+                                )}
                             </>
                         )}
                     </View>

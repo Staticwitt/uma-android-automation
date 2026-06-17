@@ -5,8 +5,9 @@ import { DiscordContext, defaultSettings, Settings } from "../../context/BotStat
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
-import PageHeader from "../../components/PageHeader"
-import WarningContainer from "../../components/WarningContainer"
+import { DomainHeader } from "../../components/ui/domain-header"
+import { SettingRow } from "../../components/ui/setting-row"
+import { Callout } from "../../components/ui/callout"
 import SearchableItem from "../../components/SearchableItem"
 import WizardSteps, { WizardStep } from "../../components/WizardSteps"
 import { Row } from "../../components/ui/row"
@@ -205,85 +206,64 @@ const DiscordSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="DiscordSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Discord Settings" />
+                <DomainHeader breadcrumb="Integrations" title="Discord" subtitle="Bot notifications, live status, and run summaries." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         <Section label="Notifications">
-                            <SearchableItem id="enableDiscordNotifications" title="Enable Discord Notifications" description="DM run results when the bot stops">
-                                <Row
-                                    title="Discord Notifications"
-                                    description="DM run results when the bot stops"
-                                    right={<Switch checked={enableDiscordNotifications} onCheckedChange={(checked) => updateDiscordSetting("enableDiscordNotifications", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                            <SettingRow
+                                id="enableDiscordNotifications"
+                                title="Discord Notifications"
+                                description="DM run results when the bot stops"
+                                right={<Switch checked={enableDiscordNotifications} onCheckedChange={(checked) => updateDiscordSetting("enableDiscordNotifications", checked)} />}
+                            />
+                            <SettingRow
                                 id="enableDiscordEmbeds"
                                 title="Rich Discord Embeds"
-                                description="Send colored embed cards instead of plain markdown for Discord notifications."
-                            >
-                                <Row
-                                    title="Rich Discord Embeds"
-                                    description="Colored embed cards for start, live status, and run summaries"
-                                    right={
-                                        <Switch
-                                            checked={enableDiscordEmbeds}
-                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordEmbeds", checked)}
-                                            disabled={!enableDiscordNotifications}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                description="Colored embed cards for start, live status, and run summaries"
+                                right={
+                                    <Switch
+                                        checked={enableDiscordEmbeds}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableDiscordEmbeds", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
+                            <SettingRow
                                 id="enableDiscordLiveStatus"
                                 title="Parent Farming Live Status"
-                                description="Send periodic Discord updates during parent farming runs (fans, energy, mood, goals, race record)."
-                            >
-                                <Row
-                                    title="Parent Farming Live Status"
-                                    description="Periodic updates while a parent farming run is in progress"
-                                    right={
-                                        <Switch
-                                            checked={enableDiscordLiveStatus}
-                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordLiveStatus", checked)}
-                                            disabled={!enableDiscordNotifications}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                description="Periodic updates while a parent farming run is in progress"
+                                right={
+                                    <Switch
+                                        checked={enableDiscordLiveStatus}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableDiscordLiveStatus", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
+                            <SettingRow
                                 id="enableDiscordRaceAlerts"
                                 title="Race Loss Alerts"
-                                description="Send a Discord alert when a smart-solver race does not finish 1st."
-                            >
-                                <Row
-                                    title="Race Loss Alerts"
-                                    description="Notify when a solver race is recorded as a loss"
-                                    right={
-                                        <Switch
-                                            checked={enableDiscordRaceAlerts}
-                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordRaceAlerts", checked)}
-                                            disabled={!enableDiscordNotifications}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                description="Notify when a solver race is recorded as a loss"
+                                right={
+                                    <Switch
+                                        checked={enableDiscordRaceAlerts}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableDiscordRaceAlerts", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
+                            <SettingRow
                                 id="enableDiscordWinRateGuardAlerts"
                                 title="Win-Rate Guard Alerts"
-                                description="Send a Discord alert when the win-rate guard blocks a planned race."
-                            >
-                                <Row
-                                    title="Win-Rate Guard Alerts"
-                                    description="Notify when P(win) is below the guard floor"
-                                    right={
-                                        <Switch
-                                            checked={enableDiscordWinRateGuardAlerts}
-                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordWinRateGuardAlerts", checked)}
-                                            disabled={!enableDiscordNotifications}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
+                                description="Notify when P(win) is below the guard floor"
+                                right={
+                                    <Switch
+                                        checked={enableDiscordWinRateGuardAlerts}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableDiscordWinRateGuardAlerts", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
                             {enableDiscordNotifications && enableDiscordLiveStatus && (
                                 <View style={{ padding: SPACING.md }}>
                                     <CustomSlider
@@ -309,14 +289,14 @@ const DiscordSettings = () => {
                             </View>
                         </Section>
 
-                        <WarningContainer style={{ marginTop: 0, marginBottom: SPACING.md }}>
+                        <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
                             <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                                 <Text style={{ fontWeight: "bold", color: colors.warningText }}>⚠️ Security Note: </Text>
                                 <Text style={{ fontSize: 14, color: colors.warningText, lineHeight: 20 }}>
                                     Your token is stored locally on this device and will not be included when exporting settings.
                                 </Text>
                             </View>
-                        </WarningContainer>
+                        </Callout>
                     </View>
                 </ScrollView>
             </SearchPageProvider>

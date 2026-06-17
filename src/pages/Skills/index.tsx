@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useContext, useEffect, useMemo, useRef } from "react"
 import { View, Text, ScrollView, StyleSheet } from "react-native"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { Section } from "../../components/ui/section"
 import InfoCallout from "../../components/ui/info-callout"
@@ -90,7 +90,7 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
     return (
         <View style={styles.container}>
             <SearchPageProvider page="Skills" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Skills" />
+                <DomainHeader breadcrumb="Gameplay" title="Skills" subtitle="Automated skill spending, style settings, and skill plans." />
                 <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                 <InfoCallout title="How skill spending works">
                     <Text style={styles.intro}>Allows configuration of automated skill point spending.</Text>

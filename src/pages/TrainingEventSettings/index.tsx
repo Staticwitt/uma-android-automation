@@ -17,9 +17,19 @@ import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 import { ChevronDown, ChevronUp, Plus, Search, X } from "lucide-react-native"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
+import TabStrip, { type TabStripItem } from "../../components/ui/tab-strip"
 import CustomSlider from "../../components/CustomSlider"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
+
+type TrainingEventSectionTab = "all" | "general" | "ocr" | "overrides"
+
+const TRAINING_EVENT_SECTION_TABS: TabStripItem[] = [
+    { key: "all", label: "All" },
+    { key: "general", label: "General" },
+    { key: "ocr", label: "OCR" },
+    { key: "overrides", label: "Overrides" },
+]
 
 // Import the data files.
 import charactersData from "../../data/characters.json"
@@ -61,6 +71,8 @@ const TrainingEventSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const { trainingEvent, updateTrainingEvent } = useContext(TrainingEventContext)
     const scrollViewRef = useRef<ScrollView>(null)
+    const [activeSection, setActiveSection] = useState<TrainingEventSectionTab>("all")
+    const showSection = useCallback((key: TrainingEventSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
 
     // Merge current training event settings with defaults to handle missing properties.
     const {
@@ -585,9 +597,14 @@ const TrainingEventSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="TrainingEventSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Training Event Settings" />
+                <DomainHeader breadcrumb="Gameplay" title="Training Events" subtitle="Event overrides, OCR preferences, and energy prioritization." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
+                        <View style={{ marginBottom: SPACING.md }}>
+                            <TabStrip items={TRAINING_EVENT_SECTION_TABS} activeKey={activeSection} onChange={(key) => setActiveSection(key as TrainingEventSectionTab)} />
+                        </View>
+
+                        {showSection("general") && (
                         <Section label="General">
                             <SearchableItem
                                 id="prioritize-energy-options"
@@ -601,7 +618,9 @@ const TrainingEventSettings = () => {
                                 />
                             </SearchableItem>
                         </Section>
+                        )}
 
+                        {showSection("ocr") && (
                         <Section label="OCR Recognition Settings">
                             <View style={{ padding: SPACING.md, paddingBottom: 0 }}>
                                 <SearchableItem
@@ -654,7 +673,10 @@ const TrainingEventSettings = () => {
                                 />
                             </SearchableItem>
                         </Section>
+                        )}
 
+                        {showSection("overrides") && (
+                        <>
                         <Section label="Training Event Option Overrides">
                             <View style={{ padding: SPACING.md }}>
                                 <SearchableItem
@@ -977,6 +999,8 @@ const TrainingEventSettings = () => {
                                 )}
                             </View>
                         </Section>
+                        </>
+                        )}
                     </View>
                 </ScrollView>
             </SearchPageProvider>

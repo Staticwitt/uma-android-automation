@@ -6,7 +6,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { ChatContext } from "../../context/BotStateContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import WarningContainer from "../../components/WarningContainer"
@@ -480,7 +480,7 @@ const LLMSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="LLMSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="LLM Settings" />
+                <DomainHeader breadcrumb="Integrations" title="LLM" subtitle="On-device docs chat, model downloads, and tuning." />
                 <ScrollView ref={scrollViewRef}>
                 <InfoContainer>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoContainer>
 

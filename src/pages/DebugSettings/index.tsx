@@ -5,7 +5,7 @@ import * as Clipboard from "expo-clipboard"
 import { useTheme } from "../../context/ThemeContext"
 import { DebugContext, BotMetaContext } from "../../context/BotStateContext"
 import CustomSlider from "../../components/CustomSlider"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import WarningContainer from "../../components/WarningContainer"
 import CustomButton from "../../components/CustomButton"
 import SearchableItem from "../../components/SearchableItem"
@@ -400,7 +400,7 @@ const DebugSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="DebugSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Debug Settings" />
+                <DomainHeader breadcrumb="Tools" title="Debug" subtitle="Diagnostics, log viewer, and template matching tests." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////

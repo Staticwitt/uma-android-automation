@@ -21,6 +21,7 @@ import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
 import { SectionLabel } from "../../components/ui/section-label"
 import { Switch } from "../../components/ui/switch"
+import { DomainLandingCard } from "../../components/ui/domain-landing-card"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
@@ -172,34 +173,13 @@ const RacingSettings = () => {
                 <DomainHeader breadcrumb="Gameplay" title="Racing" subtitle="Race behavior, retries, and mandatory race handling." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
-                        <Pressable
+                        <DomainLandingCard
+                            title="Parent Farming"
+                            description={parentFarmingSummary}
+                            icon={<Leaf size={18} color={enableParentFarmingMode ? colors.brand : colors.textMuted} />}
+                            active={enableParentFarmingMode}
                             onPress={() => navigation.navigate("ParentFarmingSettings" as never)}
-                            android_ripple={{ color: colors.ripple, foreground: true }}
-                            accessibilityRole="button"
-                            style={{ marginBottom: SPACING.md }}
-                        >
-                            <GlassSurface style={{ borderRadius: RADII.lg }}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.md, padding: SPACING.md }}>
-                                    <View
-                                        style={{
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 999,
-                                            backgroundColor: enableParentFarmingMode ? colors.brandSubtle : colors.surfaceRaised,
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                        }}
-                                    >
-                                        <Leaf size={18} color={enableParentFarmingMode ? colors.brand : colors.textMuted} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600" }}>Parent Farming</Text>
-                                        <Text style={{ ...TYPE.caption, color: colors.textMuted }} numberOfLines={2}>{parentFarmingSummary}</Text>
-                                    </View>
-                                    <ChevronRight size={16} color={colors.textMuted} />
-                                </View>
-                            </GlassSurface>
-                        </Pressable>
+                        />
 
                         <Section label="Race Behavior">
                             <SettingRow

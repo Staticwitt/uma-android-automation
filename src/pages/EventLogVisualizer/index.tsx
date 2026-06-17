@@ -17,7 +17,7 @@ import { Info } from "lucide-react-native"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import Ionicons from "@react-native-vector-icons/ionicons"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import WarningContainer from "../../components/WarningContainer"
 import { circularPress } from "../../lib/pressSurface"
@@ -182,7 +182,7 @@ const EventLogVisualizer: React.FC = () => {
         <View style={styles.root}>
             <View style={styles.content}>
                 {/* FlashList doesn't support sticky headers the same way as ScrollView, so PageHeader stays a sibling above the list (non-sticky). */}
-                <PageHeader title="Event Log Visualizer" style={{ marginBottom: 12 }} />
+                <DomainHeader breadcrumb="Tools" title="Event Log Visualizer" subtitle="Import bot logs and browse a day-by-day timeline." style={{ marginBottom: 12 }} />
 
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
                     <CustomButton variant="outline" style={{ flex: 1 }} icon={<Ionicons name="folder-outline" size={16} color={colors.text} />} onPress={openDataDirectory}>
