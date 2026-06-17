@@ -1,4 +1,5 @@
 import { Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native"
+import React from "react"
 import { useTheme } from "../../context/ThemeContext"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
@@ -27,7 +28,7 @@ export interface RowProps {
  * @param props See `RowProps`.
  * @returns Pressable when `onPress` provided, otherwise a static View.
  */
-export const Row = ({ title, description, right, onPress, disabled, style }: RowProps) => {
+export const Row = React.memo(({ title, description, right, onPress, disabled, style }: RowProps) => {
     const { colors } = useTheme()
     const content = (
         <View style={[{ flexDirection: "row", alignItems: "center", paddingVertical: ROW_PADDING_Y, paddingHorizontal: SPACING.lg, opacity: disabled ? 0.5 : 1 }, style]}>
@@ -46,4 +47,5 @@ export const Row = ({ title, description, right, onPress, disabled, style }: Row
         )
     }
     return content
-}
+})
+Row.displayName = "Row"

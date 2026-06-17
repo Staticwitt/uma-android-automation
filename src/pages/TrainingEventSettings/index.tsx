@@ -1,5 +1,5 @@
-import { useContext, useState, useMemo, useCallback, useRef } from "react"
-import { View, Text, ScrollView, StyleSheet, Pressable, TextInput } from "react-native"
+import { useContext, useState, useMemo, useCallback, useRef, useEffect, memo } from "react"
+import { View, Text, ScrollView, StyleSheet, Pressable, TextInput, InteractionManager } from "react-native"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
@@ -61,6 +61,12 @@ const TrainingEventSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const { trainingEvent, updateTrainingEvent } = useContext(TrainingEventContext)
     const scrollViewRef = useRef<ScrollView>(null)
+
+    const [showHeavySections, setShowHeavySections] = useState(false)
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => setShowHeavySections(true))
+        return () => handle.cancel()
+    }, [])
 
     // Merge current training event settings with defaults to handle missing properties.
     const {
@@ -587,6 +593,7 @@ const TrainingEventSettings = () => {
             <SearchPageProvider page="TrainingEventSettings" scrollViewRef={scrollViewRef}>
                 <PageHeader title="Training Event Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    {showHeavySections && (
                     <View className="m-1">
                         <Section label="General">
                             <SearchableItem
@@ -978,6 +985,7 @@ const TrainingEventSettings = () => {
                             </View>
                         </Section>
                     </View>
+                    )}
                 </ScrollView>
             </SearchPageProvider>
 
@@ -1105,4 +1113,4 @@ const TrainingEventSettings = () => {
     )
 }
 
-export default TrainingEventSettings
+export default memo(TrainingEventSettings)

@@ -1,5 +1,5 @@
-import { useMemo, useContext, useRef, useCallback, useState } from "react"
-import { View, Text, TextInput, ScrollView, StyleSheet, Pressable } from "react-native"
+import { useMemo, useContext, useRef, useCallback, useState, useEffect, memo } from "react"
+import { View, Text, TextInput, ScrollView, StyleSheet, Pressable, InteractionManager } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
@@ -11,7 +11,7 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
 import PageHeader from "../../components/PageHeader"
-import InfoContainer from "../../components/InfoContainer"
+import InfoCallout from "../../components/ui/info-callout"
 import WarningContainer from "../../components/WarningContainer"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
@@ -47,6 +47,12 @@ const RacingSettings = () => {
     const { general } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const scrollViewRef = useRef<ScrollView>(null)
+
+    const [showHeavySections, setShowHeavySections] = useState(false)
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => setShowHeavySections(true))
+        return () => handle.cancel()
+    }, [])
 
     // Modal state for the Junior / Original strategy pickers (nav-row + chip pattern).
     const [juniorPickerOpen, setJuniorPickerOpen] = useState(false)
@@ -215,6 +221,7 @@ const RacingSettings = () => {
             <SearchPageProvider page="RacingSettings" scrollViewRef={scrollViewRef}>
                 <PageHeader title="Racing Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    {showHeavySections && (
                     <View className="m-1">
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////
                             //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +262,7 @@ const RacingSettings = () => {
                                 </View>
                             </SearchableItem>
                             <SearchableItem
+                                id="parent-farming-character-bundles"
                                 title="Character + Goal Bundles"
                                 description="One-tap parent setups that combine character preset, goal epithets, solver weights, and training distance bias."
                             >
@@ -264,9 +272,9 @@ const RacingSettings = () => {
                                 </View>
                             </SearchableItem>
                             {enableParentFarmingMode && (
-                                <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                <InfoCallout collapsible={false} style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {`${PARENT_FARMING_MODE_SUMMARY} Use a bundle above for a full setup, or open Smart Race Solver to fine-tune epithets, aptitudes, and manual race locks.`}
-                                </InfoContainer>
+                                </InfoCallout>
                             )}
                         </Section>
 
@@ -487,9 +495,9 @@ const RacingSettings = () => {
                             </SearchableItem>
                             {enableUserInGameRaceAgenda && (
                                 <>
-                                    <InfoContainer style={{ marginHorizontal: SPACING.md }}>
+                                    <InfoCallout collapsible={false} style={{ marginHorizontal: SPACING.md }}>
                                         Critical energy level and consecutive race limits are ignored for the user in-game racing agenda.
-                                    </InfoContainer>
+                                    </InfoCallout>
                                     <SearchableItem
                                         id="user-in-game-race-agenda"
                                         title="Select Agenda"
@@ -606,6 +614,7 @@ const RacingSettings = () => {
                             <WarningContainer>Force Racing and User In-Game Race Agenda settings must be disabled in order to use the Smart Race Solver.</WarningContainer>
                         )}
                     </View>
+                    )}
                 </ScrollView>
 
                 {/* //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -663,4 +672,4 @@ const RacingSettings = () => {
     )
 }
 
-export default RacingSettings
+export default memo(RacingSettings)

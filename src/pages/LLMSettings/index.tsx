@@ -1,5 +1,5 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react"
-import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking, Pressable } from "react-native"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, memo } from "react"
+import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking, Pressable, InteractionManager } from "react-native"
 import { Check, Trash2 } from "lucide-react-native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { useTheme } from "../../context/ThemeContext"
@@ -9,7 +9,8 @@ import CustomSlider from "../../components/CustomSlider"
 import PageHeader from "../../components/PageHeader"
 import SearchableItem from "../../components/SearchableItem"
 import WarningContainer from "../../components/WarningContainer"
-import InfoContainer from "../../components/InfoContainer"
+import InfoCallout from "../../components/ui/info-callout"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import RamGauge from "../../components/ui/ram-gauge"
@@ -110,6 +111,12 @@ interface DownloadedModel {
  */
 const LLMSettings = () => {
     usePerformanceLogging("LLMSettings")
+    const scrollViewRef = useRef<ScrollView>(null)
+    const [showHeavySections, setShowHeavySections] = useState(false)
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => setShowHeavySections(true))
+        return () => handle.cancel()
+    }, [])
     const { colors } = useTheme()
     const { chat, updateChat } = useContext(ChatContext)
     const enableAskTheDocs = chat?.enableAskTheDocs ?? false
@@ -477,9 +484,12 @@ const LLMSettings = () => {
 
     return (
         <View style={styles.root}>
-            <PageHeader title="LLM Settings" />
-            <ScrollView>
-                <InfoContainer>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoContainer>
+            <SearchPageProvider page="LLMSettings" scrollViewRef={scrollViewRef}>
+                <PageHeader title="LLM Settings" />
+                <ScrollView ref={scrollViewRef}>
+                    {showHeavySections && (
+                    <>
+                <InfoCallout collapsible={false}>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoCallout>
 
                 <View style={styles.section}>
                     <SearchableItem
@@ -782,9 +792,12 @@ const LLMSettings = () => {
                         </WarningContainer>
                     </>
                 )}
-            </ScrollView>
+                    </>
+                    )}
+                </ScrollView>
+            </SearchPageProvider>
         </View>
     )
 }
 
-export default LLMSettings
+export default memo(LLMSettings)

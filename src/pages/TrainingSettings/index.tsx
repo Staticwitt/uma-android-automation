@@ -65,7 +65,12 @@ const TrainingSettings = () => {
     const [snackbarVisible, setSnackbarVisible] = useState(false)
     const [snackbarMessage, setSnackbarMessage] = useState("")
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
+    const [scoringSandboxMounted, setScoringSandboxMounted] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
+
+    useEffect(() => {
+        if (scoringSandboxOpen) setScoringSandboxMounted(true)
+    }, [scoringSandboxOpen])
 
     // Initialize local state from settings, with fallback to defaults.
     const [statPrioritizationItems, setStatPrioritizationItems] = useState<string[]>(() =>
@@ -1184,7 +1189,7 @@ const TrainingSettings = () => {
                 </ScrollView>
             </SearchPageProvider>
             {advancedExpanded && <StickySandboxButton onPress={() => setScoringSandboxOpen(true)} />}
-            <TrainingScoringSandbox open={scoringSandboxOpen} onClose={() => setScoringSandboxOpen(false)} />
+            {scoringSandboxMounted && <TrainingScoringSandbox open={scoringSandboxOpen} onClose={() => setScoringSandboxOpen(false)} />}
             <Snackbar
                 visible={snackbarVisible}
                 onDismiss={() => setSnackbarVisible(false)}

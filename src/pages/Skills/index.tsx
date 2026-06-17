@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useContext, useEffect, useMemo } from "react"
-import { View, Text, ScrollView, StyleSheet } from "react-native"
+import React, { useState, useCallback, useContext, useEffect, useMemo, useRef, memo } from "react"
+import { View, Text, ScrollView, StyleSheet, InteractionManager } from "react-native"
 import PageHeader from "../../components/PageHeader"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import { Section } from "../../components/ui/section"
 import InfoCallout from "../../components/ui/info-callout"
 import TabStrip, { TabStripItem } from "../../components/ui/tab-strip"
@@ -38,6 +39,12 @@ interface SkillsRouteParams {
  */
 const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route }) => {
     const { colors } = useTheme()
+    const scrollViewRef = useRef<ScrollView>(null)
+    const [showHeavySections, setShowHeavySections] = useState(false)
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => setShowHeavySections(true))
+        return () => handle.cancel()
+    }, [])
     const initialTab = route?.params?.tab && TAB_ITEMS.some((t) => t.key === route.params!.tab) ? route.params!.tab! : "skillPointCheck"
     const [activeKey, setActiveKey] = useState<string>(initialTab)
     const onChange = useCallback((key: string) => setActiveKey(key), [])
@@ -86,8 +93,11 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
 
     return (
         <View style={styles.container}>
-            <PageHeader title="Skills" />
-            <ScrollView contentContainerStyle={styles.scroll}>
+            <SearchPageProvider page="Skills" scrollViewRef={scrollViewRef}>
+                <PageHeader title="Skills" />
+                <ScrollView ref={scrollViewRef} contentContainerStyle={styles.scroll}>
+                    {showHeavySections && (
+                    <>
                 <InfoCallout title="How skill spending works">
                     <Text style={styles.intro}>Allows configuration of automated skill point spending.</Text>
                     <Text style={[styles.intro, { marginBottom: 0 }]}>
@@ -176,9 +186,12 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
                     )}
                 </Section>
                 <PlanTab planKey={activeKey} />
-            </ScrollView>
+                    </>
+                    )}
+                </ScrollView>
+            </SearchPageProvider>
         </View>
     )
 }
 
-export default Skills
+export default memo(Skills)

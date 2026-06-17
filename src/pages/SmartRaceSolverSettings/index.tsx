@@ -1,5 +1,6 @@
-import { useMemo, useContext, useState, useEffect, useRef, useCallback, ReactNode } from "react"
+import { useMemo, useContext, useState, useEffect, useRef, useCallback, ReactNode, memo } from "react"
 import { Dimensions, InteractionManager, View, Text, ScrollView, StyleSheet, Pressable, ActivityIndicator } from "react-native"
+import { FlashList, type FlashListRef } from "@shopify/flash-list"
 import { Divider } from "react-native-paper"
 import { previewSchedule, SchedulePreview, ScheduleEntry, SolverConfigSnapshot } from "../../lib/solver/preview"
 import {
@@ -114,8 +115,7 @@ const SmartRaceSolverSettings = () => {
     // measured y-offset via onLayout and snap the nested ScrollView to the active preset on first focus. didInitialPresetScrollRef prevents
     // the snap from re-firing while the user is browsing the page. presetForFocusRef holds the latest active preset name in a ref so the
     // snap helper can read it without taking a React-state dep, which keeps useFocusEffect from re-running on every preset selection.
-    const presetScrollRef = useRef<ScrollView>(null)
-    const presetLayoutsRef = useRef<Map<string, number>>(new Map())
+    const presetListRef = useRef<FlashListRef<CharacterPresetEntry>>(null)
     const didInitialPresetScrollRef = useRef(false)
     const presetForFocusRef = useRef<string>("")
 
@@ -265,6 +265,16 @@ const SmartRaceSolverSettings = () => {
         return () => handle.cancel()
     }, [])
 
+    const [showCalendarPreview, setShowCalendarPreview] = useState(false)
+    useEffect(() => {
+        if (!enableSmartRaceSolver || !showHeavySections) {
+            setShowCalendarPreview(false)
+            return
+        }
+        const handle = InteractionManager.runAfterInteractions(() => setShowCalendarPreview(true))
+        return () => handle.cancel()
+    }, [enableSmartRaceSolver, showHeavySections])
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Derived filters
@@ -296,6 +306,9 @@ const SmartRaceSolverSettings = () => {
         return allEpithets.filter((e) => e.name.toLowerCase().includes(q) || (e.bullet_points ?? []).join(" ").toLowerCase().includes(q))
     }, [allEpithets, forcedEpithetSearch])
 
+    const filteredPresetsRef = useRef(filteredPresets)
+    filteredPresetsRef.current = filteredPresets
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // Setters
@@ -306,9 +319,12 @@ const SmartRaceSolverSettings = () => {
      * @param key The settings.racing key to update.
      * @param value The new value.
      */
-    const updateRacingSetting = (key: string, value: any) => {
-        updateRacing({ [key]: value } as any)
-    }
+    const updateRacingSetting = useCallback(
+        (key: string, value: unknown) => {
+            updateRacing({ [key]: value } as Parameters<typeof updateRacing>[0])
+        },
+        [updateRacing]
+    )
 
     /**
      * Set the rank for a single aptitude slot. Identity-stable so memoized children skip reconciliation on unrelated changes.
@@ -540,18 +556,15 @@ const SmartRaceSolverSettings = () => {
     }, [navigation])
 
     /**
-     * Snaps the nested Character Presets ScrollView to the currently-selected preset on first focus. Reads the target preset name from
-     * `presetForFocusRef` so this callback's identity is stable and useFocusEffect does not re-run when the user picks a different preset.
-     * Bails until the active row's onLayout has measured a y-offset; once the snap fires it locks itself off so the user's own scrolling
-     * on the page is not yanked back.
+     * Snaps the nested Character Presets list to the currently-selected preset on first focus.
      */
     const maybeScrollToActivePreset = useCallback(() => {
         if (didInitialPresetScrollRef.current) return
         const target = presetForFocusRef.current
         if (!target) return
-        const y = presetLayoutsRef.current.get(target)
-        if (y == null) return
-        presetScrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: false })
+        const idx = filteredPresetsRef.current.findIndex((p) => p.name === target)
+        if (idx < 0) return
+        presetListRef.current?.scrollToIndex({ index: idx, animated: false })
         didInitialPresetScrollRef.current = true
     }, [])
 
@@ -1318,19 +1331,21 @@ const SmartRaceSolverSettings = () => {
                                                 ))}
                                             </ScrollView>
                                             <Input style={styles.input} value={presetSearch} onChangeText={setPresetSearch} placeholder="Search characters..." />
-                                            <ScrollView ref={presetScrollRef} style={styles.presetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                                                {filteredPresets.map((p) => {
+                                            <FlashList
+                                                ref={presetListRef}
+                                                data={filteredPresets}
+                                                keyExtractor={(p) => p.name}
+                                                style={styles.presetList}
+                                                nestedScrollEnabled
+                                                keyboardShouldPersistTaps="handled"
+                                                onLoad={() => maybeScrollToActivePreset()}
+                                                renderItem={({ item: p }) => {
                                                     const active = smartRaceSolverCharacterPreset === p.name
                                                     return (
                                                         <Pressable
-                                                            key={p.name}
                                                             style={[styles.presetItem, active && styles.presetItemActive]}
                                                             android_ripple={{ color: colors.ripple, foreground: true }}
                                                             onPress={() => applyPreset(p)}
-                                                            onLayout={(e) => {
-                                                                presetLayoutsRef.current.set(p.name, e.nativeEvent.layout.y)
-                                                                if (active) maybeScrollToActivePreset()
-                                                            }}
                                                         >
                                                             <Text style={active ? styles.presetNameActive : styles.presetName}>{p.name}</Text>
                                                             <Text style={styles.presetAptitudes}>
@@ -1339,9 +1354,11 @@ const SmartRaceSolverSettings = () => {
                                                             </Text>
                                                         </Pressable>
                                                     )
-                                                })}
-                                                {presetSearch && filteredPresets.length === 0 && <Text style={styles.inputDescription}>No matches.</Text>}
-                                            </ScrollView>
+                                                }}
+                                                ListEmptyComponent={
+                                                    presetSearch ? <Text style={styles.inputDescription}>No matches.</Text> : null
+                                                }
+                                            />
                                             <Text style={styles.inputDescription}>
                                                 Showing {filteredPresets.length} preset{filteredPresets.length === 1 ? "" : "s"}.
                                             </Text>
@@ -1523,13 +1540,17 @@ const SmartRaceSolverSettings = () => {
                                                 </View>
                                                 <Text style={styles.description}>Epithets the solver actively pursues. Selecting one biases the schedule toward completing it.</Text>
                                                 <Input style={styles.input} value={epithetSearch} onChangeText={setEpithetSearch} placeholder={`Search ${allEpithets.length} epithets…`} />
-                                                <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                                                    <View style={styles.row}>
-                                                        {filteredEpithets.map((ep) => (
-                                                            <EpithetChip key={ep.name} epithet={ep} selected={targetEpithets.includes(ep.name)} onToggle={toggleTargetEpithet} styles={styles} />
-                                                        ))}
-                                                    </View>
-                                                </ScrollView>
+                                                <FlashList
+                                                    data={filteredEpithets}
+                                                    numColumns={2}
+                                                    style={styles.epithetList}
+                                                    nestedScrollEnabled
+                                                    keyboardShouldPersistTaps="handled"
+                                                    keyExtractor={(ep) => ep.name}
+                                                    renderItem={({ item: ep }) => (
+                                                        <EpithetChip epithet={ep} selected={targetEpithets.includes(ep.name)} onToggle={toggleTargetEpithet} styles={styles} />
+                                                    )}
+                                                />
                                             </View>
                                         </SearchableItem>
                                         <SearchableItem
@@ -1557,13 +1578,17 @@ const SmartRaceSolverSettings = () => {
                                                     sparingly - each forced epithet narrows what the solver can pick.
                                                 </Text>
                                                 <Input style={styles.input} value={forcedEpithetSearch} onChangeText={setForcedEpithetSearch} placeholder={`Search ${allEpithets.length} epithets…`} />
-                                                <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                                                    <View style={styles.row}>
-                                                        {filteredForcedEpithets.map((ep) => (
-                                                            <EpithetChip key={ep.name} epithet={ep} selected={forcedEpithets.includes(ep.name)} onToggle={toggleForcedEpithet} styles={styles} />
-                                                        ))}
-                                                    </View>
-                                                </ScrollView>
+                                                <FlashList
+                                                    data={filteredForcedEpithets}
+                                                    numColumns={2}
+                                                    style={styles.epithetList}
+                                                    nestedScrollEnabled
+                                                    keyboardShouldPersistTaps="handled"
+                                                    keyExtractor={(ep) => ep.name}
+                                                    renderItem={({ item: ep }) => (
+                                                        <EpithetChip epithet={ep} selected={forcedEpithets.includes(ep.name)} onToggle={toggleForcedEpithet} styles={styles} />
+                                                    )}
+                                                />
                                             </View>
                                         </SearchableItem>
                                     </Section>
@@ -1846,7 +1871,11 @@ const SmartRaceSolverSettings = () => {
                                                     </View>
                                                 </View>
                                             )}
-                                            {calendarYearCards}
+                                            {showCalendarPreview ? (
+                                                calendarYearCards
+                                            ) : (
+                                                <Text style={[styles.previewStatus, { marginTop: SPACING.sm }]}>Loading schedule preview…</Text>
+                                            )}
                                         </View>
                                     </SearchableItem>
                                 </Section>
@@ -2097,4 +2126,4 @@ const SmartRaceSolverSettings = () => {
     )
 }
 
-export default SmartRaceSolverSettings
+export default memo(SmartRaceSolverSettings)

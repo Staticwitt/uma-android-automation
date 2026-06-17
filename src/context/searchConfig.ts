@@ -47,10 +47,30 @@ const searchConfig: SearchOption[] = [
         page: "DebugSettings",
     },
     {
+        id: "settings-stop-at-date",
+        title: "Stop at Date",
+        description: "Stop on one or more specified dates",
+        page: "SettingsMain",
+    },
+    {
+        id: "settings-target-dates",
+        title: "Target Dates",
+        description: "Stops the bot on the specified dates.",
+        page: "SettingsMain",
+        parentId: "settings-stop-at-date",
+    },
+    {
         id: "settings-wait-delay",
         title: "Wait Delay",
         description:
             "Sets the delay between actions and imaging operations. Lowering this will make the bot run much faster at the risk of the bot losing track of its location after loading/connecting screens.",
+        page: "SettingsMain",
+    },
+    {
+        id: "settings-dialog-wait-delay",
+        title: "Dialog Wait Delay",
+        description:
+            "Sets the delay between clicking a button that opens dialog and actually handling the dialog. Lowering this will make the bot run faster at an increased risk of the bot incorrectly handling dialogs that pop up.",
         page: "SettingsMain",
     },
     {
@@ -1134,5 +1154,11 @@ const searchConfig: SearchOption[] = [
         page: "LLMSettings",
     },
 ]
+
+/** IDs pre-registered at app init — mounted `SearchableItem`s skip redundant runtime registration. */
+export const staticSearchIds = new Set(searchConfig.map((item) => item.id))
+
+/** @returns Whether `id` is already present in the static search config. */
+export const isStaticSearchItem = (id: string): boolean => staticSearchIds.has(id)
 
 export default searchConfig

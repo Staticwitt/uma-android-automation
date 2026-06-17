@@ -1,5 +1,5 @@
-import { useMemo, useCallback, useContext, useRef, useState, useEffect } from "react"
-import { View, Text, ScrollView, StyleSheet, NativeModules, Pressable, AppState, AppStateStatus, ActivityIndicator } from "react-native"
+import { useMemo, useCallback, useContext, useRef, useState, useEffect, memo } from "react"
+import { View, Text, ScrollView, StyleSheet, NativeModules, Pressable, AppState, AppStateStatus, ActivityIndicator, InteractionManager } from "react-native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import * as Clipboard from "expo-clipboard"
 import { useTheme } from "../../context/ThemeContext"
@@ -133,6 +133,12 @@ const DebugSettings = () => {
     const { defaultSettings } = useContext(BotMetaContext)
     const scrollViewRef = useRef<ScrollView>(null)
     const modalShellStyles = useModalShellStyles()
+
+    const [showHeavySections, setShowHeavySections] = useState(false)
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => setShowHeavySections(true))
+        return () => handle.cancel()
+    }, [])
 
     /**
      * Handles mutual exclusivity for diagnostic debug tests. When one test is enabled, all others are automatically disabled.
@@ -402,6 +408,7 @@ const DebugSettings = () => {
             <SearchPageProvider page="DebugSettings" scrollViewRef={scrollViewRef}>
                 <PageHeader title="Debug Settings" />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+                    {showHeavySections && (
                     <View className="m-1">
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////
                             //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -759,6 +766,7 @@ const DebugSettings = () => {
                             </View>
                         </View>
                     </View>
+                    )}
                 </ScrollView>
             </SearchPageProvider>
 
@@ -798,4 +806,4 @@ const DebugSettings = () => {
     )
 }
 
-export default DebugSettings
+export default memo(DebugSettings)
