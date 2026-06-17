@@ -33,6 +33,7 @@ object ParentFarmingRunLoop {
         borrowRotationOffset = 0
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
+        ParentFarmingGoalQueue.resetSession()
     }
 
     fun sessionId(): String = sessionId
@@ -225,8 +226,10 @@ object ParentFarmingRunLoop {
         OwnedSupportDeckEquipper.resetForNewRun()
         SmartRaceSolverIntegration.reset()
         ParentDiscordNotifier.reset()
+        ParentFarmingLiveStatus.reset()
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
+        ParentFarmingGoalQueue.applyForRunIndex(sessionRunsCompleted)
 
         campaign.date = GameDate(day = 1)
         campaign.resetForNextParentRun()

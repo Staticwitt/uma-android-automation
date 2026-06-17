@@ -382,6 +382,42 @@ const searchConfig: SearchOption[] = [
         page: "ParentFarmingSettings",
     },
     {
+        id: "enable-parent-farming-goal-queue",
+        title: "Multi-Goal Queue",
+        description: "Cycle through different character bundles or goal presets each multi-run career.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "parent-farming-goal-queue",
+        title: "Goal Queue",
+        description: "Ordered list of bundles and presets for mixed overnight parent farming.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-auto-apply-owned-deck",
+        title: "Auto-Apply Owned Deck on Bundle",
+        description: "Equips saved owned support slots when applying a character bundle.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-live-message-log",
+        title: "Live Parent Progress in Message Log",
+        description: "Throttled turn-by-turn parent farming updates in the in-app message log.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-auto-feasibility-preview",
+        title: "Auto Feasibility Preview",
+        description: "Shows a live solver feasibility summary when your parent setup changes.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "parent-farming-analytics",
+        title: "Cross-Profile Parent Analytics",
+        description: "Quality trends and run counts grouped by profile and character.",
+        page: "ParentFarmingSettings",
+    },
+    {
         id: "parent-farming-preview-feasibility",
         title: "Run Solver Preview Check",
         description: "Validates the parent-farming setup with a live Smart Race Solver preview before starting the bot.",

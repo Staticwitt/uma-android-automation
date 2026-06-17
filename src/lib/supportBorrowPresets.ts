@@ -17,6 +17,8 @@ export const SUPPORT_BORROW_PRESETS: Record<string, string[]> = {
     "turf-allrounder": ["Matikanefukukitaru", "Symboli Rudolf", "Super Creek", "Gold Ship", "Kitasan Black"],
     "senior-finale": ["Symboli Rudolf", "Super Creek", "Gold Ship", "Biwa Hayahide", "Tokai Teio"],
     "junior-star": ["Special Week", "Kitasan Black", "Gold Ship", "Oguri Cap", "Super Creek"],
+    "ura-finals": ["Kitasan Black", "Special Week", "Super Creek", "Symboli Rudolf", "Gold Ship"],
+    "unity-aoharu": ["Tokai Teio", "Nice Nature", "Kitasan Black", "Matikanefukukitaru", "Super Creek"],
 }
 
 export const findSupportBorrowPreset = (goalPresetKey: string): string[] =>

@@ -1187,8 +1187,11 @@ object SmartRaceSolverIntegration {
      *
      * @return Parsed [Aptitudes]. Returns [Aptitudes.DEFAULT_A] when the setting is empty or invalid.
      */
+    private fun readRacingString(key: String): String =
+        ParentFarmingGoalQueue.overrideString(key, SettingsHelper.getStringSetting("racing", key))
+
     private fun readUserAptitudes(): Aptitudes {
-        val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverAptitudes")
+        val json = readRacingString("smartRaceSolverAptitudes")
         if (json.isEmpty()) return Aptitudes.DEFAULT_A
         return runCatching { parseAptitudesObj(JSONObject(json)) }.getOrElse { Aptitudes.DEFAULT_A }
     }
@@ -1219,7 +1222,7 @@ object SmartRaceSolverIntegration {
      * @return Parsed string set, or an empty set when missing or unparseable.
      */
     private fun readStringSet(key: String): Set<String> {
-        val json = SettingsHelper.getStringSetting("racing", key)
+        val json = readRacingString(key)
         if (json.isEmpty()) return emptySet()
         return runCatching {
             val arr = JSONArray(json)
@@ -1239,7 +1242,7 @@ object SmartRaceSolverIntegration {
      * @return Parsed [Weights], or default [Weights] when empty or unparseable.
      */
     private fun readWeights(): Weights {
-        val json = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
+        val json = readRacingString("smartRaceSolverWeights")
         val base =
             if (json.isEmpty()) {
                 Weights()

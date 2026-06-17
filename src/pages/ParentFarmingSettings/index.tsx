@@ -20,6 +20,9 @@ import { ParentFarmingCareerAutomationCard } from "../../components/ParentFarmin
 import { ParentFarmingGoalProgressCard } from "../../components/ParentFarmingGoalProgressCard"
 import { ParentFarmingSetupTabs } from "../../components/ParentFarmingSetupTabs"
 import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
+import { ParentFarmingGoalQueueEditor } from "../../components/ParentFarmingGoalQueueEditor"
+import { ParentFarmingAnalyticsSheet } from "../../components/ParentFarmingAnalyticsSheet"
+import { ParentFarmingAutoPreviewCard } from "../../components/ParentFarmingAutoPreviewCard"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry, findParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
@@ -68,6 +71,13 @@ import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
 import { copyToClipboard } from "../../lib/utils"
 import { SPARK_SELECTION_STRATEGIES } from "../../lib/sparkSelection"
+import {
+    applyCharacterBundleWithOwnedDeck,
+    buildParentFarmingGoalQueueResolved,
+    parseParentFarmingGoalQueue,
+    serializeParentFarmingGoalQueueResolved,
+    type ParentFarmingGoalQueueItem,
+} from "../../lib/parentFarmingGoalQueue"
 import { LEGACY_PARENT_SELECTION_STRATEGIES } from "../../lib/legacyParentSelection"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
@@ -102,6 +112,7 @@ const ParentFarmingSettings = () => {
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
     const [archiveOpen, setArchiveOpen] = useState(false)
+    const [analyticsOpen, setAnalyticsOpen] = useState(false)
     const [previewRunning, setPreviewRunning] = useState(false)
     const [activeSection, setActiveSection] = useState<ParentFarmingSectionTab>("all")
     const showSection = useCallback((key: ParentFarmingSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
@@ -134,6 +145,11 @@ const ParentFarmingSettings = () => {
         enableParentFarmingLockPreset,
         enableParentFarmingAutoDowngradeForcedEpithets,
         enableParentFarmingAdaptiveMultiRun,
+        enableParentFarmingGoalQueue,
+        parentFarmingGoalQueue,
+        enableParentFarmingAutoApplyOwnedDeck,
+        enableParentFarmingLiveMessageLog,
+        enableParentFarmingAutoFeasibilityPreview,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
@@ -283,11 +299,34 @@ const ParentFarmingSettings = () => {
         [setSettings, parentFarmingGoalPresetKey, parentFarmingBundleKey, settings.racing.parentFarmingSettingsSnapshot],
     )
 
-    const applyCharacterBundle = useCallback(
-        (bundle: ParentFarmingCharacterBundle) => {
-            setSettings((prev) => applyCharacterBundleToSettings(prev, bundle))
+    const goalQueueItems = useMemo(() => parseParentFarmingGoalQueue(parentFarmingGoalQueue), [parentFarmingGoalQueue])
+
+    const updateGoalQueue = useCallback(
+        (items: ParentFarmingGoalQueueItem[]) => {
+            setSettings((prev) => {
+                const resolved = buildParentFarmingGoalQueueResolved(prev, items)
+                return {
+                    ...prev,
+                    racing: {
+                        ...prev.racing,
+                        parentFarmingGoalQueue: JSON.stringify(items),
+                        parentFarmingGoalQueueResolved: serializeParentFarmingGoalQueueResolved(resolved),
+                    },
+                }
+            })
         },
         [setSettings],
+    )
+
+    const applyCharacterBundle = useCallback(
+        (bundle: ParentFarmingCharacterBundle) => {
+            setSettings((prev) => {
+                const withBundle = applyCharacterBundleToSettings(prev, bundle)
+                if (!enableParentFarmingAutoApplyOwnedDeck) return withBundle
+                return applyCharacterBundleWithOwnedDeck(withBundle, bundle.key, { autoApplyOwnedDeck: true })
+            })
+        },
+        [setSettings, enableParentFarmingAutoApplyOwnedDeck],
     )
 
     const openBundleSupportEditor = useCallback((bundle: ParentFarmingCharacterBundle) => {
@@ -560,6 +599,39 @@ const ParentFarmingSettings = () => {
                                     }
                                 />
                                 <SettingRow
+                                    id="enable-parent-farming-auto-apply-owned-deck"
+                                    title="Auto-apply owned deck on bundle"
+                                    description="When you tap a character bundle, equips your saved owned support slots if four or more are configured."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingAutoApplyOwnedDeck}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingAutoApplyOwnedDeck", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-live-message-log"
+                                    title="Live progress in message log"
+                                    description="Throttled turn-by-turn parent farming updates in the in-app message log."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingLiveMessageLog}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingLiveMessageLog", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-auto-feasibility-preview"
+                                    title="Auto feasibility preview"
+                                    description="Shows a live solver feasibility summary when your parent setup changes."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingAutoFeasibilityPreview}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingAutoFeasibilityPreview", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
                                     id="enable-parent-farming-lock-preset"
                                     title="Lock preset"
                                     description="When on, conflicting racing toggles re-sync from the active preset instead of clearing parent mode."
@@ -599,6 +671,10 @@ const ParentFarmingSettings = () => {
                                         </Pressable>
                                     </View>
                                 </SearchableItem>
+                                <ParentFarmingAutoPreviewCard
+                                    settings={settings}
+                                    enabled={enableParentFarmingAutoFeasibilityPreview}
+                                />
                             </Section>
                         )}
 
@@ -778,6 +854,32 @@ const ParentFarmingSettings = () => {
                                             </Pressable>
                                         </View>
                                     </SearchableItem>
+                                    <SearchableItem
+                                        id="parent-farming-analytics"
+                                        title="Cross-profile analytics"
+                                        description="Quality trends and run counts grouped by profile and character."
+                                        parentId="parent-run-archive"
+                                    >
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                            <Pressable
+                                                onPress={() => setAnalyticsOpen(true)}
+                                                style={{
+                                                    padding: SPACING.md,
+                                                    borderRadius: RADII.md,
+                                                    borderWidth: 1,
+                                                    borderColor: colors.borderHair,
+                                                    backgroundColor: colors.surface,
+                                                }}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                            >
+                                                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Open analytics dashboard</Text>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                    Compare runs across profiles and characters from archived parent history.
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    </SearchableItem>
                                 </Section>
                             </>
                         )}
@@ -942,6 +1044,28 @@ const ParentFarmingSettings = () => {
                                             showLabels
                                             description="Each career sends its own run summary when multi-run is enabled."
                                         />
+                                        <SettingRow
+                                            id="enable-parent-farming-goal-queue"
+                                            title="Multi-goal queue"
+                                            description="Cycle through different bundles or presets each career instead of repeating the same setup."
+                                            right={
+                                                <Switch
+                                                    checked={enableParentFarmingGoalQueue}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingGoalQueue", checked)}
+                                                />
+                                            }
+                                        />
+                                        {enableParentFarmingGoalQueue && (
+                                            <SearchableItem
+                                                id="parent-farming-goal-queue"
+                                                title="Goal queue"
+                                                description="Ordered list of character bundles and goal presets for mixed overnight farming."
+                                            >
+                                                <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                                    <ParentFarmingGoalQueueEditor items={goalQueueItems} onChange={updateGoalQueue} />
+                                                </View>
+                                            </SearchableItem>
+                                        )}
                                         <SettingRow
                                             id="enable-parent-farming-stop-on-quality"
                                             title="Stop on quality target"
@@ -1142,6 +1266,7 @@ const ParentFarmingSettings = () => {
                     onSave={saveOwnedInventory}
                 />
                 <ParentRunArchiveSheet visible={archiveOpen} onClose={() => setArchiveOpen(false)} />
+                <ParentFarmingAnalyticsSheet visible={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}
                     bundle={bundleSupportEditing}

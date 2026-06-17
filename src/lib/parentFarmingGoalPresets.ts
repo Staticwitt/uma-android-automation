@@ -169,7 +169,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         },
         trainingOverrides: SKILL_HINT_TRAINING,
         sparkSelectionStrategy: "SkillHints",
-        legacyParentSelectionStrategy: "SkillHints",
+        legacyParentSelectionStrategy: "WhiteFactor",
         qualityTargetScore: 85,
     },
     {
@@ -319,6 +319,37 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             minWinRateGuard: 0.68,
         },
         trainingOverrides: JUNIOR_STAR_TRAINING,
+    },
+    {
+        key: "ura-finals",
+        label: "URA Finals Parent",
+        description: "Forces URA Finals Final and targets legend-route epithets for URA Finale scenario parents.",
+        targetEpithets: ["Finals Champion", "Legendary Diva", "G1 Hunter", "Epoch Pioneer", "The GOAT", "Ruler of Japan"],
+        forcedEpithets: ["Finals Champion"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            ...QUALITY_ROUTE_WEIGHTS,
+            fanWeight: 1.3e-3,
+            minimumFanTarget: 150000,
+            minWinRateGuard: 0.8,
+        },
+        trainingOverrides: G1_FAN_TRAINING,
+        qualityTargetScore: 88,
+    },
+    {
+        key: "unity-aoharu",
+        label: "Unity Cup / Aoharu Parent",
+        description: "Targets Unity Cup team-training epithets including Dream Team and Spirit Burst routes.",
+        targetEpithets: ["Dream Team", "Hearts United", "Team Player", "Spirit Burst", "Witness to Legend", "Team Player Star Slayer"],
+        forcedEpithets: ["Dream Team"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            hintWeight: 14.0,
+            minWinRateGuard: 0.72,
+        },
+        trainingOverrides: SKILL_HINT_TRAINING,
+        sparkSelectionStrategy: "Balanced",
+        qualityTargetScore: 82,
     },
 ]
 

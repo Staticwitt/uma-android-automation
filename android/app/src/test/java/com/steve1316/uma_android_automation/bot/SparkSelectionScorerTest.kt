@@ -54,6 +54,15 @@ class SparkSelectionScorerTest {
     }
 
     @Test
+    @DisplayName("WhiteFactor strategy prefers white and star markers")
+    fun whiteFactorPrefersWhiteMarkers() {
+        val context = statContext.copy(strategy = "WhiteFactor")
+        val plain = SparkSelectionScorer.score("Speed +120", context)
+        val white = SparkSelectionScorer.score("White factor speed ★★", context)
+        assertTrue(white > plain)
+    }
+
+    @Test
     @DisplayName("Aptitude priorities rank weaker solver aptitudes earlier")
     fun buildAptitudePrioritiesUsesDistanceBiasAndWeakGrades() {
         val json = """{"Sprint":"G","Mile":"A","Medium":"B","Long":"A","Turf":"A","Dirt":"G"}"""

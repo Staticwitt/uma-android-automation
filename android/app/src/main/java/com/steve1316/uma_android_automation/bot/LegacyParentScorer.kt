@@ -62,7 +62,15 @@ object LegacyParentScorer {
 
         val skillSignal = SKILL_KEYWORDS.any { lower.contains(it) }
         val blueFactorSignal = lower.contains("blue") || lower.contains("青")
+        val whiteFactorSignal = lower.contains("white") || lower.contains("白")
+        val starCount = ocrText.count { it == '★' || it == '*' }
         when (context.strategy) {
+            "WhiteFactor" -> {
+                if (whiteFactorSignal) total += 240.0
+                if (blueFactorSignal) total += 200.0
+                if (skillSignal) total += 100.0
+                total += starCount * 40.0
+            }
             "SkillHints" -> {
                 if (skillSignal) total += 200.0
                 if (blueFactorSignal) total += 40.0

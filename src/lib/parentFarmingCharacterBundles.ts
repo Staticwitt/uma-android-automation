@@ -196,6 +196,38 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         goalPresetKey: "g1-fans",
         supportBorrowCards: bundleBorrow("g1-fans", ["Symboli Rudolf", "Super Creek", "Kitasan Black", "Gold Ship"]),
     },
+    {
+        key: "special-week-ura",
+        label: "Special Week — URA Finals Parent",
+        description: "URA Finale route: Finals Champion forced with legend and G1 fan epithets.",
+        characterName: "Special Week",
+        goalPresetKey: "ura-finals",
+        supportBorrowCards: bundleBorrow("ura-finals", ["Special Week", "Kitasan Black", "Super Creek", "Gold Ship"]),
+    },
+    {
+        key: "kitasan-black-ura",
+        label: "Kitasan Black — URA Finals Parent",
+        description: "URA Finale legend farming with Kitasan Black aptitudes.",
+        characterName: "Kitasan Black",
+        goalPresetKey: "ura-finals",
+        supportBorrowCards: bundleBorrow("ura-finals", ["Kitasan Black", "Special Week", "Oguri Cap", "Gold Ship"]),
+    },
+    {
+        key: "tokai-teio-unity",
+        label: "Tokai Teio — Unity Aoharu Parent",
+        description: "Unity Cup team-training epithets with medium-distance bias.",
+        characterName: "Tokai Teio",
+        goalPresetKey: "unity-aoharu",
+        supportBorrowCards: bundleBorrow("unity-aoharu", ["Tokai Teio", "Kitasan Black", "Special Week", "Gold Ship"]),
+    },
+    {
+        key: "nice-nature-unity",
+        label: "Nice Nature — Unity Aoharu Parent",
+        description: "Unity Cup Dream Team route with skill-hint friendly training.",
+        characterName: "Nice Nature",
+        goalPresetKey: "unity-aoharu",
+        supportBorrowCards: bundleBorrow("unity-aoharu", ["Nice Nature", "Super Creek", "Kitasan Black", "Matikanefukukitaru"]),
+    },
 ]
 
 /** Builds aptitude grades from a bundled character preset entry. */

@@ -3,6 +3,7 @@ export const SPARK_SELECTION_STRATEGIES = [
     { value: "Default", label: "Default (first option)", shortLabel: "First option" },
     { value: "StatAndAptitude", label: "Stat & aptitude (parent farming)", shortLabel: "Stat & aptitude" },
     { value: "SkillHints", label: "Skill hints & white factors", shortLabel: "Skill hints" },
+    { value: "WhiteFactor", label: "White / blue factors (aggressive)", shortLabel: "White factors" },
     { value: "Balanced", label: "Balanced", shortLabel: "Balanced" },
 ] as const
 

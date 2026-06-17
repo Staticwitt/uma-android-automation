@@ -136,13 +136,21 @@ object SparkSelector {
     }
 
     private fun buildContext(strategy: String): SparkSelectionContext {
+        val resolvedStrategy =
+            ParentFarmingGoalQueue.overrideString("sparkSelectionStrategy", strategy).ifEmpty { strategy }
         val statPriorities = SettingsHelper.getStringArraySetting("training", "statPrioritization")
-        val preferredDistance = SettingsHelper.getStringSetting("training", "preferredDistanceOverride").ifEmpty { "Auto" }
+        val preferredDistance =
+            ParentFarmingGoalQueue.preferredDistanceOverride()
+                ?: SettingsHelper.getStringSetting("training", "preferredDistanceOverride").ifEmpty { "Auto" }
         val aptitudesJson = SmartRaceSolverIntegration.effectiveAptitudesJson()
-        val preferSkillHints = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)
+        val preferSkillHints =
+            ParentFarmingGoalQueue.overrideBoolean(
+                "enablePrioritizeSkillHints",
+                SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false),
+            )
 
         return SparkSelectionContext(
-            strategy = strategy,
+            strategy = resolvedStrategy,
             statPriorities = statPriorities.ifEmpty { listOf("Speed", "Stamina", "Power", "Guts", "Wit") },
             aptitudePriorities = SparkSelectionScorer.buildAptitudePriorities(aptitudesJson, preferredDistance),
             preferSkillHints = preferSkillHints,

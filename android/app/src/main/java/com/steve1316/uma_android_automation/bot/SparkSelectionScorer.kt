@@ -69,7 +69,17 @@ object SparkSelectionScorer {
 
         val skillSignal = SKILL_KEYWORDS.any { lower.contains(it) }
         val factorSignal = FACTOR_KEYWORDS.any { lower.contains(it) }
+        val blueSignal = lower.contains("blue") || lower.contains("青")
+        val whiteSignal = lower.contains("white") || lower.contains("白")
+        val starCount = ocrText.count { it == '★' || it == '*' }
         when (context.strategy) {
+            "WhiteFactor" -> {
+                if (whiteSignal) score += 220.0
+                if (blueSignal) score += 180.0
+                if (factorSignal) score += 140.0
+                if (skillSignal) score += 90.0
+                score += starCount * 35.0
+            }
             "SkillHints" -> {
                 if (skillSignal) score += 200.0
                 if (factorSignal) score += 60.0

@@ -29,4 +29,13 @@ class LegacyParentScorerTest {
         val blue = LegacyParentScorer.score("青 factor stamina", context)
         assertTrue(blue > plain)
     }
+
+    @Test
+    @DisplayName("WhiteFactor strategy strongly prefers white factor OCR text")
+    fun whiteFactorPrefersWhiteText() {
+        val context = skillContext.copy(strategy = "WhiteFactor")
+        val statOnly = LegacyParentScorer.score("Speed +120", context)
+        val white = LegacyParentScorer.score("White factor speed ★★", context)
+        assertTrue(white > statOnly)
+    }
 }

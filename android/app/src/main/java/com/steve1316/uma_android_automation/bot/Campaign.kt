@@ -1774,6 +1774,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 onAfterTurnStartUpdates()
 
                 ParentDiscordNotifier.maybeSendLiveStatus(game, trainee, date, dateChanged = true)
+                ParentFarmingLiveStatus.maybeLog(game, trainee, date, dateChanged = true)
             }
 
             // Since we're at the main screen, we don't need to worry about this

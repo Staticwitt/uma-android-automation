@@ -3,6 +3,7 @@ export const LEGACY_PARENT_SELECTION_STRATEGIES = [
     { value: "Default", label: "Default (in-game Auto-Select)", shortLabel: "Auto-Select" },
     { value: "StatAndAptitude", label: "Stat & aptitude factors", shortLabel: "Stat & aptitude" },
     { value: "SkillHints", label: "Skill hints & white factors", shortLabel: "Skill hints" },
+    { value: "WhiteFactor", label: "White / blue factors (aggressive)", shortLabel: "White factors" },
     { value: "Balanced", label: "Balanced", shortLabel: "Balanced" },
 ] as const
 
@@ -20,7 +21,12 @@ export const formatLegacyParentStrategyLabel = (value: string | undefined): stri
 
 /** Maps spark inheritance strategy to a matching legacy parent OCR strategy. */
 export const legacyStrategyFromSparkStrategy = (sparkStrategy: string | undefined): LegacyParentSelectionStrategy => {
-    if (sparkStrategy === "SkillHints" || sparkStrategy === "StatAndAptitude" || sparkStrategy === "Balanced") {
+    if (
+        sparkStrategy === "SkillHints" ||
+        sparkStrategy === "StatAndAptitude" ||
+        sparkStrategy === "Balanced" ||
+        sparkStrategy === "WhiteFactor"
+    ) {
         return sparkStrategy
     }
     return DEFAULT_LEGACY_PARENT_SELECTION_STRATEGY

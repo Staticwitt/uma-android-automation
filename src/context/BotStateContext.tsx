@@ -114,6 +114,18 @@ export interface Settings {
         enableParentFarmingAutoDowngradeForcedEpithets: boolean
         /** Relax forced epithets between multi-run attempts after a forced-route failure. */
         enableParentFarmingAdaptiveMultiRun: boolean
+        /** Cycle through different goal presets/bundles each multi-run career. */
+        enableParentFarmingGoalQueue: boolean
+        /** JSON array of `{ type: "bundle"|"preset", key: string }` queue items. */
+        parentFarmingGoalQueue: string
+        /** Pre-resolved Kotlin patches for each queue item (written when queue is saved). */
+        parentFarmingGoalQueueResolved: string
+        /** When applying a character bundle, auto-equip saved owned deck if 4+ cards are saved. */
+        enableParentFarmingAutoApplyOwnedDeck: boolean
+        /** Emit throttled parent-farming progress lines to the in-app message log. */
+        enableParentFarmingLiveMessageLog: boolean
+        /** Auto-run solver feasibility preview when parent setup changes. */
+        enableParentFarmingAutoFeasibilityPreview: boolean
         /** JSON snapshot for reverting settings when exiting parent farming mode. */
         parentFarmingSettingsSnapshot: string
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
@@ -362,6 +374,12 @@ export const defaultSettings: Settings = {
         enableParentFarmingLockPreset: false,
         enableParentFarmingAutoDowngradeForcedEpithets: true,
         enableParentFarmingAdaptiveMultiRun: true,
+        enableParentFarmingGoalQueue: false,
+        parentFarmingGoalQueue: "[]",
+        parentFarmingGoalQueueResolved: "[]",
+        enableParentFarmingAutoApplyOwnedDeck: true,
+        enableParentFarmingLiveMessageLog: true,
+        enableParentFarmingAutoFeasibilityPreview: true,
         parentFarmingSettingsSnapshot: "",
         enableAutoSelectLegacyParents: false,
         legacyParentSelectionStrategy: "Default",
