@@ -244,6 +244,8 @@ export interface Settings {
         enableDiscordNotifications: boolean
         enableDiscordEmbeds: boolean
         enableDiscordLiveStatus: boolean
+        enableDiscordRaceAlerts: boolean
+        enableDiscordWinRateGuardAlerts: boolean
         discordLiveStatusTurnInterval: number
         discordToken: string
         discordUserID: string
@@ -532,6 +534,8 @@ export const defaultSettings: Settings = {
         enableDiscordNotifications: false,
         enableDiscordEmbeds: true,
         enableDiscordLiveStatus: true,
+        enableDiscordRaceAlerts: true,
+        enableDiscordWinRateGuardAlerts: true,
         discordLiveStatusTurnInterval: 6,
         discordToken: "",
         discordUserID: "",

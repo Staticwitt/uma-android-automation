@@ -36,7 +36,7 @@ const DiscordSettings = () => {
 
     // Merge current Discord settings with defaults to handle missing properties.
     const discordSettings = { ...defaultSettings.discord, ...discord }
-    const { enableDiscordNotifications, discordToken, enableDiscordEmbeds, enableDiscordLiveStatus, discordLiveStatusTurnInterval } = discordSettings
+    const { enableDiscordNotifications, discordToken, enableDiscordEmbeds, enableDiscordLiveStatus, enableDiscordRaceAlerts, enableDiscordWinRateGuardAlerts, discordLiveStatusTurnInterval } = discordSettings
     // Coerce to string since SQLite may store numeric IDs as numbers.
     const discordUserID = String(discordSettings.discordUserID || "")
 
@@ -236,7 +236,7 @@ const DiscordSettings = () => {
                             <SearchableItem
                                 id="enableDiscordLiveStatus"
                                 title="Parent Farming Live Status"
-                                description="Send periodic Discord updates during parent farming runs (fans, goals, race record)."
+                                description="Send periodic Discord updates during parent farming runs (fans, energy, mood, goals, race record)."
                             >
                                 <Row
                                     title="Parent Farming Live Status"
@@ -245,6 +245,40 @@ const DiscordSettings = () => {
                                         <Switch
                                             checked={enableDiscordLiveStatus}
                                             onCheckedChange={(checked) => updateDiscordSetting("enableDiscordLiveStatus", checked)}
+                                            disabled={!enableDiscordNotifications}
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
+                            <SearchableItem
+                                id="enableDiscordRaceAlerts"
+                                title="Race Loss Alerts"
+                                description="Send a Discord alert when a smart-solver race does not finish 1st."
+                            >
+                                <Row
+                                    title="Race Loss Alerts"
+                                    description="Notify when a solver race is recorded as a loss"
+                                    right={
+                                        <Switch
+                                            checked={enableDiscordRaceAlerts}
+                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordRaceAlerts", checked)}
+                                            disabled={!enableDiscordNotifications}
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
+                            <SearchableItem
+                                id="enableDiscordWinRateGuardAlerts"
+                                title="Win-Rate Guard Alerts"
+                                description="Send a Discord alert when the win-rate guard blocks a planned race."
+                            >
+                                <Row
+                                    title="Win-Rate Guard Alerts"
+                                    description="Notify when P(win) is below the guard floor"
+                                    right={
+                                        <Switch
+                                            checked={enableDiscordWinRateGuardAlerts}
+                                            onCheckedChange={(checked) => updateDiscordSetting("enableDiscordWinRateGuardAlerts", checked)}
                                             disabled={!enableDiscordNotifications}
                                         />
                                     }

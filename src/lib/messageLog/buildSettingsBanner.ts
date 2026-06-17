@@ -282,6 +282,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔔 Discord Notifications: ${settings.discord?.enableDiscordNotifications ? "✅" : "❌"}
 📎 Rich Embeds: ${settings.discord?.enableDiscordEmbeds ? "✅" : "❌"}
 📡 Parent Live Status: ${settings.discord?.enableDiscordLiveStatus ? "✅" : "❌"}
+🏁 Race Loss Alerts: ${settings.discord?.enableDiscordRaceAlerts !== false ? "✅" : "❌"}
+🛡️ Win-Rate Guard Alerts: ${settings.discord?.enableDiscordWinRateGuardAlerts !== false ? "✅" : "❌"}
 📅 Live Status Interval: every ${settings.discord?.discordLiveStatusTurnInterval ?? 6} turns
 👤 Discord User ID: ${settings.discord?.discordUserID ? "Configured" : "Not Set"}
 🔑 Discord Bot Token: ${settings.discord?.discordToken ? "Configured" : "Not Set"}`

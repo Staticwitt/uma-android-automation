@@ -940,7 +940,21 @@ const searchConfig: SearchOption[] = [
     {
         id: "enableDiscordLiveStatus",
         title: "Parent Farming Live Status",
-        description: "Send periodic Discord updates during parent farming runs (fans, goals, race record).",
+        description: "Send periodic Discord updates during parent farming runs (fans, energy, mood, goals, race record).",
+        page: "DiscordSettings",
+        parentId: "enableDiscordNotifications",
+    },
+    {
+        id: "enableDiscordRaceAlerts",
+        title: "Race Loss Alerts",
+        description: "Send a Discord alert when a smart-solver race does not finish 1st.",
+        page: "DiscordSettings",
+        parentId: "enableDiscordNotifications",
+    },
+    {
+        id: "enableDiscordWinRateGuardAlerts",
+        title: "Win-Rate Guard Alerts",
+        description: "Send a Discord alert when the win-rate guard blocks a planned race.",
         page: "DiscordSettings",
         parentId: "enableDiscordNotifications",
     },

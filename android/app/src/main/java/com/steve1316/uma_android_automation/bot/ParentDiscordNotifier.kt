@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.types.GameDate
+import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.Trainee
 
 /**
@@ -127,6 +128,8 @@ object ParentDiscordNotifier {
                 inline = true,
             ),
         )
+        fields.add(DiscordEmbedField("Energy", "${trainee.energy}%", inline = true))
+        fields.add(DiscordEmbedField("Mood", formatMood(trainee.mood), inline = true))
         fields.add(DiscordEmbedField("Races", "${raceStats.wins}W / ${raceStats.losses}L", inline = true))
         fields.add(DiscordEmbedField("Runtime", runtime, inline = true))
 
@@ -186,6 +189,9 @@ object ParentDiscordNotifier {
             footer = MessageLog.getSystemTimeString(),
         )
     }
+
+    internal fun formatMood(mood: Mood): String =
+        mood.name.lowercase().replaceFirstChar { char -> char.uppercaseChar() }
 
     fun sendMultiRunSessionComplete(sessionRunsCompleted: Int, sessionTarget: Int, bestSummary: String) {
         if (!DiscordUtils.enableDiscordNotifications) return

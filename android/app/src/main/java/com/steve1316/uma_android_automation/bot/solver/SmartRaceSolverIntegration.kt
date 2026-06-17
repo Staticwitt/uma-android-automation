@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot.solver
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
+import com.steve1316.uma_android_automation.bot.DiscordSolverNotifier
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
 import com.steve1316.uma_android_automation.bot.SupportCardSelection
@@ -422,6 +423,7 @@ object SmartRaceSolverIntegration {
         if (!won) {
             recordRaceLost(pending.raceKey, pending.name, pending.classYear, pending.turnNumber)
             MessageLog.i(TAG, "Race \"${pending.name}\" on turn ${pending.turnNumber} did not finish 1st; recorded as a loss.")
+            DiscordSolverNotifier.maybeSendRaceLoss(pending.name, pending.turnNumber)
             markDeadEpithetsAfterLoss(pending.name)
             cachedSchedule = null
             cachedScheduleTurn = -1
@@ -662,9 +664,17 @@ object SmartRaceSolverIntegration {
                 candidate.key == decision.raceKey || candidate.name == raceNameFromKey(decision.raceKey)
             }
         if (plannedRace != null && !RaceWinModel.passesWinRateGuard(plannedRace, effectiveAptitudes(), readWeights())) {
+            val weights = readWeights()
+            val pWin = RaceWinModel.winProbability(plannedRace, effectiveAptitudes())
             MessageLog.i(
                 TAG,
-                "Win-rate guard blocked planned ${decision.raceKey} on turn $currentTurn (P(win)=${"%.2f".format(RaceWinModel.winProbability(plannedRace, effectiveAptitudes()))}).",
+                "Win-rate guard blocked planned ${decision.raceKey} on turn $currentTurn (P(win)=${"%.2f".format(pWin)}).",
+            )
+            DiscordSolverNotifier.maybeSendWinRateGuardSkip(
+                raceKey = decision.raceKey,
+                turnNumber = currentTurn,
+                winProbability = pWin,
+                guardFloor = weights.minWinRateGuard.coerceIn(0.0, 1.0),
             )
             return null
         }
