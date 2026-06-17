@@ -1,20 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.14</latestVersion>
-    <latestVersionCode>104</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.14</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.14/v5.9.14-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.14/v5.9.14-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.15</latestVersion>
+    <latestVersionCode>105</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.15</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.15/v5.9.15-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.15/v5.9.15-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.14 - Smart Race Solver planning upgrade
+v5.9.15 - Discord live status and solver alerts
 
 Features
 ---
-- Energy and mood aware scheduling: MILP/heuristic plan Rest days when energy is low
-- Win-rate guard: scale race value by P(win) and optionally skip risky races
-- Live schedule preview: WIN/LOSE pills sync during a run without Recalculate
+- Parent farming live Discord embeds now show energy and mood
+- Race loss alerts when a smart-solver race does not finish 1st
+- Win-rate guard alerts when P(win) is below the guard floor
+- New Discord Settings toggles for race and guard alerts (default on)
 
-Includes v5.9.13 parent farming reliability fixes.
+Includes v5.9.14 Smart Race Solver energy, win-rate guard, and live preview.
 
     </releaseNotes>
   </update>
