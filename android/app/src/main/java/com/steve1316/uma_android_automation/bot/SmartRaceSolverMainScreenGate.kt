@@ -3,7 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.Decision
-import com.steve1316.uma_android_automation.types.MainScreenAction
+import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 
 /**
  * Shared Smart Race Solver main-screen gate for non-Trackblazer scenarios.
