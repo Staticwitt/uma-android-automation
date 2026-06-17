@@ -1,26 +1,24 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.18</latestVersion>
-    <latestVersionCode>108</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.18</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.18/v5.9.18-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.18/v5.9.18-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.19</latestVersion>
+    <latestVersionCode>109</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.19</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.19/v5.9.19-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.19/v5.9.19-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.18 - Parent farming reliability bundle
+v5.9.19 - Settings UI overhaul
 
 Features
 ---
-- Full unattended preset: career-complete skills + carat retry (max 2/career)
-- Solver preview feasibility check before starting parent runs
-- Adaptive multi-run: downgrade failed forced epithets + relax win-rate/fan floor
-- Lock preset on Racing and Smart Race Solver pages
-- General Solver Preset for non-parent Smart Race Solver runs
-- Session clipboard summary + archive quality breakdown bars
-- URA/UC Smart Race Solver main-loop gate (partial)
-- 6 new character bundles (Kitasan, Special Week, Mejiro, Agnes Tachyon, King Halo, Symboli Rudolf)
-- Spark OCR display-profile scaling + blue factor legacy parent bonus
+- New Callout, Toast, DomainHeader, and SettingRow components across settings pages
+- Settings hub glass domain tiles; Training and Racing landing pages
+- Home RunPanel with run status indicator and cleaner layout
+- Parent Farming tabs (Setup | Automation | Tune) and shared TabStrip pickers
+- Debug page tabs (Tuning | Tools | Tests)
+- TabStrips on Training, Training Events, and Smart Race Solver settings
+- Global search navigation improvements for settings stack pages
 
-Includes v5.9.17 Samsung Galaxy Tab S10 FE display profile support.
+Includes v5.9.18 parent farming reliability bundle.
 
     </releaseNotes>
   </update>
