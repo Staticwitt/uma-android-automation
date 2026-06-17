@@ -21,6 +21,16 @@ data class SparkSelectionContext(
  * Scores inheritance spark OCR snippets so the bot can pick the best of three offered sparks.
  */
 object SparkSelectionScorer {
+    private val FACTOR_KEYWORDS =
+        listOf(
+            "blue",
+            "white",
+            "factor",
+            "inheritance",
+            "spark",
+            "unique",
+        )
+
     private val SKILL_KEYWORDS =
         listOf(
             "hint",
@@ -58,10 +68,20 @@ object SparkSelectionScorer {
         var score = 0.0
 
         val skillSignal = SKILL_KEYWORDS.any { lower.contains(it) }
+        val factorSignal = FACTOR_KEYWORDS.any { lower.contains(it) }
         when (context.strategy) {
-            "SkillHints" -> if (skillSignal) score += 200.0
-            "Balanced" -> if (skillSignal) score += 80.0
-            "StatAndAptitude" -> if (skillSignal && context.preferSkillHints) score += 45.0
+            "SkillHints" -> {
+                if (skillSignal) score += 200.0
+                if (factorSignal) score += 60.0
+            }
+            "Balanced" -> {
+                if (skillSignal) score += 80.0
+                if (factorSignal) score += 35.0
+            }
+            "StatAndAptitude" -> {
+                if (skillSignal && context.preferSkillHints) score += 45.0
+                if (factorSignal) score += 20.0
+            }
         }
 
         for ((index, aptitude) in context.aptitudePriorities.withIndex()) {

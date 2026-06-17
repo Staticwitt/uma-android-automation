@@ -1,10 +1,14 @@
 import { useMemo, useContext, useRef, useCallback, useState } from "react"
-import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native"
+import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { BotMetaContext, GeneralMiscContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
+import {
+    assessParentFarmingPreviewFeasibility,
+    formatPreviewFeasibilitySummary,
+} from "../../lib/parentFarmingPreviewFeasibility"
 import { applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
 import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
@@ -25,12 +29,14 @@ import {
     enableParentFarmingCharacterBundle,
 } from "../../lib/parentFarmingResolver"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { assessParentFarmingFeasibility, formatFeasibilityIssues } from "../../lib/parentFarmingFeasibility"
 import {
     PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
     buildFullDeckApplyRacingPatch,
 } from "../../lib/parentFarmingCareerAutomation"
 import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
 import { applyParentFarmingPreset, disableParentFarmingMode, refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
+import { applyParentFarmingFullUnattended } from "../../lib/parentFarmingFullUnattended"
 import {
     hasParentFarmingTargetEpithetDrift,
     hasParentFarmingTargetWeightDrift,
@@ -75,7 +81,7 @@ const ParentFarmingSettings = () => {
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
     const { setSettings } = useContext(BotMetaContext)
-    const { general } = useContext(GeneralMiscContext)
+    const { general, updateGeneral } = useContext(GeneralMiscContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
@@ -86,6 +92,7 @@ const ParentFarmingSettings = () => {
     const [supportFinderOpen, setSupportFinderOpen] = useState(false)
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
     const [archiveOpen, setArchiveOpen] = useState(false)
+    const [previewRunning, setPreviewRunning] = useState(false)
 
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
@@ -103,6 +110,10 @@ const ParentFarmingSettings = () => {
         enableParentFarmingKeepBestRun,
         enableParentFarmingStopOnForcedEpithetFail,
         enableParentFarmingBorrowRotation,
+        enableParentFarmingFullUnattended,
+        enableParentFarmingLockPreset,
+        enableParentFarmingAutoDowngradeForcedEpithets,
+        enableParentFarmingAdaptiveMultiRun,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
@@ -168,6 +179,10 @@ const ParentFarmingSettings = () => {
     )
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
+    const parentFarmingFeasibilityWarnings = useMemo(
+        () => formatFeasibilityIssues(assessParentFarmingFeasibility(settings)),
+        [settings],
+    )
 
     const showPresetReSync = useMemo(
         () =>
@@ -221,6 +236,21 @@ const ParentFarmingSettings = () => {
         (checked: boolean) => {
             if (!checked) {
                 setGoalPickerOpen(false)
+                if (settings.racing.parentFarmingSettingsSnapshot) {
+                    Alert.alert("Exit parent farming?", "Keep your current settings or revert to the pre-preset snapshot.", [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                            text: "Keep settings",
+                            onPress: () => setSettings((prev) => disableParentFarmingMode(prev)),
+                        },
+                        {
+                            text: "Revert settings",
+                            style: "destructive",
+                            onPress: () => setSettings((prev) => disableParentFarmingMode(prev, { revert: true })),
+                        },
+                    ])
+                    return
+                }
                 setSettings((prev) => disableParentFarmingMode(prev))
                 return
             }
@@ -230,7 +260,7 @@ const ParentFarmingSettings = () => {
                 setGoalPickerOpen(true)
             }
         },
-        [setSettings, parentFarmingGoalPresetKey, parentFarmingBundleKey],
+        [setSettings, parentFarmingGoalPresetKey, parentFarmingBundleKey, settings.racing.parentFarmingSettingsSnapshot],
     )
 
     const applyCharacterBundle = useCallback(
@@ -313,9 +343,16 @@ const ParentFarmingSettings = () => {
 
     const updateRacingSetting = useCallback(
         (key: keyof Settings["racing"], value: unknown) => {
+            if (key === "enableParentFarmingFullUnattended") {
+                setSettings((prev) => {
+                    const next = { ...prev, racing: { ...prev.racing, enableParentFarmingFullUnattended: Boolean(value) } }
+                    return Boolean(value) ? applyParentFarmingFullUnattended(next) : next
+                })
+                return
+            }
             updateRacing({ [key]: value } as Partial<Settings["racing"]>)
         },
-        [updateRacing],
+        [updateRacing, setSettings],
     )
 
     const applyLegacyParentRecommendation = useCallback(() => {
@@ -356,6 +393,29 @@ const ParentFarmingSettings = () => {
     )
 
     const solverNavDisabled = enableForceRacing || enableUserInGameRaceAgenda
+    const activeScenario = general?.scenario || "Trackblazer"
+    const needsTrackblazerNudge = enableParentFarmingMode && activeScenario !== "Trackblazer"
+
+    const runPreviewCheck = useCallback(async () => {
+        setPreviewRunning(true)
+        try {
+            const result = await assessParentFarmingPreviewFeasibility(settings)
+            const summary = formatPreviewFeasibilitySummary(result)
+            const detail =
+                result.issues.length > 0
+                    ? `\n\n${formatFeasibilityIssues(result.issues).join("\n")}`
+                    : "\n\nNo static or solver issues detected."
+            Alert.alert("Solver preview check", `${summary}${detail}`)
+        } catch (error) {
+            Alert.alert("Solver preview check", error instanceof Error ? error.message : String(error))
+        } finally {
+            setPreviewRunning(false)
+        }
+    }, [settings])
+
+    const applyTrackblazerScenario = useCallback(() => {
+        updateGeneral({ scenario: "Trackblazer" })
+    }, [updateGeneral])
 
     const styles = useMemo(
         () =>
@@ -412,9 +472,128 @@ const ParentFarmingSettings = () => {
                             {parentFarmingDriftWarnings.length > 0 && (
                                 <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {parentFarmingDriftWarnings.join("\n\n")}
+                                    {showPresetReSync && (
+                                        <Pressable
+                                            onPress={reSyncFromPreset}
+                                            style={{ marginTop: SPACING.sm, alignSelf: "flex-start" }}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Re-sync from preset</Text>
+                                        </Pressable>
+                                    )}
+                                </WarningContainer>
+                            )}
+                            {parentFarmingFeasibilityWarnings.length > 0 && (
+                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                    {parentFarmingFeasibilityWarnings.join("\n\n")}
+                                    {needsTrackblazerNudge && (
+                                        <Pressable
+                                            onPress={applyTrackblazerScenario}
+                                            style={{ marginTop: SPACING.sm, alignSelf: "flex-start" }}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Switch to Trackblazer</Text>
+                                        </Pressable>
+                                    )}
                                 </WarningContainer>
                             )}
                         </Section>
+
+                        {enableParentFarmingMode && (
+                            <Section label="Reliability">
+                                <SearchableItem
+                                    id="enable-parent-farming-full-unattended"
+                                    title="Full unattended preset"
+                                    description="Enables career-complete skill spending and carat-funded race retry (max 2 per career)."
+                                >
+                                    <Row
+                                        title="Full unattended"
+                                        right={
+                                            <Switch
+                                                checked={enableParentFarmingFullUnattended}
+                                                onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingFullUnattended", checked)}
+                                            />
+                                        }
+                                    />
+                                </SearchableItem>
+                                <SearchableItem
+                                    id="enable-parent-farming-auto-downgrade-forced"
+                                    title="Auto-downgrade infeasible forced epithets"
+                                    description="Moves forced epithets without matchers or wrong scenario into targets at preset resolve time."
+                                >
+                                    <Row
+                                        title="Auto-downgrade forced epithets"
+                                        right={
+                                            <Switch
+                                                checked={enableParentFarmingAutoDowngradeForcedEpithets}
+                                                onCheckedChange={(checked) =>
+                                                    updateRacingSetting("enableParentFarmingAutoDowngradeForcedEpithets", checked)
+                                                }
+                                            />
+                                        }
+                                    />
+                                </SearchableItem>
+                                <SearchableItem
+                                    id="enable-parent-farming-adaptive-multi-run"
+                                    title="Adaptive multi-run"
+                                    description="After a forced epithet miss, downgrades that epithet to target-only on the next career."
+                                >
+                                    <Row
+                                        title="Adaptive multi-run"
+                                        right={
+                                            <Switch
+                                                checked={enableParentFarmingAdaptiveMultiRun}
+                                                onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingAdaptiveMultiRun", checked)}
+                                            />
+                                        }
+                                    />
+                                </SearchableItem>
+                                <SearchableItem
+                                    id="enable-parent-farming-lock-preset"
+                                    title="Lock preset"
+                                    description="When on, conflicting racing toggles re-sync from the active preset instead of clearing parent mode."
+                                >
+                                    <Row
+                                        title="Lock preset"
+                                        right={
+                                            <Switch
+                                                checked={enableParentFarmingLockPreset}
+                                                onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingLockPreset", checked)}
+                                            />
+                                        }
+                                    />
+                                </SearchableItem>
+                                <SearchableItem
+                                    id="parent-farming-preview-feasibility"
+                                    title="Run solver preview check"
+                                    description="Validates the parent-farming setup with a live Smart Race Solver preview before starting the bot."
+                                >
+                                    <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                        <Pressable
+                                            onPress={runPreviewCheck}
+                                            disabled={previewRunning}
+                                            style={{
+                                                padding: SPACING.md,
+                                                borderRadius: RADII.md,
+                                                borderWidth: 1,
+                                                borderColor: colors.brandBorder,
+                                                backgroundColor: colors.brandSubtle,
+                                                opacity: previewRunning ? 0.6 : 1,
+                                            }}
+                                            android_ripple={{ color: colors.ripple, foreground: true }}
+                                            accessibilityRole="button"
+                                        >
+                                            <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>
+                                                {previewRunning ? "Running preview…" : "Run solver preview check"}
+                                            </Text>
+                                            <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                Combines static feasibility checks with a full 72-turn solver schedule preview.
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+                                </SearchableItem>
+                            </Section>
+                        )}
 
                         {enableParentFarmingMode && (
                             <>

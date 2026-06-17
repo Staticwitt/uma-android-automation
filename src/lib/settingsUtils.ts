@@ -293,6 +293,26 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableParentFarmingBorrowRotation = false
             anyMigrated = true
         }
+        if (typeof racing.enableParentFarmingFullUnattended !== "boolean") {
+            racing.enableParentFarmingFullUnattended = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingLockPreset !== "boolean") {
+            racing.enableParentFarmingLockPreset = false
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingAutoDowngradeForcedEpithets !== "boolean") {
+            racing.enableParentFarmingAutoDowngradeForcedEpithets = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingAdaptiveMultiRun !== "boolean") {
+            racing.enableParentFarmingAdaptiveMultiRun = true
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingSettingsSnapshot !== "string") {
+            racing.parentFarmingSettingsSnapshot = ""
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

@@ -2,6 +2,7 @@ import type { Settings } from "../context/BotStateContext"
 import { PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY } from "./parentFarmingConstants"
 import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
 import { enableParentFarmingMode as resolveEnableParentFarmingMode, resolveParentFarmingSettings } from "./parentFarmingResolver"
+import { restoreParentFarmingSnapshot } from "./parentFarmingSnapshot"
 
 /** Human-readable label for the settings bundle used by the UI and message log. */
 export const PARENT_FARMING_MODE_LABEL = "Parent Farming Mode"
@@ -36,18 +37,26 @@ export const applyParentFarmingPreset = (settings: Settings): Settings => {
 }
 
 /** Clears the mode marker without reverting the user's current settings. */
-export const disableParentFarmingMode = (settings: Settings): Settings => ({
-    ...settings,
-    racing: {
-        ...settings.racing,
-        enableParentFarmingMode: false,
-        parentFarmingGoalPresetKey: "",
-        parentFarmingGoalPresetLabel: "",
-        parentFarmingBundleKey: "",
-        parentFarmingBundleLabel: "",
-        parentFarmingResolverRevision: 0,
-    },
-})
+export const disableParentFarmingMode = (settings: Settings, options?: { revert?: boolean }): Settings => {
+    if (options?.revert && settings.racing.parentFarmingSettingsSnapshot) {
+        const restored = restoreParentFarmingSnapshot(settings, settings.racing.parentFarmingSettingsSnapshot)
+        if (restored) return restored
+    }
+
+    return {
+        ...settings,
+        racing: {
+            ...settings.racing,
+            enableParentFarmingMode: false,
+            parentFarmingGoalPresetKey: "",
+            parentFarmingGoalPresetLabel: "",
+            parentFarmingBundleKey: "",
+            parentFarmingBundleLabel: "",
+            parentFarmingResolverRevision: 0,
+            parentFarmingSettingsSnapshot: "",
+        },
+    }
+}
 
 /** Re-applies parent-farming slices from stored keys. Used on settings load migrations. */
 export const refreshParentFarmingSettings = (settings: Settings): Settings => resolveParentFarmingSettings(settings)

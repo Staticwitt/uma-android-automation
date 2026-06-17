@@ -2048,6 +2048,8 @@ abstract class Campaign(game: Game) : Task(game) {
             return MainScreenAction.RECOVER_MOOD
         }
 
+        SmartRaceSolverMainScreenGate.maybeSolverMainScreenAction(this, game.scenario, date.day)?.let { return it }
+
         if (racing.checkEligibilityToStartExtraRacingProcess()) {
             MessageLog.i(TAG, "[INFO] Bot has no injuries, mood is sufficient and extra races can be run today. Setting the action to RACE.")
             decisionTracer.recordActionChoice(MainScreenAction.RACE, "Extra-race eligible (no injury, sufficient mood, eligible day)")

@@ -4,9 +4,10 @@ import { useNavigation } from "@react-navigation/native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Cpu, ChevronRight, Leaf } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
-import { RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
+import { BotMetaContext, RacingContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { getParentFarmingActiveLabels } from "../../lib/parentFarmingDrift"
 import { formatCareerAutomationSummary } from "../../lib/parentFarmingCareerAutomation"
+import { refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -40,6 +41,7 @@ const RacingSettings = () => {
     const { colors } = useTheme()
     const modalShellStyles = useModalShellStyles()
     const navigation = useNavigation()
+    const { setSettings } = useContext(BotMetaContext)
     const { racing, updateRacing } = useContext(RacingContext)
     const settings = useSettingsSnapshot()
     const scrollViewRef = useRef<ScrollView>(null)
@@ -81,6 +83,11 @@ const RacingSettings = () => {
 
     const updateRacingSetting = useCallback(
         (key: keyof Settings["racing"], value: unknown) => {
+            const lockPreset = settings.racing.enableParentFarmingLockPreset && settings.racing.enableParentFarmingMode
+            if (lockPreset && (key === "enableUserInGameRaceAgenda" || key === "enableForceRacing" || key === "enableFarmingFans" || key === "enableSmartRaceSolver")) {
+                setSettings((prev) => refreshParentFarmingSettings(prev))
+                return
+            }
             if (key === "enableUserInGameRaceAgenda" && value) {
                 updateRacing((prev) => ({
                     ...prev,
@@ -105,7 +112,7 @@ const RacingSettings = () => {
                 updateRacing({ [key]: value } as Partial<Settings["racing"]>)
             }
         },
-        [updateRacing],
+        [updateRacing, setSettings, settings.racing.enableParentFarmingLockPreset, settings.racing.enableParentFarmingMode],
     )
 
     const styles = useMemo(

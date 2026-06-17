@@ -64,6 +64,8 @@ import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import InfoCallout from "../../components/ui/info-callout"
 import { applyParentFarmingGoalPreset } from "../../lib/parentFarmingResolver"
+import { refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
+import { applyGeneralSolverPreset, GENERAL_SOLVER_PRESET_LABEL, GENERAL_SOLVER_PRESET_SUMMARY } from "../../lib/generalSolverPreset"
 import { PARENT_FARMING_GOAL_PRESETS, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
 import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
 import { TYPE } from "../../lib/type"
@@ -134,6 +136,8 @@ const SmartRaceSolverSettings = () => {
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableSmartRaceSolver,
+        enableParentFarmingMode,
+        enableParentFarmingLockPreset,
         smartRaceSolverCharacterPreset,
         smartRaceSolverAptitudes,
         smartRaceSolverTargetEpithets,
@@ -427,13 +431,46 @@ const SmartRaceSolverSettings = () => {
 
     /**
      * Update a single racing setting, preserving the rest of the racing block.
-     *
-     * @param key The settings.racing key to update.
-     * @param value The new value.
+     * When parent-farming lock preset is on, solver edits re-sync from the active preset instead.
      */
-    const updateRacingSetting = (key: string, value: any) => {
-        updateRacing({ [key]: value } as any)
-    }
+    const updateRacingSetting = useCallback(
+        (key: string, value: unknown) => {
+            const lockPreset = enableParentFarmingLockPreset && enableParentFarmingMode
+            const solverKeys = new Set([
+                "enableSmartRaceSolver",
+                "smartRaceSolverCharacterPreset",
+                "smartRaceSolverAptitudes",
+                "smartRaceSolverTargetEpithets",
+                "smartRaceSolverForcedEpithets",
+                "smartRaceSolverManualLocks",
+                "smartRaceSolverWeights",
+                "smartRaceSolverEpithetTiers",
+            ])
+            if (lockPreset && solverKeys.has(key)) {
+                setSettings((prev) => refreshParentFarmingSettings(prev))
+                return
+            }
+            updateRacing({ [key]: value } as Partial<typeof racingSettings>)
+        },
+        [enableParentFarmingLockPreset, enableParentFarmingMode, setSettings, updateRacing],
+    )
+
+    const applyGeneralPreset = useCallback(() => {
+        setSettings((prev) => applyGeneralSolverPreset(prev))
+    }, [setSettings])
+
+    const lockPresetActive = enableParentFarmingLockPreset && enableParentFarmingMode
+
+    const guardSolverMutation = useCallback(
+        (mutate: () => void) => {
+            if (lockPresetActive) {
+                setSettings((prev) => refreshParentFarmingSettings(prev))
+                return
+            }
+            mutate()
+        },
+        [lockPresetActive, setSettings],
+    )
 
     /**
      * Set the rank for a single aptitude slot. Identity-stable so memoized children skip reconciliation on unrelated changes.
@@ -443,12 +480,14 @@ const SmartRaceSolverSettings = () => {
      */
     const setAptitude = useCallback(
         (slot: keyof AptitudeMap, rank: string) => {
-            updateRacing((prev) => {
-                const prevAptitudes = JSON.parse(prev.smartRaceSolverAptitudes || "{}") as AptitudeMap
-                return { ...prev, smartRaceSolverAptitudes: JSON.stringify({ ...prevAptitudes, [slot]: rank }) }
+            guardSolverMutation(() => {
+                updateRacing((prev) => {
+                    const prevAptitudes = JSON.parse(prev.smartRaceSolverAptitudes || "{}") as AptitudeMap
+                    return { ...prev, smartRaceSolverAptitudes: JSON.stringify({ ...prevAptitudes, [slot]: rank }) }
+                })
             })
         },
-        [updateRacing]
+        [guardSolverMutation, updateRacing],
     )
 
     /**
@@ -479,13 +518,15 @@ const SmartRaceSolverSettings = () => {
      */
     const toggleTargetEpithet = useCallback(
         (name: string) => {
-            updateRacing((prev) => {
-                const list = JSON.parse(prev.smartRaceSolverTargetEpithets || "[]") as string[]
-                const next = list.includes(name) ? list.filter((n) => n !== name) : [...list, name]
-                return { ...prev, smartRaceSolverTargetEpithets: JSON.stringify(next) }
+            guardSolverMutation(() => {
+                updateRacing((prev) => {
+                    const list = JSON.parse(prev.smartRaceSolverTargetEpithets || "[]") as string[]
+                    const next = list.includes(name) ? list.filter((n) => n !== name) : [...list, name]
+                    return { ...prev, smartRaceSolverTargetEpithets: JSON.stringify(next) }
+                })
             })
         },
-        [updateRacing]
+        [guardSolverMutation, updateRacing],
     )
 
     /**
@@ -495,13 +536,15 @@ const SmartRaceSolverSettings = () => {
      */
     const toggleForcedEpithet = useCallback(
         (name: string) => {
-            updateRacing((prev) => {
-                const list = JSON.parse(prev.smartRaceSolverForcedEpithets || "[]") as string[]
-                const next = list.includes(name) ? list.filter((n) => n !== name) : [...list, name]
-                return { ...prev, smartRaceSolverForcedEpithets: JSON.stringify(next) }
+            guardSolverMutation(() => {
+                updateRacing((prev) => {
+                    const list = JSON.parse(prev.smartRaceSolverForcedEpithets || "[]") as string[]
+                    const next = list.includes(name) ? list.filter((n) => n !== name) : [...list, name]
+                    return { ...prev, smartRaceSolverForcedEpithets: JSON.stringify(next) }
+                })
             })
         },
-        [updateRacing]
+        [guardSolverMutation, updateRacing],
     )
 
     /**
@@ -1397,6 +1440,38 @@ const SmartRaceSolverSettings = () => {
                                     right={<Switch checked={enableSmartRaceSolver} onCheckedChange={(checked) => updateRacingSetting("enableSmartRaceSolver", checked)} />}
                                 />
                             </SearchableItem>
+
+                            <SearchableItem
+                                id="apply-general-solver-preset"
+                                title={GENERAL_SOLVER_PRESET_LABEL}
+                                description={GENERAL_SOLVER_PRESET_SUMMARY}
+                            >
+                                <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                    <Pressable
+                                        onPress={applyGeneralPreset}
+                                        style={{
+                                            padding: SPACING.md,
+                                            borderRadius: RADII.md,
+                                            borderWidth: 1,
+                                            borderColor: colors.brandBorder,
+                                            backgroundColor: colors.brandSubtle,
+                                        }}
+                                        android_ripple={{ color: colors.ripple, foreground: true }}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>{GENERAL_SOLVER_PRESET_LABEL}</Text>
+                                        <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>{GENERAL_SOLVER_PRESET_SUMMARY}</Text>
+                                    </Pressable>
+                                </View>
+                            </SearchableItem>
+
+                            {enableParentFarmingMode && enableParentFarmingLockPreset && (
+                                <InfoCallout title="Preset locked">
+                                    <Text style={[TYPE.body, { color: colors.textMuted }]}>
+                                        Parent farming lock preset is on — solver edits re-sync from your active character setup or goal preset.
+                                    </Text>
+                                </InfoCallout>
+                            )}
 
                             <SearchableItem
                                 id="smart-solver-how-it-works"

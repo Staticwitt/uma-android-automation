@@ -1,20 +1,26 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.17</latestVersion>
-    <latestVersionCode>107</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.17</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.17/v5.9.17-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.17/v5.9.17-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.18</latestVersion>
+    <latestVersionCode>108</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.18</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.18/v5.9.18-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.18/v5.9.18-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.17 - Samsung Galaxy Tab S10 FE display profile
+v5.9.18 - Parent farming reliability bundle
 
 Features
 ---
-- Native support for Samsung Galaxy Tab S10 FE (1440×2304 portrait)
-- Auto Display Profile Tuning applies ~1.33 template scale at bot start
-- Home recognizes supported tablet profile (green status)
+- Full unattended preset: career-complete skills + carat retry (max 2/career)
+- Solver preview feasibility check before starting parent runs
+- Adaptive multi-run: downgrade failed forced epithets + relax win-rate/fan floor
+- Lock preset on Racing and Smart Race Solver pages
+- General Solver Preset for non-parent Smart Race Solver runs
+- Session clipboard summary + archive quality breakdown bars
+- URA/UC Smart Race Solver main-loop gate (partial)
+- 6 new character bundles (Kitasan, Special Week, Mejiro, Agnes Tachyon, King Halo, Symboli Rudolf)
+- Spark OCR display-profile scaling + blue factor legacy parent bonus
 
-Includes v5.9.16 carat-funded race retry and v5.9.15 Discord enhancements.
+Includes v5.9.17 Samsung Galaxy Tab S10 FE display profile support.
 
     </releaseNotes>
   </update>

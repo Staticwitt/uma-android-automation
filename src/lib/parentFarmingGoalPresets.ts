@@ -98,6 +98,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             raceCostPct: 70.0,
             consecutiveRacePenalty: 2.0,
             minimumFanTarget: 120000,
+            minWinRateGuard: 0.75,
         },
         trainingOverrides: G1_FAN_TRAINING,
         qualityTargetScore: 80,
@@ -111,8 +112,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             ...QUALITY_ROUTE_WEIGHTS,
+            minWinRateGuard: 0.82,
         },
-        trainingOverrides: LONG_STAMINA_TRAINING,
+        trainingOverrides: { ...LONG_STAMINA_TRAINING, disableStatTargets: false },
         qualityTargetScore: 90,
     },
     {
@@ -124,8 +126,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             ...QUALITY_ROUTE_WEIGHTS,
+            minWinRateGuard: 0.82,
         },
-        trainingOverrides: MILE_QUEEN_TRAINING,
+        trainingOverrides: { ...MILE_QUEEN_TRAINING, disableStatTargets: false },
         qualityTargetScore: 90,
     },
     {
@@ -136,6 +139,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.0e-3,
+            minWinRateGuard: 0.7,
         },
         trainingOverrides: MILE_SPRINT_TRAINING,
     },
@@ -161,6 +165,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             hintWeight: 18.0,
+            minWinRateGuard: 0.65,
         },
         trainingOverrides: SKILL_HINT_TRAINING,
         sparkSelectionStrategy: "SkillHints",
@@ -230,8 +235,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
         weightOverrides: {
             ...TARGET_PRIORITY_WEIGHTS,
             ...QUALITY_ROUTE_WEIGHTS,
+            minWinRateGuard: 0.82,
         },
-        trainingOverrides: LONG_STAMINA_TRAINING,
+        trainingOverrides: { ...LONG_STAMINA_TRAINING, disableStatTargets: false },
     },
     {
         key: "queens-race",
@@ -253,8 +259,9 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             ...QUALITY_ROUTE_WEIGHTS,
             fanWeight: 1.0e-3,
+            minWinRateGuard: 0.8,
         },
-        trainingOverrides: MILE_QUEEN_TRAINING,
+        trainingOverrides: { ...MILE_QUEEN_TRAINING, disableStatTargets: false },
     },
     {
         key: "turf-allrounder",
@@ -309,6 +316,7 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             ...TARGET_PRIORITY_WEIGHTS,
             fanWeight: 1.0e-3,
             includeOpAndPreOp: true,
+            minWinRateGuard: 0.68,
         },
         trainingOverrides: JUNIOR_STAR_TRAINING,
     },

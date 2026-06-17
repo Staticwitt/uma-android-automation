@@ -106,6 +106,16 @@ export interface Settings {
         enableParentFarmingStopOnForcedEpithetFail: boolean
         /** Rotate friend borrow priority each run in a multi-run session. */
         enableParentFarmingBorrowRotation: boolean
+        /** End-to-end unattended: career-complete skills + carat race retry. */
+        enableParentFarmingFullUnattended: boolean
+        /** Re-sync preset-owned fields when conflicting toggles are changed. */
+        enableParentFarmingLockPreset: boolean
+        /** Downgrade infeasible forced epithets to targets at resolve time. */
+        enableParentFarmingAutoDowngradeForcedEpithets: boolean
+        /** Relax forced epithets between multi-run attempts after a forced-route failure. */
+        enableParentFarmingAdaptiveMultiRun: boolean
+        /** JSON snapshot for reverting settings when exiting parent farming mode. */
+        parentFarmingSettingsSnapshot: string
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
         enableAutoSelectLegacyParents: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
@@ -348,6 +358,11 @@ export const defaultSettings: Settings = {
         enableParentFarmingKeepBestRun: true,
         enableParentFarmingStopOnForcedEpithetFail: false,
         enableParentFarmingBorrowRotation: false,
+        enableParentFarmingFullUnattended: true,
+        enableParentFarmingLockPreset: false,
+        enableParentFarmingAutoDowngradeForcedEpithets: true,
+        enableParentFarmingAdaptiveMultiRun: true,
+        parentFarmingSettingsSnapshot: "",
         enableAutoSelectLegacyParents: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",

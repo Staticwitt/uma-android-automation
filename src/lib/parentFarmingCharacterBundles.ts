@@ -156,6 +156,46 @@ export const PARENT_FARMING_CHARACTER_BUNDLES: ParentFarmingCharacterBundle[] = 
         goalPresetKey: "turf-allrounder",
         supportBorrowCards: bundleBorrow("turf-allrounder", ["Matikanefukukitaru", "Symboli Rudolf", "Super Creek", "Kitasan Black"]),
     },
+    {
+        key: "kitasan-black-skill-hints",
+        label: "Kitasan Black — Skill Hint Parent",
+        description: "White-factor and hint-reward epithets with skill-hint spark picking.",
+        characterName: "Kitasan Black",
+        goalPresetKey: "skill-hints",
+        supportBorrowCards: bundleBorrow("skill-hints", ["Kitasan Black", "Agnes Tachyon", "Super Creek", "Symboli Rudolf"]),
+    },
+    {
+        key: "special-week-junior",
+        label: "Special Week — Junior Star Parent",
+        description: "Junior showcase epithets and early G1 history for flexible parents.",
+        characterName: "Special Week",
+        goalPresetKey: "junior-star",
+        supportBorrowCards: bundleBorrow("junior-star", ["Special Week", "Kitasan Black", "Oguri Cap", "Gold Ship"]),
+    },
+    {
+        key: "agnes-tachyon-skill-hints",
+        label: "Agnes Tachyon — Skill Hint Parent",
+        description: "Skill-hint and white-factor route with Tachyon-friendly training bias.",
+        characterName: "Agnes Tachyon",
+        goalPresetKey: "skill-hints",
+        supportBorrowCards: bundleBorrow("skill-hints", ["Agnes Tachyon", "Kitasan Black", "Symboli Rudolf", "Super Creek"]),
+    },
+    {
+        key: "king-halo-tiara",
+        label: "King Halo — Triple Tiara Parent",
+        description: "Oka Sho / Oaks / Shuka Sho inheritance with queen-route epithets.",
+        characterName: "King Halo",
+        goalPresetKey: "triple-tiara",
+        supportBorrowCards: bundleBorrow("triple-tiara", ["King Halo", "Air Groove", "Vodka", "Daiwa Scarlet"]),
+    },
+    {
+        key: "symboli-rudolf-g1",
+        label: "Symboli Rudolf — G1 / Fan Parent",
+        description: "High fan volume and senior-route G1 epithets for versatile parents.",
+        characterName: "Symboli Rudolf",
+        goalPresetKey: "g1-fans",
+        supportBorrowCards: bundleBorrow("g1-fans", ["Symboli Rudolf", "Super Creek", "Kitasan Black", "Gold Ship"]),
+    },
 ]
 
 /** Builds aptitude grades from a bundled character preset entry. */

@@ -15,6 +15,10 @@ data class DisplayProfileMatch(
 object DisplayProfileRegistry {
     private const val BASELINE_WIDTH = 1080
 
+    /** Last matched profile id for display-aware OCR tuning (e.g. spark inheritance crops). */
+    @Volatile
+    var lastMatchedProfileId: String? = null
+
     private data class ProfileSpec(
         val id: String,
         val label: String,
@@ -73,6 +77,7 @@ object DisplayProfileRegistry {
             if (!within(portraitWidth, spec.width, spec.widthTolerance)) continue
             if (!within(portraitHeight, spec.height, spec.heightTolerance)) continue
             if (dpi !in spec.dpiMin..spec.dpiMax) continue
+            lastMatchedProfileId = spec.id
             return DisplayProfileMatch(spec.id, spec.label, spec.templateScale)
         }
         return null
@@ -102,4 +107,13 @@ object DisplayProfileRegistry {
 
     private fun within(value: Int, target: Int, tolerance: Int): Boolean =
         value in (target - tolerance)..(target + tolerance)
+
+    /** OCR scale multiplier for spark inheritance crops on wider tablet profiles. */
+    fun sparkOcrScale(width: Int, height: Int, dpi: Int): Double {
+        val profile = match(width, height, dpi) ?: return 1.0
+        return when (profile.id) {
+            "samsung_tab_s10_fe" -> 1.25
+            else -> if (profile.templateScale > 1.05) 1.15 else 1.0
+        }
+    }
 }

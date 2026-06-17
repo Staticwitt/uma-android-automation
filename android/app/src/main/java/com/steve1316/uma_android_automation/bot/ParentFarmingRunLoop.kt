@@ -32,6 +32,7 @@ object ParentFarmingRunLoop {
         sessionBestRunIndex = 0
         borrowRotationOffset = 0
         ParentFarmingForcedEpithetGuard.reset()
+        ParentFarmingAdaptiveMultiRun.reset()
     }
 
     fun sessionId(): String = sessionId
@@ -92,9 +93,18 @@ object ParentFarmingRunLoop {
             )
             if (qualityTargetEnabled() && quality.score >= qualityTargetScore()) {
                 MessageLog.i(TAG, "Quality target ${qualityTargetScore()} reached; stopping multi-run.")
+                ParentDiscordNotifier.sendQualityTargetReached(quality.score, quality.grade, sessionRunsCompleted)
                 finalizeSession(game)
                 return false
             }
+            if (quality.score < 70) {
+                ParentFarmingAdaptiveMultiRun.notePoorRunQuality(quality.score)
+            }
+        }
+
+        if (summaryInput != null) {
+            val completed = (summaryInput.completedTargetEpithets + summaryInput.extraCompletedEpithets).toSet()
+            ParentFarmingAdaptiveMultiRun.noteCareerEnd(summaryInput.forcedEpithets, completed)
         }
 
         if (summaryInput != null && shouldStopForForcedEpithetFailure(summaryInput)) {
@@ -216,6 +226,7 @@ object ParentFarmingRunLoop {
         SmartRaceSolverIntegration.reset()
         ParentDiscordNotifier.reset()
         ParentFarmingForcedEpithetGuard.reset()
+        ParentFarmingAdaptiveMultiRun.reset()
 
         campaign.date = GameDate(day = 1)
         campaign.resetForNextParentRun()
