@@ -16,6 +16,8 @@ import type { ThemeColors } from "../lib/theme"
 interface ParentFarmingBundleGridProps {
     scenario: string
     onApply: (bundle: ParentFarmingCharacterBundle) => void
+    /** When false, omits the intro description (parent section already explains). Default true. */
+    showDescription?: boolean
 }
 
 interface BundleCardModel {
@@ -72,7 +74,7 @@ BundleCard.displayName = "BundleCard"
 /**
  * Grid of one-tap parent-farming character + goal bundles.
  */
-export const ParentFarmingBundleGrid = React.memo(({ scenario, onApply }: ParentFarmingBundleGridProps) => {
+export const ParentFarmingBundleGrid = React.memo(({ scenario, onApply, showDescription = true }: ParentFarmingBundleGridProps) => {
     const { colors } = useTheme()
     const styles = useMemo(() => createStyles(colors), [colors])
 
@@ -91,9 +93,11 @@ export const ParentFarmingBundleGrid = React.memo(({ scenario, onApply }: Parent
 
     return (
         <View>
-            <Text style={styles.description}>
-                One tap applies Parent Farming Mode, the character preset and aptitudes, goal epithets and solver weights, and training distance bias. Manual race locks are cleared.
-            </Text>
+            {showDescription && (
+                <Text style={styles.description}>
+                    One tap applies Parent Farming Mode, the character preset and aptitudes, goal epithets and solver weights, and training distance bias. Manual race locks are cleared.
+                </Text>
+            )}
             <View style={styles.grid}>
                 {cards.map((model) => (
                     <BundleCard key={model.bundle.key} model={model} onApply={onApply} styles={styles} rippleColor={colors.ripple} />
