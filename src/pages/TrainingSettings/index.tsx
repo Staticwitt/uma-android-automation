@@ -17,7 +17,8 @@ import { useSettings } from "../../context/SettingsContext"
 import { useProfileManager } from "../../hooks/useProfileManager"
 import { applyMigrations } from "../../hooks/useSettingsManager"
 import { databaseManager } from "../../lib/database"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
+import TabStrip, { type TabStripItem } from "../../components/ui/tab-strip"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
@@ -34,6 +35,16 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 import { TrainingScoringSandbox } from "../../components/TrainingScoringSandbox"
 import { TrainingScoringAdvanced } from "../../components/TrainingScoringAdvanced"
 import { StickySandboxButton } from "../../components/TrainingScoringAdvanced/StickySandboxButton"
+
+type TrainingSectionTab = "all" | "priorities" | "behavior" | "scoring" | "targets"
+
+const TRAINING_SECTION_TABS: TabStripItem[] = [
+    { key: "all", label: "All" },
+    { key: "priorities", label: "Priorities" },
+    { key: "behavior", label: "Behavior" },
+    { key: "scoring", label: "Scoring" },
+    { key: "targets", label: "Targets" },
+]
 
 /**
  * The Training Settings page.
@@ -68,6 +79,8 @@ const TrainingSettings = () => {
     const { showToast, showError } = useToast()
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
+    const [activeSection, setActiveSection] = useState<TrainingSectionTab>("all")
+    const showSection = useCallback((key: TrainingSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
 
     // Initialize local state from settings, with fallback to defaults.
     const [statPrioritizationItems, setStatPrioritizationItems] = useState<string[]>(() =>
@@ -505,7 +518,7 @@ const TrainingSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="TrainingSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Training Settings" />
+                <DomainHeader breadcrumb="Gameplay" title="Training Settings" subtitle="Stat priorities, training behavior, scoring, and stat targets." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         <ParentFarmingActivePresetChip settings={settings} />
@@ -534,6 +547,12 @@ const TrainingSettings = () => {
                         </SearchableItem>
 
                         {showHeavySections && (
+                            <View style={{ marginBottom: SPACING.md }}>
+                                <TabStrip items={TRAINING_SECTION_TABS} activeKey={activeSection} onChange={(key) => setActiveSection(key as TrainingSectionTab)} />
+                            </View>
+                        )}
+
+                        {showHeavySections && showSection("priorities") && (
                             <>
                                 <Section label="Priorities">
                                     {renderStatSelector(
@@ -580,7 +599,10 @@ const TrainingSettings = () => {
                                         "summer-training-stat-priority"
                                     )}
                                 </Section>
+                            </>
+                        )}
 
+                        {showHeavySections && showSection("behavior") && (
                                 <Section label="Behavior">
                                     <View style={styles.sliderShell}>
                                         <CustomSlider
@@ -695,7 +717,10 @@ const TrainingSettings = () => {
                                         />
                                     </SearchableItem>
                                 </Section>
+                        )}
 
+                        {showHeavySections && showSection("scoring") && (
+                            <>
                                 <Section label="Scoring">
                                     <SearchableItem
                                         id="enable-training-level-weighting"
@@ -737,6 +762,12 @@ const TrainingSettings = () => {
                                     </SearchableItem>
                                 </Section>
 
+                                <TrainingScoringAdvanced onExpandedChange={setAdvancedExpanded} />
+                            </>
+                        )}
+
+                        {showHeavySections && showSection("targets") && (
+                            <>
                                 <Section label="Detection">
                                     <SearchableItem
                                         id="enable-training-analysis-validation"
@@ -1185,7 +1216,6 @@ const TrainingSettings = () => {
                                     </View>
                                 </Section>
 
-                                <TrainingScoringAdvanced onExpandedChange={setAdvancedExpanded} />
                             </>
                         )}
                     </View>

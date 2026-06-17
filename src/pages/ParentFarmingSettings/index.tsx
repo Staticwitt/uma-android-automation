@@ -52,7 +52,7 @@ import { recommendLegacyParents, formatLegacyParentRecommendation } from "../../
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import InfoContainer from "../../components/InfoContainer"
 import WarningContainer from "../../components/WarningContainer"
 import SearchableItem from "../../components/SearchableItem"
@@ -432,7 +432,7 @@ const ParentFarmingSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="ParentFarmingSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Parent Farming" />
+                <DomainHeader breadcrumb="Gameplay" title="Parent Farming" subtitle="Goal presets, inheritance sparks, and character setups." />
                 <ScrollView
                     ref={scrollViewRef}
                     nestedScrollEnabled

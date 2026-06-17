@@ -8,7 +8,7 @@ describe("searchNavigation", () => {
     })
 
     it("includes recently added settings stack routes", () => {
-        for (const page of ["ParentFarmingSettings", "SmartRaceSolverSettings", "LLMSettings", "Skills", "Chat"]) {
+        for (const page of ["ParentFarmingSettings", "SmartRaceSolverSettings", "LLMSettings", "Skills", "Chat", "TrainingLanding", "RacingLanding"]) {
             expect(SEARCH_PAGE_LABELS).toHaveProperty(page)
         }
     })

@@ -7,21 +7,20 @@ import { useSettings } from "../../context/SettingsContext"
 import { logWithTimestamp, logErrorWithTimestamp } from "../../lib/logger"
 import { Animated, DeviceEventEmitter, StyleSheet, View, NativeModules } from "react-native"
 import { MessageLogDispatchContext } from "../../context/MessageLogContext"
-import { useTheme } from "../../context/ThemeContext"
 import { useToast } from "../../context/ToastContext"
 import { Text } from "../../components/ui/text"
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import Ionicons from "@react-native-vector-icons/ionicons"
-import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip"
 import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
-import SelectButton from "../../components/SelectButton"
 import PermissionSetupDialog from "../../components/PermissionSetupDialog"
 import { loadDeviceCapabilities, shouldSuggestX8664Variant } from "../../lib/chat/deviceCapabilities"
-import HeroStatusCard, { HeroStatus } from "../../components/HeroStatusCard"
+import { type HeroStatus } from "../../components/HeroStatusCard"
+import { RunPanel } from "../../components/home/RunPanel"
+import { RunStatusIndicator } from "../../components/home/RunStatusIndicator"
+import { HOME_SCENARIOS } from "../../components/home/scenarios"
 import { useProfileContext, DEFAULT_PROFILE_NAME } from "../../context/ProfileContext"
-import { SPACING } from "../../lib/spacing"
-import { DeviceMetrics, SUPPORTED_DISPLAY_PROFILE_LABELS } from "../../lib/displayProfile"
+import { DeviceMetrics } from "../../lib/displayProfile"
 
 const styles = StyleSheet.create({
     root: {
@@ -36,38 +35,10 @@ const styles = StyleSheet.create({
         width: "100%",
         flexDirection: "column",
     },
-    hero: {
-        width: "100%",
-        marginBottom: SPACING.md,
-    },
     logBody: {
         flex: 1,
     },
-    button: {
-        width: 100,
-    },
 })
-
-/**
- * List of scenarios that are supported by the app.
- */
-const scenarios = [
-    {
-        value: "URA Finale",
-        label: "URA Finale",
-        disabled: false,
-    },
-    {
-        value: "Unity Cup",
-        label: "Unity Cup",
-        disabled: false,
-    },
-    {
-        value: "Trackblazer",
-        label: "Trackblazer",
-        disabled: false,
-    },
-]
 
 /**
  * The main Home page of the application.
@@ -77,7 +48,6 @@ const Home = () => {
     usePerformanceLogging("Home")
     const { StartModule } = NativeModules
 
-    const { colors } = useTheme()
     const [isRunning, setIsRunning] = useState<boolean>(false)
     const [showNotReadyDialog, setShowNotReadyDialog] = useState<boolean>(false)
     const { showError } = useToast()
@@ -99,20 +69,11 @@ const Home = () => {
         let animation: Animated.CompositeAnimation | null = null
 
         if (unsupportedReason !== null || abiMismatch) {
-            // Pulsate the icon to grab attention when there's an unsupported device or a slow ABI variant installed.
             animation = Animated.loop(
                 Animated.sequence([
-                    Animated.timing(pulseAnim, {
-                        toValue: 1.25,
-                        duration: 700,
-                        useNativeDriver: true,
-                    }),
-                    Animated.timing(pulseAnim, {
-                        toValue: 1,
-                        duration: 700,
-                        useNativeDriver: true,
-                    }),
-                ])
+                    Animated.timing(pulseAnim, { toValue: 1.25, duration: 700, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+                ]),
             )
             animation.start()
         } else {
@@ -122,7 +83,7 @@ const Home = () => {
         return () => {
             animation?.stop()
         }
-    }, [unsupportedReason, abiMismatch])
+    }, [unsupportedReason, abiMismatch, pulseAnim])
 
     useEffect(() => {
         const mediaProjectionSubscription = DeviceEventEmitter.addListener("MediaProjectionService", (data) => {
@@ -145,34 +106,18 @@ const Home = () => {
         }
     }, [])
 
-    /**
-     * Checks if the currently selected scenario exists in the available scenarios data.
-     */
-    const isScenarioValid: boolean = useMemo(() => {
-        return scenarios.some((it) => it.value === general.scenario)
-    }, [general.scenario])
+    const isScenarioValid: boolean = useMemo(() => HOME_SCENARIOS.some((it) => it.value === general.scenario), [general.scenario])
 
-    /**
-     * Fetch device metrics from NativeModule.
-     */
     const fetchDeviceMetrics = async () => {
         try {
             const metrics = await StartModule.getDeviceDimensions()
             setDeviceMetrics(metrics)
-
-            if (metrics.supportedDisplay) {
-                setUnsupportedReason(null)
-            } else {
-                setUnsupportedReason(`unsupported configuration: ${metrics.width}x${metrics.height} @ ${metrics.dpi} DPI`)
-            }
+            setUnsupportedReason(metrics.supportedDisplay ? null : `unsupported configuration: ${metrics.width}x${metrics.height} @ ${metrics.dpi} DPI`)
         } catch (error) {
             logErrorWithTimestamp("[Home] Failed to fetch device dimensions:", error)
         }
     }
 
-    /**
-     * Grab the program name and version.
-     */
     const getVersion = () => {
         const appName = Application.applicationName || "App"
         var version = Application.nativeApplicationVersion || "0.0.0"
@@ -182,19 +127,11 @@ const Home = () => {
         setAppVersion(version)
     }
 
-    /**
-     * One-shot mount check for the x86_64-capable-but-arm64-installed mismatch. Mirrors `fetchDeviceMetrics` - load once, set state
-     * once, never re-runs. Result is consumed by `renderStatus` (warning icon + tooltip section) and the pulse-animation effect.
-     */
     const checkAbiMismatch = async () => {
         const caps = await loadDeviceCapabilities()
         if (shouldSuggestX8664Variant(caps)) setAbiMismatch(true)
     }
 
-    /**
-     * Saves settings then starts the native bot service. Shared by both the inline start path and the
-     * post-permission-grant chain from PermissionSetupDialog.
-     */
     const proceedToStart = async () => {
         logWithTimestamp("[Home] Saving settings before starting bot...")
         try {
@@ -210,9 +147,6 @@ const Home = () => {
         StartModule.start()
     }
 
-    /**
-     * Handles the button press for starting or stopping the bot.
-     */
     const handleButtonPress = async () => {
         if (isRunning) {
             StartModule.stop()
@@ -223,8 +157,6 @@ const Home = () => {
             return
         }
 
-        // Gate the start on all 3 system permissions (accessibility, overlay, battery optimization).
-        // If any are missing, surface the unified PermissionSetupDialog and let it chain back into proceedToStart.
         try {
             const [accessibility, overlay, battery] = await Promise.all([StartModule.getAccessibilityStatus(), StartModule.getOverlayStatus(), StartModule.getBatteryOptimizationStatus()])
             const allGranted = accessibility.enabled && accessibility.active && overlay.enabled && battery.enabled
@@ -239,141 +171,53 @@ const Home = () => {
         await proceedToStart()
     }
 
-    /** Gets the appropriate icon name for the SelectButton based on device state. */
     const getSelectButtonIconName = (): React.ComponentProps<typeof Ionicons>["name"] | undefined => {
-        if (!isScenarioValid) {
-            return undefined
-        } else if (isRunning) {
-            return "stop-outline"
-        } else {
-            return "play-outline"
-        }
+        if (!isScenarioValid) return undefined
+        return isRunning ? "stop-outline" : "play-outline"
     }
 
-    /** Gets the SelectButton variant based on device state. */
-    const getSelectButtonVariant = (): any => {
-        if (isRunning) {
-            // Not an error, but we want the button to be red to indicate that
-            // pressing it will stop the service.
-            // Must come first because we always want the button to be red
-            // if the bot is running, regardless of the other conditions.
-            return "error"
-        } else if (unsupportedReason !== null || abiMismatch) {
-            return "warning"
-        } else if (deviceMetrics === null) {
-            return "warning"
-        } else if (isScenarioValid) {
-            return "success"
-        } else {
-            return "primary"
-        }
+    const getSelectButtonVariant = (): React.ComponentProps<typeof import("../../components/SelectButton").default>["variant"] => {
+        if (isRunning) return "error"
+        if (unsupportedReason !== null || abiMismatch) return "warning"
+        if (deviceMetrics === null) return "warning"
+        if (isScenarioValid) return "success"
+        return "primary"
     }
 
-    /** Returns a status indicator based on the device state. */
-    const renderStatus = (): React.ReactElement | null => {
-        const warningSections: string[] = []
-        if (unsupportedReason) {
-            const profileLine =
-                deviceMetrics?.displayProfileLabel != null && deviceMetrics.displayProfileLabel.length > 0
-                    ? `\n\nRecognized profile: ${deviceMetrics.displayProfileLabel}`
-                    : ""
-            const scaleLine =
-                deviceMetrics?.recommendedTemplateScale != null && deviceMetrics.recommendedTemplateScale !== 1
-                    ? `\nRecommended template scale: ${deviceMetrics.recommendedTemplateScale.toFixed(2)} (applied automatically when Auto Display Profile Tuning is on and custom scale is 1.0).`
-                    : ""
-            warningSections.push(`Current Display: ${deviceMetrics?.width}x${deviceMetrics?.height} (${deviceMetrics?.dpi} DPI).${profileLine}${scaleLine}
-
-Warning: Performance may be degraded due to ${unsupportedReason}.
-
-Supported profiles:
-${SUPPORTED_DISPLAY_PROFILE_LABELS.map((label) => `• ${label}`).join("\n")}
-
-Note: Width matters more than height for template matching. Run in portrait. For unrecognized panels, use Debug Settings → Basic Template Matching Test, or force 1080×1920 via adb (see README).`)
-        }
-        if (abiMismatch) {
-            warningSections.push(`Installed Build: arm64-v8a
-Device Supports: x86_64
-
-Warning: The arm64 build runs through Android's binary translator on this device, which is significantly slower than running natively.
-
-Note: Reinstall using the x86_64 release APK for much better performance.`)
-        }
-        const warningText = warningSections.join("\n\n----\n\n")
-
-        if (unsupportedReason || abiMismatch) {
-            return (
-                <Tooltip delayDuration={150}>
-                    <TooltipTrigger>
-                        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                            <Ionicons name="alert-circle-outline" size={24} color={colors.warning} />
-                        </Animated.View>
-                    </TooltipTrigger>
-                    <TooltipContent sideOffset={12} side="bottom" style={{ maxWidth: 350, backgroundColor: colors.warningBg, borderColor: colors.warningBorder, borderWidth: 1 }}>
-                        <Text style={{ color: colors.warningText }}>{warningText}</Text>
-                    </TooltipContent>
-                </Tooltip>
-            )
-        }
-
-        if (!readyStatus && !isRunning) {
-            return (
-                <Tooltip delayDuration={150}>
-                    <TooltipTrigger>
-                        <Ionicons name="information-circle-outline" size={24} color={colors.info} />
-                    </TooltipTrigger>
-                    <TooltipContent sideOffset={12} side="bottom" style={{ width: 200 }}>
-                        <Text>Select a Scenario to start from the center button dropdown.</Text>
-                    </TooltipContent>
-                </Tooltip>
-            )
-        }
-
-        if (deviceMetrics) {
-            return (
-                <Tooltip delayDuration={150}>
-                    <TooltipTrigger>
-                        <Ionicons name="checkmark-circle-outline" size={24} color={colors.success} />
-                    </TooltipTrigger>
-                    <TooltipContent sideOffset={12} side="bottom">
-                        <Text>Everything looks good and ready to go!</Text>
-                    </TooltipContent>
-                </Tooltip>
-            )
-        }
-
-        return null
-    }
-
-    // Map the existing bot state to the hero card's status pill. Running takes priority. Warnings (unsupported display
-    // or ABI mismatch) surface as "error". An unselected scenario lands on "stopped". Otherwise the bot is "ready".
     const heroStatus: HeroStatus = isRunning ? "running" : unsupportedReason !== null || abiMismatch ? "error" : readyStatus && deviceMetrics !== null ? "ready" : "stopped"
     const heroProfile = currentProfileName ?? DEFAULT_PROFILE_NAME
+
     return (
         <View style={styles.root}>
-            {/* MessageLog uses FlashList, which doesn't support sticky headers the same way as ScrollView, so PageHeader stays a sibling above (non-sticky). */}
-            <PageHeader title="Home" showHomeButton={false} style={{ width: "100%" }} rightComponent={renderStatus()} />
+            <PageHeader
+                title="Home"
+                showHomeButton={false}
+                style={{ width: "100%" }}
+                rightComponent={
+                    <RunStatusIndicator
+                        readyStatus={readyStatus}
+                        isRunning={isRunning}
+                        deviceMetrics={deviceMetrics}
+                        unsupportedReason={unsupportedReason}
+                        abiMismatch={abiMismatch}
+                        pulseAnim={pulseAnim}
+                    />
+                }
+            />
 
-            <View style={styles.hero}>
-                <HeroStatusCard
-                    status={heroStatus}
-                    profile={heroProfile}
-                    cta={
-                        <SelectButton
-                            variant={getSelectButtonVariant()}
-                            iconName={getSelectButtonIconName()}
-                            options={scenarios}
-                            placeholder={deviceMetrics ? "Select a Scenario" : "Not Ready"}
-                            value={general.scenario}
-                            onValueChange={(value) => {
-                                const newScenario = value || ""
-                                updateGeneral({ scenario: newScenario })
-                                setReadyStatus(newScenario !== "")
-                            }}
-                            onPress={handleButtonPress}
-                        />
-                    }
-                />
-            </View>
+            <RunPanel
+                status={heroStatus}
+                profile={heroProfile}
+                scenario={general.scenario}
+                deviceMetrics={deviceMetrics}
+                selectVariant={getSelectButtonVariant()}
+                selectIconName={getSelectButtonIconName()}
+                onScenarioChange={(newScenario) => {
+                    updateGeneral({ scenario: newScenario })
+                    setReadyStatus(newScenario !== "")
+                }}
+                onPress={handleButtonPress}
+            />
 
             <View style={styles.contentContainer}>
                 <View style={styles.logBody}>

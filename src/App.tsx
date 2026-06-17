@@ -18,6 +18,8 @@ import { ProfileProvider } from "./context/ProfileContext"
 import { useBootstrap } from "./hooks/useBootstrap"
 import Home from "./pages/Home"
 import Settings from "./pages/Settings"
+import TrainingLanding from "./pages/TrainingLanding"
+import RacingLanding from "./pages/RacingLanding"
 import TrainingSettings from "./pages/TrainingSettings"
 import TrainingEventSettings from "./pages/TrainingEventSettings"
 import RacingSettings from "./pages/RacingSettings"
@@ -52,6 +54,8 @@ function SettingsStack() {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
             <Stack.Screen name="SettingsMain" component={Settings} />
+            <Stack.Screen name="TrainingLanding" component={TrainingLanding} />
+            <Stack.Screen name="RacingLanding" component={RacingLanding} />
             <Stack.Screen name="TrainingSettings" component={TrainingSettings} />
             <Stack.Screen name="TrainingEventSettings" component={TrainingEventSettings} />
             <Stack.Screen name="RacingSettings" component={RacingSettings} />

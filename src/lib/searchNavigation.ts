@@ -1,7 +1,9 @@
 /** Human-readable labels for settings stack and drawer routes used by global search. */
 export const SEARCH_PAGE_LABELS: Record<string, string> = {
     SettingsMain: "General Settings",
-    TrainingSettings: "Training",
+    TrainingLanding: "Training",
+    RacingLanding: "Racing & Farming",
+    TrainingSettings: "Training Settings",
     TrainingEventSettings: "Training Events",
     RacingSettings: "Racing",
     ParentFarmingSettings: "Parent Farming",
@@ -20,6 +22,8 @@ export const SEARCH_PAGE_LABELS: Record<string, string> = {
 /** Routes nested under the Settings stack navigator. */
 export const SETTINGS_STACK_PAGES = new Set([
     "SettingsMain",
+    "TrainingLanding",
+    "RacingLanding",
     "TrainingSettings",
     "TrainingEventSettings",
     "RacingSettings",
