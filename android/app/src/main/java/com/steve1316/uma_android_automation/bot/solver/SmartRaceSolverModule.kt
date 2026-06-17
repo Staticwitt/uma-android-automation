@@ -46,6 +46,18 @@ class SmartRaceSolverModule(reactContext: ReactApplicationContext) : ReactContex
         }
     }
 
+    @ReactMethod
+    fun getLiveCalendarSnapshot(promise: Promise) {
+        solverScope.launch {
+            try {
+                val snapshot = SmartRaceSolverIntegration.getLiveCalendarSnapshot()
+                promise.resolve(snapshot)
+            } catch (t: Throwable) {
+                promise.reject("E_SOLVER", t.message ?: "live snapshot failed", t)
+            }
+        }
+    }
+
     companion object {
         /** Name JS imports this module under via `NativeModules.SmartRaceSolverModule`. */
         private const val MODULE_NAME = "SmartRaceSolverModule"

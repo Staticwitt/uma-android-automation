@@ -101,6 +101,14 @@ export interface WeightsMap {
     includeOpAndPreOp: boolean
     /** When true, races during the Classic / Senior summer training camps are not blocked. */
     allowSummerRacing: boolean
+    /** Pessimism dial (0..1) scaling race/epithet EV by estimated P(win). 1.0 = full estimate. */
+    assumedRaceWinRate: number
+    /** Hard floor on P(win) for eligible races. 0 disables. */
+    minWinRateGuard: number
+    /** Extra penalty when racing below the low-energy threshold. */
+    lowEnergyRacePenalty: number
+    /** Score bonus for planning Rest when energy is low. */
+    energyRestValue: number
 }
 
 /** Progress against a single matcher or a whole epithet. `current` is capped at `required`. */
@@ -178,6 +186,10 @@ export const DEFAULT_WEIGHTS: WeightsMap = {
     aptitudeThreshold: "C",
     includeOpAndPreOp: false,
     allowSummerRacing: false,
+    assumedRaceWinRate: 1.0,
+    minWinRateGuard: 0,
+    lowEnergyRacePenalty: 4.0,
+    energyRestValue: 2.0,
 }
 
 /** Named optimization-mode presets for the Smart Race Solver. Selecting a mode in the UI snaps the

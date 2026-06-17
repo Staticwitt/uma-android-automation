@@ -1,6 +1,7 @@
 package com.steve1316.uma_android_automation.bot.solver
 
 import com.steve1316.uma_android_automation.types.Aptitude
+import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
 
 /**
@@ -99,7 +100,7 @@ object ScoringFunctions {
      * @return Net contribution to the objective if [race] is picked. Positive values prefer this
      *   race over Train. Negative values prefer Train.
      */
-    fun raceValue(race: RaceCandidate, weights: Weights, currentFans: Int = 0): Double {
+    fun raceValue(race: RaceCandidate, weights: Weights, currentFans: Int = 0, state: SolverState? = null): Double {
         val rb = weights.raceBonusPct.coerceAtLeast(0.0) / 100.0
         val stat = Math.floor(baseStat(race.grade) * (1.0 + rb))
         val sp = Math.floor(baseSp(race.grade) * (1.0 + rb))
@@ -111,7 +112,15 @@ object ScoringFunctions {
             } else {
                 race.fans * weights.fanWeight
             }
-        return (gross - cost) * weights.raceValue + fanTerm
+        var value = (gross - cost) * weights.raceValue + fanTerm
+        if (state != null) {
+            val winRate = RaceWinModel.effectiveWinRate(race, state.aptitudes, weights)
+            value *= winRate
+            if (race.turnNumber == state.currentTurn && state.initialEnergy < EnergyModel.LOW_ENERGY_THRESHOLD) {
+                value -= weights.lowEnergyRacePenalty
+            }
+        }
+        return value
     }
 
     /**
@@ -125,19 +134,22 @@ object ScoringFunctions {
      * @param weights Active weights (currently unused, reserved for future tuning).
      * @return Constant `1.0`.
      */
-    fun trainValue(
-        @Suppress("UNUSED_PARAMETER") weights: Weights,
-    ): Double = 1.0
+    fun trainValue(weights: Weights, energy: Int = EnergyModel.MAX_ENERGY, mood: Mood = Mood.NORMAL): Double {
+        val base = 1.0 + EnergyModel.moodTrainBonus(mood)
+        if (energy < EnergyModel.LOW_ENERGY_THRESHOLD) return base - 0.5
+        return base
+    }
 
     /**
-     * Resting yields no scoring contribution. Energy is not modelled in the static preview.
-     *
-     * @param weights Active weights (currently unused).
-     * @return Constant `0.0`.
+     * Rest value rises when energy is low or mood is poor so the heuristic (and MILP post-process)
+     * can prefer recovery over training.
      */
-    fun restValue(
-        @Suppress("UNUSED_PARAMETER") weights: Weights,
-    ): Double = 0.0
+    fun restValue(weights: Weights, energy: Int = EnergyModel.MAX_ENERGY, mood: Mood = Mood.NORMAL): Double {
+        var value = EnergyModel.moodRestBonus(mood)
+        if (energy < EnergyModel.LOW_ENERGY_THRESHOLD) value += weights.energyRestValue
+        if (energy <= EnergyModel.CRITICAL_ENERGY) value += weights.energyRestValue * 0.5
+        return value
+    }
 
     /**
      * Reward magnitude of completing [epithet]. Stat rewards return the amount derived from
@@ -156,6 +168,7 @@ object ScoringFunctions {
         weights: Weights,
         isTarget: Boolean = false,
         epithetTierMultiplier: Double = 1.0,
+        winRateScale: Double = 1.0,
     ): Double {
         val (kind, amount) = EpithetFilters.rewardFromBullets(epithet.bullets)
         val base =
@@ -166,7 +179,8 @@ object ScoringFunctions {
             }
         val targetMultiplier = if (isTarget) weights.targetEpithetMultiplier.coerceAtLeast(1.0) else 1.0
         val tierMultiplier = epithetTierMultiplier.coerceAtLeast(0.0)
-        return base * weights.epithetValue * targetMultiplier * tierMultiplier
+        val scale = winRateScale.coerceIn(0.0, 1.0)
+        return base * weights.epithetValue * targetMultiplier * tierMultiplier * scale
     }
 
     /**
@@ -227,7 +241,10 @@ object ScoringFunctions {
         val distApt = state.aptitudes.forDistance(race.distanceType)
         val surfApt = state.aptitudes.forSurface(race.terrain)
         val threshold = state.weights.aptitudeThreshold
-        return distApt.atLeast(threshold) && surfApt.atLeast(threshold)
+        if (!distApt.atLeast(threshold) || !surfApt.atLeast(threshold)) return false
+        if (!RaceWinModel.passesWinRateGuard(race, state.aptitudes, state.weights)) return false
+        if (race.turnNumber == state.currentTurn && state.initialEnergy < EnergyModel.RACE_COST) return false
+        return true
     }
 
     /**

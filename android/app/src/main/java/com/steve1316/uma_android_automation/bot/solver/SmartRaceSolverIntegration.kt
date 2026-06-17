@@ -13,6 +13,7 @@ import com.steve1316.uma_android_automation.bot.toSolverAptitudes
 import com.steve1316.uma_android_automation.types.Trainee
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.GameDate
+import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
@@ -139,6 +140,12 @@ object SmartRaceSolverIntegration {
     /** Live aptitude grades from the trainee details dialog; overrides settings until [reset]. */
     @Volatile private var currentRunAptitudes: Aptitudes? = null
 
+    /** Live trainee energy (0..100) observed during the current run. */
+    @Volatile private var currentRunEnergy: Int = EnergyModel.MAX_ENERGY
+
+    /** Live trainee mood observed during the current run. */
+    @Volatile private var currentRunMood: Mood = Mood.NORMAL
+
     /** Updates the fan count used by live solver decisions for [Weights.minimumFanTarget]. */
     fun updateCurrentFans(fans: Int) {
         currentRunFans = fans.coerceAtLeast(0)
@@ -162,6 +169,22 @@ object SmartRaceSolverIntegration {
 
     fun updateCurrentAptitudes(aptitudes: Aptitudes) {
         currentRunAptitudes = aptitudes
+    }
+
+    /** Updates live energy/mood used by solver scoring and MILP rest planning. */
+    fun updateTraineeVitality(energy: Int, mood: Mood) {
+        currentRunEnergy = energy.coerceIn(0, EnergyModel.MAX_ENERGY)
+        currentRunMood = mood
+    }
+
+    /**
+     * JSON calendar snapshot for the active bot run (decisions + WIN/LOSE results). Returns null
+     * when no run has seeded history yet.
+     */
+    fun getLiveCalendarSnapshot(): String? {
+        if (!historySeeded) return null
+        if (!SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver")) return null
+        return runCatching { buildCalendarSnapshotJson(reuseSchedule = true) }.getOrNull()
     }
 
     /**
@@ -208,6 +231,8 @@ object SmartRaceSolverIntegration {
         cachedManualLocksParsed = null
         currentRunFans = 0
         currentRunAptitudes = null
+        currentRunEnergy = EnergyModel.MAX_ENERGY
+        currentRunMood = Mood.NORMAL
         SparkPickHistory.reset()
     }
 
@@ -632,6 +657,18 @@ object SmartRaceSolverIntegration {
             return null
         }
 
+        val plannedRace =
+            racesByTurn[currentTurn]?.firstOrNull { candidate ->
+                candidate.key == decision.raceKey || candidate.name == raceNameFromKey(decision.raceKey)
+            }
+        if (plannedRace != null && !RaceWinModel.passesWinRateGuard(plannedRace, effectiveAptitudes(), readWeights())) {
+            MessageLog.i(
+                TAG,
+                "Win-rate guard blocked planned ${decision.raceKey} on turn $currentTurn (P(win)=${"%.2f".format(RaceWinModel.winProbability(plannedRace, effectiveAptitudes()))}).",
+            )
+            return null
+        }
+
         val pick =
             candidates.firstOrNull { rd ->
                 rd.name == decision.raceKey || rd.name == raceNameFromKey(decision.raceKey)
@@ -757,23 +794,110 @@ object SmartRaceSolverIntegration {
                 ?: loadEpithets()
                 ?: emptyList()
 
+        val useLiveRun = config.optBoolean("useLiveRunState", false)
+        val liveRunActive = useLiveRun && historySeeded
+        val currentTurn =
+            when {
+                liveRunActive -> currentRunTurn.coerceIn(1, Heuristic.LAST_TURN)
+                config.has("currentTurn") -> config.optInt("currentTurn", 1).coerceIn(1, Heuristic.LAST_TURN)
+                else -> 1
+            }
+        val raceHistorySnapshot =
+            when {
+                liveRunActive -> synchronized(raceHistory) { raceHistory.toList() }
+                config.has("raceHistory") -> parseRaceHistoryArray(config.optJSONArray("raceHistory"))
+                else -> emptyList()
+            }
+        val deadEpithets =
+            when {
+                liveRunActive -> runtimeDeadEpithets
+                config.has("deadEpithets") -> jsonStringList(config.optJSONArray("deadEpithets")).toSet()
+                else -> emptySet()
+            }
+
         val state =
             SolverState(
-                currentTurn = 1,
+                currentTurn = currentTurn,
                 scenario = config.optString("scenario", "Trackblazer"),
                 characterPreset = config.optStringOrNull("characterPreset"),
                 aptitudes = parseAptitudesObj(config.optJSONObject("aptitudes")),
                 racesByTurn = racesByTurn,
                 epithets = epithets,
+                raceHistory = raceHistorySnapshot,
+                deadEpithets = deadEpithets,
                 forcedEpithets = jsonStringList(config.optJSONArray("forcedEpithets")).toSet(),
                 targetEpithets = jsonStringList(config.optJSONArray("targetEpithets")).toSet(),
                 epithetTierMultipliers = readEpithetTierMultipliers(),
                 lockedDecisions = parseManualLocks(config.optJSONObject("manualLocks"), racesByTurn),
                 weights = parseWeightsObj(config.optJSONObject("weights")),
+                currentFans = if (liveRunActive) currentRunFans else config.optInt("currentFans", 0).coerceAtLeast(0),
+                initialEnergy =
+                    if (liveRunActive) {
+                        currentRunEnergy
+                    } else {
+                        config.optInt("initialEnergy", EnergyModel.MAX_ENERGY).coerceIn(0, EnergyModel.MAX_ENERGY)
+                    },
+                initialMood =
+                    if (liveRunActive) {
+                        currentRunMood
+                    } else {
+                        Mood.fromName(config.optString("initialMood", Mood.NORMAL.name)) ?: Mood.NORMAL
+                    },
             )
 
-        val schedule = SmartRaceSolver.solve(state)
-        return serializeSchedule(schedule, racesByTurn)
+        val schedule =
+            if (liveRunActive && cachedSchedule != null) {
+                cachedSchedule!!
+            } else {
+                SmartRaceSolver.solve(state)
+            }
+        val payload = JSONObject(serializeSchedule(schedule, racesByTurn))
+        if (liveRunActive) {
+            payload.put("currentTurn", currentRunTurn)
+            payload.put("liveRun", true)
+            val results = JSONArray()
+            synchronized(raceHistory) {
+                for (win in raceHistory) {
+                    results.put(
+                        JSONObject()
+                            .put("turn", win.turnNumber)
+                            .put("raceKey", win.raceKey)
+                            .put("name", win.name)
+                            .put("outcome", RaceOutcome.WIN.name),
+                    )
+                }
+            }
+            synchronized(raceLosses) {
+                for (loss in raceLosses) {
+                    results.put(
+                        JSONObject()
+                            .put("turn", loss.turnNumber)
+                            .put("raceKey", loss.raceKey)
+                            .put("name", loss.name)
+                            .put("outcome", RaceOutcome.LOSE.name),
+                    )
+                }
+            }
+            payload.put("results", results)
+        }
+        return payload.toString()
+    }
+
+    private fun parseRaceHistoryArray(arr: JSONArray?): List<RaceWin> {
+        if (arr == null) return emptyList()
+        val out = ArrayList<RaceWin>(arr.length())
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            out.add(
+                RaceWin(
+                    raceKey = o.optString("raceKey"),
+                    name = o.optString("name"),
+                    classYear = o.optString("classYear", ""),
+                    turnNumber = o.optInt("turnNumber"),
+                ),
+            )
+        }
+        return out
     }
 
     /**
@@ -813,6 +937,8 @@ object SmartRaceSolverIntegration {
             weights = readWeights(),
             currentFans = currentRunFans,
             deadEpithets = runtimeDeadEpithets,
+            initialEnergy = currentRunEnergy,
+            initialMood = currentRunMood,
         )
 
     /**
@@ -1152,6 +1278,10 @@ object SmartRaceSolverIntegration {
             aptitudeThreshold = parseAptitude(obj.optString("aptitudeThreshold", "C")),
             includeOpAndPreOp = obj.optBoolean("includeOpAndPreOp", false),
             allowSummerRacing = obj.optBoolean("allowSummerRacing", false),
+            assumedRaceWinRate = obj.optDouble("assumedRaceWinRate", 1.0),
+            minWinRateGuard = obj.optDouble("minWinRateGuard", 0.0),
+            lowEnergyRacePenalty = obj.optDouble("lowEnergyRacePenalty", 4.0),
+            energyRestValue = obj.optDouble("energyRestValue", 2.0),
         )
     }
 

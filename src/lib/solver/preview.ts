@@ -50,8 +50,21 @@ export interface SolverConfigSnapshot {
         includeOpAndPreOp: boolean
         /** When true, races during the Classic / Senior summer training camps are not blocked. */
         allowSummerRacing: boolean
+        /** Pessimism dial (0..1) for win-rate-aware scoring. */
+        assumedRaceWinRate?: number
+        /** Hard P(win) floor; 0 disables the guard. */
+        minWinRateGuard?: number
+        lowEnergyRacePenalty?: number
+        energyRestValue?: number
     }
-    /** Bundled races.json passed inline so the bridge does not depend on SettingsHelper persistence having reached SQLite by the time the preview fires. */
+    /** When true, merge live bot run wins/losses from [SmartRaceSolverIntegration]. */
+    useLiveRunState?: boolean
+    /** Optional 1-indexed turn for loss-aware preview (ignored when `useLiveRunState` is true). */
+    currentTurn?: number
+    /** Preview-only starting energy (0..100). Defaults to 100. */
+    initialEnergy?: number
+    /** Preview-only starting mood. Defaults to NORMAL. */
+    initialMood?: string
     racesDataJson?: string
     /** Bundled epithets.json passed inline for the same reason as `racesDataJson`. */
     epithetsDataJson?: string
@@ -80,6 +93,41 @@ export interface SchedulePreview {
     totalScore: number
     /** Populated by the Kotlin integration on a soft failure (e.g. "races data unavailable"). Presence signals a degraded result. */
     error?: string
+    /** Current bot turn when `liveRun` is true. */
+    currentTurn?: number
+    /** True when this preview reflects an active bot run. */
+    liveRun?: boolean
+    /** Confirmed WIN/LOSE markers keyed by turn when `liveRun` is true. */
+    results?: Array<{ turn: number; raceKey: string; name: string; outcome: "WIN" | "LOSE" }>
+}
+
+/**
+ * Fetches the live calendar snapshot from an in-progress bot run, or null when idle.
+ */
+export async function getLiveCalendarSnapshot(): Promise<string | null> {
+    const snapshot: string | null = await NativeModules.SmartRaceSolverModule.getLiveCalendarSnapshot()
+    return snapshot ?? null
+}
+
+/**
+ * Parses a live calendar JSON blob into a [SchedulePreview] plus results overlay.
+ */
+export function parseLiveCalendarSnapshot(json: string): SchedulePreview {
+    const parsed = JSON.parse(json) as {
+        currentTurn?: number
+        decisions: Record<string, ScheduleEntry>
+        projectedEpithets?: string[]
+        totalScore?: number
+        results?: Array<{ turn: number; raceKey: string; name: string; outcome: "WIN" | "LOSE" }>
+    }
+    return {
+        decisions: parsed.decisions ?? {},
+        projectedEpithets: parsed.projectedEpithets ?? [],
+        totalScore: parsed.totalScore ?? 0,
+        currentTurn: parsed.currentTurn,
+        liveRun: true,
+        results: parsed.results ?? [],
+    }
 }
 
 /**

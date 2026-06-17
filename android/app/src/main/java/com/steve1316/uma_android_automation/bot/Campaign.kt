@@ -1879,6 +1879,8 @@ abstract class Campaign(game: Game) : Task(game) {
         } finally {
             MessageLog.disableOutput = false
         }
+
+        SmartRaceSolverIntegration.updateTraineeVitality(trainee.energy, trainee.mood)
     }
 
     /**

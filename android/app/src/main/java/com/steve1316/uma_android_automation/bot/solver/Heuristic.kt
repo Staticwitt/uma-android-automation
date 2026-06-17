@@ -54,6 +54,7 @@ object Heuristic {
             raceHistory = state.raceHistory,
             completedEpithets = state.completedEpithets,
             consecutiveRaces = countTrailingRaces(state.raceHistory, state.currentTurn - 1),
+            energy = state.initialEnergy.coerceIn(0, EnergyModel.MAX_ENERGY),
             score = 0.0,
         )
 
@@ -102,10 +103,13 @@ object Heuristic {
         val children = ArrayList<Beam>(racesHere.size + 2)
         for (race in racesHere) {
             if (!canRaceAfterGap(beam, turn, state)) continue
+            if (beam.energy < EnergyModel.RACE_COST) continue
             children += applyDecision(beam, turn, Decision.RaceDecision(race.key), state)
         }
         children += applyDecision(beam, turn, Decision.Train, state)
-        children += applyDecision(beam, turn, Decision.Rest, state)
+        if (beam.energy < EnergyModel.MAX_ENERGY) {
+            children += applyDecision(beam, turn, Decision.Rest, state)
+        }
         return children
     }
 
@@ -143,13 +147,15 @@ object Heuristic {
                 beam.copy(
                     decisions = beam.decisions + (turn to decision),
                     consecutiveRaces = 0,
-                    score = beam.score + ScoringFunctions.trainValue(state.weights),
+                    energy = EnergyModel.afterTrain(beam.energy),
+                    score = beam.score + ScoringFunctions.trainValue(state.weights, beam.energy, state.initialMood),
                 )
             Decision.Rest ->
                 beam.copy(
                     decisions = beam.decisions + (turn to decision),
                     consecutiveRaces = 0,
-                    score = beam.score + ScoringFunctions.restValue(state.weights),
+                    energy = EnergyModel.afterRest(beam.energy),
+                    score = beam.score + ScoringFunctions.restValue(state.weights, beam.energy, state.initialMood),
                 )
         }
 
@@ -192,7 +198,8 @@ object Heuristic {
                     EpithetTracker.isCompleted(epithet, syntheticState)
             }
 
-        val baseScore = ScoringFunctions.raceValue(race, state.weights, state.currentFans)
+        val baseScore = ScoringFunctions.raceValue(race, state.weights, state.currentFans, state)
+        val winRate = RaceWinModel.effectiveWinRate(race, state.aptitudes, state.weights)
         // Mirror the reference Trackblazer solver: every epithet completion contributes its
         // reward to the objective. This is what makes G2/G3 races (which net zero on grade-
         // and-cost alone) competitive - a free epithet reward tips the balance over Train.
@@ -205,6 +212,7 @@ object Heuristic {
                     state.weights,
                     it.name in state.targetEpithets,
                     state.epithetTierMultipliers[it.name] ?: 1.0,
+                    winRate,
                 )
             }
         val summer = ScoringFunctions.summerBlockPenalty(turn, state)
@@ -215,6 +223,7 @@ object Heuristic {
             raceHistory = newHistory,
             completedEpithets = beam.completedEpithets + newlyCompleted.map { it.name },
             consecutiveRaces = newConsec,
+            energy = EnergyModel.afterRace(beam.energy),
             score = beam.score + baseScore + epithetGain - summer - consec,
         )
     }
@@ -260,6 +269,7 @@ object Heuristic {
      * @property completedEpithets Epithets the beam projects to complete given [raceHistory].
      * @property consecutiveRaces Number of contiguous race turns ending at the most recent
      *   decision. Reset to 0 by Train/Rest.
+     * @property energy Projected trainee energy (0..100) after the most recent decision.
      * @property score Cumulative beam score: sum of per-turn scoring contributions.
      */
     private data class Beam(
@@ -267,6 +277,7 @@ object Heuristic {
         val raceHistory: List<RaceWin>,
         val completedEpithets: Set<String>,
         val consecutiveRaces: Int,
+        val energy: Int,
         val score: Double,
     )
 }

@@ -289,11 +289,12 @@ object MilpSolver {
                 val byKey = state.racesByTurn[t]?.associateBy { it.key } ?: continue
                 for ((key, v) in races) {
                     val race = byKey[key] ?: continue
-                    var w = ScoringFunctions.raceValue(race, state.weights, state.currentFans)
+                    var w = ScoringFunctions.raceValue(race, state.weights, state.currentFans, state)
                     if (t in state.summerBlockTurns) w -= state.weights.summerPenalty
                     v.weight(w)
                 }
             }
+            val epithetWinScale = state.weights.assumedRaceWinRate.coerceIn(0.0, 1.0)
             for ((name, v) in epithetVars) {
                 val epithet = state.epithetsByName[name] ?: continue
                 v.weight(
@@ -302,6 +303,7 @@ object MilpSolver {
                         state.weights,
                         name in state.targetEpithets,
                         state.epithetTierMultipliers[name] ?: 1.0,
+                        epithetWinScale,
                     ),
                 )
             }
@@ -323,7 +325,28 @@ object MilpSolver {
          */
         private fun extractSchedule(objectiveValue: Double): Schedule {
             val decisions = HashMap<TurnNumber, Decision>(turns.last - turns.first + 1)
+            var energy = state.initialEnergy.coerceIn(0, EnergyModel.MAX_ENERGY)
+            var consecutiveRaces =
+                run {
+                    val winTurns = state.raceHistory.mapTo(HashSet()) { it.turnNumber }
+                    var count = 0
+                    var t = state.currentTurn - 1
+                    while (t > 0 && t in winTurns) {
+                        count++
+                        t--
+                    }
+                    count
+                }
             for (t in turns) {
+                val locked = state.lockedDecisions[t]
+                if (locked != null) {
+                    decisions[t] = resolveNonRaceDecision(locked, energy, consecutiveRaces)
+                    applyEnergyTransition(decisions[t]!!, energy, consecutiveRaces).also {
+                        energy = it.first
+                        consecutiveRaces = it.second
+                    }
+                    continue
+                }
                 val raceOn = (xVars[t]?.value?.toDouble() ?: 0.0) > 0.5
                 if (raceOn) {
                     val pickedKey =
@@ -332,7 +355,16 @@ object MilpSolver {
                             ?.key
                     decisions[t] = if (pickedKey != null) Decision.RaceDecision(pickedKey) else Decision.Train
                 } else {
-                    decisions[t] = Decision.Train
+                    decisions[t] =
+                        if (EnergyModel.shouldPreferRest(energy, consecutiveRaces)) {
+                            Decision.Rest
+                        } else {
+                            Decision.Train
+                        }
+                }
+                applyEnergyTransition(decisions[t]!!, energy, consecutiveRaces).also {
+                    energy = it.first
+                    consecutiveRaces = it.second
                 }
             }
             val projected =
@@ -342,6 +374,26 @@ object MilpSolver {
                     .toSet() + state.completedEpithets
             return Schedule(decisions, projected, objectiveValue)
         }
+
+        private fun resolveNonRaceDecision(locked: Decision, energy: Int, consecutiveRaces: Int): Decision =
+            when (locked) {
+                is Decision.RaceDecision -> locked
+                Decision.Rest ->
+                    if (energy >= EnergyModel.MAX_ENERGY && !EnergyModel.shouldPreferRest(energy, consecutiveRaces)) {
+                        Decision.Train
+                    } else {
+                        Decision.Rest
+                    }
+                Decision.Train -> locked
+            }
+
+        private fun applyEnergyTransition(decision: Decision, energy: Int, consecutiveRaces: Int): Pair<Int, Int> =
+            when (decision) {
+                is Decision.RaceDecision -> EnergyModel.afterRace(energy) to (consecutiveRaces + 1)
+                Decision.Train -> EnergyModel.afterTrain(energy) to 0
+                Decision.Rest -> EnergyModel.afterRest(energy) to 0
+            }
+
 
         // //////////////////////////////////////////////////////////////////////////////////////////////////
         // //////////////////////////////////////////////////////////////////////////////////////////////////
