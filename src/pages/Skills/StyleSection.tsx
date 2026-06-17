@@ -2,12 +2,11 @@ import React, { useContext, useMemo, useState } from "react"
 import { View, Text, StyleSheet, Pressable } from "react-native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { Section } from "../../components/ui/section"
-import { Row } from "../../components/ui/row"
+import { SettingRow } from "../../components/ui/setting-row"
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import InfoCallout from "../../components/ui/info-callout"
-import SearchableItem from "../../components/SearchableItem"
 import { SkillsContext, defaultSettings } from "../../context/BotStateContext"
 import { useTheme } from "../../context/ThemeContext"
 import { TYPE } from "../../lib/type"
@@ -130,30 +129,30 @@ const StyleSection: React.FC = () => {
     return (
         <>
             <Section label="Style">
-                <SearchableItem id="skill-plan-running-style" title="Running Style for Skills" description="Dictates which skills are considered for purchase based on the preferred running style.">
-                    <Row
-                        title="Running Style"
-                        description="Dictates which skills are considered for purchase based on the preferred running style."
-                        onPress={() => setOpenPicker("running")}
-                        right={chipFor(runningChip)}
-                    />
-                </SearchableItem>
-                <SearchableItem id="preferred-distance-override" title="Track Distance for Skills" description="Dictates which skills are considered for purchase based on the track distance.">
-                    <Row
-                        title="Track Distance"
-                        description="Dictates which skills are considered for purchase based on the track distance."
-                        onPress={() => setOpenPicker("distance")}
-                        right={chipFor(distanceChip)}
-                    />
-                </SearchableItem>
-                <SearchableItem id="preferred-track-surface" title="Track Surface for Skills" description="Dictates which skills are considered for purchase based on the terrain.">
-                    <Row
-                        title="Track Surface"
-                        description="Dictates which skills are considered for purchase based on the terrain."
-                        onPress={() => setOpenPicker("surface")}
-                        right={chipFor(surfaceChip)}
-                    />
-                </SearchableItem>
+                <SettingRow
+                    id="skill-plan-running-style"
+                    title="Running Style"
+                    searchTitle="Running Style for Skills"
+                    description="Dictates which skills are considered for purchase based on the preferred running style."
+                    onPress={() => setOpenPicker("running")}
+                    right={chipFor(runningChip)}
+                />
+                <SettingRow
+                    id="preferred-distance-override"
+                    title="Track Distance"
+                    searchTitle="Track Distance for Skills"
+                    description="Dictates which skills are considered for purchase based on the track distance."
+                    onPress={() => setOpenPicker("distance")}
+                    right={chipFor(distanceChip)}
+                />
+                <SettingRow
+                    id="preferred-track-surface"
+                    title="Track Surface"
+                    searchTitle="Track Surface for Skills"
+                    description="Dictates which skills are considered for purchase based on the terrain."
+                    onPress={() => setOpenPicker("surface")}
+                    right={chipFor(surfaceChip)}
+                />
             </Section>
 
             <InfoCallout title="How Running Style affects skill picks">

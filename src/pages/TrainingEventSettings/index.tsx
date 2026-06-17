@@ -10,6 +10,7 @@ import { TrainingEventContext, defaultSettings } from "../../context/BotStateCon
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import SearchableItem from "../../components/SearchableItem"
+import { SettingRow } from "../../components/ui/setting-row"
 import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
@@ -606,17 +607,12 @@ const TrainingEventSettings = () => {
 
                         {showSection("general") && (
                         <Section label="General">
-                            <SearchableItem
+                            <SettingRow
                                 id="prioritize-energy-options"
                                 title="Prioritize Energy Options"
                                 description="When enabled, the bot will prioritize training event choices that provide energy recovery or avoid energy consumption, helping to maintain optimal energy levels for training sessions."
-                            >
-                                <Row
-                                    title="Prioritize Energy Options"
-                                    description="When enabled, the bot will prioritize training event choices that provide energy recovery or avoid energy consumption, helping to maintain optimal energy levels for training sessions."
-                                    right={<Switch checked={enablePrioritizeEnergyOptions} onCheckedChange={(checked) => updateTrainingEventSetting("enablePrioritizeEnergyOptions", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enablePrioritizeEnergyOptions} onCheckedChange={(checked) => updateTrainingEventSetting("enablePrioritizeEnergyOptions", checked)} />}
+                            />
                         </Section>
                         )}
 
@@ -634,17 +630,12 @@ const TrainingEventSettings = () => {
                                 </SearchableItem>
                             </View>
 
-                            <SearchableItem
+                            <SettingRow
                                 id="automatic-ocr-retry-training"
                                 title="Enable Automatic OCR Retry for Training Events"
                                 description="When enabled, the bot will automatically retry OCR detection with adjusted settings if the initial attempt for a training event title fails or has low confidence."
-                            >
-                                <Row
-                                    title="Enable Automatic OCR Retry for Training Events"
-                                    description="When enabled, the bot will automatically retry OCR detection with adjusted settings if the initial attempt for a training event title fails or has low confidence."
-                                    right={<Switch checked={enableAutomaticOCRRetry} onCheckedChange={(checked) => updateTrainingEventSetting("enableAutomaticOCRRetry", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enableAutomaticOCRRetry} onCheckedChange={(checked) => updateTrainingEventSetting("enableAutomaticOCRRetry", checked)} />}
+                            />
 
                             <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
@@ -661,17 +652,12 @@ const TrainingEventSettings = () => {
                                 />
                             </View>
 
-                            <SearchableItem
+                            <SettingRow
                                 id="hide-ocr-comparison-results-training"
                                 title="Hide OCR String Comparison Results"
                                 description="If enabled, the bot will suppress detailed logging of individual string similarity scores during training event detection to keep the logs cleaner."
-                            >
-                                <Row
-                                    title="Hide OCR String Comparison Results"
-                                    description="If enabled, the bot will suppress detailed logging of individual string similarity scores during training event detection to keep the logs cleaner."
-                                    right={<Switch checked={enableHideOCRComparisonResults} onCheckedChange={(checked) => updateTrainingEventSetting("enableHideOCRComparisonResults", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enableHideOCRComparisonResults} onCheckedChange={(checked) => updateTrainingEventSetting("enableHideOCRComparisonResults", checked)} />}
+                            />
                         </Section>
                         )}
 

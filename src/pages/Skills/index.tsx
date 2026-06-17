@@ -5,9 +5,8 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import { Section } from "../../components/ui/section"
 import InfoCallout from "../../components/ui/info-callout"
 import TabStrip, { TabStripItem } from "../../components/ui/tab-strip"
-import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
-import SearchableItem from "../../components/SearchableItem"
+import { SettingRow } from "../../components/ui/setting-row"
 import CustomSlider from "../../components/CustomSlider"
 import { SkillsContext, defaultSettings } from "../../context/BotStateContext"
 import { useTheme } from "../../context/ThemeContext"
@@ -109,32 +108,30 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
                         <Text style={styles.planDescription}>{activeConfig.description}</Text>
                     </View>
                     {isSkillPointCheck && (
-                        <SearchableItem id="enable-skill-point-check" title="Enable Skill Point Check" description="Stop the bot when the skill point threshold is reached">
-                            <Row
-                                title="Enable Skill Point Check"
-                                description="Stop the bot when the skill point threshold is reached"
-                                right={
-                                    <Switch
-                                        checked={skills.enableSkillPointCheck}
-                                        onCheckedChange={(checked) => {
-                                            if (checked) {
-                                                updateSkills({ enableSkillPointCheck: true })
-                                            } else {
-                                                // Cascade off: also disable the Skill Point Check plan so the legacy mirror effect doesn't immediately flip the top toggle back on.
-                                                updateSkills((prev) => ({
-                                                    ...prev,
-                                                    enableSkillPointCheck: false,
-                                                    plans: {
-                                                        ...prev.plans,
-                                                        skillPointCheck: mergeSkillPlanConfig("skillPointCheck", { ...prev.plans.skillPointCheck, enabled: false }),
-                                                    },
-                                                }))
-                                            }
-                                        }}
-                                    />
-                                }
-                            />
-                        </SearchableItem>
+                        <SettingRow
+                            id="enable-skill-point-check"
+                            title="Enable Skill Point Check"
+                            description="Stop the bot when the skill point threshold is reached"
+                            right={
+                                <Switch
+                                    checked={skills.enableSkillPointCheck}
+                                    onCheckedChange={(checked) => {
+                                        if (checked) {
+                                            updateSkills({ enableSkillPointCheck: true })
+                                        } else {
+                                            updateSkills((prev) => ({
+                                                ...prev,
+                                                enableSkillPointCheck: false,
+                                                plans: {
+                                                    ...prev.plans,
+                                                    skillPointCheck: mergeSkillPlanConfig("skillPointCheck", { ...prev.plans.skillPointCheck, enabled: false }),
+                                                },
+                                            }))
+                                        }
+                                    }}
+                                />
+                            }
+                        />
                     )}
                     {isSkillPointCheck && skills.enableSkillPointCheck && (
                         <View style={styles.sliderHost}>
@@ -157,29 +154,20 @@ const Skills: React.FC<{ route?: { params?: SkillsRouteParams } }> = ({ route })
                             />
                         </View>
                     )}
-                    <SearchableItem
+                    <SettingRow
                         id={isSkillPointCheck ? "skill-point-check-plan" : `enable-skill-plan-${activeKey}`}
-                        title={`Enable ${activeConfig.title} Plan`}
+                        title={`Enable ${activeConfig.title} Plan (Beta)`}
+                        searchTitle={`Enable ${activeConfig.title} Plan`}
                         description="Purchase skills based on this plan's configuration"
-                    >
-                        <Row
-                            title={`Enable ${activeConfig.title} Plan (Beta)`}
-                            description="Purchase skills based on this plan's configuration"
-                            right={<Switch checked={enabled} onCheckedChange={(checked) => updatePlanSetting("enabled", checked)} />}
-                        />
-                    </SearchableItem>
+                        right={<Switch checked={enabled} onCheckedChange={(checked) => updatePlanSetting("enabled", checked)} />}
+                    />
                     {enabled && (
-                        <SearchableItem
+                        <SettingRow
                             id={`enable-buy-negative-skills-${activeConfig.name}`}
                             title="Purchase All Negative Skills"
                             description="Attempt to buy all negative skills (e.g. Firm Conditions x)"
-                        >
-                            <Row
-                                title="Purchase All Negative Skills"
-                                description="Attempt to buy all negative skills (e.g. Firm Conditions x)"
-                                right={<Switch checked={enableBuyNegativeSkills} onCheckedChange={(checked) => updatePlanSetting("enableBuyNegativeSkills", checked)} />}
-                            />
-                        </SearchableItem>
+                            right={<Switch checked={enableBuyNegativeSkills} onCheckedChange={(checked) => updatePlanSetting("enableBuyNegativeSkills", checked)} />}
+                        />
                     )}
                 </Section>
                 <PlanTab planKey={activeKey} />

@@ -9,10 +9,9 @@ import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 import { Section } from "../../components/ui/section"
 import { SectionLabel } from "../../components/ui/section-label"
-import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
 import { Input } from "../../components/ui/input"
-import SearchableItem from "../../components/SearchableItem"
+import { SettingRow } from "../../components/ui/setting-row"
 import CustomSelect from "../../components/CustomSelect"
 import CustomButton from "../../components/CustomButton"
 import CustomScrollView from "../../components/CustomScrollView"
@@ -307,27 +306,27 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                         boosts.
                     </Text>
                 </View>
-                <SearchableItem id={`exclude-green-skills-${config.name}`} title="Skip All Green Skills" description="Exclude green stat-trigger skills">
-                    <Row
-                        title="Skip Green Skills"
-                        description="Exclude green stat-trigger skills"
-                        right={<Switch checked={excludeGreenSkills} onCheckedChange={(checked) => updatePlanSetting("excludeGreenSkills", checked)} />}
-                    />
-                </SearchableItem>
-                <SearchableItem id={`exclude-red-skills-${config.name}`} title="Skip All Red Skills (Debuffs)" description="Exclude red debuff skills">
-                    <Row
-                        title="Skip Red Skills"
-                        description="Exclude red debuff skills"
-                        right={<Switch checked={excludeRedSkills} onCheckedChange={(checked) => updatePlanSetting("excludeRedSkills", checked)} />}
-                    />
-                </SearchableItem>
-                <SearchableItem id={`exclude-unique-skills-${config.name}`} title="Skip All Unique Skills" description="Exclude inherited unique (legacy) skills">
-                    <Row
-                        title="Skip Unique Skills"
-                        description="Exclude inherited unique (legacy) skills"
-                        right={<Switch checked={excludeUniqueSkills} onCheckedChange={(checked) => updatePlanSetting("excludeUniqueSkills", checked)} />}
-                    />
-                </SearchableItem>
+                <SettingRow
+                    id={`exclude-green-skills-${config.name}`}
+                    title="Skip Green Skills"
+                    searchTitle="Skip All Green Skills"
+                    description="Exclude green stat-trigger skills"
+                    right={<Switch checked={excludeGreenSkills} onCheckedChange={(checked) => updatePlanSetting("excludeGreenSkills", checked)} />}
+                />
+                <SettingRow
+                    id={`exclude-red-skills-${config.name}`}
+                    title="Skip Red Skills"
+                    searchTitle="Skip All Red Skills (Debuffs)"
+                    description="Exclude red debuff skills"
+                    right={<Switch checked={excludeRedSkills} onCheckedChange={(checked) => updatePlanSetting("excludeRedSkills", checked)} />}
+                />
+                <SettingRow
+                    id={`exclude-unique-skills-${config.name}`}
+                    title="Skip Unique Skills"
+                    searchTitle="Skip All Unique Skills"
+                    description="Exclude inherited unique (legacy) skills"
+                    right={<Switch checked={excludeUniqueSkills} onCheckedChange={(checked) => updatePlanSetting("excludeUniqueSkills", checked)} />}
+                />
             </Section>
 
             <Section label="Strategy & Planned Skills">
@@ -392,19 +391,18 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                     <Text style={styles.listHelperText}>{helperText}</Text>
                 </View>
 
-                <SearchableItem id={`show-selected-skills-${config.name}`} title="Show Only Selected Skills" description="Filter the list to only currently-selected skills">
-                    <Row
-                        title="Show Only Selected Skills"
-                        description="Filter the list to only currently-selected skills"
-                        right={
-                            <Switch
-                                checked={activeIds.length === 0 ? false : showSelected}
-                                disabled={activeIds.length === 0}
-                                onCheckedChange={(checked) => setShowSelected(checked && activeIds.length !== 0)}
-                            />
-                        }
-                    />
-                </SearchableItem>
+                <SettingRow
+                    id={`show-selected-skills-${config.name}`}
+                    title="Show Only Selected Skills"
+                    description="Filter the list to only currently-selected skills"
+                    right={
+                        <Switch
+                            checked={activeIds.length === 0 ? false : showSelected}
+                            disabled={activeIds.length === 0}
+                            onCheckedChange={(checked) => setShowSelected(checked && activeIds.length !== 0)}
+                        />
+                    }
+                />
 
                 <View style={styles.hostPad}>
                     <Input style={styles.searchInput} value={searchQuery} onChangeText={setSearchQuery} placeholder="Search skills by name..." />
