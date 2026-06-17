@@ -4,12 +4,13 @@ import { useNavigation, DrawerActions, useRoute } from "@react-navigation/native
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { useTheme } from "../../context/ThemeContext"
 import { useSearchRegistry } from "../../context/SearchRegistryContext"
+import { searchPageLabel, isSettingsStackPage } from "../../lib/searchNavigation"
 import { Portal } from "@rn-primitives/portal"
 import { circularPress } from "../../lib/pressSurface"
 import { StickyPageHeader } from "../ui/sticky-page-header"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
-interface PageHeaderProps {
+export interface PageHeaderProps {
     /** The title to display in the header. */
     title: string
     /** Whether to show the Home button (default: true). */
@@ -26,19 +27,6 @@ interface PageHeaderProps {
     searchOnRight?: boolean
     /** Optional additional styles for the header container. */
     style?: ViewStyle
-}
-
-// This is a mapping of page names to their display names. This is used to display the page name in the header.
-const pageNameMapping: Record<string, string> = {
-    SettingsMain: "General Settings",
-    TrainingSettings: "Training",
-    TrainingEventSettings: "Training Events",
-    RacingSettings: "Racing",
-    SmartRaceSolverSettings: "Smart Race Solver",
-    Skills: "Skills",
-    DebugSettings: "Debug",
-    EventLogVisualizer: "Event Log Visualizer",
-    ImportSettingsPreview: "Import Settings Preview",
 }
 
 /**
@@ -175,7 +163,7 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
         // Group results by their human-readable page name.
         const grouped: Record<string, any[]> = {}
         flatResults.forEach((item) => {
-            const pageName = pageNameMapping[item.page] || item.page
+            const pageName = searchPageLabel(item.page)
             if (!grouped[pageName]) {
                 grouped[pageName] = []
             }
@@ -204,22 +192,7 @@ const PageHeader = ({ title, showHomeButton = true, titleComponent, leftComponen
             fallbackTargetId: item.parentId || undefined,
         }
 
-        // List of pages that are nested inside the "Settings" stack.
-        const settingsPages = [
-            "SettingsMain",
-            "TrainingSettings",
-            "TrainingEventSettings",
-            "RacingSettings",
-            "SmartRaceSolverSettings",
-            "Skills",
-            "EventLogVisualizer",
-            "ImportSettingsPreview",
-            "DebugSettings",
-        ]
-
-        const isSettingsPage = settingsPages.includes(item.page)
-
-        if (isSettingsPage) {
+        if (isSettingsStackPage(item.page)) {
             // Use nested navigation to reach settings from outside the stack (e.g., from Home).
             ;(navigation.navigate as any)("Settings", {
                 screen: item.page,

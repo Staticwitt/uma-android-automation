@@ -6,9 +6,9 @@ import { prepareSettingsForBotStart } from "../../lib/prepareSettingsForBotStart
 import { useSettings } from "../../context/SettingsContext"
 import { logWithTimestamp, logErrorWithTimestamp } from "../../lib/logger"
 import { Animated, DeviceEventEmitter, StyleSheet, View, NativeModules } from "react-native"
-import { Snackbar } from "react-native-paper"
 import { MessageLogDispatchContext } from "../../context/MessageLogContext"
 import { useTheme } from "../../context/ThemeContext"
+import { useToast } from "../../context/ToastContext"
 import { Text } from "../../components/ui/text"
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import Ionicons from "@react-native-vector-icons/ionicons"
@@ -80,8 +80,7 @@ const Home = () => {
     const { colors } = useTheme()
     const [isRunning, setIsRunning] = useState<boolean>(false)
     const [showNotReadyDialog, setShowNotReadyDialog] = useState<boolean>(false)
-    const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
-    const [snackbarMessage, setSnackbarMessage] = useState<string>("")
+    const { showError } = useToast()
     const [deviceMetrics, setDeviceMetrics] = useState<DeviceMetrics | null>(null)
     const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null)
     const [showPermissionDialog, setShowPermissionDialog] = useState<boolean>(false)
@@ -205,8 +204,7 @@ const Home = () => {
             logWithTimestamp("[Home] Settings saved successfully, starting bot...")
         } catch (error) {
             logErrorWithTimestamp("[Home] Failed to save settings:", error)
-            setSnackbarMessage(`Failed to save settings before starting: ${error}`)
-            setSnackbarOpen(true)
+            showError(`Failed to save settings before starting: ${error}`)
             return
         }
         StartModule.start()
@@ -398,20 +396,6 @@ Note: Reinstall using the x86_64 release APK for much better performance.`)
             </AlertDialog>
 
             <PermissionSetupDialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog} onAllGranted={proceedToStart} />
-
-            <Snackbar
-                visible={snackbarOpen}
-                onDismiss={() => setSnackbarOpen(false)}
-                action={{
-                    label: "Close",
-                    onPress: () => {
-                        setSnackbarOpen(false)
-                    },
-                }}
-                style={{ backgroundColor: colors.error, borderRadius: 10 }}
-            >
-                {snackbarMessage}
-            </Snackbar>
         </View>
     )
 }

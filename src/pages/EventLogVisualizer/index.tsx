@@ -10,7 +10,7 @@ import YearSummaryCard from "../../components/EventLog/YearSummaryCard"
 import { parseLogs, type LogFileInput, type DayRecord, type GapRecord, type FileDividerRecord, aggregateYearSummaries } from "../../lib/eventLogParser"
 import CustomButton from "../../components/CustomButton"
 import { useTheme } from "../../context/ThemeContext"
-import { Snackbar } from "react-native-paper"
+import { useToast } from "../../context/ToastContext"
 import { useSettings } from "../../context/SettingsContext"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip"
 import { Info } from "lucide-react-native"
@@ -33,11 +33,10 @@ type MixedRecord = DayRecord | GapRecord | FileDividerRecord
 const EventLogVisualizer: React.FC = () => {
     usePerformanceLogging("EventLogVisualizer")
     const { colors, isDark } = useTheme()
+    const { showError } = useToast()
     const { openDataDirectory } = useSettings()
 
     const [records, setRecords] = useState<MixedRecord[]>([])
-    const [errors, setErrors] = useState<string[]>([])
-    const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false)
     const [showTriggers, setShowTriggers] = useState<boolean>(false)
     const [viewMode, setViewMode] = useState<"timeline" | "years">("timeline")
 
@@ -128,14 +127,14 @@ const EventLogVisualizer: React.FC = () => {
             // Defer state updates to prevent mounting conflicts when FlashList is updating.
             setTimeout(() => {
                 setRecords(res.records)
-                setErrors(errorMessages)
-                setSnackbarOpen(errorMessages.length > 0)
+                if (errorMessages.length > 0) {
+                    showError(errorMessages.join("\n"), { durationMs: 6000 })
+                }
             }, 0)
         } catch (e: any) {
             const errorMessage = String(e?.message || e)
             setTimeout(() => {
-                setErrors([errorMessage])
-                setSnackbarOpen(true)
+                showError(errorMessage)
             }, 0)
         }
     }
@@ -285,15 +284,6 @@ const EventLogVisualizer: React.FC = () => {
                     </>
                 )}
             </View>
-
-            <Snackbar
-                visible={snackbarOpen}
-                onDismiss={() => setSnackbarOpen(false)}
-                action={{ label: "Close", onPress: () => setSnackbarOpen(false) }}
-                style={{ backgroundColor: errors.length ? colors.destructive : colors.surface, borderRadius: 10 }}
-            >
-                {errors.join("\n")}
-            </Snackbar>
         </View>
     )
 }

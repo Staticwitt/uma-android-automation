@@ -3,8 +3,8 @@ import { View, Text, ScrollView, StyleSheet, Pressable, InteractionManager, Layo
 import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalCheckRow, ModalFooterChip } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
-import { Snackbar } from "react-native-paper"
 import { useTheme } from "../../context/ThemeContext"
+import { useToast } from "../../context/ToastContext"
 import { TrainingContext, GeneralMiscContext, BotMetaContext, defaultSettings, Settings, useSettingsSnapshot } from "../../context/BotStateContext"
 import { ParentFarmingActivePresetChip } from "../../components/ParentFarmingActivePresetChip"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
@@ -65,8 +65,7 @@ const TrainingSettings = () => {
         LayoutAnimation.configureNext(LayoutAnimation.create(MOTION.duration.base, "easeInEaseOut", "opacity"))
         setDistanceOpen((prev) => ({ ...prev, [key]: !prev[key] }))
     }, [])
-    const [snackbarVisible, setSnackbarVisible] = useState(false)
-    const [snackbarMessage, setSnackbarMessage] = useState("")
+    const { showToast, showError } = useToast()
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
 
@@ -526,12 +525,10 @@ const TrainingSettings = () => {
                                 currentTrainingStatTargetSettings={trainingStatTargetSettings}
                                 onOverwriteSettings={handleOverwriteSettings}
                                 onNoChangesDetected={() => {
-                                    setSnackbarMessage("Current Training settings are already the same.")
-                                    setSnackbarVisible(true)
+                                    showToast("Current Training settings are already the same.")
                                 }}
                                 onError={(message) => {
-                                    setSnackbarMessage(message)
-                                    setSnackbarVisible(true)
+                                    showError(message)
                                 }}
                             />
                         </SearchableItem>
@@ -1196,20 +1193,6 @@ const TrainingSettings = () => {
             </SearchPageProvider>
             {advancedExpanded && <StickySandboxButton onPress={() => setScoringSandboxOpen(true)} />}
             <TrainingScoringSandbox open={scoringSandboxOpen} onClose={() => setScoringSandboxOpen(false)} />
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                action={{
-                    label: "Close",
-                    onPress: () => {
-                        setSnackbarVisible(false)
-                    },
-                }}
-                style={{ backgroundColor: "red", borderRadius: 10 }}
-                duration={4000}
-            >
-                {snackbarMessage}
-            </Snackbar>
         </View>
     )
 }

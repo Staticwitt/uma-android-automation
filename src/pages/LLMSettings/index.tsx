@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { View, ScrollView, StyleSheet, Text, TextInput, NativeModules, NativeEventEmitter, Alert, Linking, Pressable } from "react-native"
 import { Check, Trash2 } from "lucide-react-native"
 import Ionicons from "@react-native-vector-icons/ionicons"
@@ -7,6 +7,7 @@ import { ChatContext } from "../../context/BotStateContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
 import PageHeader from "../../components/PageHeader"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import WarningContainer from "../../components/WarningContainer"
 import InfoContainer from "../../components/InfoContainer"
@@ -111,6 +112,7 @@ interface DownloadedModel {
 const LLMSettings = () => {
     usePerformanceLogging("LLMSettings")
     const { colors } = useTheme()
+    const scrollViewRef = useRef<ScrollView>(null)
     const { chat, updateChat } = useContext(ChatContext)
     const enableAskTheDocs = chat?.enableAskTheDocs ?? false
     const [downloadState, setDownloadState] = useState<DownloadState | null>(null)
@@ -477,8 +479,9 @@ const LLMSettings = () => {
 
     return (
         <View style={styles.root}>
-            <PageHeader title="LLM Settings" />
-            <ScrollView>
+            <SearchPageProvider page="LLMSettings" scrollViewRef={scrollViewRef}>
+                <PageHeader title="LLM Settings" />
+                <ScrollView ref={scrollViewRef}>
                 <InfoContainer>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoContainer>
 
                 <View style={styles.section}>
@@ -782,7 +785,8 @@ const LLMSettings = () => {
                         </WarningContainer>
                     </>
                 )}
-            </ScrollView>
+                </ScrollView>
+            </SearchPageProvider>
         </View>
     )
 }

@@ -2,7 +2,6 @@ import { useMemo, useContext, useEffect, useState, useRef, useCallback } from "r
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { BotMetaContext, GeneralMiscContext } from "../../context/BotStateContext"
 import { InteractionManager, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { Snackbar } from "react-native-paper"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@react-native-vector-icons/ionicons"
 import ThemeToggle from "../../components/ThemeToggle"
@@ -20,6 +19,7 @@ import SearchableItem from "../../components/SearchableItem"
 import { useSettings } from "../../context/SettingsContext"
 import { useSettingsFileManager } from "../../hooks/useSettingsFileManager"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
+import { useToast } from "../../context/ToastContext"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
@@ -109,7 +109,7 @@ const Settings = () => {
         return () => handle.cancel()
     }, [])
 
-    const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
+    const { showToast } = useToast()
 
     /**
      * Reset the settings to their default values.
@@ -117,8 +117,7 @@ const Settings = () => {
     const handleResetSettings = async () => {
         const success = await resetSettings()
         if (success) {
-            setSnackbarMessage("Settings reset to defaults")
-            setTimeout(() => setSnackbarMessage(null), 2500)
+            showToast("Settings reset to defaults", { variant: "success" })
         }
     }
 
@@ -451,18 +450,14 @@ const Settings = () => {
 
             {/* Restart Dialog */}
             <AlertDialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-                <AlertDialogContent style={{ backgroundColor: "black" }}>
+                <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            <Text style={{ color: "white" }}>Settings Imported</Text>
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            <Text style={{ color: "white" }}>Settings have been imported successfully.</Text>
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>Settings Imported</AlertDialogTitle>
+                        <AlertDialogDescription>Settings have been imported successfully.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction style={{ backgroundColor: "white" }}>
-                            <Text style={{ color: "black" }}>OK</Text>
+                        <AlertDialogAction>
+                            <Text>OK</Text>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -470,31 +465,23 @@ const Settings = () => {
 
             {/* Reset Settings Dialog */}
             <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
-                <AlertDialogContent style={{ backgroundColor: "black" }}>
+                <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            <Text style={{ color: "white" }}>Reset Settings to Default</Text>
-                        </AlertDialogTitle>
-                        <AlertDialogDescription style={{ height: 50 }}>
-                            <Text style={{ color: "white" }}>
-                                Are you sure you want to reset all settings to their default values? This action cannot be undone and will overwrite your current configuration.
-                            </Text>
+                        <AlertDialogTitle>Reset Settings to Default</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to reset all settings to their default values? This action cannot be undone and will overwrite your current configuration.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel onPress={() => setShowResetDialog(false)} style={{ backgroundColor: "black" }}>
-                            <Text style={{ color: "white" }}>Cancel</Text>
+                        <AlertDialogCancel onPress={() => setShowResetDialog(false)}>
+                            <Text>Cancel</Text>
                         </AlertDialogCancel>
-                        <AlertDialogAction onPress={handleResetSettings} style={{ backgroundColor: "white" }}>
-                            <Text style={{ color: "black" }}>Reset</Text>
+                        <AlertDialogAction onPress={handleResetSettings}>
+                            <Text>Reset</Text>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            <Snackbar visible={snackbarMessage !== null} onDismiss={() => setSnackbarMessage(null)} style={{ backgroundColor: colors.surfaceRaised, borderRadius: 10 }}>
-                {snackbarMessage ?? ""}
-            </Snackbar>
         </View>
     )
 }

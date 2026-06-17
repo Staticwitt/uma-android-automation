@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { View, ScrollView, StyleSheet, TextInput, Text, NativeModules, Pressable, KeyboardAvoidingView } from "react-native"
 import { useFocusEffect } from "@react-navigation/native"
 import { type MarkedStyles } from "react-native-marked"
@@ -8,6 +8,7 @@ import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSelect from "../../components/CustomSelect"
 import PageHeader from "../../components/PageHeader"
+import { SearchPageProvider } from "../../context/SearchPageContext"
 import { MarkdownView } from "../../components/ChatMarkdown"
 import { databaseManager } from "../../lib/database"
 import * as llamaRunner from "../../lib/chat/llamaRunner"
@@ -74,6 +75,7 @@ const BlinkingCursor: React.FC<BlinkingCursorProps> = ({ color }) => {
 
 const Chat = () => {
     const { colors, isDark } = useTheme()
+    const scrollViewRef = useRef<ScrollView>(null)
     const [query, setQuery] = useState("")
     const [result, setResult] = useState<ChatResult | null>(null)
     const [partialAnswer, setPartialAnswer] = useState("")
@@ -402,8 +404,9 @@ const Chat = () => {
 
     return (
         <KeyboardAvoidingView style={styles.root} behavior="padding">
-            <PageHeader title="Ask the Docs" />
-            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: SPACING.xl }}>
+            <SearchPageProvider page="Chat" scrollViewRef={scrollViewRef}>
+                <PageHeader title="Ask the Docs" />
+                <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: SPACING.xl }}>
                 <InfoCallout title="About" collapsible={false} style={{ marginVertical: SPACING.md }}>
                     <Text style={[TYPE.caption, { color: colors.textMuted }]}>
                         Ask the Docs answers questions about this app by searching its bundled documentation and source code, all on-device.{"\n\n"}Responses are grounded in README.md,
@@ -542,7 +545,8 @@ const Chat = () => {
                     </>
                 )}
                 {searched && !isSearching && !result && <Text style={styles.emptyText}>No matching documentation found.</Text>}
-            </ScrollView>
+                </ScrollView>
+            </SearchPageProvider>
         </KeyboardAvoidingView>
     )
 }

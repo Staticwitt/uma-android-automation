@@ -39,7 +39,7 @@ const SearchableItemContent = ({ id, children, scrollViewRef, style }: Searchabl
     const { colors } = useTheme()
     const highlightAnim = useRef(new Animated.Value(0)).current
     const highlightColor = useRef(colors.brand).current
-    const highlightFallbackColor = "orange"
+    const highlightFallbackColor = colors.warning
     const viewRef = useRef<any>(null)
     const pageContext = useSearchPage()
 

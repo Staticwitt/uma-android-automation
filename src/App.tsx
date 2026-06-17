@@ -12,6 +12,7 @@ import { BotStateProvider } from "./context/BotStateContext"
 import { MessageLogProvider } from "./context/MessageLogContext"
 import { SettingsProvider } from "./context/SettingsContext"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
+import { ToastProvider } from "./context/ToastContext"
 import { SearchProvider } from "./context/SearchRegistryContext"
 import { ProfileProvider } from "./context/ProfileContext"
 import { useBootstrap } from "./hooks/useBootstrap"
@@ -120,7 +121,9 @@ function AppContent() {
                 <ProfileProvider>
                     <MessageLogProvider>
                         <SettingsProvider>
-                            <AppWithBootstrap theme={theme} colors={colors} />
+                            <ToastProvider>
+                                <AppWithBootstrap theme={theme} colors={colors} />
+                            </ToastProvider>
                         </SettingsProvider>
                     </MessageLogProvider>
                 </ProfileProvider>

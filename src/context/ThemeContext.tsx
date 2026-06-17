@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { useColorScheme } from "react-native"
 import { THEME } from "../lib/theme"
+import { syncNativeWindColorScheme } from "../lib/nativeWindTheme"
 
 type Theme = "light" | "dark"
 
@@ -57,6 +58,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             setTheme(systemColorScheme)
         }
     }, [systemColorScheme])
+
+    useEffect(() => {
+        syncNativeWindColorScheme(theme)
+    }, [theme])
 
     /**
      * Toggles between light and dark themes.

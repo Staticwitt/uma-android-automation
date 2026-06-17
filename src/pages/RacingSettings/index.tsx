@@ -11,7 +11,8 @@ import { refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
+import { SettingRow } from "../../components/ui/setting-row"
 import InfoContainer from "../../components/InfoContainer"
 import WarningContainer from "../../components/WarningContainer"
 import SearchableItem from "../../components/SearchableItem"
@@ -168,7 +169,7 @@ const RacingSettings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="RacingSettings" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Racing Settings" />
+                <DomainHeader breadcrumb="Gameplay" title="Racing" subtitle="Race behavior, retries, and mandatory race handling." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         <Pressable
@@ -201,13 +202,12 @@ const RacingSettings = () => {
                         </Pressable>
 
                         <Section label="Race Behavior">
-                            <SearchableItem id="enable-farming-fans" title="Enable Farming Fans" description="When enabled, the bot will start running extra races to gain fans.">
-                                <Row
-                                    title="Enable Farming Fans"
-                                    description="When enabled, the bot will start running extra races to gain fans."
-                                    right={<Switch checked={enableFarmingFans} onCheckedChange={(checked) => updateRacingSetting("enableFarmingFans", checked)} />}
-                                />
-                            </SearchableItem>
+                            <SettingRow
+                                id="enable-farming-fans"
+                                title="Enable Farming Fans"
+                                description="When enabled, the bot will start running extra races to gain fans."
+                                right={<Switch checked={enableFarmingFans} onCheckedChange={(checked) => updateRacingSetting("enableFarmingFans", checked)} />}
+                            />
                             <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
                                     searchId="days-to-run-extra-races"
