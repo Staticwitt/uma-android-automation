@@ -1,6 +1,6 @@
 import React from "react"
 import type { GapRecord } from "../../lib/eventLogParser"
-import WarningContainer from "../WarningContainer"
+import { Callout } from "../ui/callout"
 
 type Props = {
     /** The gap record indicating missing day(s) in the event log. */
@@ -13,7 +13,7 @@ type Props = {
  * @param gap The gap record indicating the missing day range.
  */
 const GapsNotice: React.FC<Props> = ({ gap }) => {
-    return <WarningContainer style={{ marginBottom: 10, marginTop: 0 }}>⚠️ {gap.from === gap.to ? `Day ${gap.from} missing.` : `Days ${gap.from}-${gap.to} missing.`}</WarningContainer>
+    return <Callout variant="warning" style={{ marginBottom: 10, marginTop: 0 }}>⚠️ {gap.from === gap.to ? `Day ${gap.from} missing.` : `Days ${gap.from}-${gap.to} missing.`}</Callout>
 }
 
 export default GapsNotice

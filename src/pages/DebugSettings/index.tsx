@@ -6,7 +6,7 @@ import { useTheme } from "../../context/ThemeContext"
 import { DebugContext, BotMetaContext } from "../../context/BotStateContext"
 import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import CustomButton from "../../components/CustomButton"
 import SearchableItem from "../../components/SearchableItem"
 import { SearchPageProvider } from "../../context/SearchPageContext"
@@ -416,9 +416,9 @@ const DebugSettings = () => {
                             </SearchableItem>
                         </Section>
                         {debug.enableDebugMode && (
-                            <WarningContainer style={{ marginTop: 0, marginBottom: SPACING.md }}>
+                            <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
                                 ⚠️ Significantly extends the average runtime of the bot due to increased IO operations.
-                            </WarningContainer>
+                            </Callout>
                         )}
 
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -756,9 +756,9 @@ const DebugSettings = () => {
                                     <Text style={[TYPE.caption, { color: colors.textMuted, lineHeight: 18, marginBottom: SPACING.sm }]}>
                                         Run diagnostic tests to verify template matching and OCR functionality.
                                     </Text>
-                                    <WarningContainer style={{ marginTop: 0 }}>
+                                    <Callout variant="warning" style={{ marginTop: 0 }}>
                                         {"⚠️ Only one debug test can be enabled at a time. \n\nHaving Debug Mode enabled will output more helpful logs."}
-                                    </WarningContainer>
+                                    </Callout>
                                 </View>
                                 {DEBUG_TESTS.map((test, idx) => (
                                     <View key={test.key}>

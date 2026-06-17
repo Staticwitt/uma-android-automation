@@ -53,8 +53,8 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
-import InfoContainer from "../../components/InfoContainer"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
+import { SettingRow } from "../../components/ui/setting-row"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { Row } from "../../components/ui/row"
@@ -441,21 +441,16 @@ const ParentFarmingSettings = () => {
                 >
                     <View className="m-1">
                         <Section label="Mode">
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-parent-farming-mode"
-                                title="Enable Parent Farming Mode"
-                                description="Smart Race Solver, fan-weighted epithets, inheritance spark picking, and relaxed stat targets."
-                            >
-                                <Row
-                                    title="Parent Farming Mode"
-                                    description="Turn on after picking a character setup or goal preset below."
-                                    right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
-                                />
-                            </SearchableItem>
+                                title="Parent Farming Mode"
+                                description="Turn on after picking a character setup or goal preset below."
+                                right={<Switch checked={enableParentFarmingMode} onCheckedChange={setParentFarmingMode} />}
+                            />
                             {!enableParentFarmingMode && (
-                                <InfoContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                <Callout variant="info" style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     Enable the mode, then choose a character setup (recommended) or goal preset. Start the bot on career selection for auto-equip, auto-borrow, legacy parent auto-select, and optional auto-start.
-                                </InfoContainer>
+                                </Callout>
                             )}
                             <ParentFarmingActivePresetChip settings={settings} />
                             {enableParentFarmingMode && (
@@ -470,7 +465,7 @@ const ParentFarmingSettings = () => {
                                 />
                             )}
                             {parentFarmingDriftWarnings.length > 0 && (
-                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                <Callout variant="warning" style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {parentFarmingDriftWarnings.join("\n\n")}
                                     {showPresetReSync && (
                                         <Pressable
@@ -481,10 +476,10 @@ const ParentFarmingSettings = () => {
                                             <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Re-sync from preset</Text>
                                         </Pressable>
                                     )}
-                                </WarningContainer>
+                                </Callout>
                             )}
                             {parentFarmingFeasibilityWarnings.length > 0 && (
-                                <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                                <Callout variant="warning" style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                     {parentFarmingFeasibilityWarnings.join("\n\n")}
                                     {needsTrackblazerNudge && (
                                         <Pressable
@@ -495,7 +490,7 @@ const ParentFarmingSettings = () => {
                                             <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Switch to Trackblazer</Text>
                                         </Pressable>
                                     )}
-                                </WarningContainer>
+                                </Callout>
                             )}
                         </Section>
 
@@ -1096,9 +1091,9 @@ const ParentFarmingSettings = () => {
                                         </GlassSurface>
                                     </Pressable>
                                     {solverNavDisabled && (
-                                        <WarningContainer style={{ marginHorizontal: SPACING.md }}>
+                                        <Callout variant="warning" style={{ marginHorizontal: SPACING.md }}>
                                             Disable Force Racing and in-game race agenda in Racing settings to use the solver.
-                                        </WarningContainer>
+                                        </Callout>
                                     )}
                                 </Section>
                             </>

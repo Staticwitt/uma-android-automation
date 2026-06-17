@@ -2,7 +2,7 @@ import React, { useMemo } from "react"
 import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../CustomButton"
-import WarningContainer from "../WarningContainer"
+import { Callout } from "../ui/callout"
 import { SettingsCategory } from "../../hooks/useProfileManager"
 
 interface ProfileComparisonProps {
@@ -121,7 +121,7 @@ const ProfileComparison: React.FC<ProfileComparisonProps> = ({ comparison, onCon
     }
 
     return (
-        <WarningContainer style={styles.container}>
+        <Callout variant="warning" style={styles.container}>
             <Text style={styles.title}>{title}</Text>
 
             <View style={styles.section}>
@@ -148,7 +148,7 @@ const ProfileComparison: React.FC<ProfileComparisonProps> = ({ comparison, onCon
                     {buttonLabel}
                 </CustomButton>
             </View>
-        </WarningContainer>
+        </Callout>
     )
 }
 

@@ -9,8 +9,7 @@ import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
-import WarningContainer from "../../components/WarningContainer"
-import InfoContainer from "../../components/InfoContainer"
+import { Callout } from "../../components/ui/callout"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { GlassSurface } from "../../components/ui/glass-surface"
 import RamGauge from "../../components/ui/ram-gauge"
@@ -482,7 +481,7 @@ const LLMSettings = () => {
             <SearchPageProvider page="LLMSettings" scrollViewRef={scrollViewRef}>
                 <DomainHeader breadcrumb="Integrations" title="LLM" subtitle="On-device docs chat, model downloads, and tuning." />
                 <ScrollView ref={scrollViewRef}>
-                <InfoContainer>Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</InfoContainer>
+                <Callout variant="info">Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</Callout>
 
                 <View style={styles.section}>
                     <SearchableItem
@@ -779,10 +778,10 @@ const LLMSettings = () => {
                             )}
                         </Section>
 
-                        <WarningContainer style={{ marginTop: 0, marginBottom: SPACING.md }}>
+                        <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
                             Generated answers may occasionally be wrong or phrased imprecisely. A verifier guards against clear hallucinations by falling back to showing the source text verbatim, but
                             always cross-check important answers against the full docs.
-                        </WarningContainer>
+                        </Callout>
                     </>
                 )}
                 </ScrollView>

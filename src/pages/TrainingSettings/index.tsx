@@ -23,7 +23,7 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { shallowArrayEqual } from "../../lib/utils"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import { Row } from "../../components/ui/row"
 import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
@@ -523,9 +523,9 @@ const TrainingSettings = () => {
                     <View className="m-1">
                         <ParentFarmingActivePresetChip settings={settings} />
                         {parentFarmingDriftWarnings.length > 0 && (
-                            <WarningContainer style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
+                            <Callout variant="warning" style={{ marginHorizontal: SPACING.md, marginBottom: SPACING.md }}>
                                 {parentFarmingDriftWarnings.join("\n\n")}
-                            </WarningContainer>
+                            </Callout>
                         )}
                         <SearchableItem
                             id="training-settings-profile-selector"
@@ -795,9 +795,9 @@ const TrainingSettings = () => {
                                     </SearchableItem>
                                 </Section>
                                 {enableTrainingAnalysisValidation && (
-                                    <WarningContainer style={{ marginTop: -SPACING.md, marginBottom: SPACING.lg }}>
+                                    <Callout variant="warning" style={{ marginTop: -SPACING.md, marginBottom: SPACING.lg }}>
                                         Warning: Enabling Training Analysis Validation prevents accidental trainings at the cost of significantly slower scenario completion.
-                                    </WarningContainer>
+                                    </Callout>
                                 )}
 
                                 <Section label="Distance">

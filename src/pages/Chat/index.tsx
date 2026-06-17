@@ -7,7 +7,7 @@ import { KotlinCode, DARK_PALETTE, LIGHT_PALETTE } from "../../components/Kotlin
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSelect from "../../components/CustomSelect"
-import PageHeader from "../../components/PageHeader"
+import { DomainHeader } from "../../components/ui/domain-header"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { MarkdownView } from "../../components/ChatMarkdown"
 import { databaseManager } from "../../lib/database"
@@ -405,7 +405,7 @@ const Chat = () => {
     return (
         <KeyboardAvoidingView style={styles.root} behavior="padding">
             <SearchPageProvider page="Chat" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Ask the Docs" />
+                <DomainHeader breadcrumb="Tools" title="Ask the Docs" subtitle="On-device documentation search and grounded chat." showHomeButton={false} />
                 <ScrollView ref={scrollViewRef} keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: SPACING.xl }}>
                 <InfoCallout title="About" collapsible={false} style={{ marginVertical: SPACING.md }}>
                     <Text style={[TYPE.caption, { color: colors.textMuted }]}>

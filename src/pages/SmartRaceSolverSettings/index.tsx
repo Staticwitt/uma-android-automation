@@ -47,7 +47,7 @@ import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision
 import { copyToClipboard } from "../../lib/utils"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import { Input } from "../../components/ui/input"
 import racesData from "../../data/races.json"
 import epithetsData from "../../data/epithets.json"
@@ -56,6 +56,7 @@ import { DomainHeader } from "../../components/ui/domain-header"
 import { SolverIntroCallout } from "./components/SolverIntroCallout"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import SearchableItem from "../../components/SearchableItem"
+import { SettingRow } from "../../components/ui/setting-row"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { AptitudeRow, EpithetChip } from "./components/Helpers"
 import { GlassFab } from "../../components/ui/glass-fab"
@@ -1418,17 +1419,12 @@ const SmartRaceSolverSettings = () => {
                     <View>
                         {/* Master toggle */}
                         <Section label="Smart Race Solver" firstDivider={false}>
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-smart-race-solver"
-                                title="Enable Smart Race Solver"
+                                title="Smart Race Solver"
                                 description="Plans every turn of the career to maximize score by targeting epithet rewards. The bot only races when the solver picks a race; other turns become training or rest."
-                            >
-                                <Row
-                                    title="Smart Race Solver"
-                                    description="Plans every turn of the career to maximize score by targeting epithet rewards. The bot only races when the solver picks a race; other turns become training or rest."
-                                    right={<Switch checked={enableSmartRaceSolver} onCheckedChange={(checked) => updateRacingSetting("enableSmartRaceSolver", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enableSmartRaceSolver} onCheckedChange={(checked) => updateRacingSetting("enableSmartRaceSolver", checked)} />}
+                            />
 
                             <SearchableItem
                                 id="apply-general-solver-preset"
@@ -2152,9 +2148,9 @@ const SmartRaceSolverSettings = () => {
                                                 </Text>
                                             )}
                                             {dirty && (
-                                                <WarningContainer>
+                                                <Callout variant="warning">
                                                     Settings have changed - the calendar needs to be regenerated. Tap Recalculate to refresh the preview and apply changes.
-                                                </WarningContainer>
+                                                </Callout>
                                             )}
                                             {previewLoading && (
                                                 <View style={{ flexDirection: "row", alignItems: "center" }}>

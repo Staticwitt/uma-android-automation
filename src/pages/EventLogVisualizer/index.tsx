@@ -19,7 +19,7 @@ import { Switch } from "../../components/ui/switch"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import { circularPress } from "../../lib/pressSurface"
 import { TYPE } from "../../lib/type"
 
@@ -198,14 +198,14 @@ const EventLogVisualizer: React.FC = () => {
                             </Pressable>
                         </TooltipTrigger>
                         <TooltipContent side="bottom" style={{ backgroundColor: isDark ? colors.surfaceRaised : "black", maxWidth: 300 }}>
-                            <WarningContainer>
+                            <Callout variant="warning">
                                 <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                                     <Text style={{ fontWeight: "bold", color: colors.warningText }}>⚠️ File Explorer Note:</Text>
                                     <Text style={{ fontSize: 14, color: colors.warningText, lineHeight: 20 }}>
                                         To manually access files, you need a file explorer app that can access the /Android/data folder (like CX File Explorer). Standard file managers will not work.
                                     </Text>
                                 </View>
-                            </WarningContainer>
+                            </Callout>
                             <Text style={styles.empty}>
                                 Select one or more .txt logs named like "TraineeName_date.txt" or "log @ date.txt" to visualize per-day actions. Files are sorted by filename. Gaps between days are
                                 shown. {"\n\n"}

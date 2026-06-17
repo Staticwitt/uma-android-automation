@@ -13,8 +13,7 @@ import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { SettingRow } from "../../components/ui/setting-row"
-import InfoContainer from "../../components/InfoContainer"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import SearchableItem from "../../components/SearchableItem"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
 import { Row } from "../../components/ui/row"
@@ -271,9 +270,9 @@ const RacingSettings = () => {
                                         showLabels={true}
                                         description="Cap carat-funded race retries per career (0 = unlimited)."
                                     />
-                                    <WarningContainer style={{ marginTop: SPACING.sm }}>
+                                    <Callout variant="warning" style={{ marginTop: SPACING.sm }}>
                                         Spends premium carats to buy Alarm Clock race retries. Real-money Purchase Carats dialogs are still blocked.
-                                    </WarningContainer>
+                                    </Callout>
                                 </View>
                             )}
                             <SearchableItem
@@ -309,7 +308,7 @@ const RacingSettings = () => {
                                     right={<Switch checked={enableForceRacing} onCheckedChange={(checked) => updateRacingSetting("enableForceRacing", checked)} />}
                                 />
                             </SearchableItem>
-                            {enableForceRacing && <WarningContainer>Warning: Enabling this will override all other racing settings and they will be ignored.</WarningContainer>}
+                            {enableForceRacing && <Callout variant="warning">Warning: Enabling this will override all other racing settings and they will be ignored.</Callout>}
                         </Section>
 
                         <Section label="Strategy">
@@ -419,9 +418,9 @@ const RacingSettings = () => {
                             </SearchableItem>
                             {enableUserInGameRaceAgenda && (
                                 <>
-                                    <InfoContainer style={{ marginHorizontal: SPACING.md }}>
+                                    <Callout variant="info" style={{ marginHorizontal: SPACING.md }}>
                                         Critical energy level and consecutive race limits are ignored for the user in-game racing agenda.
-                                    </InfoContainer>
+                                    </Callout>
                                     <SearchableItem
                                         id="user-in-game-race-agenda"
                                         title="Select Agenda"
@@ -532,7 +531,7 @@ const RacingSettings = () => {
                             </GlassSurface>
                         </Pressable>
                         {(enableForceRacing || enableUserInGameRaceAgenda) && (
-                            <WarningContainer>Force Racing and User In-Game Race Agenda settings must be disabled in order to use the Smart Race Solver.</WarningContainer>
+                            <Callout variant="warning">Force Racing and User In-Game Race Agenda settings must be disabled in order to use the Smart Race Solver.</Callout>
                         )}
                     </View>
                 </ScrollView>

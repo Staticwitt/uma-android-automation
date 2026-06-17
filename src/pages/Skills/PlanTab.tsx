@@ -16,7 +16,7 @@ import SearchableItem from "../../components/SearchableItem"
 import CustomSelect from "../../components/CustomSelect"
 import CustomButton from "../../components/CustomButton"
 import CustomScrollView from "../../components/CustomScrollView"
-import WarningContainer from "../../components/WarningContainer"
+import { Callout } from "../../components/ui/callout"
 import skillsData from "../../data/skills.json"
 import icons from "./icons"
 import { mergeSkillPlanConfig, parseSkillIdCsv } from "../../lib/skillPlanSettings"
@@ -344,7 +344,7 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                         onValueChange={(value) => updatePlanSetting("strategy", value)}
                         placeholder="Select Strategy"
                     />
-                    {strategy == "optimize_rank" && <WarningContainer>Warning: Optimize Rank ignores any of the Skill Style Overrides set in the Skills page.</WarningContainer>}
+                    {strategy == "optimize_rank" && <Callout variant="warning">Warning: Optimize Rank ignores any of the Skill Style Overrides set in the Skills page.</Callout>}
                     <Text style={styles.strategyDescription}>
                         This option determines what the bot does with any remaining skill points after it has purchased all of the skills from the Planned Skills section and the other options on this
                         page.

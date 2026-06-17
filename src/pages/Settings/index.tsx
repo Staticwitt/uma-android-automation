@@ -2,18 +2,18 @@ import { useMemo, useContext, useEffect, useState, useRef, useCallback } from "r
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { BotMetaContext, GeneralMiscContext } from "../../context/BotStateContext"
 import { InteractionManager, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@react-native-vector-icons/ionicons"
 import ThemeToggle from "../../components/ThemeToggle"
 import { useTheme } from "../../context/ThemeContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
 import CustomButton from "../../components/CustomButton"
-import PageHeader from "../../components/PageHeader"
-import { Row } from "../../components/ui/row"
+import { DomainHeader } from "../../components/ui/domain-header"
+import { Callout } from "../../components/ui/callout"
+import { SettingRow } from "../../components/ui/setting-row"
+import { SettingsHubNav } from "../../components/settings/SettingsHubNav"
 import { Section } from "../../components/ui/section"
 import { Switch } from "../../components/ui/switch"
-import WarningContainer from "../../components/WarningContainer"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import SearchableItem from "../../components/SearchableItem"
 import { useSettings } from "../../context/SettingsContext"
@@ -36,7 +36,6 @@ const Settings = () => {
     const { defaultSettings } = useContext(BotMetaContext)
     const { general, misc, updateGeneral, updateMisc } = useContext(GeneralMiscContext)
     const { colors } = useTheme()
-    const navigation = useNavigation()
 
     const { openDataDirectory, resetSettings } = useSettings()
     const { handleImportSettings, handleExportSettings, showImportDialog, setShowImportDialog, showResetDialog, setShowResetDialog } = useSettingsFileManager()
@@ -181,65 +180,27 @@ const Settings = () => {
         [general]
     )
 
-    // Shared chevron icon used as the right-aligned affordance on every navigation Row.
-    const chevron = <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+    // Shared chevron removed — hub uses DomainLandingCard navigation.
 
-    const renderNavigationSections = () => {
-        return (
-            <>
-                <Section label="GAMEPLAY">
-                    <Row title="Training" description="Stat priorities, training behavior, and event preferences." right={chevron} onPress={() => navigation.navigate("TrainingLanding" as never)} />
-                    <Row title="Racing & Farming" description="Race behavior, smart solver, and parent farming goals." right={chevron} onPress={() => navigation.navigate("RacingLanding" as never)} />
-                    <Row title="Skills" description="Skill purchasing behavior." right={chevron} onPress={() => navigation.navigate("Skills" as never)} />
-                </Section>
-
-                <Section label="SCENARIO">
-                    <Row
-                        title="Scenario Overrides"
-                        description="Behavior overrides specific to each scenario."
-                        right={chevron}
-                        onPress={() => navigation.navigate("ScenarioOverridesSettings" as never)}
-                    />
-                </Section>
-
-                <Section label="INTEGRATIONS">
-                    <Row title="Discord" description="Discord notifications when the bot stops." right={chevron} onPress={() => navigation.navigate("DiscordSettings" as never)} />
-                    <Row title="LLM" description="On-device docs search and chat model downloads." right={chevron} onPress={() => navigation.navigate("LLMSettings" as never)} />
-                </Section>
-
-                <Section label="TOOLS">
-                    <Row title="Ask the Docs" description="On-device docs chat powered by the LLM engine." right={chevron} onPress={() => navigation.navigate("Chat" as never)} />
-                    <Row
-                        title="Event Log Visualizer (Beta)"
-                        description="Import logs and view a day-by-day timeline of actions."
-                        right={chevron}
-                        onPress={() => navigation.navigate("EventLogVisualizer" as never)}
-                    />
-                    <Row title="Debug" description="Debug mode, template matching, and diagnostic tests." right={chevron} onPress={() => navigation.navigate("DebugSettings" as never)} />
-                </Section>
-            </>
-        )
-    }
+    const renderNavigationSections = () => <SettingsHubNav />
 
     const renderMiscSettings = () => {
         return (
             <View>
                 <Section label="MISC">
-                    <SearchableItem id="settings-stop-before-finals" title="Stop before Finals" description="Pause to buy skills before the final races">
-                        <Row
-                            title="Stop before Finals"
-                            description="Pause to buy skills before the final races"
-                            right={<Switch checked={general.enableStopBeforeFinals} onCheckedChange={(checked) => updateGeneral({ enableStopBeforeFinals: checked })} />}
-                        />
-                    </SearchableItem>
+                    <SettingRow
+                        id="settings-stop-before-finals"
+                        title="Stop before Finals"
+                        description="Pause to buy skills before the final races"
+                        right={<Switch checked={general.enableStopBeforeFinals} onCheckedChange={(checked) => updateGeneral({ enableStopBeforeFinals: checked })} />}
+                    />
 
-                    <SearchableItem id="settings-stop-at-date" title="Stop at Date" description="Stop on one or more specified dates">
-                        <Row
-                            title="Stop at Date"
-                            description="Stop on one or more specified dates"
-                            right={<Switch checked={general.enableStopAtDate} onCheckedChange={(checked) => updateGeneral({ enableStopAtDate: checked })} />}
-                        />
-                    </SearchableItem>
+                    <SettingRow
+                        id="settings-stop-at-date"
+                        title="Stop at Date"
+                        description="Stop on one or more specified dates"
+                        right={<Switch checked={general.enableStopAtDate} onCheckedChange={(checked) => updateGeneral({ enableStopAtDate: checked })} />}
+                    />
 
                     {general.enableStopAtDate && (
                         <SearchableItem id="settings-target-dates" title="Target Dates" description="Stops the bot on the specified dates." parentId="settings-stop-at-date">
@@ -312,33 +273,26 @@ const Settings = () => {
                         </SearchableItem>
                     )}
 
-                    <SearchableItem id="settings-crane-game-attempt" title="Enable Crane Game Attempt" description="Attempt to complete the crane game instead of stopping">
-                        <Row
-                            title="Enable Crane Game Attempt"
-                            description="Attempt to complete the crane game instead of stopping"
-                            right={<Switch checked={general.enableCraneGameAttempt} onCheckedChange={(checked) => updateGeneral({ enableCraneGameAttempt: checked })} />}
-                        />
-                    </SearchableItem>
+                    <SettingRow
+                        id="settings-crane-game-attempt"
+                        title="Enable Crane Game Attempt"
+                        description="Attempt to complete the crane game instead of stopping"
+                        right={<Switch checked={general.enableCraneGameAttempt} onCheckedChange={(checked) => updateGeneral({ enableCraneGameAttempt: checked })} />}
+                    />
 
-                    <SearchableItem
+                    <SettingRow
                         id="settings-enable-swipe-based-scrolling"
                         title="Enable Swipe-Based Scrolling"
                         description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
-                    >
-                        <Row
-                            title="Enable Swipe-Based Scrolling"
-                            description="Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device."
-                            right={<Switch checked={general.enableSwipeBasedScrolling} onCheckedChange={(checked) => updateGeneral({ enableSwipeBasedScrolling: checked })} />}
-                        />
-                    </SearchableItem>
+                        right={<Switch checked={general.enableSwipeBasedScrolling} onCheckedChange={(checked) => updateGeneral({ enableSwipeBasedScrolling: checked })} />}
+                    />
 
-                    <SearchableItem id="settings-enable-settings-display" title="Enable Settings Display in Message Log" description="Show current bot configuration in the message log">
-                        <Row
-                            title="Enable Settings Display in Message Log"
-                            description="Show current bot configuration in the message log"
-                            right={<Switch checked={misc.enableSettingsDisplay} onCheckedChange={(checked) => updateMisc({ enableSettingsDisplay: checked })} />}
-                        />
-                    </SearchableItem>
+                    <SettingRow
+                        id="settings-enable-settings-display"
+                        title="Enable Settings Display in Message Log"
+                        description="Show current bot configuration in the message log"
+                        right={<Switch checked={misc.enableSettingsDisplay} onCheckedChange={(checked) => updateMisc({ enableSettingsDisplay: checked })} />}
+                    />
                 </Section>
 
                 <Section label="WAIT DELAY">
@@ -419,14 +373,14 @@ const Settings = () => {
                     </SearchableItem>
                 </Section>
 
-                <WarningContainer style={{ marginTop: 0, marginBottom: SPACING.md }}>
+                <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                         <Text style={{ fontWeight: "bold", color: colors.warningText }}>⚠️ File Explorer Note:</Text>
                         <Text style={{ fontSize: 14, color: colors.warningText, lineHeight: 20 }}>
                             To manually access files, you need a file explorer app that can access the /Android/data folder (like CX File Explorer). Standard file managers will not work.
                         </Text>
                     </View>
-                </WarningContainer>
+                </Callout>
             </View>
         )
     }
@@ -437,7 +391,7 @@ const Settings = () => {
     return (
         <View style={styles.root}>
             <SearchPageProvider page="SettingsMain" scrollViewRef={scrollViewRef}>
-                <PageHeader title="Settings" searchOnRight rightComponent={<ThemeToggle />} />
+                <DomainHeader breadcrumb="App" title="Settings" subtitle="Gameplay, integrations, tools, and bot configuration." searchOnRight rightComponent={<ThemeToggle />} />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
                         {renderNavigationSections()}
