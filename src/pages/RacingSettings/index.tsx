@@ -202,59 +202,39 @@ const RacingSettings = () => {
                                     description="Extra races on days where turn % interval matches (e.g. 5 → days 5, 10, 15). Ignored when Smart Race Solver is on."
                                 />
                             </View>
-                            <SearchableItem
+                            <SettingRow
                                 id="ignore-consecutive-race-warning"
                                 title="Ignore Consecutive Race Warning"
                                 description="When enabled, the bot will ignore the warning popup about consecutive races and continue racing."
-                            >
-                                <Row
-                                    title="Ignore Consecutive Race Warning"
-                                    description="When enabled, the bot will ignore the warning popup about consecutive races and continue racing."
-                                    right={<Switch checked={ignoreConsecutiveRaceWarning} onCheckedChange={(checked) => updateRacingSetting("ignoreConsecutiveRaceWarning", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                right={<Switch checked={ignoreConsecutiveRaceWarning} onCheckedChange={(checked) => updateRacingSetting("ignoreConsecutiveRaceWarning", checked)} />}
+                            />
+                            <SettingRow
                                 id="ignore-low-energy-racing-block"
                                 title="Ignore Low Energy Racing Block"
                                 description="When enabled, the Trackblazer bot will not block racing when energy is critically low (<=1%) with 3+ consecutive races."
-                            >
-                                <Row
-                                    title="Ignore Low Energy Racing Block"
-                                    description="When enabled, the Trackblazer bot will not block racing when energy is critically low (<=1%) with 3+ consecutive races."
-                                    right={<Switch checked={ignoreLowEnergyRacingBlock} onCheckedChange={(checked) => updateRacingSetting("ignoreLowEnergyRacingBlock", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem id="disable-race-retries" title="Disable Race Retries" description="When enabled, the bot will not retry mandatory races if they fail and will stop.">
-                                <Row
-                                    title="Disable Race Retries"
-                                    description="When enabled, the bot will not retry mandatory races if they fail and will stop."
-                                    right={<Switch checked={disableRaceRetries} onCheckedChange={(checked) => updateRacingSetting("disableRaceRetries", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                right={<Switch checked={ignoreLowEnergyRacingBlock} onCheckedChange={(checked) => updateRacingSetting("ignoreLowEnergyRacingBlock", checked)} />}
+                            />
+                            <SettingRow
+                                id="disable-race-retries"
+                                title="Disable Race Retries"
+                                description="When enabled, the bot will not retry mandatory races if they fail and will stop."
+                                right={<Switch checked={disableRaceRetries} onCheckedChange={(checked) => updateRacingSetting("disableRaceRetries", checked)} />}
+                            />
+                            <SettingRow
                                 id="enable-free-race-retry"
                                 title="Allow Daily Free Race Retry"
                                 description="When enabled, the bot will attempt to retry a failed mandatory race only if the daily free race retry is available."
                                 condition={disableRaceRetries}
                                 parentId="disable-race-retries"
-                            >
-                                <Row
-                                    title="Allow Daily Free Race Retry"
-                                    description="When enabled, the bot will attempt to retry a failed mandatory race only if the daily free race retry is available."
-                                    right={<Switch checked={enableFreeRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                right={<Switch checked={enableFreeRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)} />}
+                            />
+                            <SettingRow
                                 id="enable-carat-race-retry"
                                 title="Spend Carats for Race Retry"
-                                description="When enabled, the bot may buy an Alarm Clock with carats to retry a failed race after item retries are exhausted."
-                            >
-                                <Row
-                                    title="Spend Carats for Race Retry"
-                                    description="Confirm Purchase Alarm Clock dialogs to retry with carats"
-                                    right={<Switch checked={enableCaratRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableCaratRaceRetry", checked)} />}
-                                />
-                            </SearchableItem>
+                                description="Confirm Purchase Alarm Clock dialogs to retry with carats"
+                                searchDescription="When enabled, the bot may buy an Alarm Clock with carats to retry a failed race after item retries are exhausted."
+                                right={<Switch checked={enableCaratRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableCaratRaceRetry", checked)} />}
+                            />
                             {enableCaratRaceRetry && (
                                 <View style={{ padding: SPACING.md }}>
                                     <CustomSlider
@@ -275,54 +255,34 @@ const RacingSettings = () => {
                                     </Callout>
                                 </View>
                             )}
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-complete-career-on-failure"
                                 title="Complete Career on Failure"
                                 description="When enabled, the bot will proceed to the career completion screen when a mandatory race fails and retries are exhausted."
-                            >
-                                <Row
-                                    title="Complete Career on Failure"
-                                    description="When enabled, the bot will proceed to the career completion screen when a mandatory race fails and retries are exhausted."
-                                    right={<Switch checked={enableCompleteCareerOnFailure} onCheckedChange={(checked) => updateRacingSetting("enableCompleteCareerOnFailure", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                right={<Switch checked={enableCompleteCareerOnFailure} onCheckedChange={(checked) => updateRacingSetting("enableCompleteCareerOnFailure", checked)} />}
+                            />
+                            <SettingRow
                                 id="enable-stop-on-mandatory-races"
                                 title="Stop on Mandatory Races"
                                 description="When enabled, the bot will automatically stop when it encounters a mandatory race, allowing you to manually handle them."
-                            >
-                                <Row
-                                    title="Stop on Mandatory Races"
-                                    description="When enabled, the bot will automatically stop when it encounters a mandatory race, allowing you to manually handle them."
-                                    right={<Switch checked={enableStopOnMandatoryRaces} onCheckedChange={(checked) => updateRacingSetting("enableStopOnMandatoryRaces", checked)} />}
-                                />
-                            </SearchableItem>
-                            <SearchableItem
+                                right={<Switch checked={enableStopOnMandatoryRaces} onCheckedChange={(checked) => updateRacingSetting("enableStopOnMandatoryRaces", checked)} />}
+                            />
+                            <SettingRow
                                 id="enable-force-racing"
                                 title="Force Racing"
                                 description="When enabled, the bot will skip all training, rest, and mood recovery activities and focus exclusively on racing every day."
-                            >
-                                <Row
-                                    title="Force Racing"
-                                    description="When enabled, the bot will skip all training, rest, and mood recovery activities and focus exclusively on racing every day."
-                                    right={<Switch checked={enableForceRacing} onCheckedChange={(checked) => updateRacingSetting("enableForceRacing", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enableForceRacing} onCheckedChange={(checked) => updateRacingSetting("enableForceRacing", checked)} />}
+                            />
                             {enableForceRacing && <Callout variant="warning">Warning: Enabling this will override all other racing settings and they will be ignored.</Callout>}
                         </Section>
 
                         <Section label="Strategy">
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-per-distance-strategy"
                                 title="Per-Distance Strategy"
                                 description="When enabled, allows setting different race strategies for each track distance."
-                            >
-                                <Row
-                                    title="Per-Distance Strategy"
-                                    description="When enabled, allows setting different race strategies for each track distance."
-                                    right={<Switch checked={enablePerDistanceStrategy} onCheckedChange={(checked) => updateRacingSetting("enablePerDistanceStrategy", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enablePerDistanceStrategy} onCheckedChange={(checked) => updateRacingSetting("enablePerDistanceStrategy", checked)} />}
+                            />
 
                             {!enablePerDistanceStrategy ? (
                                 <>
@@ -405,17 +365,12 @@ const RacingSettings = () => {
                         </Section>
 
                         <Section label="In-Game Race Agenda">
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-user-in-game-race-agenda"
                                 title="Enable User In-Game Race Agenda"
                                 description="When enabled, the bot will load your selected in-game race agenda instead of using the racing plan settings. Note that this will disable the farming fans and racing plan settings."
-                            >
-                                <Row
-                                    title="Enable User In-Game Race Agenda"
-                                    description="When enabled, the bot will load your selected in-game race agenda instead of using the racing plan settings. Note that this will disable the farming fans and racing plan settings."
-                                    right={<Switch checked={enableUserInGameRaceAgenda} onCheckedChange={(checked) => updateRacingSetting("enableUserInGameRaceAgenda", checked)} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={enableUserInGameRaceAgenda} onCheckedChange={(checked) => updateRacingSetting("enableUserInGameRaceAgenda", checked)} />}
+                            />
                             {enableUserInGameRaceAgenda && (
                                 <>
                                     <Callout variant="info" style={{ marginHorizontal: SPACING.md }}>
@@ -472,30 +427,20 @@ const RacingSettings = () => {
                                             />
                                         </View>
                                     </SearchableItem>
-                                    <SearchableItem
+                                    <SettingRow
                                         id="limit-races-to-in-game-agenda"
                                         title="Limit Extra Races to Agenda"
                                         description="When enabled, the bot will override the racing behavior of any scenario such that it will not run any extra races except for the ones scheduled by the selected user's in-game racing agenda."
                                         parentId="enable-user-in-game-race-agenda"
-                                    >
-                                        <Row
-                                            title="Limit Extra Races to Agenda"
-                                            description="When enabled, the bot will override the racing behavior of any scenario such that it will not run any extra races except for the ones scheduled by the selected user's in-game racing agenda."
-                                            right={<Switch checked={limitRacesToInGameAgenda} onCheckedChange={(checked) => updateRacingSetting("limitRacesToInGameAgenda", checked)} />}
-                                        />
-                                    </SearchableItem>
-                                    <SearchableItem
+                                        right={<Switch checked={limitRacesToInGameAgenda} onCheckedChange={(checked) => updateRacingSetting("limitRacesToInGameAgenda", checked)} />}
+                                    />
+                                    <SettingRow
                                         id="skip-summer-training-for-agenda"
                                         title="Skip Summer Training for Agenda"
                                         description="When enabled, the bot will perform scheduled races from the in-game racing agenda during Summer instead of prioritizing Summer training. Note that this requires 'Enable User In-Game Race Agenda' to be enabled."
                                         parentId="enable-user-in-game-race-agenda"
-                                    >
-                                        <Row
-                                            title="Skip Summer Training for Agenda"
-                                            description="When enabled, the bot will perform scheduled races from the in-game racing agenda during Summer instead of prioritizing Summer training. Note that this requires 'Enable User In-Game Race Agenda' to be enabled."
-                                            right={<Switch checked={skipSummerTrainingForAgenda} onCheckedChange={(checked) => updateRacingSetting("skipSummerTrainingForAgenda", checked)} />}
-                                        />
-                                    </SearchableItem>
+                                        right={<Switch checked={skipSummerTrainingForAgenda} onCheckedChange={(checked) => updateRacingSetting("skipSummerTrainingForAgenda", checked)} />}
+                                    />
                                 </>
                             )}
                         </Section>

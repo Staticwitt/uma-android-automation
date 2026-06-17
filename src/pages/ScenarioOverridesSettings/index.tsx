@@ -8,6 +8,7 @@ import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSlider from "../../components/CustomSlider"
 import CustomButton from "../../components/CustomButton"
 import { DomainHeader } from "../../components/ui/domain-header"
+import { SettingRow } from "../../components/ui/setting-row"
 import { Input } from "../../components/ui/input"
 import { Row } from "../../components/ui/row"
 import { Switch } from "../../components/ui/switch"
@@ -443,22 +444,17 @@ const ScenarioOverridesSettings = () => {
                                         />
                                     </View>
 
-                                    <SearchableItem
+                                    <SettingRow
                                         id="trackblazer-enable-irregular-training"
                                         title="Enable Irregular Training"
                                         description="When enabled, the bot will occasionally check for highly profitable training sessions before opting for extra races."
-                                    >
-                                        <Row
-                                            title="Enable Irregular Training"
-                                            description="When enabled, the bot will occasionally check for highly profitable training sessions before opting for extra races."
-                                            right={
-                                                <Switch
-                                                    checked={scenarioOverrides.trackblazerEnableIrregularTraining}
-                                                    onCheckedChange={(checked) => updateOverrideSetting("trackblazerEnableIrregularTraining", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
+                                        right={
+                                            <Switch
+                                                checked={scenarioOverrides.trackblazerEnableIrregularTraining}
+                                                onCheckedChange={(checked) => updateOverrideSetting("trackblazerEnableIrregularTraining", checked)}
+                                            />
+                                        }
+                                    />
 
                                     {scenarioOverrides.trackblazerEnableIrregularTraining && (
                                         <View style={{ padding: SPACING.md }}>
@@ -482,22 +478,17 @@ const ScenarioOverridesSettings = () => {
                                         </View>
                                     )}
 
-                                    <SearchableItem
+                                    <SettingRow
                                         id="trackblazer-whistle-forces-training"
                                         title="Reset Whistle Forces Training"
                                         description="Whether or not using a Reset Whistle means it can ignore the failure chance thresholds in the Training Settings page. If enabled, the bot will pick the best available training after usage even if it's risky."
-                                    >
-                                        <Row
-                                            title="Reset Whistle Forces Training"
-                                            description="Whether or not using a Reset Whistle means it can ignore the failure chance thresholds in the Training Settings page. If enabled, the bot will pick the best available training after usage even if it's risky."
-                                            right={
-                                                <Switch
-                                                    checked={scenarioOverrides.trackblazerWhistleForcesTraining}
-                                                    onCheckedChange={(checked) => updateOverrideSetting("trackblazerWhistleForcesTraining", checked)}
-                                                />
-                                            }
-                                        />
-                                    </SearchableItem>
+                                        right={
+                                            <Switch
+                                                checked={scenarioOverrides.trackblazerWhistleForcesTraining}
+                                                onCheckedChange={(checked) => updateOverrideSetting("trackblazerWhistleForcesTraining", checked)}
+                                            />
+                                        }
+                                    />
                                 </Section>
 
                                 {/* Shop & Items */}

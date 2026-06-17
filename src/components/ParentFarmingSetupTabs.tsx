@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react"
-import { View, Text, Pressable, StyleSheet } from "react-native"
+import { View, Text, StyleSheet } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import type { ParentFarmingCharacterBundle } from "../lib/parentFarmingCharacterBundles"
 import type { ParentFarmingGoalPreset } from "../lib/parentFarmingGoalPresets"
 import type { ParentFarmingSupportBorrowOverrides } from "../lib/parentFarmingSupportBorrow"
 import { ParentFarmingBundleGrid } from "./ParentFarmingBundleGrid"
 import { ParentFarmingGoalPresetGrid } from "./ParentFarmingGoalPresetGrid"
+import TabStrip, { type TabStripItem } from "./ui/tab-strip"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
-import { RADII } from "../lib/radii"
 
 type SetupTab = "bundles" | "goals"
+
+const SETUP_TABS: TabStripItem[] = [
+    { key: "bundles", label: "Character setups" },
+    { key: "goals", label: "Goal presets" },
+]
 
 interface ParentFarmingSetupTabsProps {
     scenario: string
@@ -39,23 +44,6 @@ export const ParentFarmingSetupTabs = ({
         () =>
             StyleSheet.create({
                 intro: { ...TYPE.caption, color: colors.textMuted, lineHeight: 18, marginBottom: SPACING.md },
-                tabRow: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.md },
-                tab: {
-                    flex: 1,
-                    paddingVertical: SPACING.sm,
-                    paddingHorizontal: SPACING.md,
-                    borderRadius: RADII.md,
-                    borderWidth: 1,
-                    borderColor: colors.borderHair,
-                    backgroundColor: colors.surface,
-                    alignItems: "center",
-                },
-                tabActive: {
-                    borderColor: colors.brand,
-                    backgroundColor: colors.brandSubtle,
-                },
-                tabText: { ...TYPE.caption, color: colors.textMuted, fontWeight: "600" },
-                tabTextActive: { color: colors.brand },
             }),
         [colors]
     )
@@ -67,26 +55,7 @@ export const ParentFarmingSetupTabs = ({
                     ? "Recommended: one tap applies character, goal epithets, training bias, and support borrow list."
                     : "Goal-only presets update epithets, solver weights, and training without changing character aptitudes."}
             </Text>
-            <View style={styles.tabRow}>
-                <Pressable
-                    style={[styles.tab, tab === "bundles" && styles.tabActive]}
-                    onPress={() => setTab("bundles")}
-                    android_ripple={{ color: colors.ripple, foreground: true }}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: tab === "bundles" }}
-                >
-                    <Text style={[styles.tabText, tab === "bundles" && styles.tabTextActive]}>Character setups</Text>
-                </Pressable>
-                <Pressable
-                    style={[styles.tab, tab === "goals" && styles.tabActive]}
-                    onPress={() => setTab("goals")}
-                    android_ripple={{ color: colors.ripple, foreground: true }}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: tab === "goals" }}
-                >
-                    <Text style={[styles.tabText, tab === "goals" && styles.tabTextActive]}>Goal presets</Text>
-                </Pressable>
-            </View>
+            <TabStrip items={SETUP_TABS} activeKey={tab} onChange={(key) => setTab(key as SetupTab)} style={{ marginBottom: SPACING.md }} />
             {tab === "bundles" ? (
                 <ParentFarmingBundleGrid
                     scenario={scenario}

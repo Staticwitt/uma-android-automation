@@ -7,6 +7,7 @@ import { ChatContext } from "../../context/BotStateContext"
 import CustomButton from "../../components/CustomButton"
 import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
+import { SettingRow } from "../../components/ui/setting-row"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import SearchableItem from "../../components/SearchableItem"
 import { Callout } from "../../components/ui/callout"
@@ -484,17 +485,13 @@ const LLMSettings = () => {
                 <Callout variant="info">Retrieve-only search always works. The options below add optional natural-language answers backed by an on-device model.</Callout>
 
                 <View style={styles.section}>
-                    <SearchableItem
+                    <SettingRow
                         id="llm-enable-ask-the-docs"
-                        title="Enable Ask the Docs feature"
+                        title="Ask the Docs"
+                        searchTitle="Enable Ask the Docs feature"
                         description="Show the Ask the Docs page in the navigation drawer and reveal the rest of these LLM options. Off by default."
-                    >
-                        <Row
-                            title="Ask the Docs"
-                            description="Show the Ask the Docs page in the navigation drawer and reveal the rest of these LLM options. Off by default."
-                            right={<Switch checked={enableAskTheDocs} onCheckedChange={(checked) => updateChat({ enableAskTheDocs: checked })} />}
-                        />
-                    </SearchableItem>
+                        right={<Switch checked={enableAskTheDocs} onCheckedChange={(checked) => updateChat({ enableAskTheDocs: checked })} />}
+                    />
                 </View>
 
                 {enableAskTheDocs && (

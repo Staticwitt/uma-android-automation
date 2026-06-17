@@ -1,11 +1,13 @@
 import { useMemo, useCallback, useContext, useRef, useState, useEffect } from "react"
-import { View, Text, ScrollView, StyleSheet, NativeModules, Pressable, AppState, AppStateStatus, ActivityIndicator } from "react-native"
+import { View, Text, ScrollView, StyleSheet, NativeModules, Pressable, AppState, AppStateStatus, ActivityIndicator, InteractionManager } from "react-native"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import * as Clipboard from "expo-clipboard"
 import { useTheme } from "../../context/ThemeContext"
 import { DebugContext, BotMetaContext } from "../../context/BotStateContext"
 import CustomSlider from "../../components/CustomSlider"
 import { DomainHeader } from "../../components/ui/domain-header"
+import { SettingRow } from "../../components/ui/setting-row"
+import TabStrip, { type TabStripItem } from "../../components/ui/tab-strip"
 import { Callout } from "../../components/ui/callout"
 import CustomButton from "../../components/CustomButton"
 import SearchableItem from "../../components/SearchableItem"
@@ -21,6 +23,15 @@ import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
+
+type DebugSectionTab = "all" | "tuning" | "tools" | "tests"
+
+const DEBUG_SECTION_TABS: TabStripItem[] = [
+    { key: "all", label: "All" },
+    { key: "tuning", label: "Tuning" },
+    { key: "tools", label: "Tools" },
+    { key: "tests", label: "Tests" },
+]
 
 /** Descriptor for a single diagnostic test surfaced in the Debug Tests section. Drives the mutually-exclusive Switch rows. */
 interface DebugTestDescriptor {
@@ -162,6 +173,16 @@ const DebugSettings = () => {
     const [recheckingIndex, setRecheckingIndex] = useState<number | null>(null)
     const recheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [frameRatePickerOpen, setFrameRatePickerOpen] = useState(false)
+    const [activeSection, setActiveSection] = useState<DebugSectionTab>("all")
+    const showSection = useCallback((key: DebugSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
+    const [showHeavySections, setShowHeavySections] = useState(false)
+
+    useEffect(() => {
+        const handle = InteractionManager.runAfterInteractions(() => {
+            setShowHeavySections(true)
+        })
+        return () => handle.cancel()
+    }, [])
 
     /** Checks with the native module if the Accessibility Service is currently running. */
     const checkAccessibilityStatus = () => {
@@ -403,17 +424,20 @@ const DebugSettings = () => {
                 <DomainHeader breadcrumb="Tools" title="Debug" subtitle="Diagnostics, log viewer, and template matching tests." />
                 <ScrollView ref={scrollViewRef} nestedScrollEnabled={true} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                     <View className="m-1">
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Debug Mode */}
+                        {showHeavySections && (
+                            <View style={{ marginBottom: SPACING.md }}>
+                                <TabStrip items={DEBUG_SECTION_TABS} activeKey={activeSection} onChange={(key) => setActiveSection(key as DebugSectionTab)} />
+                            </View>
+                        )}
+                        {showSection("tuning") && (
+                        <>
                         <Section label="Debug Mode">
-                            <SearchableItem id="enable-debug-mode" title="Enable Debug Mode" description="Allows debugging messages in the log and test images to be created in the /temp/ folder.">
-                                <Row
-                                    title="Enable Debug Mode"
-                                    description="Allows debugging messages in the log and test images to be created in the /temp/ folder."
-                                    right={<Switch checked={debug.enableDebugMode} onCheckedChange={(checked) => updateDebug({ enableDebugMode: checked })} />}
-                                />
-                            </SearchableItem>
+                            <SettingRow
+                                id="enable-debug-mode"
+                                title="Enable Debug Mode"
+                                description="Allows debugging messages in the log and test images to be created in the /temp/ folder."
+                                right={<Switch checked={debug.enableDebugMode} onCheckedChange={(checked) => updateDebug({ enableDebugMode: checked })} />}
+                            />
                         </Section>
                         {debug.enableDebugMode && (
                             <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
@@ -459,22 +483,18 @@ const DebugSettings = () => {
                                     description="Manually set the scale to do template matching. The Basic Template Matching Test can help find your recommended scale. Making it too low or too high will cause the bot to match on too little or too many things as false positives."
                                 />
                             </View>
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-auto-display-profile-tuning"
                                 title="Auto Display Profile Tuning"
-                                description="When enabled, applies a recommended template scale for recognized devices (e.g. Samsung Galaxy Tab S10 FE at 1440×2304) if custom scale is still 1.0."
-                            >
-                                <Row
-                                    title="Auto Display Profile Tuning"
-                                    description="Apply known display profiles (Tab S10 FE, etc.) at bot start"
-                                    right={
-                                        <Switch
-                                            checked={debug.enableAutoDisplayProfileTuning ?? true}
-                                            onCheckedChange={(checked) => updateDebug({ enableAutoDisplayProfileTuning: checked })}
-                                        />
-                                    }
-                                />
-                            </SearchableItem>
+                                description="Apply known display profiles (Tab S10 FE, etc.) at bot start"
+                                searchDescription="When enabled, applies a recommended template scale for recognized devices (e.g. Samsung Galaxy Tab S10 FE at 1440×2304) if custom scale is still 1.0."
+                                right={
+                                    <Switch
+                                        checked={debug.enableAutoDisplayProfileTuning ?? true}
+                                        onCheckedChange={(checked) => updateDebug({ enableAutoDisplayProfileTuning: checked })}
+                                    />
+                                }
+                            />
                             <View style={styles.hostPad}>
                                 <CustomSlider
                                     searchId="ocr-threshold"
@@ -493,66 +513,53 @@ const DebugSettings = () => {
                                 />
                             </View>
                         </Section>
+                        </>
+                        )}
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Remote Log Viewer */}
+                        {showSection("tools") && (
+                        <>
                         <Section label="Remote Log Viewer">
-                            <View style={{ padding: SPACING.md, gap: SPACING.sm }}>
-                                <Text style={[TYPE.caption, { color: colors.textMuted }]}>
-                                    Starts an HTTP server on this device when the bot runs. Open the URL shown below in a browser on your computer to view logs in real-time.
-                                </Text>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: SPACING.md }}>
-                                    <View style={{ width: 28, height: 28, borderRadius: 999, backgroundColor: colors.brandSubtle, alignItems: "center", justifyContent: "center" }}>
-                                        <Ionicons name="cellular-outline" size={14} color={colors.brand} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "600" as const }}>Remote Log Viewer</Text>
-                                        <Text style={{ ...TYPE.caption, color: colors.textMuted }}>Same WiFi required</Text>
-                                    </View>
-                                    <SearchableItem
-                                        id="settings-enable-remote-log-viewer"
-                                        title="Enable Remote Log Viewer"
-                                        description="Starts an HTTP server on this device when the bot runs. Open the URL shown below in a browser on your computer to view logs in real-time."
+                            <SettingRow
+                                id="settings-enable-remote-log-viewer"
+                                title="Remote Log Viewer"
+                                searchTitle="Enable Remote Log Viewer"
+                                description="Starts an HTTP server on this device when the bot runs. Open the URL on your computer to view logs in real-time (same WiFi required)."
+                                right={<Switch checked={debug.enableRemoteLogViewer} onCheckedChange={(checked) => updateDebug({ enableRemoteLogViewer: checked })} />}
+                            />
+                            {debug.enableRemoteLogViewer && (
+                                <View style={{ padding: SPACING.md, gap: SPACING.sm }}>
+                                    <Pressable
+                                        onPress={handleCopyRlvUrl}
+                                        android_ripple={{ color: colors.ripple, foreground: true }}
+                                        style={{ padding: SPACING.sm, backgroundColor: colors.surfaceRaised, borderRadius: RADII.md, flexDirection: "row", alignItems: "center", gap: SPACING.sm }}
                                     >
-                                        <Switch checked={debug.enableRemoteLogViewer} onCheckedChange={(checked) => updateDebug({ enableRemoteLogViewer: checked })} />
-                                    </SearchableItem>
+                                        <Text style={{ ...TYPE.monoLabel, color: colors.brand, flex: 1 }}>{rlvUrl}</Text>
+                                        <Ionicons name="copy-outline" size={14} color={colors.textMuted} />
+                                    </Pressable>
+                                    <Text style={{ ...TYPE.caption, color: colors.textMuted }}>Port {debug.remoteLogViewerPort} · Active</Text>
+                                    <CustomSlider
+                                        searchId="settings-remote-log-viewer-port"
+                                        searchCondition={debug.enableRemoteLogViewer}
+                                        parentId="settings-enable-remote-log-viewer"
+                                        value={debug.remoteLogViewerPort}
+                                        placeholder={defaultSettings.debug.remoteLogViewerPort}
+                                        onValueChange={(value) => updateDebug({ remoteLogViewerPort: value })}
+                                        onSlidingComplete={(value) => updateDebug({ remoteLogViewerPort: value })}
+                                        min={1024}
+                                        max={65535}
+                                        step={1}
+                                        showValue
+                                        showLabels
+                                        label="Server Port"
+                                        description="Port number for the log stream server. Change only if the default conflicts with another service."
+                                    />
+                                    {deviceIp === "10.0.2.15" && (
+                                        <Text style={{ ...TYPE.caption, color: colors.warningText }}>
+                                            Emulator detected - direct connection to {deviceIp} will fail. Use ADB port forwarding instead.
+                                        </Text>
+                                    )}
                                 </View>
-                                {debug.enableRemoteLogViewer && (
-                                    <>
-                                        <Pressable
-                                            onPress={handleCopyRlvUrl}
-                                            android_ripple={{ color: colors.ripple, foreground: true }}
-                                            style={{ padding: SPACING.sm, backgroundColor: colors.surfaceRaised, borderRadius: RADII.md, flexDirection: "row", alignItems: "center", gap: SPACING.sm }}
-                                        >
-                                            <Text style={{ ...TYPE.monoLabel, color: colors.brand, flex: 1 }}>{rlvUrl}</Text>
-                                            <Ionicons name="copy-outline" size={14} color={colors.textMuted} />
-                                        </Pressable>
-                                        <Text style={{ ...TYPE.caption, color: colors.textMuted }}>Port {debug.remoteLogViewerPort} · Active</Text>
-                                        <CustomSlider
-                                            searchId="settings-remote-log-viewer-port"
-                                            searchCondition={debug.enableRemoteLogViewer}
-                                            parentId="settings-enable-remote-log-viewer"
-                                            value={debug.remoteLogViewerPort}
-                                            placeholder={defaultSettings.debug.remoteLogViewerPort}
-                                            onValueChange={(value) => updateDebug({ remoteLogViewerPort: value })}
-                                            onSlidingComplete={(value) => updateDebug({ remoteLogViewerPort: value })}
-                                            min={1024}
-                                            max={65535}
-                                            step={1}
-                                            showValue
-                                            showLabels
-                                            label="Server Port"
-                                            description="Port number for the log stream server. Change only if the default conflicts with another service."
-                                        />
-                                        {deviceIp === "10.0.2.15" && (
-                                            <Text style={{ ...TYPE.caption, color: colors.warningText }}>
-                                                Emulator detected - direct connection to {deviceIp} will fail. Use ADB port forwarding instead.
-                                            </Text>
-                                        )}
-                                    </>
-                                )}
-                            </View>
+                            )}
                         </Section>
 
                         {/* //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -562,17 +569,12 @@ const DebugSettings = () => {
                             <View style={{ padding: SPACING.md, paddingBottom: 0 }}>
                                 <Text style={[TYPE.caption, { color: colors.textMuted }]}>Configure the quality settings for screen recording.</Text>
                             </View>
-                            <SearchableItem
+                            <SettingRow
                                 id="enable-screen-recording"
                                 title="Enable Screen Recording"
                                 description="Records the screen while the bot is running. The mp4 file will be saved to the /recordings folder of the app's data directory. Note that performance and battery life may be impacted while recording."
-                            >
-                                <Row
-                                    title="Enable Screen Recording"
-                                    description="Records the screen while the bot is running. The mp4 file will be saved to the /recordings folder of the app's data directory. Note that performance and battery life may be impacted while recording."
-                                    right={<Switch checked={debug.enableScreenRecording} onCheckedChange={(checked) => updateDebug({ enableScreenRecording: checked })} />}
-                                />
-                            </SearchableItem>
+                                right={<Switch checked={debug.enableScreenRecording} onCheckedChange={(checked) => updateDebug({ enableScreenRecording: checked })} />}
+                            />
                             <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
                                     searchId="recording-bit-rate"
@@ -717,7 +719,11 @@ const DebugSettings = () => {
                                 </>
                             )}
                         </Section>
+                        </>
+                        )}
 
+                        {showSection("tests") && (
+                        <>
                         <Section label="DEBUG SETTINGS">
                             <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
@@ -737,18 +743,14 @@ const DebugSettings = () => {
                                 />
                             </View>
 
-                            <SearchableItem id="settings-enable-message-id-display" title="Enable Message ID Display" description="Shows message IDs in the message log to help with debugging.">
-                                <Row
-                                    title="Enable Message ID Display"
-                                    description="Shows message IDs in the message log to help with debugging."
-                                    right={<Switch checked={debug.enableMessageIdDisplay} onCheckedChange={(checked) => updateDebug({ enableMessageIdDisplay: checked })} />}
-                                />
-                            </SearchableItem>
+                            <SettingRow
+                                id="settings-enable-message-id-display"
+                                title="Enable Message ID Display"
+                                description="Shows message IDs in the message log to help with debugging."
+                                right={<Switch checked={debug.enableMessageIdDisplay} onCheckedChange={(checked) => updateDebug({ enableMessageIdDisplay: checked })} />}
+                            />
                         </Section>
 
-                        {/* //////////////////////////////////////////////////////////////////////////////////////////////////
-                            //////////////////////////////////////////////////////////////////////////////////////////////////
-                            Debug Tests */}
                         <View style={{ marginTop: SPACING.sm, marginBottom: SPACING.lg }}>
                             <SectionLabel label="Debug Tests" />
                             <View style={{ backgroundColor: colors.surface, borderRadius: RADII.lg, borderWidth: 1, borderColor: colors.borderHair, overflow: "hidden" }}>
@@ -762,18 +764,19 @@ const DebugSettings = () => {
                                 </View>
                                 {DEBUG_TESTS.map((test, idx) => (
                                     <View key={test.key}>
-                                        <SearchableItem id={test.searchId} title={test.title} description={test.description}>
-                                            <Row
-                                                title={test.title}
-                                                description={test.description}
-                                                right={<Switch checked={!!debug[test.key]} onCheckedChange={(checked) => handleDebugTestToggle(test.key, checked)} />}
-                                            />
-                                        </SearchableItem>
+                                        <SettingRow
+                                            id={test.searchId}
+                                            title={test.title}
+                                            description={test.description}
+                                            right={<Switch checked={!!debug[test.key]} onCheckedChange={(checked) => handleDebugTestToggle(test.key, checked)} />}
+                                        />
                                         {idx < DEBUG_TESTS.length - 1 && <View style={{ height: 1, backgroundColor: colors.borderHair, marginLeft: SPACING.lg }} />}
                                     </View>
                                 ))}
                             </View>
                         </View>
+                        </>
+                        )}
                     </View>
                 </ScrollView>
             </SearchPageProvider>
