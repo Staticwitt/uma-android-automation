@@ -1,21 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.13</latestVersion>
-    <latestVersionCode>103</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.13</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.13/v5.9.13-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.13/v5.9.13-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.14</latestVersion>
+    <latestVersionCode>104</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.14</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.14/v5.9.14-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.14/v5.9.14-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.13 - Parent farming reliability
+v5.9.14 - Smart Race Solver planning upgrade
 
-Fixes
+Features
 ---
-- Smart Race Solver fuzzy-matches on-screen race names when OCR differs from the plan
-- Parent farming falls back to fan racing when smart race selection fails
-- Forced-epithet fail-fast enabled by default; minimum race gap 1 in base preset
-- In-app updater rejects bad HTTP responses instead of installing failed downloads
+- Energy and mood aware scheduling: MILP/heuristic plan Rest days when energy is low
+- Win-rate guard: scale race value by P(win) and optionally skip risky races
+- Live schedule preview: WIN/LOSE pills sync during a run without Recalculate
 
-Includes v5.9.12 friend support borrow fix and v5.9.11 game data auto-update.
+Includes v5.9.13 parent farming reliability fixes.
 
     </releaseNotes>
   </update>
