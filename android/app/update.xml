@@ -1,20 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.16</latestVersion>
-    <latestVersionCode>106</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.16</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.16/v5.9.16-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.16/v5.9.16-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.17</latestVersion>
+    <latestVersionCode>107</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.17</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.17/v5.9.17-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.17/v5.9.17-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.16 - Carat-funded race retry
+v5.9.17 - Samsung Galaxy Tab S10 FE display profile
 
 Features
 ---
-- Optional setting to spend carats on Alarm Clock race retries when item retries are exhausted
-- Per-career cap for carat-funded retries (default 5, 0 = unlimited)
-- Works for mandatory races, Try Again dialogs, Trackblazer, and inline retry buttons
+- Native support for Samsung Galaxy Tab S10 FE (1440×2304 portrait)
+- Auto Display Profile Tuning applies ~1.33 template scale at bot start
+- Home recognizes supported tablet profile (green status)
 
-Includes v5.9.15 Discord live status and solver alerts.
+Includes v5.9.16 carat-funded race retry and v5.9.15 Discord enhancements.
 
     </releaseNotes>
   </update>
