@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonConfirm
+import com.steve1316.uma_android_automation.components.ButtonEditTeam
 import com.steve1316.uma_android_automation.components.ButtonHomePresents
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
 import com.steve1316.uma_android_automation.components.ButtonMenuBarHomeSelected
@@ -25,11 +26,14 @@ import com.steve1316.uma_android_automation.utils.ScrollListEntryDetectionConfig
 object ParentFarmingColdStart {
     private const val TAG = "[PF_COLD_START]"
 
-    /** Team-home Career hub (large button above the bottom nav, lower-right). */
+    /** Team-home Career hub fallback (large button above the bottom nav, lower-right). */
     private const val TEAM_HOME_CAREER_X_FRACTION = 0.84
     private const val TEAM_HOME_CAREER_Y_FRACTION = 0.835
 
-    /** Explicit phases so character pick always precedes scenario pick, even when OCR is weak. */
+    /** Career hub sits roughly this fraction of screen height above the bottom nav anchor. */
+    private const val CAREER_HUB_ABOVE_NAV_FRACTION = 0.12
+
+    /** Explicit phases so character pick always precedes scenario pick. */
     internal enum class Phase {
         NAVIGATE_HOME,
         PICK_CHARACTER,
@@ -39,11 +43,13 @@ object ParentFarmingColdStart {
     @Volatile private var coldStartComplete = false
     @Volatile private var phase = Phase.NAVIGATE_HOME
     @Volatile private var scenarioTapAttempts = 0
+    @Volatile private var idleIterations = 0
 
     fun resetSession() {
         coldStartComplete = false
         phase = Phase.NAVIGATE_HOME
         scenarioTapAttempts = 0
+        idleIterations = 0
     }
 
     fun isEnabled(): Boolean =
@@ -78,47 +84,56 @@ object ParentFarmingColdStart {
             return false
         }
 
-        when {
-            isOnTeamHomeHub(game, campaign) -> {
-                phase = Phase.NAVIGATE_HOME
-                if (tryOpenCareerFromTeamHome(game)) {
-                    phase = Phase.PICK_CHARACTER
-                    return true
+        val advanced =
+            when {
+                isOnTeamHomeHub(game, campaign) -> {
+                    phase = Phase.NAVIGATE_HOME
+                    if (tryOpenCareerFromTeamHome(game)) {
+                        phase = Phase.PICK_CHARACTER
+                        true
+                    } else {
+                        false
+                    }
                 }
-            }
-            needsHomeTab(game) -> {
-                phase = Phase.NAVIGATE_HOME
-                if (ButtonMenuBarHomeUnselected.click(game.imageUtils)) {
-                    MessageLog.i(TAG, "Switching to Home tab before opening Career.")
-                    game.wait(0.8)
-                    return true
+                needsHomeTab(game) -> {
+                    phase = Phase.NAVIGATE_HOME
+                    if (ButtonMenuBarHomeUnselected.click(game.imageUtils)) {
+                        MessageLog.i(TAG, "Switching to Home tab before opening Career.")
+                        game.wait(0.8)
+                        true
+                    } else {
+                        false
+                    }
                 }
-            }
-            shouldPickScenario(game) -> {
-                if (trySelectScenario(game)) return true
-            }
-            shouldPickCharacter(game, campaign) -> {
-                if (selectCharacterFromList(game, character)) {
-                    phase = Phase.PICK_SCENARIO
-                    scenarioTapAttempts = 0
-                    MessageLog.i(TAG, "Trainee selected — advancing to scenario picker.")
-                    game.wait(1.0)
-                    return true
+                shouldPickCharacter(game, campaign) -> {
+                    if (selectCharacterFromList(game, character)) {
+                        MessageLog.i(TAG, "Trainee tapped — waiting for Confirm before scenario picker.")
+                        game.wait(1.0)
+                        true
+                    } else {
+                        false
+                    }
                 }
+                shouldPickScenario() -> {
+                    if (trySelectScenario(game)) true else false
+                }
+                else -> false
             }
+
+        if (advanced) {
+            idleIterations = 0
+            return true
         }
 
         when {
             ButtonConfirm.click(game.imageUtils) -> {
                 game.wait(0.8)
+                advanceToScenarioPhaseIfNeeded("Confirm")
                 return true
             }
             ButtonNext.click(game.imageUtils) -> {
                 game.wait(0.8)
-                if (phase == Phase.PICK_CHARACTER) {
-                    phase = Phase.PICK_SCENARIO
-                    scenarioTapAttempts = 0
-                }
+                advanceToScenarioPhaseIfNeeded("Next")
                 return true
             }
             ButtonOk.click(game.imageUtils) -> {
@@ -131,13 +146,23 @@ object ParentFarmingColdStart {
             }
         }
 
+        logIdleProgress(game, campaign)
         return false
+    }
+
+    private fun advanceToScenarioPhaseIfNeeded(source: String) {
+        if (phase == Phase.PICK_CHARACTER) {
+            phase = Phase.PICK_SCENARIO
+            scenarioTapAttempts = 0
+            MessageLog.i(TAG, "Character confirmed via $source — advancing to scenario picker.")
+        }
     }
 
     private fun markComplete(reason: String?) {
         coldStartComplete = true
         phase = Phase.NAVIGATE_HOME
         scenarioTapAttempts = 0
+        idleIterations = 0
         if (reason != null) {
             MessageLog.i(TAG, reason)
         }
@@ -146,21 +171,21 @@ object ParentFarmingColdStart {
     private fun shouldPickCharacter(game: Game, campaign: Campaign): Boolean {
         if (phase == Phase.PICK_SCENARIO) return false
         if (isOnTeamHomeHub(game, campaign) || needsHomeTab(game)) return false
-        if (isLikelyScenarioSelectScreen(game)) return false
         if (phase == Phase.NAVIGATE_HOME) {
             phase = Phase.PICK_CHARACTER
         }
         return phase == Phase.PICK_CHARACTER
     }
 
-    private fun shouldPickScenario(game: Game): Boolean =
-        phase == Phase.PICK_SCENARIO || isLikelyScenarioSelectScreen(game)
+    /** Scenario picking is phase-gated only — OCR must not skip character confirmation. */
+    internal fun shouldPickScenario(): Boolean = phase == Phase.PICK_SCENARIO
 
     /** Tracen team hub (not in-career training, not career selection). */
     internal fun isOnTeamHomeHub(game: Game, campaign: Campaign): Boolean {
         if (campaign.checkMainScreen()) return false
         if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
         return ButtonMenuBarHomeSelected.check(game.imageUtils) ||
+            ButtonEditTeam.check(game.imageUtils) ||
             ButtonHomeSpecialMissions.check(game.imageUtils) ||
             ButtonHomePresents.check(game.imageUtils)
     }
@@ -182,7 +207,7 @@ object ParentFarmingColdStart {
                 "select scenario",
                 "choose scenario",
             )
-        return keywords.count { keyword -> text.contains(keyword) } >= 1
+        return keywords.count { keyword -> text.contains(keyword) } >= 2
     }
 
     internal fun scenarioKeywords(scenario: String): List<String> =
@@ -199,9 +224,26 @@ object ParentFarmingColdStart {
             else -> 0.26 to 0.52
         }
 
+    internal fun careerHubTapPoint(displayWidth: Int, displayHeight: Int, navAnchorY: Double?): Pair<Double, Double> {
+        val x = displayWidth * TEAM_HOME_CAREER_X_FRACTION
+        val y =
+            if (navAnchorY != null) {
+                (navAnchorY - displayHeight * CAREER_HUB_ABOVE_NAV_FRACTION)
+                    .coerceIn(displayHeight * 0.65, displayHeight * 0.90)
+            } else {
+                displayHeight * TEAM_HOME_CAREER_Y_FRACTION
+            }
+        return x to y
+    }
+
     private fun tryOpenCareerFromTeamHome(game: Game): Boolean {
-        val x = SharedData.displayWidth * TEAM_HOME_CAREER_X_FRACTION
-        val y = SharedData.displayHeight * TEAM_HOME_CAREER_Y_FRACTION
+        val navAnchorY =
+            sequenceOf(
+                ButtonMenuBarHomeSelected.find(game.imageUtils).first,
+                ButtonMenuBarHomeUnselected.find(game.imageUtils).first,
+                ButtonEditTeam.find(game.imageUtils).first,
+            ).firstOrNull()?.y
+        val (x, y) = careerHubTapPoint(SharedData.displayWidth, SharedData.displayHeight, navAnchorY)
         MessageLog.i(TAG, "Tapping team-home Career hub at (${x.toInt()}, ${y.toInt()}).")
         game.tap(x, y)
         game.waitForLoading()
@@ -210,10 +252,6 @@ object ParentFarmingColdStart {
     }
 
     private fun trySelectScenario(game: Game): Boolean {
-        if (phase != Phase.PICK_SCENARIO) {
-            phase = Phase.PICK_SCENARIO
-            scenarioTapAttempts = 0
-        }
         if (scenarioTapAttempts >= 3) {
             MessageLog.w(TAG, "Scenario picker taps exhausted; waiting for career selection or dialogs.")
             return false
@@ -289,4 +327,18 @@ object ParentFarmingColdStart {
             ocrEngine = "tesseract",
             debugName = "cold_start_character_entry",
         ).lowercase()
+
+    private fun logIdleProgress(game: Game, campaign: Campaign) {
+        idleIterations++
+        if (idleIterations == 1 || idleIterations % 8 == 0) {
+            val onHome = isOnTeamHomeHub(game, campaign)
+            val needsHome = needsHomeTab(game)
+            val scenarioOcr = readScenarioPickerOcr(game)
+            MessageLog.i(
+                TAG,
+                "Waiting (phase=$phase, onHome=$onHome, needsHome=$needsHome, " +
+                    "scenarioOcr=${scenarioOcr.take(48)}, idle=$idleIterations).",
+            )
+        }
+    }
 }
