@@ -296,12 +296,12 @@ object LegacyParentSelector {
     private fun readPreferredPair(): List<String> =
         SupportCardSelection.filterTraineeFromSupportNames(
             SupportCardSelection.readStringList(
-                SettingsHelper.getStringSetting("racing", "legacyParentPreferredPair"),
+                ParentFarmingGoalQueue.racingString("legacyParentPreferredPair", "[]"),
             ),
         )
 
     private fun ocrLooksLikeTrainee(ocrText: String): Boolean {
-        val trainee = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").trim()
+        val trainee = ParentFarmingGoalQueue.racingString("smartRaceSolverCharacterPreset").trim()
         if (trainee.isEmpty()) return false
         return SupportCardSelection.matchScore(ocrText, trainee) >= MIN_NAME_MATCH_SCORE
     }

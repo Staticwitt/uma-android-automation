@@ -66,10 +66,17 @@ describe("prepareSettingsForBotStart", () => {
         expect(prepared.training.disableStatTargets).toBe(true)
     })
 
-    it("preserves cold start toggle across bot-start re-resolve", () => {
+    it("prepareSettingsForBotStart enables generation farm multi-run from breeding plan", () => {
         const settings = baseSettings()
-        settings.racing.enableParentFarmingColdStart = false
+        settings.racing.enableParentFarmingBreedingPlan = true
+        settings.racing.parentFarmingBreedingPlan = JSON.stringify({
+            generations: [
+                { label: "Gen 1", goalPresetKey: "skill-hints", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2", goalPresetKey: "g1-fans", targetFactorSkills: ["Test Skill"], usePreviousAsLegacy: true },
+            ],
+        })
         const prepared = prepareSettingsForBotStart(settings)
-        expect(prepared.racing.enableParentFarmingColdStart).toBe(false)
+        expect(prepared.racing.enableParentFarmingMultiRun).toBe(true)
+        expect(prepared.racing.parentFarmingMultiRunCount).toBe(2)
     })
 })

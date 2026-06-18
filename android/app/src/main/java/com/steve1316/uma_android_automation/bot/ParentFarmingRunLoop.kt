@@ -34,7 +34,7 @@ object ParentFarmingRunLoop {
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
         ParentFarmingGoalQueue.resetSession()
-        ParentFarmingColdStart.resetSession()
+        ParentFarmingGenerationFarm.resetSession()
         ParentFarmingRecoveryCoach.reset()
     }
 
@@ -231,7 +231,7 @@ object ParentFarmingRunLoop {
         ParentFarmingLiveStatus.reset()
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
-        ParentFarmingColdStart.resetSession()
+        ParentFarmingGenerationFarm.resetSession()
         ParentFarmingRecoveryCoach.reset()
         ParentFarmingGoalQueue.applyForRunIndex(sessionRunsCompleted)
 

@@ -286,7 +286,7 @@ export const formatParentFarmingReliabilitySummary = (settings: Settings): strin
     if (!racing.enableParentFarmingMode) return ""
     const parts: string[] = []
     if (racing.enableParentFarmingFullUnattended) parts.push("full unattended")
-    if (racing.enableParentFarmingColdStart) parts.push("cold start")
+    if (racing.enableParentFarmingBreedingPlan) parts.push("generation farm")
     if (racing.enableParentFarmingAutoDowngradeForcedEpithets) parts.push("auto-downgrade forced")
     if (racing.enableParentFarmingAdaptiveMultiRun) parts.push("adaptive multi-run")
     if (racing.enableParentFarmingLockPreset) parts.push("lock preset")

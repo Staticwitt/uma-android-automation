@@ -249,7 +249,7 @@ class Game(val myContext: Context) {
         val startTime: Long = runStartTimeMillis
         ParentDiscordNotifier.reset()
         ParentFarmingRunLoop.resetSession()
-        ParentFarmingColdStart.resetSession()
+        ParentFarmingGenerationFarm.resetSession()
         ParentFarmingRecoveryCoach.reset()
         SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()

@@ -80,7 +80,7 @@ object ParentHarvestScanner {
 
     private fun readTargetFactors(): List<String> =
         SupportCardSelection.readStringList(
-            SettingsHelper.getStringSetting("racing", "parentFarmingTargetFactorSkills", "[]"),
+            ParentFarmingGoalQueue.racingString("parentFarmingTargetFactorSkills", "[]"),
         )
 
     private fun ocrEntry(game: Game, entry: ScrollListEntry): String =

@@ -313,10 +313,6 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.parentFarmingSettingsSnapshot = ""
             anyMigrated = true
         }
-        if (typeof racing.enableParentFarmingColdStart !== "boolean") {
-            racing.enableParentFarmingColdStart = true
-            anyMigrated = true
-        }
         if (typeof racing.enableParentFarmingAutoScenario !== "boolean") {
             racing.enableParentFarmingAutoScenario = true
             anyMigrated = true

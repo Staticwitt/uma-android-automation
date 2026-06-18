@@ -1,8 +1,7 @@
 import { writeFileSync, mkdirSync } from "fs"
 import { defaultSettings } from "../src/context/BotStateContext"
 import { enableParentFarmingCharacterBundle } from "../src/lib/parentFarmingResolver"
-import { breedingPlanToGoalQueue, serializeParentFarmingBreedingPlan } from "../src/lib/parentFarmingBreedingPlan"
-import { buildParentFarmingGoalQueueResolved, serializeParentFarmingGoalQueueResolved } from "../src/lib/parentFarmingGoalQueue"
+import { serializeParentFarmingBreedingPlan } from "../src/lib/parentFarmingBreedingPlan"
 import { prepareSettingsForBotStart } from "../src/lib/prepareSettingsForBotStart"
 
 const breedingPlan = {
@@ -25,7 +24,6 @@ const breedingPlan = {
 let settings = { ...defaultSettings, general: { ...defaultSettings.general, scenario: "Trackblazer" } }
 settings = enableParentFarmingCharacterBundle(settings, "grass-wonder-mile")
 Object.assign(settings.racing, {
-    enableParentFarmingColdStart: true,
     enableParentFarmingMultiRun: true,
     parentFarmingMultiRunCount: 2,
     enableParentFarmingBreedingPlan: true,
@@ -42,13 +40,6 @@ Object.assign(settings.racing, {
     supportBorrowPreferredCards: JSON.stringify(["Grass Wonder", "Silence Suzuka", "Maruzensky", "King Halo"]),
     parentFarmingTargetFactorSkills: "[]",
 })
-
-const queueItems = breedingPlanToGoalQueue(breedingPlan)
-settings.racing.parentFarmingGoalQueue = JSON.stringify(queueItems)
-settings.racing.enableParentFarmingGoalQueue = true
-settings.racing.parentFarmingGoalQueueResolved = serializeParentFarmingGoalQueueResolved(
-    buildParentFarmingGoalQueueResolved(settings, queueItems),
-)
 
 const prepared = prepareSettingsForBotStart(settings)
 

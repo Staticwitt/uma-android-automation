@@ -1,7 +1,14 @@
 import type { Settings } from "../context/BotStateContext"
+import type { ParentFarmingGoalQueueItem, ParentFarmingGoalQueueResolvedPatch } from "./parentFarmingGoalQueue"
+import { patchFromSettingsForBreeding } from "./parentFarmingGoalQueue"
+import {
+    applyParentFarmingCharacterBundle,
+    applyParentFarmingGoalPreset,
+} from "./parentFarmingResolver"
+import { refreshParentFarmingSettings } from "./parentFarmingPreset"
+import { applyParentFarmingScenarioSync } from "./parentFarmingScenarioSync"
 import { findParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
-import type { ParentFarmingGoalQueueItem } from "./parentFarmingGoalQueue"
 
 export interface ParentFarmingBreedingGeneration {
     label: string
@@ -58,49 +65,67 @@ export const breedingPlanToGoalQueue = (plan: ParentFarmingBreedingPlan): Parent
     return items
 }
 
-/** Applies active breeding generation target factors to racing settings for harvest OCR. */
+/** Applies one breeding generation (bundle/preset, factors, labels) through the full resolver. */
 export const applyBreedingGenerationToSettings = (settings: Settings, generationIndex: number): Settings => {
     const plan = parseParentFarmingBreedingPlan(settings.racing.parentFarmingBreedingPlan)
     const gen = plan.generations[generationIndex]
     if (!gen) return settings
 
-    let next = {
-        ...settings,
+    let next: Settings
+    if (gen.bundleKey) {
+        const bundle = findParentFarmingCharacterBundle(gen.bundleKey)
+        if (!bundle) return settings
+        next = applyParentFarmingCharacterBundle(settings, bundle)
+    } else if (gen.goalPresetKey) {
+        const preset = findParentFarmingGoalPreset(gen.goalPresetKey)
+        if (!preset) return settings
+        next = applyParentFarmingGoalPreset(settings, preset, undefined, { mergeEpithets: false })
+    } else {
+        return settings
+    }
+
+    return {
+        ...next,
         racing: {
-            ...settings.racing,
+            ...next.racing,
             parentFarmingTargetFactorSkills: JSON.stringify(gen.targetFactorSkills),
         },
     }
+}
 
-    if (gen.bundleKey) {
-        const bundle = findParentFarmingCharacterBundle(gen.bundleKey)
-        if (bundle) {
-            next = {
-                ...next,
-                racing: {
-                    ...next.racing,
-                    parentFarmingBundleKey: bundle.key,
-                    parentFarmingBundleLabel: bundle.label,
-                    parentFarmingGoalPresetKey: bundle.goalPresetKey,
-                    smartRaceSolverCharacterPreset: bundle.characterName,
-                },
+/** Resolves each breeding generation into Kotlin patches, wiring previous-gen legacy when requested. */
+export const buildBreedingPlanGoalQueueResolved = (
+    settings: Settings,
+    plan: ParentFarmingBreedingPlan,
+): ParentFarmingGoalQueueResolvedPatch[] => {
+    const patches: ParentFarmingGoalQueueResolvedPatch[] = []
+
+    for (let index = 0; index < plan.generations.length; index++) {
+        const gen = plan.generations[index]
+        let resolved = refreshParentFarmingSettings(applyParentFarmingScenarioSync(applyBreedingGenerationToSettings(settings, index)))
+
+        if (gen.usePreviousAsLegacy && index > 0) {
+            const previousCharacter = patches[index - 1]?.characterPreset?.trim()
+            if (previousCharacter) {
+                resolved = {
+                    ...resolved,
+                    racing: {
+                        ...resolved.racing,
+                        legacyParentPreferredPair: JSON.stringify([previousCharacter, ""]),
+                    },
+                }
             }
         }
-    } else if (gen.goalPresetKey) {
-        const preset = findParentFarmingGoalPreset(gen.goalPresetKey)
-        if (preset) {
-            next = {
-                ...next,
-                racing: {
-                    ...next.racing,
-                    parentFarmingGoalPresetKey: preset.key,
-                    parentFarmingGoalPresetLabel: preset.label,
-                },
-            }
-        }
+
+        patches.push(
+            patchFromSettingsForBreeding(resolved, gen.label || `Gen ${index + 1}`, {
+                targetFactorSkills: JSON.stringify(gen.targetFactorSkills),
+                usePreviousAsLegacy: gen.usePreviousAsLegacy,
+            }),
+        )
     }
 
-    return next
+    return patches
 }
 
 export const defaultBreedingPlan = (): ParentFarmingBreedingPlan => ({
