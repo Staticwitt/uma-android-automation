@@ -1,20 +1,20 @@
-<AppUpdater>
-  <update>
-    <latestVersion>5.9.24</latestVersion>
-    <latestVersionCode>114</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.24</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.24/v5.9.24-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.24/v5.9.24-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
-    <releaseNotes>
-v5.9.24 - Parent farming hotfix
-
-Fixes
----
-- Cold start from home no longer loops tapping Home; opens Career hub, scenario picker, and character roster correctly
-- Breeding plan label and factor-skill text fields keep keyboard focus and accept comma-separated skills
-
-Includes v5.9.23 parent farming next-tier pack.
-
-    </releaseNotes>
-  </update>
-</AppUpdater>
+<AppUpdater>
+  <update>
+    <latestVersion>5.9.25</latestVersion>
+    <latestVersionCode>115</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.25</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.25/v5.9.25-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.25/v5.9.25-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <releaseNotes>
+v5.9.25 - Scrollbar detection hotfix
+
+Fixes
+---
+- Prevent crash when auto-equipping owned support deck if scrollbar region crop fails
+- Scroll-to-top/bottom now reuses the current screenshot for scrollbar detection
+
+Includes v5.9.24 parent farming fixes and v5.9.23 next-tier pack.
+
+    </releaseNotes>
+  </update>
+</AppUpdater>

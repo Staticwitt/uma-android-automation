@@ -657,7 +657,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
      * @param bitmap Optional source bitmap to use when detecting scrollbar.
      */
     private fun scrollToTop(bitmap: Bitmap? = null) {
-        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion(bitmap).second
         if (!bIsScrollable && !swipeMode) {
             MessageLog.d(TAG, "[DEBUG] scrollToTop:: List is not scrollable.")
             return
@@ -694,7 +694,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
      * @param bitmap Optional source bitmap to use when detecting scrollbar.
      */
     private fun scrollToBottom(bitmap: Bitmap? = null) {
-        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+        val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion(bitmap).second
         if (!bIsScrollable && !swipeMode) {
             MessageLog.d(TAG, "[DEBUG] scrollToBottom:: List is not scrollable.")
             return
@@ -961,7 +961,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             } else {
                 // SCROLLBAR CHANGE DETECTION LOGIC
                 // Breaks loop if no change to Y position or no scrollbar detected.
-                val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion().second
+                val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion(bitmap).second
                 if (bboxThumb == null) {
                     MessageLog.d(TAG, "[DEBUG] process:: No scrollbar thumb detected. Exiting loop.")
                     return true
