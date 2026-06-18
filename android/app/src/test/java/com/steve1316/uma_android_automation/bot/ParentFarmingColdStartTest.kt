@@ -52,4 +52,33 @@ class ParentFarmingColdStartTest {
         ParentFarmingColdStart.resetSession()
         assertTrue(ParentFarmingColdStart.currentPhase() == ParentFarmingColdStart.Phase.NAVIGATE_HOME)
     }
+
+    @Test
+    fun isHomeNavigationPhase_onlyNavigateHome() {
+        assertTrue(ParentFarmingColdStart.isHomeNavigationPhase(ParentFarmingColdStart.Phase.NAVIGATE_HOME))
+        assertFalse(ParentFarmingColdStart.isHomeNavigationPhase(ParentFarmingColdStart.Phase.PICK_CHARACTER))
+        assertFalse(ParentFarmingColdStart.isHomeNavigationPhase(ParentFarmingColdStart.Phase.PICK_SCENARIO))
+    }
+
+    @Test
+    fun shouldRetryCareerHubOnHome_whenCharacterPhaseStillOnTeamHome() {
+        assertTrue(
+            ParentFarmingColdStart.shouldRetryCareerHubOnHome(
+                ParentFarmingColdStart.Phase.PICK_CHARACTER,
+                onTeamHome = true,
+            ),
+        )
+        assertFalse(
+            ParentFarmingColdStart.shouldRetryCareerHubOnHome(
+                ParentFarmingColdStart.Phase.NAVIGATE_HOME,
+                onTeamHome = true,
+            ),
+        )
+        assertFalse(
+            ParentFarmingColdStart.shouldRetryCareerHubOnHome(
+                ParentFarmingColdStart.Phase.PICK_CHARACTER,
+                onTeamHome = false,
+            ),
+        )
+    }
 }
