@@ -1,5 +1,8 @@
 package com.steve1316.uma_android_automation.bot
 
+import android.graphics.Bitmap
+import com.steve1316.uma_android_automation.types.BoundingBox
+import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -30,5 +33,32 @@ class SupportCardSelectionTest {
     @Test
     fun matchScore_prefersExactSubstring() {
         assertEquals(1.0, SupportCardSelection.matchScore("maruzensky speed", "Maruzensky"), 0.001)
+    }
+
+    @Test
+    fun firstMatchingPreferredName_respectsPriorityOrder() {
+        val preferred = listOf("Maruzensky", "Super Creek")
+        assertEquals("Maruzensky", SupportCardSelection.firstMatchingPreferredName("maruzensky speed", preferred))
+        assertEquals("Super Creek", SupportCardSelection.firstMatchingPreferredName("super creek stamina", preferred))
+    }
+
+    @Test
+    fun firstMatchingPreferredName_prefersFirstNameWhenBothMatch() {
+        val preferred = listOf("Maruzensky", "Super Creek")
+        assertEquals(
+            "Maruzensky",
+            SupportCardSelection.firstMatchingPreferredName("maruzensky and super creek", preferred),
+        )
+    }
+
+    @Test
+    fun entryDedupeKey_usesBoundingBox() {
+        val entry =
+            ScrollListEntry(
+                index = 0,
+                bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
+                bbox = BoundingBox(x = 10, y = 20, w = 100, h = 50),
+            )
+        assertEquals("10:20:100:50", SupportCardSelection.entryDedupeKey(entry))
     }
 }

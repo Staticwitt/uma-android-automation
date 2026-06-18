@@ -1,22 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.30</latestVersion>
-    <latestVersionCode>120</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.30</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.30/v5.9.30-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.30/v5.9.30-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.31</latestVersion>
+    <latestVersionCode>121</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.31</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.31/v5.9.31-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.31/v5.9.31-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.30 - Cold start phase fix
+v5.9.31 - Support card selection optimizations
 
-Fixes
+Improvements
 ---
-- Cold start no longer jumps to scenario taps immediately after tapping a trainee — Confirm/Next must advance the phase first
-- Scenario picking is phase-gated only (OCR can no longer skip character confirmation)
-- Character pick runs before scenario pick in the navigation loop
-- Team home detection includes Edit Team; Career hub tap anchors off the bottom nav on tall displays
-- Idle cold-start logging reports phase and screen hints in logcat ([PF_COLD_START])
+- Scroll-list picker OCR runs once per row (bbox dedupe keys instead of double OCR)
+- Borrow slot matching respects preferred-card priority order (first list entry wins)
+- Borrow scroll fallback scans the list once for all preferred names
+- Friend-slot satisfaction uses the same priority-order matcher
 
-Includes v5.9.29 cold start phases and prior parent-farming fixes.
+Includes v5.9.30 cold start fix and prior parent-farming updates.
 
     </releaseNotes>
   </update>
