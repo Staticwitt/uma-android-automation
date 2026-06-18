@@ -10,6 +10,7 @@ import com.steve1316.uma_android_automation.components.ButtonHomePresents
 import com.steve1316.uma_android_automation.components.ButtonHomeSpecialMissions
 import com.steve1316.uma_android_automation.components.ButtonMenuBarHomeSelected
 import com.steve1316.uma_android_automation.components.ButtonMenuBarHomeUnselected
+import com.steve1316.uma_android_automation.components.ButtonMenuBarRaceSelected
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonOk
 import com.steve1316.uma_android_automation.components.ButtonStartCareer
@@ -32,6 +33,8 @@ object ParentFarmingColdStart {
 
     /** Career hub sits roughly this fraction of screen height above the bottom nav anchor. */
     private const val CAREER_HUB_ABOVE_NAV_FRACTION = 0.12
+
+    private const val CHARACTER_LIST_OCR_SCALE = 1.5
 
     /** Explicit phases so character pick always precedes scenario pick. */
     internal enum class Phase {
@@ -58,6 +61,13 @@ object ParentFarmingColdStart {
 
     internal fun currentPhase(): Phase = phase
 
+    /** Home → Career navigation only runs while still on the team hub phase. */
+    internal fun isHomeNavigationPhase(phase: Phase): Boolean = phase == Phase.NAVIGATE_HOME
+
+    /** Retry Career hub when character pick was expected but the screen never left team home. */
+    internal fun shouldRetryCareerHubOnHome(phase: Phase, onTeamHome: Boolean): Boolean =
+        phase == Phase.PICK_CHARACTER && onTeamHome
+
     /**
      * @return True when navigation or selection advanced this iteration (caller should return early).
      */
@@ -72,7 +82,7 @@ object ParentFarmingColdStart {
             return false
         }
 
-        val character = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").trim()
+        val character = effectiveCharacterPreset()
         if (character.isEmpty()) {
             MessageLog.w(TAG, "No character preset configured; skipping cold start.")
             markComplete(null)
@@ -84,10 +94,20 @@ object ParentFarmingColdStart {
             return false
         }
 
+        val onTeamHome = isOnTeamHomeHub(game, campaign)
+
         val advanced =
             when {
-                isOnTeamHomeHub(game, campaign) -> {
-                    phase = Phase.NAVIGATE_HOME
+                needsHomeTab(game) && isHomeNavigationPhase(phase) -> {
+                    if (ButtonMenuBarHomeUnselected.click(game.imageUtils)) {
+                        MessageLog.i(TAG, "Switching to Home tab before opening Career.")
+                        game.wait(0.8)
+                        true
+                    } else {
+                        false
+                    }
+                }
+                onTeamHome && isHomeNavigationPhase(phase) -> {
                     if (tryOpenCareerFromTeamHome(game)) {
                         phase = Phase.PICK_CHARACTER
                         true
@@ -95,11 +115,9 @@ object ParentFarmingColdStart {
                         false
                     }
                 }
-                needsHomeTab(game) -> {
-                    phase = Phase.NAVIGATE_HOME
-                    if (ButtonMenuBarHomeUnselected.click(game.imageUtils)) {
-                        MessageLog.i(TAG, "Switching to Home tab before opening Career.")
-                        game.wait(0.8)
+                onTeamHome && shouldRetryCareerHubOnHome(phase, onTeamHome) -> {
+                    MessageLog.w(TAG, "Still on team home during character pick — retrying Career hub.")
+                    if (tryOpenCareerFromTeamHome(game)) {
                         true
                     } else {
                         false
@@ -146,9 +164,21 @@ object ParentFarmingColdStart {
             }
         }
 
-        logIdleProgress(game, campaign)
+        logIdleProgress(game, campaign, onTeamHome)
         return false
     }
+
+    private fun effectiveCharacterPreset(): String =
+        ParentFarmingGoalQueue
+            .overrideString(
+                "smartRaceSolverCharacterPreset",
+                SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset", ""),
+            ).trim()
+
+    private fun effectiveScenario(): String =
+        ParentFarmingGoalQueue.overrideScenario(
+            SettingsHelper.getStringSetting("general", "scenario", "Trackblazer"),
+        )
 
     private fun advanceToScenarioPhaseIfNeeded(source: String) {
         if (phase == Phase.PICK_CHARACTER) {
@@ -190,9 +220,12 @@ object ParentFarmingColdStart {
             ButtonHomePresents.check(game.imageUtils)
     }
 
-    /** Bottom nav visible but Home tab is not active yet. */
-    internal fun needsHomeTab(game: Game): Boolean =
-        ButtonMenuBarHomeUnselected.check(game.imageUtils) && !ButtonMenuBarHomeSelected.check(game.imageUtils)
+    /** Bottom nav visible but Home tab is not active yet (includes Race tab). */
+    internal fun needsHomeTab(game: Game): Boolean {
+        if (ButtonMenuBarHomeSelected.check(game.imageUtils)) return false
+        return ButtonMenuBarHomeUnselected.check(game.imageUtils) ||
+            ButtonMenuBarRaceSelected.check(game.imageUtils)
+    }
 
     internal fun isLikelyScenarioSelectScreen(game: Game): Boolean = likelyScenarioSelectFromOcr(readScenarioPickerOcr(game))
 
@@ -257,7 +290,7 @@ object ParentFarmingColdStart {
             return false
         }
 
-        val scenario = SettingsHelper.getStringSetting("general", "scenario", "Trackblazer")
+        val scenario = effectiveScenario()
         val ocrText = readScenarioPickerOcr(game)
         val keywords = scenarioKeywords(scenario)
         if (keywords.none { ocrText.contains(it) }) {
@@ -296,7 +329,7 @@ object ParentFarmingColdStart {
             game,
             fallbackComponent = LabelEventProgress,
             entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
-            keyExtractor = { entry -> ocrEntry(game, entry) },
+            keyExtractor = { entry -> SupportCardSelection.entryDedupeKey(entry) },
             onEntry = { _, entry ->
                 val text = ocrEntry(game, entry)
                 val score = SupportCardSelection.matchScore(text, characterName)
@@ -323,22 +356,26 @@ object ParentFarmingColdStart {
             entry.bitmap.height,
             useThreshold = false,
             useGrayscale = true,
-            scale = 2.0,
+            scale = CHARACTER_LIST_OCR_SCALE,
             ocrEngine = "tesseract",
             debugName = "cold_start_character_entry",
         ).lowercase()
 
-    private fun logIdleProgress(game: Game, campaign: Campaign) {
+    private fun logIdleProgress(game: Game, campaign: Campaign, onTeamHome: Boolean) {
         idleIterations++
         if (idleIterations == 1 || idleIterations % 8 == 0) {
-            val onHome = isOnTeamHomeHub(game, campaign)
             val needsHome = needsHomeTab(game)
             val scenarioOcr = readScenarioPickerOcr(game)
             MessageLog.i(
                 TAG,
-                "Waiting (phase=$phase, onHome=$onHome, needsHome=$needsHome, " +
-                    "scenarioOcr=${scenarioOcr.take(48)}, idle=$idleIterations).",
+                "Waiting (phase=$phase, onHome=$onTeamHome, needsHome=$needsHome, " +
+                    "trainee=${effectiveCharacterPreset()}, scenarioOcr=${scenarioOcr.take(48)}, idle=$idleIterations).",
             )
+        }
+        if (idleIterations >= 16 && onTeamHome && phase == Phase.PICK_CHARACTER) {
+            MessageLog.w(TAG, "Resetting to NAVIGATE_HOME after prolonged idle on team home.")
+            phase = Phase.NAVIGATE_HOME
+            idleIterations = 0
         }
     }
 }
