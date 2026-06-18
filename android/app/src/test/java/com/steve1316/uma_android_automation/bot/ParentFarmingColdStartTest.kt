@@ -22,12 +22,19 @@ class ParentFarmingColdStartTest {
     }
 
     @Test
-    fun likelyScenarioSelectFromOcr_requiresMultipleScenarioKeywords() {
-        assertFalse(ParentFarmingColdStart.likelyScenarioSelectFromOcr("only trackblazer here"))
+    fun likelyScenarioSelectFromOcr_detectsSingleScenarioKeyword() {
+        assertFalse(ParentFarmingColdStart.likelyScenarioSelectFromOcr("grass wonder special week"))
+        assertTrue(ParentFarmingColdStart.likelyScenarioSelectFromOcr("only trackblazer here"))
         assertTrue(
             ParentFarmingColdStart.likelyScenarioSelectFromOcr(
                 "trackblazer ura finale unity cup choose scenario",
             ),
         )
+    }
+
+    @Test
+    fun resetSession_restoresNavigateHomePhase() {
+        ParentFarmingColdStart.resetSession()
+        assertTrue(ParentFarmingColdStart.currentPhase() == ParentFarmingColdStart.Phase.NAVIGATE_HOME)
     }
 }

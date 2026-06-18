@@ -65,4 +65,11 @@ describe("prepareSettingsForBotStart", () => {
         const prepared = prepareSettingsForBotStart(settings)
         expect(prepared.training.disableStatTargets).toBe(true)
     })
+
+    it("preserves cold start toggle across bot-start re-resolve", () => {
+        const settings = baseSettings()
+        settings.racing.enableParentFarmingColdStart = false
+        const prepared = prepareSettingsForBotStart(settings)
+        expect(prepared.racing.enableParentFarmingColdStart).toBe(false)
+    })
 })

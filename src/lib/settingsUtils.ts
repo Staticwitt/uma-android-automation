@@ -313,6 +313,22 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.parentFarmingSettingsSnapshot = ""
             anyMigrated = true
         }
+        if (typeof racing.enableParentFarmingColdStart !== "boolean") {
+            racing.enableParentFarmingColdStart = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingAutoScenario !== "boolean") {
+            racing.enableParentFarmingAutoScenario = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingGameDataFactorOcr !== "boolean") {
+            racing.enableParentFarmingGameDataFactorOcr = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingHarvestReport !== "boolean") {
+            racing.enableParentFarmingHarvestReport = true
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.
