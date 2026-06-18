@@ -29,11 +29,11 @@ export const applyParentFarmingPreset = (settings: Settings): Settings => {
                     parentFarmingBundleKey: "",
                     parentFarmingBundleLabel: "",
                 },
-            })
+            }, { preserveUserPreferences: false })
         }
     }
 
-    return resolveEnableParentFarmingMode(settings)
+    return resolveEnableParentFarmingMode(settings, { preserveUserPreferences: false })
 }
 
 /** Clears the mode marker without reverting the user's current settings. */
@@ -58,5 +58,6 @@ export const disableParentFarmingMode = (settings: Settings, options?: { revert?
     }
 }
 
-/** Re-applies parent-farming slices from stored keys. Used on settings load migrations. */
-export const refreshParentFarmingSettings = (settings: Settings): Settings => resolveParentFarmingSettings(settings)
+/** Re-applies parent-farming solver/training slices from stored keys without resetting user toggles. */
+export const refreshParentFarmingSettings = (settings: Settings): Settings =>
+    resolveParentFarmingSettings(settings, { preserveUserPreferences: true })

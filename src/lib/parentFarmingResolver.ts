@@ -28,6 +28,7 @@ import { autoDowngradeInfeasibleForcedEpithets } from "./parentFarmingFeasibilit
 import { applyParentFarmingFullUnattended } from "./parentFarmingFullUnattended"
 import { recommendLegacyParents } from "./legacyParentRecommendations"
 import { captureParentFarmingSnapshot } from "./parentFarmingSnapshot"
+import { preserveParentFarmingUserRacing } from "./parentFarmingUserPreferences"
 
 export { PARENT_FARMING_DEFAULT_GOAL_PRESET_KEY, PARENT_FARMING_RESOLVER_REVISION } from "./parentFarmingConstants"
 
@@ -36,6 +37,8 @@ export interface ResolveParentFarmingOptions {
     allowedEpithetNames?: Set<string>
     /** When false, goal epithets replace existing targets (bundles). When true, merge with manual picks. */
     mergeEpithets?: boolean
+    /** When true (default), keep user-edited toggles and deck/borrow lists across refresh/migration. */
+    preserveUserPreferences?: boolean
 }
 
 const defaultAllowedEpithetNames = (settings: Settings): Set<string> =>
@@ -52,6 +55,8 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
     if (!settings.racing.enableParentFarmingMode) {
         return settings
     }
+
+    const preserveUserPreferences = options?.preserveUserPreferences ?? true
 
     const bundle = settings.racing.parentFarmingBundleKey
         ? findParentFarmingCharacterBundle(settings.racing.parentFarmingBundleKey)
@@ -89,7 +94,7 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
         }
         fallback = autoDowngradeInfeasibleForcedEpithets(fallback)
         fallback = applyParentFarmingFullUnattended(fallback)
-        return fallback
+        return finalizeParentFarmingResolve(settings, fallback, preserveUserPreferences)
     }
 
     const mergeEpithets = options?.mergeEpithets ?? !bundle
@@ -183,7 +188,15 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
 
     resolved = autoDowngradeInfeasibleForcedEpithets(resolved)
     resolved = applyParentFarmingFullUnattended(resolved)
-    return resolved
+    return finalizeParentFarmingResolve(settings, resolved, preserveUserPreferences)
+}
+
+const finalizeParentFarmingResolve = (settings: Settings, resolved: Settings, preserveUserPreferences: boolean): Settings => {
+    if (!preserveUserPreferences) return resolved
+    return {
+        ...resolved,
+        racing: preserveParentFarmingUserRacing(settings.racing, resolved.racing),
+    }
 }
 
 /** Enables parent farming and resolves slices from stored keys or the default goal preset. */
@@ -220,7 +233,7 @@ export const enableParentFarmingGoalPreset = (
                 parentFarmingBundleLabel: "",
             },
         },
-        { ...options, mergeEpithets: options?.mergeEpithets ?? true },
+        { ...options, mergeEpithets: options?.mergeEpithets ?? true, preserveUserPreferences: options?.preserveUserPreferences ?? false },
     )
 }
 
@@ -244,7 +257,7 @@ export const enableParentFarmingCharacterBundle = (settings: Settings, bundleKey
                 parentFarmingGoalPresetLabel: goalPreset.label,
             },
         },
-        { mergeEpithets: false },
+        { mergeEpithets: false, preserveUserPreferences: false },
     )
 }
 

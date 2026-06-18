@@ -53,17 +53,21 @@ const setsEqual = (left: string[], right: string[]): boolean => {
     return left.every((value) => rightSet.has(value))
 }
 
+/** Preset expectations without restoring user-edited toggles (for drift detection). */
+const resolveParentFarmingPresetExpectations = (settings: Settings): Settings =>
+    resolveParentFarmingSettings(settings, { preserveUserPreferences: false })
+
 /** Whether spark selection strategy differs from what the resolver would apply. */
 export const hasParentFarmingSparkStrategyDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     return settings.racing.sparkSelectionStrategy !== resolved.racing.sparkSelectionStrategy
 }
 
 /** Whether forced epithets differ from what the resolver would apply. */
 export const hasParentFarmingForcedEpithetDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     const current = parseStringList(settings.racing.smartRaceSolverForcedEpithets)
     const expected = parseStringList(resolved.racing.smartRaceSolverForcedEpithets)
     return !setsEqual(current, expected)
@@ -72,7 +76,7 @@ export const hasParentFarmingForcedEpithetDrift = (settings: Settings): boolean 
 /** Whether parent-farming training fields differ from what the resolver would apply. */
 export const hasParentFarmingTrainingDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     for (const key of TRAINING_DRIFT_KEYS) {
         const current = settings.training[key]
         const expected = resolved.training[key]
@@ -99,7 +103,7 @@ export const hasParentFarmingSupportBorrowDrift = (settings: Settings): boolean 
 /** Whether solver fan weight / minimum fan target differ from the resolved parent-farming preset. */
 export const hasParentFarmingSolverWeightDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     try {
         const current = JSON.parse(settings.racing.smartRaceSolverWeights || "{}") as Record<string, number>
         const expected = JSON.parse(resolved.racing.smartRaceSolverWeights || "{}") as Record<string, number>
@@ -112,7 +116,7 @@ export const hasParentFarmingSolverWeightDrift = (settings: Settings): boolean =
 /** Whether target epithet list differs from the resolved parent-farming preset. */
 export const hasParentFarmingTargetEpithetDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     const current = parseStringList(settings.racing.smartRaceSolverTargetEpithets)
     const expected = parseStringList(resolved.racing.smartRaceSolverTargetEpithets)
     return !arraysEqual(current, expected)
@@ -121,7 +125,7 @@ export const hasParentFarmingTargetEpithetDrift = (settings: Settings): boolean 
 /** Whether forced epithet list differs from resolved preset (beyond the existing forced drift check scope). */
 export const hasParentFarmingTargetWeightDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     try {
         const current = JSON.parse(settings.racing.smartRaceSolverWeights || "{}") as Record<string, number>
         const expected = JSON.parse(resolved.racing.smartRaceSolverWeights || "{}") as Record<string, number>
@@ -142,14 +146,14 @@ const tierMapsEqual = (left: Record<string, number>, right: Record<string, numbe
 /** Whether epithet tier multipliers differ from the resolved preset. */
 export const hasParentFarmingEpithetTierDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     return !tierMapsEqual(buildEpithetTiersFromRacing(settings.racing), buildEpithetTiersFromRacing(resolved.racing))
 }
 
 /** Whether legacy parent strategy differs from the resolved preset. */
 export const hasParentFarmingLegacyStrategyDrift = (settings: Settings): boolean => {
     if (!settings.racing.enableParentFarmingMode) return false
-    const resolved = resolveParentFarmingSettings(settings)
+    const resolved = resolveParentFarmingPresetExpectations(settings)
     return settings.racing.legacyParentSelectionStrategy !== resolved.racing.legacyParentSelectionStrategy
 }
 

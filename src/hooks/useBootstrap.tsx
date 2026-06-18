@@ -21,7 +21,7 @@ export const useBootstrap = () => {
     const mlc = useContext(MessageLogDispatchContext) as MessageLogDispatchProps
 
     // Hook for managing settings persistence.
-    const { saveSettingsImmediate, loadSettings } = useSettings()
+    const { flushPendingSave, saveSettingsImmediate, loadSettings } = useSettings()
 
     useEffect(() => {
         // Listen for messages from the Android automation service.
@@ -244,17 +244,18 @@ export const useBootstrap = () => {
                 logWithTimestamp(`[Bootstrap] App state changed to ${nextAppState}, saving settings...`)
                 if (!isSavingRef.current) {
                     isSavingRef.current = true
-                    // Do an immediate save to bypass debouncing.
-                    saveSettingsImmediate().finally(() => {
-                        isSavingRef.current = false
-                    })
+                    void flushPendingSave()
+                        .then(() => saveSettingsImmediate())
+                        .finally(() => {
+                            isSavingRef.current = false
+                        })
                 }
             }
         }
 
         const subscription = AppState.addEventListener("change", handleAppStateChange)
         return () => subscription?.remove()
-    }, [saveSettingsImmediate])
+    }, [flushPendingSave, saveSettingsImmediate])
 
     // Update ready status whenever settings change or app becomes ready.
     useEffect(() => {
