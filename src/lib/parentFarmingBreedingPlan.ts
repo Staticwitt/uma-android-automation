@@ -39,6 +39,15 @@ export const parseParentFarmingBreedingPlan = (json: string | undefined): Parent
 
 export const serializeParentFarmingBreedingPlan = (plan: ParentFarmingBreedingPlan): string => JSON.stringify(plan)
 
+/** Parses comma-separated factor skill input without dropping a trailing comma mid-edit. */
+export const parseTargetFactorSkillsInput = (text: string): string[] =>
+    text
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean)
+
+export const formatTargetFactorSkillsInput = (skills: string[]): string => skills.join(", ")
+
 /** Converts breeding generations into goal-queue items for Kotlin multi-run cycling. */
 export const breedingPlanToGoalQueue = (plan: ParentFarmingBreedingPlan): ParentFarmingGoalQueueItem[] => {
     const items: ParentFarmingGoalQueueItem[] = []

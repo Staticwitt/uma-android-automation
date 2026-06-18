@@ -1,6 +1,6 @@
 import type { Settings } from "../../context/BotStateContext"
 import { applyParentFarmingScenarioSync, resolveParentFarmingScenario } from "../parentFarmingScenarioSync"
-import { breedingPlanToGoalQueue, defaultBreedingPlan, parseParentFarmingBreedingPlan, serializeParentFarmingBreedingPlan } from "../parentFarmingBreedingPlan"
+import { breedingPlanToGoalQueue, defaultBreedingPlan, parseParentFarmingBreedingPlan, parseTargetFactorSkillsInput, serializeParentFarmingBreedingPlan } from "../parentFarmingBreedingPlan"
 import { buildParentFarmingRecommendations } from "../parentFarmingRecommendations"
 
 const baseSettings = (): Settings =>
@@ -35,6 +35,12 @@ describe("parentFarmingBreedingPlan", () => {
         const plan = defaultBreedingPlan()
         const json = serializeParentFarmingBreedingPlan(plan)
         expect(parseParentFarmingBreedingPlan(json).generations).toHaveLength(2)
+    })
+
+    it("parses comma-separated factor skill input on commit", () => {
+        expect(parseTargetFactorSkillsInput("Stamina, Power, Mile")).toEqual(["Stamina", "Power", "Mile"])
+        expect(parseTargetFactorSkillsInput("Corner Recovery ○")).toEqual(["Corner Recovery ○"])
+        expect(parseTargetFactorSkillsInput("Stamina, ")).toEqual(["Stamina"])
     })
 })
 
