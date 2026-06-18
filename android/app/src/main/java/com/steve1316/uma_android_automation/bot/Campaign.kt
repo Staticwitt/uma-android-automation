@@ -2184,9 +2184,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
-            if (ParentFarmingColdStart.tryAdvance(game, this)) {
-                return null
-            }
+            ParentFarmingGenerationFarm.tryGate(game, this)
 
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null

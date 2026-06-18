@@ -32,7 +32,6 @@ export const PARENT_FARMING_USER_PREFERENCE_RACING_KEYS: ReadonlyArray<keyof Set
     "enableParentFarmingAutoApplyOwnedDeck",
     "enableParentFarmingLiveMessageLog",
     "enableParentFarmingAutoFeasibilityPreview",
-    "enableParentFarmingColdStart",
     "enableParentFarmingGameDataFactorOcr",
     "enableParentFarmingHarvestReport",
     "enableParentFarmingTrainingOptimizer",

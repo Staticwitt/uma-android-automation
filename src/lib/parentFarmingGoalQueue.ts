@@ -30,6 +30,12 @@ export interface ParentFarmingGoalQueueResolvedPatch {
     supportBorrow: string
     preferredDistanceOverride: string
     enablePrioritizeSkillHints: boolean
+    /** JSON array of factor skill names for harvest OCR at career end. */
+    targetFactorSkills: string
+    /** When true, legacy parent slot 1 was set from the previous generation's trainee. */
+    usePreviousAsLegacy: boolean
+    /** JSON `[parentOne, parentTwo]` legacy OCR pair for career selection. */
+    legacyParentPreferredPair: string
 }
 
 export const parseParentFarmingGoalQueue = (json: string | undefined): ParentFarmingGoalQueueItem[] => {
@@ -93,6 +99,9 @@ const patchFromSettings = (settings: Settings, label: string): ParentFarmingGoal
     supportBorrow: settings.racing.supportBorrowPreferredCards || "[]",
     preferredDistanceOverride: settings.training.preferredDistanceOverride || "Default",
     enablePrioritizeSkillHints: settings.training.enablePrioritizeSkillHints ?? false,
+    targetFactorSkills: settings.racing.parentFarmingTargetFactorSkills || "[]",
+    usePreviousAsLegacy: false,
+    legacyParentPreferredPair: settings.racing.legacyParentPreferredPair || "[]",
 })
 
 /** Resolves each queue item into a Kotlin-readable patch list. */
@@ -107,6 +116,18 @@ export const buildParentFarmingGoalQueueResolved = (settings: Settings, items: P
             item.key
         return patchFromSettings(resolved, label)
     })
+
+/** Builds a goal-queue patch from fully resolved settings (breeding plan auto-advance). */
+export const patchFromSettingsForBreeding = (
+    settings: Settings,
+    label: string,
+    breeding: Pick<ParentFarmingGoalQueueResolvedPatch, "targetFactorSkills" | "usePreviousAsLegacy">,
+): ParentFarmingGoalQueueResolvedPatch => ({
+    ...patchFromSettings(settings, label),
+    targetFactorSkills: breeding.targetFactorSkills,
+    usePreviousAsLegacy: breeding.usePreviousAsLegacy,
+    legacyParentPreferredPair: settings.racing.legacyParentPreferredPair || "[]",
+})
 
 export const serializeParentFarmingGoalQueueResolved = (patches: ParentFarmingGoalQueueResolvedPatch[]): string => JSON.stringify(patches)
 

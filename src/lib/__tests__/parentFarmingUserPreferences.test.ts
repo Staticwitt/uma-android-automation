@@ -12,7 +12,7 @@ const createSettings = (): Settings =>
             parentFarmingBundleKey: "",
             parentFarmingResolverRevision: 0,
             smartRaceSolverCharacterPreset: "Special Week",
-            enableParentFarmingColdStart: true,
+            enableParentFarmingBreedingPlan: true,
             enableAutoBorrowSupportCard: false,
             enableParentFarmingMultiRun: true,
             parentFarmingMultiRunCount: 5,
@@ -33,7 +33,7 @@ describe("parentFarmingUserPreferences", () => {
         const seed = createSettings().racing
         const resolved = {
             ...seed,
-            enableParentFarmingColdStart: false,
+            enableParentFarmingBreedingPlan: false,
             enableAutoBorrowSupportCard: true,
             enableParentFarmingMultiRun: false,
             parentFarmingMultiRunCount: 1,
@@ -41,7 +41,7 @@ describe("parentFarmingUserPreferences", () => {
         }
 
         const merged = preserveParentFarmingUserRacing(seed, resolved)
-        expect(merged.enableParentFarmingColdStart).toBe(true)
+        expect(merged.enableParentFarmingBreedingPlan).toBe(true)
         expect(merged.enableAutoBorrowSupportCard).toBe(false)
         expect(merged.enableParentFarmingMultiRun).toBe(true)
         expect(merged.parentFarmingMultiRunCount).toBe(5)
@@ -51,7 +51,7 @@ describe("parentFarmingUserPreferences", () => {
     it("resolveParentFarmingSettings preserves user toggles by default on refresh", () => {
         const settings = createSettings()
         const result = resolveParentFarmingSettings(settings)
-        expect(result.racing.enableParentFarmingColdStart).toBe(true)
+        expect(result.racing.enableParentFarmingBreedingPlan).toBe(true)
         expect(result.racing.enableAutoBorrowSupportCard).toBe(false)
         expect(result.racing.enableParentFarmingMultiRun).toBe(true)
         expect(result.racing.parentFarmingMultiRunCount).toBe(5)

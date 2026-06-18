@@ -1,23 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.32</latestVersion>
-    <latestVersionCode>122</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.32</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.32/v5.9.32-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.32/v5.9.32-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.33</latestVersion>
+    <latestVersionCode>123</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.33</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.33/v5.9.33-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.33/v5.9.33-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.32 - Cold start reliability fix
+v5.9.33 - Generation farm replaces cold start
 
-Fixes
+Changes
 ---
-- Team-home Career navigation no longer re-runs during character/scenario phases (fixes infinite Career hub tap loop)
-- Retries Career hub when character pick expected but still on team home
-- Switches to Home tab from Race tab before opening Career
-- Character roster scroll uses single OCR per row (bbox dedupe) and 1.5× OCR scale
-- Cold start reads trainee + scenario from active goal-queue patch when multi-run queue is enabled
-- Idle timeout resets to home navigation after prolonged stall on team home
+- Removed cold start (team-home navigation) entirely
+- New generation farm flow: start on career selection; breeding plan drives multi-run goal queue
+- Bot start auto-enables multi-run and resolves per-generation patches (trainee, scenario, factors, legacy parent)
+- Goal queue patches advance settings between careers without home navigation
+- Legacy parent and harvest OCR read active generation patch at runtime
 
-Includes v5.9.31 support card optimizations and prior parent-farming fixes.
+Includes v5.9.32 reliability fixes and v5.9.31 support card optimizations.
 
     </releaseNotes>
   </update>

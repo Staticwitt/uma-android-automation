@@ -412,9 +412,9 @@ const searchConfig: SearchOption[] = [
         page: "ParentFarmingSettings",
     },
     {
-        id: "enable-parent-farming-cold-start",
-        title: "Cold Start from Home",
-        description: "Auto-pick the bundle character and navigate to career selection from team home.",
+        id: "enable-parent-farming-breeding-plan",
+        title: "Generation Farm",
+        description: "Multi-generation breeding plan with automatic settings advance between careers.",
         page: "ParentFarmingSettings",
     },
     {

@@ -941,7 +941,7 @@ object SmartRaceSolverIntegration {
         SolverState(
             currentTurn = currentTurn,
             scenario = scenario,
-            characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").ifEmpty { null },
+            characterPreset = readRacingString("smartRaceSolverCharacterPreset").ifEmpty { null },
             aptitudes = effectiveAptitudes(),
             racesByTurn = racesByTurn,
             epithets = epithetsForActiveContext(epithets, scenario),
@@ -1024,7 +1024,7 @@ object SmartRaceSolverIntegration {
      * @return Subset of [epithets] usable for the active scenario / preset.
      */
     private fun epithetsForActiveContext(epithets: List<Epithet>, scenario: String): List<Epithet> {
-        val preset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset")
+        val preset = readRacingString("smartRaceSolverCharacterPreset")
         return epithets.filter {
             val scenarioRestrictions = EpithetFilters.scenariosFor(it)
             val scenarioOk =
@@ -1688,7 +1688,7 @@ object SmartRaceSolverIntegration {
 
     private fun buildContributionSolverContext(): ContributionSolverContext =
         ContributionSolverContext(
-            characterPreset = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").ifEmpty { null },
+            characterPreset = readRacingString("smartRaceSolverCharacterPreset").ifEmpty { null },
             aptitudes = effectiveAptitudes(),
             forcedEpithets = readEffectiveForcedEpithets(),
             targetEpithets = readEffectiveTargetEpithets(),

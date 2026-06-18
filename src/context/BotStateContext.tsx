@@ -126,8 +126,6 @@ export interface Settings {
         enableParentFarmingLiveMessageLog: boolean
         /** Auto-run solver feasibility preview when parent setup changes. */
         enableParentFarmingAutoFeasibilityPreview: boolean
-        /** Navigate from team home and pick the bundle character before career selection. */
-        enableParentFarmingColdStart: boolean
         /** Score spark/parent OCR against bundled skills database. */
         enableParentFarmingGameDataFactorOcr: boolean
         /** OCR inherited skills at career end for harvest verdict. */
@@ -400,7 +398,6 @@ export const defaultSettings: Settings = {
         enableParentFarmingAutoApplyOwnedDeck: true,
         enableParentFarmingLiveMessageLog: true,
         enableParentFarmingAutoFeasibilityPreview: true,
-        enableParentFarmingColdStart: true,
         enableParentFarmingGameDataFactorOcr: true,
         enableParentFarmingHarvestReport: true,
         enableParentFarmingTrainingOptimizer: true,

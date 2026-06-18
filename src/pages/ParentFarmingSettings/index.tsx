@@ -152,7 +152,6 @@ const ParentFarmingSettings = () => {
         enableParentFarmingAutoApplyOwnedDeck,
         enableParentFarmingLiveMessageLog,
         enableParentFarmingAutoFeasibilityPreview,
-        enableParentFarmingColdStart,
         enableParentFarmingGameDataFactorOcr,
         enableParentFarmingHarvestReport,
         enableParentFarmingTrainingOptimizer,
@@ -688,17 +687,6 @@ const ParentFarmingSettings = () => {
                                     enabled={enableParentFarmingAutoFeasibilityPreview}
                                 />
                                 <SettingRow
-                                    id="enable-parent-farming-cold-start"
-                                    title="Cold start from home"
-                                    description="Navigate team home, pick the bundle character, and reach career selection before equip/borrow/parent automation."
-                                    right={
-                                        <Switch
-                                            checked={enableParentFarmingColdStart}
-                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingColdStart", checked)}
-                                        />
-                                    }
-                                />
-                                <SettingRow
                                     id="enable-parent-farming-game-data-factor-ocr"
                                     title="Game-data factor OCR"
                                     description="Score inheritance sparks and legacy parents against the bundled skills database, not keywords alone."
@@ -979,15 +967,20 @@ const ParentFarmingSettings = () => {
                                     </SearchableItem>
                                 </Section>
 
-                                <Section label="Multi-generation breeding">
+                                <Section label="Generation farm">
                                     <SettingRow
                                         id="enable-parent-farming-breeding-plan"
-                                        title="Breeding plan queue"
-                                        description="Cycle generations as a multi-run goal queue with per-gen target factor skills."
+                                        title="Multi-generation breeding plan"
+                                        description="Chain parent runs toward inherited factor skills. Start the bot on career selection — settings advance automatically between careers."
                                         right={
                                             <Switch
                                                 checked={enableParentFarmingBreedingPlan}
-                                                onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBreedingPlan", checked)}
+                                                onCheckedChange={(checked) => {
+                                                    updateRacingSetting("enableParentFarmingBreedingPlan", checked)
+                                                    if (checked) {
+                                                        updateRacingSetting("enableParentFarmingMultiRun", true)
+                                                    }
+                                                }}
                                             />
                                         }
                                     />
@@ -995,7 +988,7 @@ const ParentFarmingSettings = () => {
                                         <SearchableItem
                                             id="parent-farming-breeding-plan"
                                             title="Breeding generations"
-                                            description="Plan chained parent runs toward specific inherited skills."
+                                            description="Each generation picks a bundle/preset, target factor skills, and optional previous-gen legacy parent."
                                         >
                                             <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
                                                 <ParentFarmingBreedingPlanEditor
