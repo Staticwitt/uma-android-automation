@@ -1,22 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.27</latestVersion>
-    <latestVersionCode>117</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.27</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.27/v5.9.27-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.27/v5.9.27-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.28</latestVersion>
+    <latestVersionCode>118</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.28</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.28/v5.9.28-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.28/v5.9.28-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.27 - Career automation reliability fixes
+v5.9.28 - Settings toggle persistence fix
 
 Fixes
 ---
-- Factor-based legacy parent picks re-scroll to tap the correct row instead of stale coordinates
-- Scroll lists honor caller timeout instead of always using 60 seconds
-- Friend borrow OCR only runs on career selection (avoids false skip on other screens)
-- Scrollbar crop failure no longer falls back to full-frame detection with wrong offsets
-- Owned support equip re-reads each slot after prior picks land
+- Parent farming toggles (cold start, multi-run, auto-equip, etc.) no longer reset on app relaunch
+- Preset re-resolve on load, migration, and bot start preserves user-edited racing preferences
+- Debounced settings are flushed before background save so quick exits still persist toggles
+- Drift detection still compares against preset defaults (not preserved user values)
 
-Includes v5.9.26 career selection loop fix and prior hotfixes.
+Includes v5.9.27 career automation reliability fixes and prior hotfixes.
 
     </releaseNotes>
   </update>

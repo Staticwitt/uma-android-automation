@@ -10,6 +10,8 @@ interface SettingsContextType {
     saveSettings: (newSettings?: any) => Promise<void>
     /** Saves settings immediately without debouncing. */
     saveSettingsImmediate: (newSettings?: any) => Promise<void>
+    /** Flushes any pending debounced save before an immediate persist. */
+    flushPendingSave: () => Promise<void>
     /** Loads settings from persistent storage. */
     loadSettings: (skipInitializationCheck?: boolean) => Promise<void>
     /** Imports settings from a file at the given URI. Returns true on success. */
