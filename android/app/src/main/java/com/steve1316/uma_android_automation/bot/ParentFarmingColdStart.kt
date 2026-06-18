@@ -29,15 +29,28 @@ object ParentFarmingColdStart {
     private const val TEAM_HOME_CAREER_X_FRACTION = 0.84
     private const val TEAM_HOME_CAREER_Y_FRACTION = 0.835
 
+    /** Explicit phases so character pick always precedes scenario pick, even when OCR is weak. */
+    internal enum class Phase {
+        NAVIGATE_HOME,
+        PICK_CHARACTER,
+        PICK_SCENARIO,
+    }
+
     @Volatile private var coldStartComplete = false
+    @Volatile private var phase = Phase.NAVIGATE_HOME
+    @Volatile private var scenarioTapAttempts = 0
 
     fun resetSession() {
         coldStartComplete = false
+        phase = Phase.NAVIGATE_HOME
+        scenarioTapAttempts = 0
     }
 
     fun isEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
             SettingsHelper.getBooleanSetting("racing", "enableParentFarmingColdStart", true)
+
+    internal fun currentPhase(): Phase = phase
 
     /**
      * @return True when navigation or selection advanced this iteration (caller should return early).
@@ -45,43 +58,50 @@ object ParentFarmingColdStart {
     fun tryAdvance(game: Game, campaign: Campaign): Boolean {
         if (!isEnabled() || coldStartComplete) return false
         if (campaign.checkMainScreen()) {
-            coldStartComplete = true
+            markComplete("Already in career — skipping cold start.")
             return false
         }
         if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
-            coldStartComplete = true
-            MessageLog.i(TAG, "Reached career selection — cold start complete.")
+            markComplete("Reached career selection — cold start complete.")
             return false
         }
 
         val character = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").trim()
         if (character.isEmpty()) {
             MessageLog.w(TAG, "No character preset configured; skipping cold start.")
-            coldStartComplete = true
+            markComplete(null)
             return false
         }
 
         if (ButtonStartCareer.check(game.imageUtils) || ButtonStartCareerOffset.check(game.imageUtils)) {
-            coldStartComplete = true
+            markComplete("Start Career visible — cold start complete.")
             return false
         }
 
         when {
             isOnTeamHomeHub(game, campaign) -> {
-                if (tryOpenCareerFromTeamHome(game)) return true
+                phase = Phase.NAVIGATE_HOME
+                if (tryOpenCareerFromTeamHome(game)) {
+                    phase = Phase.PICK_CHARACTER
+                    return true
+                }
             }
             needsHomeTab(game) -> {
+                phase = Phase.NAVIGATE_HOME
                 if (ButtonMenuBarHomeUnselected.click(game.imageUtils)) {
                     MessageLog.i(TAG, "Switching to Home tab before opening Career.")
                     game.wait(0.8)
                     return true
                 }
             }
-            isLikelyScenarioSelectScreen(game) -> {
+            shouldPickScenario(game) -> {
                 if (trySelectScenario(game)) return true
             }
-            else -> {
+            shouldPickCharacter(game, campaign) -> {
                 if (selectCharacterFromList(game, character)) {
+                    phase = Phase.PICK_SCENARIO
+                    scenarioTapAttempts = 0
+                    MessageLog.i(TAG, "Trainee selected — advancing to scenario picker.")
                     game.wait(1.0)
                     return true
                 }
@@ -95,6 +115,10 @@ object ParentFarmingColdStart {
             }
             ButtonNext.click(game.imageUtils) -> {
                 game.wait(0.8)
+                if (phase == Phase.PICK_CHARACTER) {
+                    phase = Phase.PICK_SCENARIO
+                    scenarioTapAttempts = 0
+                }
                 return true
             }
             ButtonOk.click(game.imageUtils) -> {
@@ -109,6 +133,28 @@ object ParentFarmingColdStart {
 
         return false
     }
+
+    private fun markComplete(reason: String?) {
+        coldStartComplete = true
+        phase = Phase.NAVIGATE_HOME
+        scenarioTapAttempts = 0
+        if (reason != null) {
+            MessageLog.i(TAG, reason)
+        }
+    }
+
+    private fun shouldPickCharacter(game: Game, campaign: Campaign): Boolean {
+        if (phase == Phase.PICK_SCENARIO) return false
+        if (isOnTeamHomeHub(game, campaign) || needsHomeTab(game)) return false
+        if (isLikelyScenarioSelectScreen(game)) return false
+        if (phase == Phase.NAVIGATE_HOME) {
+            phase = Phase.PICK_CHARACTER
+        }
+        return phase == Phase.PICK_CHARACTER
+    }
+
+    private fun shouldPickScenario(game: Game): Boolean =
+        phase == Phase.PICK_SCENARIO || isLikelyScenarioSelectScreen(game)
 
     /** Tracen team hub (not in-career training, not career selection). */
     internal fun isOnTeamHomeHub(game: Game, campaign: Campaign): Boolean {
@@ -125,9 +171,19 @@ object ParentFarmingColdStart {
 
     internal fun isLikelyScenarioSelectScreen(game: Game): Boolean = likelyScenarioSelectFromOcr(readScenarioPickerOcr(game))
 
-    internal fun likelyScenarioSelectFromOcr(text: String): Boolean =
-        listOf("trackblazer", "ura finale", "unity cup", "aoharu", "make a new start")
-            .count { keyword -> text.contains(keyword) } >= 2
+    internal fun likelyScenarioSelectFromOcr(text: String): Boolean {
+        val keywords =
+            listOf(
+                "trackblazer",
+                "ura finale",
+                "unity cup",
+                "aoharu",
+                "make a new start",
+                "select scenario",
+                "choose scenario",
+            )
+        return keywords.count { keyword -> text.contains(keyword) } >= 1
+    }
 
     internal fun scenarioKeywords(scenario: String): List<String> =
         when (scenario) {
@@ -154,16 +210,26 @@ object ParentFarmingColdStart {
     }
 
     private fun trySelectScenario(game: Game): Boolean {
+        if (phase != Phase.PICK_SCENARIO) {
+            phase = Phase.PICK_SCENARIO
+            scenarioTapAttempts = 0
+        }
+        if (scenarioTapAttempts >= 3) {
+            MessageLog.w(TAG, "Scenario picker taps exhausted; waiting for career selection or dialogs.")
+            return false
+        }
+
         val scenario = SettingsHelper.getStringSetting("general", "scenario", "Trackblazer")
         val ocrText = readScenarioPickerOcr(game)
         val keywords = scenarioKeywords(scenario)
         if (keywords.none { ocrText.contains(it) }) {
-            MessageLog.w(TAG, "Scenario picker visible but \"$scenario\" not detected in OCR; using default card position.")
+            MessageLog.w(TAG, "Scenario picker step but \"$scenario\" not detected in OCR; using card position.")
         }
         val (xFraction, yFraction) = scenarioTapFraction(scenario)
         val x = SharedData.displayWidth * xFraction
         val y = SharedData.displayHeight * yFraction
-        MessageLog.i(TAG, "Selecting scenario \"$scenario\" at (${x.toInt()}, ${y.toInt()}).")
+        scenarioTapAttempts++
+        MessageLog.i(TAG, "Selecting scenario \"$scenario\" at (${x.toInt()}, ${y.toInt()}) (attempt $scenarioTapAttempts).")
         game.tap(x, y)
         game.waitForLoading()
         game.wait(1.0)
