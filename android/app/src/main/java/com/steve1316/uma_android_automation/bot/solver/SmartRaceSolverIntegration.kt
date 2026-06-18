@@ -7,6 +7,7 @@ import com.steve1316.uma_android_automation.bot.DiscordSolverNotifier
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.ParentFarmingAdaptiveMultiRun
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
+import com.steve1316.uma_android_automation.bot.ParentFarmingGoalQueue
 import com.steve1316.uma_android_automation.bot.SupportCardSelection
 import com.steve1316.uma_android_automation.bot.RunRaceStats
 import com.steve1316.uma_android_automation.bot.SparkPickHistory
