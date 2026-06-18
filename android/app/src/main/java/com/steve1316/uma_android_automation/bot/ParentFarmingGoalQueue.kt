@@ -51,6 +51,13 @@ object ParentFarmingGoalQueue {
         }
     }
 
+    /** Read-only lookup of the patch for an upcoming run, without mutating the active patch. */
+    fun peekPatchForRunIndex(runIndex: Int): ResolvedPatch? {
+        if (!isEnabled() || patches.isEmpty()) return null
+        val index = runIndex.coerceIn(0, patches.lastIndex)
+        return patches[index]
+    }
+
     fun applyForRunIndex(runIndex: Int) {
         if (!isEnabled() || patches.isEmpty()) {
             activePatch = null

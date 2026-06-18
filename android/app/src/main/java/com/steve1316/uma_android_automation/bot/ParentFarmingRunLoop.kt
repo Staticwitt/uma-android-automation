@@ -197,12 +197,26 @@ object ParentFarmingRunLoop {
             game.wait(1.0)
         }
 
-        val deadline = System.currentTimeMillis() + 90_000
+        val nextPatch = ParentFarmingGoalQueue.peekPatchForRunIndex(sessionRunsCompleted)
+        val autoSelect = ParentFarmingGenerationFarm.isEnabled() && nextPatch?.characterPreset?.isNotEmpty() == true
+        val targetScenario =
+            nextPatch?.scenario?.ifEmpty { SettingsHelper.getStringSetting("general", "scenario", "Trackblazer") } ?: ""
+        if (autoSelect) {
+            ParentFarmingGenerationFarm.resetNavigation()
+            MessageLog.i(TAG, "Generation farm: auto-navigating to next career (trainee=${nextPatch!!.characterPreset}, scenario=$targetScenario).")
+        }
+
+        val deadline = System.currentTimeMillis() + if (autoSelect) 180_000 else 90_000
         while (System.currentTimeMillis() < deadline) {
             campaign.tryHandleAllDialogs(timeoutMs = 2_000)
             if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
                 game.wait(1.0)
                 return true
+            }
+            if (autoSelect &&
+                ParentFarmingGenerationFarm.tryAdvanceNavigation(game, campaign, nextPatch!!.characterPreset, targetScenario)
+            ) {
+                continue
             }
             when {
                 ButtonToHome.click(game.imageUtils) -> game.wait(1.0)
