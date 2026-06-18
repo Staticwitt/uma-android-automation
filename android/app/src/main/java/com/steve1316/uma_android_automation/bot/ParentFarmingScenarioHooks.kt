@@ -23,14 +23,14 @@ object ParentFarmingScenarioHooks {
     private fun onUraTurnStart(campaign: Campaign, date: GameDate) {
         if (date.day <= 12) return
         val preset = SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetKey")
-        if (preset == "ura-finals" && !campaign.racing.enableForceRacing) {
+        if (preset == "ura-finals" && !SettingsHelper.getBooleanSetting("racing", "enableForceRacing", false)) {
             MessageLog.v(TAG, "URA parent route: solver gate active (finals champion track).")
         }
     }
 
     private fun onUnityTurnStart(campaign: Campaign, date: GameDate) {
         val preset = SettingsHelper.getStringSetting("racing", "parentFarmingGoalPresetKey")
-        if (preset == "unity-aoharu" && campaign.training.enablePrioritizeSkillHints) {
+        if (preset == "unity-aoharu" && SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)) {
             MessageLog.v(TAG, "Unity parent route: skill-hint training bias active.")
         }
     }

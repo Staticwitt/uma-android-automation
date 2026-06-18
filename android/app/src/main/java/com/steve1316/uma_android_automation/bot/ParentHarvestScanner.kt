@@ -2,8 +2,9 @@ package com.steve1316.uma_android_automation.bot
 
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
-import com.steve1316.uma_android_automation.components.ButtonSkillListFullStats
 import com.steve1316.uma_android_automation.components.ButtonClose
+import com.steve1316.uma_android_automation.components.ButtonSkillListFullStats
+import com.steve1316.uma_android_automation.components.ButtonSkillUp
 import com.steve1316.uma_android_automation.utils.ScrollList
 import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import com.steve1316.uma_android_automation.utils.ScrollListEntryDetectionConfig
@@ -36,6 +37,7 @@ object ParentHarvestScanner {
             game.wait(1.0)
             ScrollList.processWithFallback(
                 game,
+                fallbackComponent = ButtonSkillUp,
                 entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
                 keyExtractor = { entry -> ocrEntry(game, entry) },
                 onEntry = { _, entry ->
