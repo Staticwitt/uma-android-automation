@@ -6,6 +6,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.ButtonBorrowSupportCard
 import com.steve1316.uma_android_automation.components.ButtonOk
+import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 /**
  * Auto-borrows a friend support card at career selection using OCR + preset priority lists from React Native settings.
@@ -29,6 +30,13 @@ object SupportCardBorrower {
     private const val FRIEND_SLOT_OCR_HEIGHT_FRACTION = 0.08
 
     @Volatile private var borrowCompletedThisRun = false
+
+    internal data class BorrowSlotMatch(
+        val slot: Int,
+        val name: String,
+        val score: Double,
+        val ocrText: String,
+    )
 
     fun resetForNewRun() {
         borrowCompletedThisRun = false
@@ -66,7 +74,7 @@ object SupportCardBorrower {
         }
         if (ButtonBorrowSupportCard.click(game.imageUtils)) {
             MessageLog.i(TAG, "Opened Borrow Card dialog.")
-            game.wait(1.0)
+            game.wait(0.8)
             return true
         }
         MessageLog.w(TAG, "Borrow support card button found but click failed.")
@@ -74,7 +82,7 @@ object SupportCardBorrower {
     }
 
     /**
-     * OCRs visible borrow slots and taps the best match from preferred names.
+     * OCRs visible borrow slots and taps the first preferred-name match in list order.
      *
      * @return True when a card was selected.
      */
@@ -85,59 +93,55 @@ object SupportCardBorrower {
             return false
         }
 
-        val imageUtils = game.imageUtils
-        var bestSlot = -1
-        var bestScore = 0.0
-        var bestName = ""
-        var bestText = ""
+        val slotOcrTexts = ocrBorrowSlotTexts(game.imageUtils, sourceBitmap)
+        val match = pickPriorityBorrowSlot(slotOcrTexts, preferredNames)
 
-        for (index in CARD_SLOT_X_FRACTIONS.indices) {
-            val centerX = SharedData.displayWidth * CARD_SLOT_X_FRACTIONS[index]
-            val centerY = SharedData.displayHeight * CARD_SLOT_Y_FRACTION
-            val ocrText =
-                SupportCardSelection.ocrRegion(
-                    imageUtils,
-                    sourceBitmap,
-                    centerX,
-                    centerY,
-                    OCR_WIDTH_FRACTION,
-                    OCR_HEIGHT_FRACTION,
-                    "support_borrow_slot_$index",
-                )
-            for (name in preferredNames) {
-                if (SupportCardSelection.isTraineeCharacter(name)) continue
-                val score = SupportCardSelection.matchScore(ocrText, name)
-                if (score > bestScore) {
-                    bestScore = score
-                    bestSlot = index
-                    bestName = name
-                    bestText = ocrText
-                }
-            }
-        }
-
-        if (bestSlot < 0 || bestScore < SupportCardSelection.MIN_NAME_MATCH_SCORE) {
+        if (match == null) {
+            val bestScore =
+                preferredNames.maxOfOrNull { name ->
+                    slotOcrTexts.maxOfOrNull { text -> SupportCardSelection.matchScore(text, name) } ?: 0.0
+                } ?: 0.0
             MessageLog.w(
                 TAG,
-                "No borrow match above threshold (best=$bestScore for \"$bestText\"). Preferred: ${preferredNames.joinToString()}",
+                "No borrow match above threshold (best=$bestScore). Preferred: ${preferredNames.joinToString()}",
             )
             if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowIntelligence", true)) {
-                for (name in preferredNames) {
-                    if (SupportCardSelection.findAndTapCardInList(game, name, TAG)) {
-                        return true
-                    }
+                game.wait(0.4)
+                if (SupportCardSelection.findAndTapPreferredCardInList(game, preferredNames, TAG) != null) {
+                    return true
                 }
                 SupportCardSelection.dismissListPicker(game)
             }
             return false
         }
 
-        val tapX = SharedData.displayWidth * CARD_SLOT_X_FRACTIONS[bestSlot]
+        val tapX = SharedData.displayWidth * CARD_SLOT_X_FRACTIONS[match.slot]
         val tapY = SharedData.displayHeight * (CARD_SLOT_Y_FRACTION + 0.08)
-        MessageLog.i(TAG, "Selecting support \"$bestName\" (slot $bestSlot, score=$bestScore, ocr=\"$bestText\").")
+        MessageLog.i(
+            TAG,
+            "Selecting support \"${match.name}\" (slot ${match.slot}, score=${match.score}, ocr=\"${match.ocrText}\").",
+        )
         game.tap(tapX, tapY, taps = 1)
-        game.wait(0.8)
+        game.wait(0.6)
         return true
+    }
+
+    /** Walks preferred names in order and returns the first slot that meets the match threshold. */
+    internal fun pickPriorityBorrowSlot(
+        slotOcrTexts: List<String>,
+        preferredNames: List<String>,
+    ): BorrowSlotMatch? {
+        for (name in preferredNames) {
+            if (SupportCardSelection.isTraineeCharacter(name)) continue
+            for (index in slotOcrTexts.indices) {
+                val ocrText = slotOcrTexts[index]
+                val score = SupportCardSelection.matchScore(ocrText, name)
+                if (score >= SupportCardSelection.MIN_NAME_MATCH_SCORE) {
+                    return BorrowSlotMatch(index, name, score, ocrText)
+                }
+            }
+        }
+        return null
     }
 
     fun confirmBorrow(game: Game): Boolean {
@@ -150,6 +154,21 @@ object SupportCardBorrower {
         MessageLog.w(TAG, "Failed to confirm support card borrow.")
         return false
     }
+
+    internal fun ocrBorrowSlotTexts(imageUtils: CustomImageUtils, sourceBitmap: Bitmap): List<String> =
+        CARD_SLOT_X_FRACTIONS.indices.map { index ->
+            val centerX = SharedData.displayWidth * CARD_SLOT_X_FRACTIONS[index]
+            val centerY = SharedData.displayHeight * CARD_SLOT_Y_FRACTION
+            SupportCardSelection.ocrRegion(
+                imageUtils,
+                sourceBitmap,
+                centerX,
+                centerY,
+                OCR_WIDTH_FRACTION,
+                OCR_HEIGHT_FRACTION,
+                "support_borrow_slot_$index",
+            )
+        }
 
     private fun preferredNames(): List<String> =
         rotatedPreferredNames(
@@ -184,8 +203,24 @@ object SupportCardBorrower {
                 FRIEND_SLOT_OCR_HEIGHT_FRACTION,
                 "friend_support_slot",
             )
-        return preferredNames.any { name ->
-            SupportCardSelection.matchScore(ocrText, name) >= SupportCardSelection.MIN_NAME_MATCH_SCORE
-        }
+        return isFriendSupportSatisfiedFromOcr(ocrText, preferredNames, borrowRotationEnabled())
     }
+
+    /** When rotation is off, only the top preferred card counts as satisfied (avoids false skips). */
+    internal fun isFriendSupportSatisfiedFromOcr(
+        ocrText: String,
+        preferredNames: List<String>,
+        borrowRotationEnabled: Boolean,
+    ): Boolean {
+        val candidates =
+            if (borrowRotationEnabled) {
+                preferredNames
+            } else {
+                preferredNames.take(1)
+            }
+        return SupportCardSelection.firstMatchingPreferredName(ocrText, candidates) != null
+    }
+
+    private fun borrowRotationEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowRotation", false)
 }

@@ -18,6 +18,14 @@ import org.json.JSONArray
 internal object SupportCardSelection {
     const val MIN_NAME_MATCH_SCORE = 0.82
 
+    /** Slot labels are small — keep 2× OCR for accuracy. */
+    const val SLOT_OCR_SCALE = 2.0
+
+    /** List rows are larger crops — 1.5× is enough and faster while scrolling. */
+    const val LIST_OCR_SCALE = 1.5
+
+    private const val POST_TAP_WAIT_SEC = 0.6
+
     private val similarity = StringSimilarityServiceImpl(JaroWinklerStrategy())
 
     fun readStringList(json: String): List<String> {
@@ -66,6 +74,21 @@ internal object SupportCardSelection {
         }
     }
 
+    internal fun matchesName(ocrText: String, name: String): Boolean = matchScore(ocrText, name) >= MIN_NAME_MATCH_SCORE
+
+    /** First preferred name that meets [minScore], preserving list priority order. */
+    internal fun firstMatchingPreferredName(
+        ocrText: String,
+        preferredNames: List<String>,
+        minScore: Double = MIN_NAME_MATCH_SCORE,
+    ): String? {
+        for (name in preferredNames) {
+            if (isTraineeCharacter(name)) continue
+            if (matchScore(ocrText, name) >= minScore) return name
+        }
+        return null
+    }
+
     fun ocrRegion(
         imageUtils: CustomImageUtils,
         sourceBitmap: Bitmap,
@@ -74,6 +97,7 @@ internal object SupportCardSelection {
         widthFraction: Double,
         heightFraction: Double,
         debugName: String,
+        scale: Double = SLOT_OCR_SCALE,
     ): String =
         imageUtils.performOCROnRegion(
             sourceBitmap,
@@ -83,56 +107,64 @@ internal object SupportCardSelection {
             (SharedData.displayHeight * heightFraction).toInt(),
             useThreshold = false,
             useGrayscale = true,
-            scale = 2.0,
+            scale = scale,
             ocrEngine = "tesseract",
             debugName = debugName,
         )
 
     /** Scrolls a support picker list and taps the first row matching [cardName]. */
-    fun findAndTapCardInList(game: Game, cardName: String, logTag: String): Boolean {
-        if (isTraineeCharacter(cardName)) {
-            com.steve1316.automation_library.utils.MessageLog.w(
-                logTag,
-                "Refusing to select trainee \"$cardName\" as support.",
-            )
-            return false
-        }
-        var tapped = false
+    fun findAndTapCardInList(game: Game, cardName: String, logTag: String): Boolean =
+        findAndTapPreferredCardInList(game, listOf(cardName), logTag) != null
+
+    /**
+     * Scrolls the picker once and taps the first row matching any name in priority order.
+     *
+     * @return The matched card name, or null when no row met the threshold.
+     */
+    fun findAndTapPreferredCardInList(game: Game, cardNames: List<String>, logTag: String): String? {
+        val preferredNames = filterTraineeFromSupportNames(cardNames)
+        if (preferredNames.isEmpty()) return null
+
+        var matchedName: String? = null
         ScrollList.processWithFallback(
             game,
             fallbackComponent = LabelEventProgress,
             entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
-            keyExtractor = { entry -> ocrEntry(game.imageUtils, entry) },
+            keyExtractor = { entry -> entryDedupeKey(entry) },
             onEntry = { _, entry ->
                 val text = ocrEntry(game.imageUtils, entry)
-                val score = matchScore(text, cardName)
-                if (score >= MIN_NAME_MATCH_SCORE) {
+                val name = firstMatchingPreferredName(text, preferredNames)
+                if (name != null) {
+                    val score = matchScore(text, name)
                     com.steve1316.automation_library.utils.MessageLog.i(
                         logTag,
-                        "Tapping support \"$cardName\" (score=$score, ocr=\"$text\").",
+                        "Tapping support \"$name\" (score=$score, ocr=\"$text\").",
                     )
                     game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
-                    game.wait(0.8)
-                    tapped = true
+                    game.wait(POST_TAP_WAIT_SEC)
+                    matchedName = name
                     true
                 } else {
                     false
                 }
             },
         )
-        if (!tapped) {
+        if (matchedName == null) {
             dismissListPicker(game)
         }
-        return tapped
+        return matchedName
     }
 
     /** Closes a scrollable card/parent picker so career-selection automation can continue. */
     fun dismissListPicker(game: Game) {
         when {
-            ButtonBackGreen.click(game.imageUtils) -> game.wait(0.5)
-            ButtonBack.click(game.imageUtils) -> game.wait(0.5)
+            ButtonBackGreen.click(game.imageUtils) -> game.wait(0.4)
+            ButtonBack.click(game.imageUtils) -> game.wait(0.4)
         }
     }
+
+    internal fun entryDedupeKey(entry: ScrollListEntry): String =
+        "${entry.bbox.x}:${entry.bbox.y}:${entry.bbox.w}:${entry.bbox.h}"
 
     private fun ocrEntry(imageUtils: CustomImageUtils, entry: ScrollListEntry): String =
         imageUtils.performOCROnRegion(
@@ -143,7 +175,7 @@ internal object SupportCardSelection {
             entry.bitmap.height,
             useThreshold = false,
             useGrayscale = true,
-            scale = 2.0,
+            scale = LIST_OCR_SCALE,
             ocrEngine = "tesseract",
             debugName = "support_card_list_entry",
         ).lowercase()
