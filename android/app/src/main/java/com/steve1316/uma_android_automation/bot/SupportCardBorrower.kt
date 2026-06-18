@@ -50,13 +50,13 @@ object SupportCardBorrower {
             return false
         }
 
+        if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
+
         if (isFriendSupportSatisfied(game, preferredNames)) {
             borrowCompletedThisRun = true
             MessageLog.i(TAG, "Friend support already matches borrow list; skipping borrow dialog.")
             return false
         }
-
-        if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
 
         if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
 

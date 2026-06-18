@@ -836,7 +836,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
 
         // Max time limit for the while loop to scroll through the list.
         val startTime: Long = System.currentTimeMillis()
-        val maxTimeMs: Long = 60000
+        val loopTimeoutMs: Long = maxTimeMs.toLong().coerceAtLeast(250L)
 
         // Track bounding boxes for average entry height calculation.
         val entryBboxes: MutableList<BoundingBox> = mutableListOf()
@@ -853,7 +853,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
         val maxScrollCount = 30
 
         var index = 0
-        while (System.currentTimeMillis() - startTime < maxTimeMs) {
+        while (System.currentTimeMillis() - startTime < loopTimeoutMs) {
             var currentFrameEntries: List<ScrollListEntry> = emptyList()
             var retries = 3
             while (retries > 0) {
@@ -961,7 +961,8 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             } else {
                 // SCROLLBAR CHANGE DETECTION LOGIC
                 // Breaks loop if no change to Y position or no scrollbar detected.
-                val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion(bitmap).second
+                val postScrollBitmap = game.imageUtils.getSourceBitmap()
+                val bboxThumb: BoundingBox? = getListScrollBarBoundingRegion(postScrollBitmap).second
                 if (bboxThumb == null) {
                     MessageLog.d(TAG, "[DEBUG] process:: No scrollbar thumb detected. Exiting loop.")
                     return true

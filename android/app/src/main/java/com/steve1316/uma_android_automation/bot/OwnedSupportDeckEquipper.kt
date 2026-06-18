@@ -67,20 +67,19 @@ object OwnedSupportDeckEquipper {
             "Equipping owned support deck (attempt $equipAttempts/$MAX_EQUIP_ATTEMPTS): ${ownedCards.joinToString(" · ")}",
         )
 
-        var equippedCount = 0
-
         for (index in ownedCards.indices.take(OWNED_SLOT_X_FRACTIONS.size)) {
             val cardName = ownedCards[index]
             if (SupportCardSelection.isTraineeCharacter(cardName)) {
                 MessageLog.w(TAG, "Skipping owned slot $index — \"$cardName\" matches the trainee.")
                 continue
             }
+            val slotBitmap = imageUtils.getSourceBitmap()
             val centerX = SharedData.displayWidth * OWNED_SLOT_X_FRACTIONS[index]
             val centerY = SharedData.displayHeight * OWNED_SLOT_Y_FRACTION
             val ocrText =
                 SupportCardSelection.ocrRegion(
                     imageUtils,
-                    sourceBitmap,
+                    slotBitmap,
                     centerX,
                     centerY,
                     OCR_WIDTH_FRACTION,
@@ -89,23 +88,21 @@ object OwnedSupportDeckEquipper {
                 )
             if (SupportCardSelection.matchScore(ocrText, cardName) >= SupportCardSelection.MIN_NAME_MATCH_SCORE) {
                 MessageLog.i(TAG, "Slot $index already shows \"$cardName\" (ocr=\"$ocrText\").")
-                equippedCount++
                 continue
             }
 
             game.tap(centerX, centerY)
             game.wait(1.0)
-            if (SupportCardSelection.findAndTapCardInList(game, cardName, TAG)) {
-                equippedCount++
-            } else {
+            if (!SupportCardSelection.findAndTapCardInList(game, cardName, TAG)) {
                 MessageLog.w(TAG, "Could not select owned support \"$cardName\" for slot $index.")
             }
         }
 
         val targetCount = ownedCards.size.coerceAtMost(4)
-        MessageLog.i(TAG, "Owned support equip finished ($equippedCount/$targetCount slots).")
+        val satisfiedAfterPass = countSatisfiedSlots(imageUtils, imageUtils.getSourceBitmap(), ownedCards)
+        MessageLog.i(TAG, "Owned support equip finished ($satisfiedAfterPass/$targetCount slots).")
 
-        if (equippedCount >= targetCount) {
+        if (satisfiedAfterPass >= targetCount) {
             equipAttemptedThisRun = true
             return false
         }

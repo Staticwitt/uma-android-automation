@@ -14,8 +14,6 @@ import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.utils.ScrollList
 import com.steve1316.uma_android_automation.utils.ScrollListEntry
 import com.steve1316.uma_android_automation.utils.ScrollListEntryDetectionConfig
-import net.ricecode.similarity.JaroWinklerStrategy
-import net.ricecode.similarity.StringSimilarityServiceImpl
 
 /**
  * Auto-selects the legacy parent pair at career selection via the in-game Auto-Select button,
@@ -38,8 +36,6 @@ object LegacyParentSelector {
     @Volatile private var autoSelectAttempts = 0
 
     private const val MAX_AUTO_SELECT_ATTEMPTS = 3
-
-    private val similarity = StringSimilarityServiceImpl(JaroWinklerStrategy())
 
     fun resetForNewRun() {
         autoSelectAttemptedThisRun = false
@@ -161,7 +157,7 @@ object LegacyParentSelector {
         if (!openLegacyPicker(game)) return false
 
         val context = LegacyParentScorer.contextFromSettings()
-        val candidates = mutableListOf<Pair<ScrollListEntry, Double>>()
+        val candidates = mutableListOf<Pair<String, Double>>()
         ScrollList.processWithFallback(
             game,
             fallbackComponent = LabelEventProgress,
@@ -172,34 +168,37 @@ object LegacyParentSelector {
                 if (ocrLooksLikeTrainee(text)) return@processWithFallback false
                 val score = LegacyParentScorer.score(text, context, game.myContext)
                 if (score > 0.0) {
-                    candidates.add(entry to score)
+                    candidates.add(text to score)
                 }
                 false
             },
         )
 
-        val topEntries =
+        val topCandidates =
             candidates
                 .sortedByDescending { it.second }
-                .distinctBy { (entry, _) -> ocrParentEntry(game.imageUtils, entry) }
+                .distinctBy { it.first }
                 .take(2)
 
-        if (topEntries.isEmpty()) {
+        if (topCandidates.isEmpty()) {
             SupportCardSelection.dismissListPicker(game)
             game.wait(0.5)
             return false
         }
 
-        for ((entry, score) in topEntries) {
-            val text = ocrParentEntry(game.imageUtils, entry)
+        for ((text, score) in topCandidates) {
             MessageLog.i(TAG, "Selecting legacy parent by factors (score=$score, ocr=\"$text\").")
-            game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
-            game.wait(0.8)
+            if (!findAndTapParentEntry(game, text)) {
+                MessageLog.w(TAG, "Could not re-locate legacy parent for factor pick (score=$score, ocr=\"$text\").")
+                SupportCardSelection.dismissListPicker(game)
+                game.wait(0.5)
+                return false
+            }
         }
 
         ButtonBackGreen.click(game.imageUtils)
         game.wait(0.8)
-        MessageLog.i(TAG, "Selected ${topEntries.size} legacy parent(s) using ${context.strategy} strategy.")
+        MessageLog.i(TAG, "Selected ${topCandidates.size} legacy parent(s) using ${context.strategy} strategy.")
         return true
     }
 
@@ -220,6 +219,11 @@ object LegacyParentSelector {
             MessageLog.w(TAG, "Refusing to select trainee \"$name\" as legacy parent.")
             return false
         }
+        return findAndTapParentEntry(game, name)
+    }
+
+    /** Scrolls the legacy picker and taps the first row whose OCR matches [targetText]. */
+    private fun findAndTapParentEntry(game: Game, targetText: String): Boolean {
         var tapped = false
         ScrollList.processWithFallback(
             game,
@@ -228,9 +232,9 @@ object LegacyParentSelector {
             keyExtractor = { entry -> ocrParentEntry(game.imageUtils, entry) },
             onEntry = { _, entry ->
                 val text = ocrParentEntry(game.imageUtils, entry)
-                val score = matchScore(text, name)
+                val score = SupportCardSelection.matchScore(text, targetText)
                 if (score >= MIN_NAME_MATCH_SCORE) {
-                    MessageLog.i(TAG, "Tapping legacy parent \"$name\" (score=$score, ocr=\"$text\").")
+                    MessageLog.i(TAG, "Tapping legacy parent \"$targetText\" (score=$score, ocr=\"$text\").")
                     game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
                     game.wait(0.8)
                     tapped = true
@@ -247,7 +251,7 @@ object LegacyParentSelector {
         val slotTexts = readParentSlotTexts(game, sourceBitmap)
         if (slotTexts.size < preferredPair.size) return false
         return preferredPair.indices.all { index ->
-            matchScore(slotTexts[index], preferredPair[index]) >= MIN_NAME_MATCH_SCORE
+            SupportCardSelection.matchScore(slotTexts[index], preferredPair[index]) >= MIN_NAME_MATCH_SCORE
         }
     }
 
@@ -288,26 +292,6 @@ object LegacyParentSelector {
             ocrEngine = "tesseract",
             debugName = "legacy_parent_list_entry",
         ).lowercase()
-
-    private fun matchScore(ocrText: String, name: String): Double {
-        val normalizedOcr = ocrText.lowercase()
-        val needle = name.lowercase()
-        if (!ocrMightMatchName(normalizedOcr, needle)) return 0.0
-        return when {
-            normalizedOcr.contains(needle) -> 1.0
-            else -> similarity.score(needle, normalizedOcr)
-        }
-    }
-
-    private fun ocrMightMatchName(normalizedOcr: String, needle: String): Boolean {
-        if (needle.isEmpty()) return false
-        if (normalizedOcr.contains(needle)) return true
-        if (needle.length < 3) return true
-        for (i in 0..needle.length - 3) {
-            if (normalizedOcr.contains(needle.substring(i, i + 3))) return true
-        }
-        return false
-    }
 
     private fun readPreferredPair(): List<String> =
         SupportCardSelection.filterTraineeFromSupportNames(

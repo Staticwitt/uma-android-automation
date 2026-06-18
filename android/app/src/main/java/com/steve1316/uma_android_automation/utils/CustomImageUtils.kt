@@ -3169,7 +3169,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                     "detectScrollBar",
                 )
             } else {
-                createSafeBitmap(bitmap, region, "detectScrollBar") ?: bitmap
+                createSafeBitmap(bitmap, region, "detectScrollBar")
             }
 
         if (resolvedBitmap == null || resolvedBitmap.isRecycled || resolvedBitmap.width <= 0 || resolvedBitmap.height <= 0) {
