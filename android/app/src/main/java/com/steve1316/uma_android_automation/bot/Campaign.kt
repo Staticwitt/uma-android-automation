@@ -2188,11 +2188,11 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
-            if (OwnedSupportDeckEquipper.tryEquipOwnedDeck(game)) {
+            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null
             }
 
-            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+            if (OwnedSupportDeckEquipper.tryEquipOwnedDeck(game)) {
                 return null
             }
 

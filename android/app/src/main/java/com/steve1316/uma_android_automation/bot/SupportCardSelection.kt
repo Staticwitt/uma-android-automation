@@ -3,6 +3,8 @@ package com.steve1316.uma_android_automation.bot
 import android.graphics.Bitmap
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.components.ButtonBack
+import com.steve1316.uma_android_automation.components.ButtonBackGreen
 import com.steve1316.uma_android_automation.components.LabelEventProgress
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import com.steve1316.uma_android_automation.utils.ScrollList
@@ -118,7 +120,18 @@ internal object SupportCardSelection {
                 }
             },
         )
+        if (!tapped) {
+            dismissListPicker(game)
+        }
         return tapped
+    }
+
+    /** Closes a scrollable card/parent picker so career-selection automation can continue. */
+    fun dismissListPicker(game: Game) {
+        when {
+            ButtonBackGreen.click(game.imageUtils) -> game.wait(0.5)
+            ButtonBack.click(game.imageUtils) -> game.wait(0.5)
+        }
     }
 
     private fun ocrEntry(imageUtils: CustomImageUtils, entry: ScrollListEntry): String =

@@ -4,7 +4,7 @@ import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { rankSupportsForGoal } from "./supportDeckScoring"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 
-/** Racing flags for hands-off career selection (equip → borrow → parents → start). */
+/** Racing flags for hands-off career selection (parents → equip → borrow → start). */
 export const PARENT_FARMING_CAREER_AUTOMATION_FLAGS: Pick<
     Settings["racing"],
     "enableAutoEquipOwnedSupportDeck" | "enableAutoBorrowSupportCard" | "enableAutoSelectLegacyParents" | "enableAutoStartCareer"

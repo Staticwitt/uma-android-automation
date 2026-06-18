@@ -1,19 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.25</latestVersion>
-    <latestVersionCode>115</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.25</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.25/v5.9.25-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.25/v5.9.25-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.26</latestVersion>
+    <latestVersionCode>116</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.26</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.26/v5.9.26-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.26/v5.9.26-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.25 - Scrollbar detection hotfix
+v5.9.26 - Career selection loop fix
 
 Fixes
 ---
-- Prevent crash when auto-equipping owned support deck if scrollbar region crop fails
-- Scroll-to-top/bottom now reuses the current screenshot for scrollbar detection
+- Run legacy parent selection before owned support equip so parent changes do not wipe supports and re-open pickers
+- Close support/parent scroll lists after failed card match instead of leaving the picker open
+- Cap parent and owned-deck retries so career prep advances to borrow/start instead of looping forever
 
-Includes v5.9.24 parent farming fixes and v5.9.23 next-tier pack.
+Includes v5.9.25 scrollbar crash fix and v5.9.24 parent farming hotfixes.
 
     </releaseNotes>
   </update>

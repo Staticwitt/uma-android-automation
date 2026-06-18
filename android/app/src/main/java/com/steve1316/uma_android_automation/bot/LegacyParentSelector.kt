@@ -35,11 +35,15 @@ object LegacyParentSelector {
     private const val MIN_NAME_MATCH_SCORE = 0.82
 
     @Volatile private var autoSelectAttemptedThisRun = false
+    @Volatile private var autoSelectAttempts = 0
+
+    private const val MAX_AUTO_SELECT_ATTEMPTS = 3
 
     private val similarity = StringSimilarityServiceImpl(JaroWinklerStrategy())
 
     fun resetForNewRun() {
         autoSelectAttemptedThisRun = false
+        autoSelectAttempts = 0
     }
 
     fun isEnabled(): Boolean = SettingsHelper.getBooleanSetting("racing", "enableAutoSelectLegacyParents")
@@ -51,6 +55,7 @@ object LegacyParentSelector {
      */
     fun tryTriggerAutoSelect(game: Game): Boolean {
         if (!isEnabled() || autoSelectAttemptedThisRun) return false
+        if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
 
         val preferredPair = readPreferredPair()
         if (preferredPair.isNotEmpty()) {
@@ -78,6 +83,12 @@ object LegacyParentSelector {
         if (triggerGameAutoSelect(game)) {
             autoSelectAttemptedThisRun = true
             return true
+        }
+
+        autoSelectAttempts++
+        if (autoSelectAttempts >= MAX_AUTO_SELECT_ATTEMPTS) {
+            autoSelectAttemptedThisRun = true
+            MessageLog.w(TAG, "Giving up on legacy parent auto-select after $MAX_AUTO_SELECT_ATTEMPTS attempts.")
         }
         return false
     }
@@ -135,7 +146,7 @@ object LegacyParentSelector {
         }
 
         if (!allFound) {
-            ButtonBackGreen.click(game.imageUtils)
+            SupportCardSelection.dismissListPicker(game)
             game.wait(0.5)
             return false
         }
@@ -174,7 +185,7 @@ object LegacyParentSelector {
                 .take(2)
 
         if (topEntries.isEmpty()) {
-            ButtonBackGreen.click(game.imageUtils)
+            SupportCardSelection.dismissListPicker(game)
             game.wait(0.5)
             return false
         }

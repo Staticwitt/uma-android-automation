@@ -56,6 +56,8 @@ object SupportCardBorrower {
             return false
         }
 
+        if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
+
         if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
 
         val owned = SupportCardSelection.readStringList(SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"))
@@ -125,6 +127,7 @@ object SupportCardBorrower {
                         return true
                     }
                 }
+                SupportCardSelection.dismissListPicker(game)
             }
             return false
         }
