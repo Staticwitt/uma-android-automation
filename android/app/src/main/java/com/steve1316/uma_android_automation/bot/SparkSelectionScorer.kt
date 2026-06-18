@@ -61,7 +61,7 @@ object SparkSelectionScorer {
      * @param context Active spark selection preferences.
      * @return Higher is better. All options score 0.0 in `Default` mode.
      */
-    fun score(ocrText: String, context: SparkSelectionContext): Double {
+    fun score(ocrText: String, context: SparkSelectionContext, gameContext: android.content.Context? = null): Double {
         if (context.strategy == "Default" || ocrText.isBlank()) return 0.0
 
         val lower = ocrText.lowercase()
@@ -143,6 +143,8 @@ object SparkSelectionScorer {
             val pct = match.groupValues[1].toIntOrNull() ?: 0
             score += pct * 0.4
         }
+
+        score += FactorSkillMatcher.scoreBonus(gameContext, ocrText, context.strategy, context.preferSkillHints)
 
         return score
     }

@@ -412,6 +412,48 @@ const searchConfig: SearchOption[] = [
         page: "ParentFarmingSettings",
     },
     {
+        id: "enable-parent-farming-cold-start",
+        title: "Cold Start from Home",
+        description: "Auto-pick the bundle character and navigate to career selection from team home.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-game-data-factor-ocr",
+        title: "Game-Data Factor OCR",
+        description: "Match inheritance OCR against the bundled skills database.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-harvest-report",
+        title: "Parent Harvest Report",
+        description: "Scrape inherited skills at career end with keep vs reroll verdict.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-training-optimizer",
+        title: "Training Optimizer",
+        description: "Bias training toward weak aptitudes for parent bundles.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-recovery-coach",
+        title: "Recovery Coach",
+        description: "Dead epithet guidance in message log and Discord.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "enable-parent-farming-breeding-plan",
+        title: "Breeding Plan",
+        description: "Multi-generation parent farming queue with target factor skills.",
+        page: "ParentFarmingSettings",
+    },
+    {
+        id: "parent-farming-recommendations",
+        title: "Outcome Recommendations",
+        description: "Archive-based tips for bundle and preset changes.",
+        page: "ParentFarmingSettings",
+    },
+    {
         id: "parent-farming-analytics",
         title: "Cross-Profile Parent Analytics",
         description: "Quality trends and run counts grouped by profile and character.",

@@ -1775,6 +1775,7 @@ abstract class Campaign(game: Game) : Task(game) {
 
                 ParentDiscordNotifier.maybeSendLiveStatus(game, trainee, date, dateChanged = true)
                 ParentFarmingLiveStatus.maybeLog(game, trainee, date, dateChanged = true)
+                ParentFarmingScenarioHooks.onTurnStart(this, date)
             }
 
             // Since we're at the main screen, we don't need to worry about this
@@ -2183,6 +2184,10 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
+            if (ParentFarmingColdStart.tryAdvance(game, this)) {
+                return null
+            }
+
             if (OwnedSupportDeckEquipper.tryEquipOwnedDeck(game)) {
                 return null
             }
@@ -2265,13 +2270,15 @@ abstract class Campaign(game: Game) : Task(game) {
 
                 handleDialogs()
 
+                val harvestResult = ParentHarvestScanner.scanAtCareerEnd(game)
+
                 // Print the final Trainee information.
                 trainee.logInfo()
 
                 val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
                 val summaryInput =
                     if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
-                        ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs)
+                        ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs, harvestResult = harvestResult)
                     } else {
                         null
                     }

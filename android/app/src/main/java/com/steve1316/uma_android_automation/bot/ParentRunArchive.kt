@@ -136,6 +136,9 @@ object ParentRunArchive {
             .put("sessionRunTarget", input.sessionRunTarget)
             .put("isSessionBest", isSessionBest)
             .put("inheritanceSummary", input.inheritanceSummary)
+            .put("harvestSummary", input.harvestSummary)
+            .put("harvestVerdict", input.harvestVerdict)
+            .put("harvestFactors", JSONArray(input.harvestFactors))
     }
 
     private fun <T : Enum<T>> aptitudesJson(entries: List<T>, value: (T) -> String): JSONObject {

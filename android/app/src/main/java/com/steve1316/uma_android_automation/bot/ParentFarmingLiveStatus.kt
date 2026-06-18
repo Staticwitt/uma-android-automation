@@ -46,6 +46,9 @@ object ParentFarmingLiveStatus {
             } ?: ""
 
         val queueLabel = ParentFarmingGoalQueue.activeLabel().let { if (it.isNotEmpty()) " · $it" else "" }
+        val deadEpithets = SmartRaceSolverIntegration.deadEpithetsSnapshot()
+        val deadLine = if (deadEpithets.isNotEmpty()) " · DEAD: ${deadEpithets.joinToString()}" else ""
+        ParentFarmingRecoveryCoach.pollFromSolver()
         val multiRunLine =
             if (ParentFarmingRunLoop.isEnabled()) {
                 val completed = ParentFarmingRunLoop.sessionRunsCompleted()
@@ -57,7 +60,7 @@ object ParentFarmingLiveStatus {
 
         MessageLog.i(
             TAG,
-            "Turn ${date.day} · ${trainee.fans} fans · ${raceStats.wins}W/${raceStats.losses}L · projected ${projected.grade} (${projected.score})$goalLine$multiRunLine$queueLabel",
+            "Turn ${date.day} · ${trainee.fans} fans · ${raceStats.wins}W/${raceStats.losses}L · projected ${projected.grade} (${projected.score})$goalLine$multiRunLine$queueLabel$deadLine",
         )
     }
 }

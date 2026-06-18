@@ -57,7 +57,7 @@ object SparkSelector {
 
             val ocrText = ocrSparkOption(imageUtils, sourceBitmap, cropX, cropY, ocrWidth, ocrHeight, index)
 
-            val score = SparkSelectionScorer.score(ocrText, context)
+            val score = SparkSelectionScorer.score(ocrText, context, game.myContext)
             scores.add(index to score)
             optionTexts.add(ocrText.trim())
             MessageLog.i(TAG, "[SPARK] Option ${index + 1}: \"$ocrText\" (score=${"%.1f".format(score)})")

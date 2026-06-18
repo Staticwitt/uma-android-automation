@@ -159,7 +159,7 @@ object LegacyParentSelector {
             onEntry = { _, entry ->
                 val text = ocrParentEntry(game.imageUtils, entry)
                 if (ocrLooksLikeTrainee(text)) return@processWithFallback false
-                val score = LegacyParentScorer.score(text, context)
+                val score = LegacyParentScorer.score(text, context, game.myContext)
                 if (score > 0.0) {
                     candidates.add(entry to score)
                 }

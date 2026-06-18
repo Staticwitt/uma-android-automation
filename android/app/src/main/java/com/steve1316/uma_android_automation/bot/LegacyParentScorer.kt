@@ -54,7 +54,7 @@ object LegacyParentScorer {
     fun isFactorSelectionEnabled(): Boolean = contextFromSettings().strategy != "Default"
 
     /** Higher is better. Returns 0 when strategy is Default. */
-    fun score(ocrText: String, context: Context): Double {
+    fun score(ocrText: String, context: Context, gameContext: android.content.Context? = null): Double {
         if (context.strategy == "Default" || ocrText.isBlank()) return 0.0
 
         val lower = ocrText.lowercase()
@@ -119,6 +119,7 @@ object LegacyParentScorer {
 
         total += scoreParsedStatValues(lower, context)
         total += scoreParsedAptitudeGrades(lower, context)
+        total += FactorSkillMatcher.scoreBonus(gameContext, ocrText, context.strategy, context.preferSkillHints)
 
         return total
     }

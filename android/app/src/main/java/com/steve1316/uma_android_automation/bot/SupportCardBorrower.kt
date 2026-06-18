@@ -119,6 +119,13 @@ object SupportCardBorrower {
                 TAG,
                 "No borrow match above threshold (best=$bestScore for \"$bestText\"). Preferred: ${preferredNames.joinToString()}",
             )
+            if (SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBorrowIntelligence", true)) {
+                for (name in preferredNames) {
+                    if (SupportCardSelection.findAndTapCardInList(game, name, TAG)) {
+                        return true
+                    }
+                }
+            }
             return false
         }
 

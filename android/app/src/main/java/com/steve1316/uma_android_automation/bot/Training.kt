@@ -99,7 +99,8 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     private val statPrioritizationRaw: List<StatName> = SettingsHelper.getStringArraySetting("training", "statPrioritization").map { StatName.fromName(it)!! }
 
     /** The final stat prioritization list. */
-    internal val statPrioritization: List<StatName> = statPrioritizationRaw.ifEmpty { StatName.entries }
+    internal val statPrioritization: List<StatName> =
+        ParentFarmingTrainingOptimizer.optimizedStatPriorities(statPrioritizationRaw.ifEmpty { StatName.entries })
 
     /** The raw stat prioritization list for in-game event choices, sourced from user settings. */
     private val eventChoiceStatPriorityRaw: List<StatName> = SettingsHelper.getStringArraySetting("training", "eventChoiceStatPriority").map { StatName.fromName(it)!! }

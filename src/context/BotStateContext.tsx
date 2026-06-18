@@ -126,6 +126,26 @@ export interface Settings {
         enableParentFarmingLiveMessageLog: boolean
         /** Auto-run solver feasibility preview when parent setup changes. */
         enableParentFarmingAutoFeasibilityPreview: boolean
+        /** Navigate from team home and pick the bundle character before career selection. */
+        enableParentFarmingColdStart: boolean
+        /** Score spark/parent OCR against bundled skills database. */
+        enableParentFarmingGameDataFactorOcr: boolean
+        /** OCR inherited skills at career end for harvest verdict. */
+        enableParentFarmingHarvestReport: boolean
+        /** Bias training stat priorities toward weak parent aptitudes. */
+        enableParentFarmingTrainingOptimizer: boolean
+        /** Surface dead-epithet recovery guidance mid-run. */
+        enableParentFarmingRecoveryCoach: boolean
+        /** Scroll friend borrow lists when visible slots fail OCR. */
+        enableParentFarmingBorrowIntelligence: boolean
+        /** Sync general.scenario from URA/Unity goal presets before bot start. */
+        enableParentFarmingAutoScenario: boolean
+        /** Multi-generation breeding plan JSON (generations with target factors). */
+        parentFarmingBreedingPlan: string
+        /** Apply breeding plan as the multi-run goal queue. */
+        enableParentFarmingBreedingPlan: boolean
+        /** JSON array of target inherited skill names for harvest OCR matching. */
+        parentFarmingTargetFactorSkills: string
         /** JSON snapshot for reverting settings when exiting parent farming mode. */
         parentFarmingSettingsSnapshot: string
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
@@ -380,6 +400,16 @@ export const defaultSettings: Settings = {
         enableParentFarmingAutoApplyOwnedDeck: true,
         enableParentFarmingLiveMessageLog: true,
         enableParentFarmingAutoFeasibilityPreview: true,
+        enableParentFarmingColdStart: true,
+        enableParentFarmingGameDataFactorOcr: true,
+        enableParentFarmingHarvestReport: true,
+        enableParentFarmingTrainingOptimizer: true,
+        enableParentFarmingRecoveryCoach: true,
+        enableParentFarmingBorrowIntelligence: true,
+        enableParentFarmingAutoScenario: true,
+        parentFarmingBreedingPlan: "[]",
+        enableParentFarmingBreedingPlan: false,
+        parentFarmingTargetFactorSkills: "[]",
         parentFarmingSettingsSnapshot: "",
         enableAutoSelectLegacyParents: false,
         legacyParentSelectionStrategy: "Default",

@@ -60,6 +60,9 @@ export interface ParentRunArchiveEntry {
     sessionRunTarget?: number
     isSessionBest?: boolean
     inheritanceSummary?: string
+    harvestSummary?: string
+    harvestVerdict?: string
+    harvestFactors?: string[]
 }
 
 const parseStringArray = (value: unknown): string[] => {

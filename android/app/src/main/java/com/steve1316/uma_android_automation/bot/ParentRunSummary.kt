@@ -41,6 +41,9 @@ data class ParentRunSummaryInput(
     val sessionRunIndex: Int = 0,
     val sessionRunTarget: Int = 0,
     val inheritanceSummary: String = "",
+    val harvestSummary: String = "",
+    val harvestVerdict: String = "",
+    val harvestFactors: List<String> = emptyList(),
 )
 
 /**
@@ -66,7 +69,13 @@ object ParentRunSummary {
     fun discordMarkdownFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): String =
         buildDiscordMarkdown(inputFromSettings(trainee, scenario, elapsedMs))
 
-    fun inputFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?, epithetTurn: TurnNumber = 72): ParentRunSummaryInput {
+    fun inputFromSettings(
+        trainee: Trainee,
+        scenario: String,
+        elapsedMs: Long?,
+        epithetTurn: TurnNumber = 72,
+        harvestResult: ParentHarvestScanner.HarvestResult? = null,
+    ): ParentRunSummaryInput {
         val weightsJson = SettingsHelper.getStringSetting("racing", "smartRaceSolverWeights")
         val weights = parseWeights(weightsJson)
         val profileName =
@@ -104,6 +113,9 @@ object ParentRunSummary {
             sessionRunIndex = ParentFarmingRunLoop.sessionRunIndexForArchive(),
             sessionRunTarget = ParentFarmingRunLoop.targetRunCount(),
             inheritanceSummary = formatInheritanceSummary(trainee, SparkPickHistory.snapshot()),
+            harvestSummary = harvestResult?.summary ?: "",
+            harvestVerdict = harvestResult?.verdict ?: "",
+            harvestFactors = harvestResult?.matchedFactors ?: emptyList(),
         )
     }
 
@@ -196,6 +208,12 @@ object ParentRunSummary {
         lines.addAll(formatSparkPicks(input.sparkPicks))
         if (input.inheritanceSummary.isNotEmpty()) {
             lines.add("Inheritance: ${input.inheritanceSummary}")
+        }
+        if (input.harvestSummary.isNotEmpty()) {
+            lines.add("Harvest: ${input.harvestSummary}")
+        }
+        if (input.harvestVerdict.isNotEmpty()) {
+            lines.add("Harvest verdict: ${input.harvestVerdict}")
         }
         lines.add("Races: ${input.raceStats.wins} wins, ${input.raceStats.losses} losses")
         lines.add("Fans: ${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})")

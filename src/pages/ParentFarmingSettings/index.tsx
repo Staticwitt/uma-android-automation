@@ -23,6 +23,8 @@ import { ParentRunArchiveSheet } from "../../components/ParentRunArchiveSheet"
 import { ParentFarmingGoalQueueEditor } from "../../components/ParentFarmingGoalQueueEditor"
 import { ParentFarmingAnalyticsSheet } from "../../components/ParentFarmingAnalyticsSheet"
 import { ParentFarmingAutoPreviewCard } from "../../components/ParentFarmingAutoPreviewCard"
+import { ParentFarmingRecommendationsCard } from "../../components/ParentFarmingRecommendationsCard"
+import { ParentFarmingBreedingPlanEditor } from "../../components/ParentFarmingBreedingPlanEditor"
 import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { buildAllowedEpithetNamesForParentBundle, aptitudesFromCharacterPreset, findCharacterPresetEntry, findParentFarmingCharacterBundle } from "../../lib/parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset, type ParentFarmingGoalPreset } from "../../lib/parentFarmingGoalPresets"
@@ -150,6 +152,16 @@ const ParentFarmingSettings = () => {
         enableParentFarmingAutoApplyOwnedDeck,
         enableParentFarmingLiveMessageLog,
         enableParentFarmingAutoFeasibilityPreview,
+        enableParentFarmingColdStart,
+        enableParentFarmingGameDataFactorOcr,
+        enableParentFarmingHarvestReport,
+        enableParentFarmingTrainingOptimizer,
+        enableParentFarmingRecoveryCoach,
+        enableParentFarmingBorrowIntelligence,
+        enableParentFarmingAutoScenario,
+        enableParentFarmingBreedingPlan,
+        parentFarmingBreedingPlan,
+        parentFarmingTargetFactorSkills,
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
@@ -675,6 +687,83 @@ const ParentFarmingSettings = () => {
                                     settings={settings}
                                     enabled={enableParentFarmingAutoFeasibilityPreview}
                                 />
+                                <SettingRow
+                                    id="enable-parent-farming-cold-start"
+                                    title="Cold start from home"
+                                    description="Navigate team home, pick the bundle character, and reach career selection before equip/borrow/parent automation."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingColdStart}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingColdStart", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-game-data-factor-ocr"
+                                    title="Game-data factor OCR"
+                                    description="Score inheritance sparks and legacy parents against the bundled skills database, not keywords alone."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingGameDataFactorOcr}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingGameDataFactorOcr", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-harvest-report"
+                                    title="Parent harvest report"
+                                    description="OCR inherited skills at career end and log a keep vs reroll verdict."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingHarvestReport}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingHarvestReport", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-training-optimizer"
+                                    title="Training + race optimizer"
+                                    description="Boost training priority for weak aptitudes needed by the active parent bundle."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingTrainingOptimizer}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingTrainingOptimizer", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-recovery-coach"
+                                    title="Recovery coach"
+                                    description="Warn when epithets go dead with suggested next steps (message log + Discord)."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingRecoveryCoach}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingRecoveryCoach", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-borrow-intelligence"
+                                    title="Live borrow intelligence"
+                                    description="Scroll the friend borrow list when visible slots fail OCR."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingBorrowIntelligence}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBorrowIntelligence", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-auto-scenario"
+                                    title="Auto-sync scenario"
+                                    description="Set Trackblazer / URA Finale / Unity Cup from the active goal preset when the bot starts."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingAutoScenario}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingAutoScenario", checked)}
+                                        />
+                                    }
+                                />
                             </Section>
                         )}
 
@@ -880,6 +969,42 @@ const ParentFarmingSettings = () => {
                                             </Pressable>
                                         </View>
                                     </SearchableItem>
+                                    <SearchableItem
+                                        id="parent-farming-recommendations"
+                                        title="Outcome recommendations"
+                                        description="Tips from archived run history — bundle switches, forced epithet misses, fan floors."
+                                        parentId="parent-run-archive"
+                                    >
+                                        <ParentFarmingRecommendationsCard settings={settings} />
+                                    </SearchableItem>
+                                </Section>
+
+                                <Section label="Multi-generation breeding">
+                                    <SettingRow
+                                        id="enable-parent-farming-breeding-plan"
+                                        title="Breeding plan queue"
+                                        description="Cycle generations as a multi-run goal queue with per-gen target factor skills."
+                                        right={
+                                            <Switch
+                                                checked={enableParentFarmingBreedingPlan}
+                                                onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBreedingPlan", checked)}
+                                            />
+                                        }
+                                    />
+                                    {enableParentFarmingBreedingPlan && (
+                                        <SearchableItem
+                                            id="parent-farming-breeding-plan"
+                                            title="Breeding generations"
+                                            description="Plan chained parent runs toward specific inherited skills."
+                                        >
+                                            <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                                <ParentFarmingBreedingPlanEditor
+                                                    json={parentFarmingBreedingPlan}
+                                                    onChange={(value) => updateRacingSetting("parentFarmingBreedingPlan", value)}
+                                                />
+                                            </View>
+                                        </SearchableItem>
+                                    )}
                                 </Section>
                             </>
                         )}

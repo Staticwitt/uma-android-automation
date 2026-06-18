@@ -34,6 +34,8 @@ object ParentFarmingRunLoop {
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
         ParentFarmingGoalQueue.resetSession()
+        ParentFarmingColdStart.resetSession()
+        ParentFarmingRecoveryCoach.reset()
     }
 
     fun sessionId(): String = sessionId
@@ -229,6 +231,8 @@ object ParentFarmingRunLoop {
         ParentFarmingLiveStatus.reset()
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
+        ParentFarmingColdStart.resetSession()
+        ParentFarmingRecoveryCoach.reset()
         ParentFarmingGoalQueue.applyForRunIndex(sessionRunsCompleted)
 
         campaign.date = GameDate(day = 1)

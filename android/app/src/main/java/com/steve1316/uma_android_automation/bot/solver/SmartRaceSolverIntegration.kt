@@ -8,6 +8,7 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.ParentFarmingAdaptiveMultiRun
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
 import com.steve1316.uma_android_automation.bot.ParentFarmingGoalQueue
+import com.steve1316.uma_android_automation.bot.ParentFarmingRecoveryCoach
 import com.steve1316.uma_android_automation.bot.SupportCardSelection
 import com.steve1316.uma_android_automation.bot.RunRaceStats
 import com.steve1316.uma_android_automation.bot.SparkPickHistory
@@ -238,6 +239,9 @@ object SmartRaceSolverIntegration {
         currentRunMood = Mood.NORMAL
         SparkPickHistory.reset()
     }
+
+    /** Dead epithets accumulated during the active run (for recovery coach / live status). */
+    fun deadEpithetsSnapshot(): Set<String> = runtimeDeadEpithets
 
     /** Epithet completion snapshot for parent-run summaries at career end. */
     data class ParentRunEpithetSnapshot(
@@ -995,6 +999,7 @@ object SmartRaceSolverIntegration {
             )
         if (newlyDead.isEmpty()) return
         runtimeDeadEpithets = runtimeDeadEpithets + newlyDead
+        ParentFarmingRecoveryCoach.pollFromSolver()
         MessageLog.i(TAG, "Marked ${newlyDead.size} epithet(s) dead after losing \"$lostRaceName\": ${newlyDead.sorted().joinToString()}")
         val forced = readStringSet("smartRaceSolverForcedEpithets")
         ParentFarmingForcedEpithetGuard.onDeadEpithets(newlyDead, forced)
