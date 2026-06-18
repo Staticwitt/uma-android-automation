@@ -50,6 +50,14 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h
+
       - name: Build release APKs
         run: |
           yarn build:doc-index
@@ -90,7 +98,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: "v${{ steps.version.outputs.version }} — App performance optimizations"
+          name: "v${{ steps.version.outputs.version }} — Generation farm release"
           body: ${{ steps.notes.outputs.body }}
           files: |
             ${{ steps.apks.outputs.arm64 }}
