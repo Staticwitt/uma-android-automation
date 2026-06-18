@@ -1,22 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.33</latestVersion>
-    <latestVersionCode>123</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.33</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.33/v5.9.33-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.33/v5.9.33-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.34</latestVersion>
+    <latestVersionCode>124</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.34</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.34/v5.9.34-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.34/v5.9.34-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.33 - Generation farm replaces cold start
+v5.9.34 - Generation farm auto-navigation
 
 Changes
 ---
-- Removed cold start (team-home navigation) entirely
-- New generation farm flow: start on career selection; breeding plan drives multi-run goal queue
-- Bot start auto-enables multi-run and resolves per-generation patches (trainee, scenario, factors, legacy parent)
-- Goal queue patches advance settings between careers without home navigation
-- Legacy parent and harvest OCR read active generation patch at runtime
+- Generation farm now auto-navigates home → Career hub → trainee → scenario for the next breeding-plan generation instead of requiring a manual return to career selection
+- Restores targeted pieces of the removed cold-start navigation (team-home detection, OCR character-list pick, OCR scenario pick), scoped to mid-session run transitions only
+- Falls back to the prior generic click-through when no breeding-plan trainee is configured for the next run
 
-Includes v5.9.32 reliability fixes and v5.9.31 support card optimizations.
+Includes v5.9.33 generation farm release.
 
     </releaseNotes>
   </update>
