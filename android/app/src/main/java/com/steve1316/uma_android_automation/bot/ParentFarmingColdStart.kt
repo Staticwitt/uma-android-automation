@@ -72,7 +72,7 @@ object ParentFarmingColdStart {
             return false
         }
 
-        val character = SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").trim()
+        val character = ParentFarmingGoalQueue.racingString("smartRaceSolverCharacterPreset").trim()
         if (character.isEmpty()) {
             MessageLog.w(TAG, "No character preset configured; skipping cold start.")
             markComplete(null)
@@ -257,7 +257,7 @@ object ParentFarmingColdStart {
             return false
         }
 
-        val scenario = SettingsHelper.getStringSetting("general", "scenario", "Trackblazer")
+        val scenario = ParentFarmingGoalQueue.overrideScenario(SettingsHelper.getStringSetting("general", "scenario", "Trackblazer"))
         val ocrText = readScenarioPickerOcr(game)
         val keywords = scenarioKeywords(scenario)
         if (keywords.none { ocrText.contains(it) }) {

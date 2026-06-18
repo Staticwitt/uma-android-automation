@@ -7,7 +7,7 @@ import org.json.JSONObject
 
 /**
  * Applies pre-resolved parent-farming goal queue patches between multi-run careers.
- * Patches are written by React when the user saves the queue.
+ * Patches are written by React when the user saves the queue or breeding plan.
  */
 object ParentFarmingGoalQueue {
     private const val TAG = "[PF_GOAL_QUEUE]"
@@ -27,6 +27,9 @@ object ParentFarmingGoalQueue {
         val supportBorrow: String,
         val preferredDistanceOverride: String,
         val enablePrioritizeSkillHints: Boolean,
+        val targetFactorSkills: String,
+        val usePreviousAsLegacy: Boolean,
+        val legacyParentPreferredPair: String,
     )
 
     @Volatile private var patches: List<ResolvedPatch> = emptyList()
@@ -44,6 +47,7 @@ object ParentFarmingGoalQueue {
         activePatch = patches.getOrNull(activeIndex)
         if (activePatch != null) {
             MessageLog.i(TAG, "Goal queue session started (${patches.size} goals). First: ${activePatch!!.label}")
+            logActivePatch(activePatch!!)
         }
     }
 
@@ -56,7 +60,8 @@ object ParentFarmingGoalQueue {
         val index = runIndex.coerceIn(0, patches.lastIndex)
         activeIndex = index
         activePatch = patches[index]
-        MessageLog.i(TAG, "Goal queue run ${runIndex + 1}: ${activePatch!!.label}")
+        MessageLog.i(TAG, "Goal queue run ${runIndex + 1}/${patches.size}: ${activePatch!!.label}")
+        logActivePatch(activePatch!!)
     }
 
     fun activeLabel(): String = activePatch?.label ?: ""
@@ -64,6 +69,9 @@ object ParentFarmingGoalQueue {
     fun preferredDistanceOverride(): String? = activePatch?.preferredDistanceOverride?.takeIf { it.isNotEmpty() }
 
     fun hasActiveOverride(): Boolean = activePatch != null
+
+    /** Reads a racing setting with the active goal-queue patch applied when present. */
+    fun racingString(key: String, fallback: String = ""): String = overrideString(key, SettingsHelper.getStringSetting("racing", key, fallback))
 
     fun overrideString(key: String, fallback: String): String {
         val patch = activePatch ?: return fallback
@@ -80,6 +88,8 @@ object ParentFarmingGoalQueue {
             "parentFarmingGoalPresetKey" -> patch.goalPresetKey
             "parentFarmingBundleLabel" -> if (patch.bundleKey.isNotEmpty()) patch.label else ""
             "parentFarmingGoalPresetLabel" -> patch.label
+            "parentFarmingTargetFactorSkills" -> patch.targetFactorSkills.ifEmpty { fallback }
+            "legacyParentPreferredPair" -> patch.legacyParentPreferredPair.ifEmpty { fallback }
             else -> fallback
         }
     }
@@ -93,6 +103,15 @@ object ParentFarmingGoalQueue {
     }
 
     fun overrideScenario(fallback: String): String = activePatch?.scenario?.ifEmpty { fallback } ?: fallback
+
+    private fun logActivePatch(patch: ResolvedPatch) {
+        MessageLog.i(
+            TAG,
+            "Active patch: trainee=${patch.characterPreset}, scenario=${patch.scenario}, " +
+                "factors=${patch.targetFactorSkills}, usePreviousLegacy=${patch.usePreviousAsLegacy}, " +
+                "legacyPair=${patch.legacyParentPreferredPair}",
+        )
+    }
 
     private fun loadPatches(): List<ResolvedPatch> {
         val json = SettingsHelper.getStringSetting("racing", "parentFarmingGoalQueueResolved", "[]")
@@ -118,6 +137,9 @@ object ParentFarmingGoalQueue {
                             supportBorrow = obj.optString("supportBorrow", "[]"),
                             preferredDistanceOverride = obj.optString("preferredDistanceOverride", "Default"),
                             enablePrioritizeSkillHints = obj.optBoolean("enablePrioritizeSkillHints", false),
+                            targetFactorSkills = obj.optString("targetFactorSkills", "[]"),
+                            usePreviousAsLegacy = obj.optBoolean("usePreviousAsLegacy", false),
+                            legacyParentPreferredPair = obj.optString("legacyParentPreferredPair", "[]"),
                         ),
                     )
                 }

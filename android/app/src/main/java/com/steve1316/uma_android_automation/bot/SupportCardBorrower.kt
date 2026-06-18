@@ -155,7 +155,7 @@ object SupportCardBorrower {
         rotatedPreferredNames(
             SupportCardSelection.filterTraineeFromSupportNames(
                 SupportCardSelection.readStringList(
-                    SettingsHelper.getStringSetting("racing", "supportBorrowPreferredCards"),
+                    ParentFarmingGoalQueue.racingString("supportBorrowPreferredCards", "[]"),
                 ),
             ),
         )

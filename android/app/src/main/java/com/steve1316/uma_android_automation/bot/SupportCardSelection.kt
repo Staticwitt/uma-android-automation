@@ -36,7 +36,7 @@ internal object SupportCardSelection {
     /** True when [name] matches the active trainee character preset (case-insensitive). */
     fun isTraineeCharacter(name: String): Boolean {
         val trainee =
-            SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset")
+            ParentFarmingGoalQueue.racingString("smartRaceSolverCharacterPreset")
                 .trim()
         if (trainee.isEmpty()) return false
         return name.trim().equals(trainee, ignoreCase = true)
