@@ -50,6 +50,12 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Cache embedder model
+        uses: actions/cache@v4
+        with:
+          path: .cache/embedder
+          key: embedder-minilm-l6-v2-${{ hashFiles('scripts/build-doc-index.ts', 'src/lib/chat/embedder.ts') }}
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet
