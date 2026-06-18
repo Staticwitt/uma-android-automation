@@ -1,23 +1,26 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.22</latestVersion>
-    <latestVersionCode>112</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.22</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.22/v5.9.22-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.22/v5.9.22-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.23</latestVersion>
+    <latestVersionCode>113</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.23</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.23/v5.9.23-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.23/v5.9.23-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.22 - Parent farming major enhancement pack
+v5.9.23 - Parent farming next-tier pack
 
 Parent farming
 ---
-- Smarter spark / white-factor picking in Kotlin and TS scorers
-- Auto feasibility preview on the Parent Farming page when setup changes
-- URA Finals and Unity Aoharu goal presets plus character bundles
-- Multi-goal queue for multi-run sessions (patches settings between careers)
-- Richer live progress in message log (fans, W/L, projected quality, goals)
-- Stronger factor-parent / legacy white-factor selection logic
-- One-tap best owned support deck when applying character bundles
-- Cross-profile parent farming analytics dashboard
+- Cold start from home: auto-navigate and pick bundle character before career selection
+- Game-data factor/skill OCR for inheritance sparks and legacy parents
+- Parent harvest report at career end with keep vs reroll verdict
+- Training optimizer biases stat priorities toward weak aptitudes
+- Recovery coach when epithets go dead (message log + Discord)
+- Live borrow intelligence scrolls friend list when slot OCR fails
+- Auto-sync URA Finale / Unity Cup scenario from goal preset on bot start
+- Outcome-based recommendations from archived run history
+- Multi-generation breeding plan feeds the multi-run goal queue
+
+Includes v5.9.22 major enhancement pack and v5.9.21 performance optimizations.
 
     </releaseNotes>
   </update>
