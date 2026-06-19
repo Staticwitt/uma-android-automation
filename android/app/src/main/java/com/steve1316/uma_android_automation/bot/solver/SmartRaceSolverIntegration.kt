@@ -92,6 +92,13 @@ object SmartRaceSolverIntegration {
      *  `(hash, parsedValue)`. */
     @Volatile private var cachedInlineEpithets: Pair<Int, List<Epithet>>? = null
 
+    /** Memoised result of [MandatoryRaces.parse] applied to the persisted `characterObjectivesData`
+     *  setting. Populated lazily by [loadObjectives]. */
+    @Volatile private var cachedObjectives: Map<String, List<CharacterMandatoryRace>>? = null
+
+    /** Same idea as [cachedInlineEpithets] but for the inline character objectives payload. */
+    @Volatile private var cachedInlineObjectives: Pair<Int, Map<String, List<CharacterMandatoryRace>>>? = null
+
     /** Memoised parse of `smartRaceSolverManualLocks` until the raw JSON changes. */
     @Volatile private var cachedManualLocksJson: String? = null
     @Volatile private var cachedManualLocksParsed: Map<TurnNumber, Decision>? = null
@@ -831,20 +838,27 @@ object SmartRaceSolverIntegration {
                 else -> emptySet()
             }
 
+        val scenario = config.optString("scenario", "Trackblazer")
+        val characterPreset = config.optStringOrNull("characterPreset")
+        val aptitudes = parseAptitudesObj(config.optJSONObject("aptitudes"))
+        val manualLocks = parseManualLocks(config.optJSONObject("manualLocks"), racesByTurn)
+        val applied =
+            applyMandatoryRaces(scenario, characterPreset, aptitudes, racesByTurn, manualLocks, config.optStringOrNull("objectivesDataJson"))
+
         val state =
             SolverState(
                 currentTurn = currentTurn,
-                scenario = config.optString("scenario", "Trackblazer"),
-                characterPreset = config.optStringOrNull("characterPreset"),
-                aptitudes = parseAptitudesObj(config.optJSONObject("aptitudes")),
-                racesByTurn = racesByTurn,
+                scenario = scenario,
+                characterPreset = characterPreset,
+                aptitudes = aptitudes,
+                racesByTurn = applied.racesByTurn,
                 epithets = epithets,
                 raceHistory = raceHistorySnapshot,
                 deadEpithets = deadEpithets,
                 forcedEpithets = jsonStringList(config.optJSONArray("forcedEpithets")).toSet(),
                 targetEpithets = jsonStringList(config.optJSONArray("targetEpithets")).toSet(),
                 epithetTierMultipliers = readEpithetTierMultipliers(),
-                lockedDecisions = parseManualLocks(config.optJSONObject("manualLocks"), racesByTurn),
+                lockedDecisions = applied.lockedDecisions,
                 weights = parseWeightsObj(config.optJSONObject("weights")),
                 currentFans = if (liveRunActive) currentRunFans else config.optInt("currentFans", 0).coerceAtLeast(0),
                 initialEnergy =
@@ -867,7 +881,7 @@ object SmartRaceSolverIntegration {
             } else {
                 SmartRaceSolver.solve(state)
             }
-        val payload = JSONObject(serializeSchedule(schedule, racesByTurn))
+        val payload = JSONObject(serializeSchedule(schedule, state.racesByTurn))
         if (liveRunActive) {
             payload.put("currentTurn", currentRunTurn)
             payload.put("liveRun", true)
@@ -937,24 +951,51 @@ object SmartRaceSolverIntegration {
         racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
         raceHistorySnapshot: List<RaceWin> = synchronized(raceHistory) { raceHistory.toList() },
         lockedDecisions: Map<TurnNumber, Decision>? = null,
-    ): SolverState =
-        SolverState(
+    ): SolverState {
+        val characterPreset = readRacingString("smartRaceSolverCharacterPreset").ifEmpty { null }
+        val aptitudes = effectiveAptitudes()
+        val baseLocks = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn)
+        val applied = applyMandatoryRaces(scenario, characterPreset, aptitudes, racesByTurn, baseLocks)
+        return SolverState(
             currentTurn = currentTurn,
             scenario = scenario,
-            characterPreset = readRacingString("smartRaceSolverCharacterPreset").ifEmpty { null },
-            aptitudes = effectiveAptitudes(),
-            racesByTurn = racesByTurn,
+            characterPreset = characterPreset,
+            aptitudes = aptitudes,
+            racesByTurn = applied.racesByTurn,
             epithets = epithetsForActiveContext(epithets, scenario),
             raceHistory = raceHistorySnapshot,
             forcedEpithets = readEffectiveForcedEpithets(),
             targetEpithets = readEffectiveTargetEpithets(),
             epithetTierMultipliers = readEpithetTierMultipliers(),
-            lockedDecisions = lockedDecisions ?: loadManualLocksFromSettings(racesByTurn),
+            lockedDecisions = applied.lockedDecisions,
             weights = readWeights(),
             currentFans = currentRunFans,
             deadEpithets = runtimeDeadEpithets,
             initialEnergy = currentRunEnergy,
             initialMood = currentRunMood,
+        )
+    }
+
+    /**
+     * Applies the selected character's mandatory career races onto [racesByTurn] / [baseLocks]
+     * via [MandatoryRaces.apply]. Shared by [newSolverState] and [buildCalendarSnapshotJson] so
+     * both the solve and the calendar display agree on which races are forced onto the calendar.
+     */
+    private fun applyMandatoryRaces(
+        scenario: String,
+        characterPreset: String?,
+        aptitudes: Aptitudes,
+        racesByTurn: Map<TurnNumber, List<RaceCandidate>>,
+        baseLocks: Map<TurnNumber, Decision>,
+        objectivesJson: String? = null,
+    ): MandatoryApplication =
+        MandatoryRaces.apply(
+            scenario = scenario,
+            characterPreset = characterPreset,
+            aptitudes = aptitudes,
+            racesByTurn = racesByTurn,
+            baseLocks = baseLocks,
+            objectives = parseObjectivesJsonField(objectivesJson) ?: loadObjectives() ?: emptyMap(),
         )
 
     /**
@@ -1378,6 +1419,21 @@ object SmartRaceSolverIntegration {
             ?.also { cachedPresets = it }
     }
 
+    /**
+     * Lazy, cached parse of the `characterObjectivesData` setting.
+     *
+     * @return Map of character name -> mandatory races, or null when the setting is empty or unparseable.
+     */
+    private fun loadObjectives(): Map<String, List<CharacterMandatoryRace>>? {
+        cachedObjectives?.let { return it }
+        val json = SettingsHelper.getStringSetting("racing", "characterObjectivesData")
+        if (json.isEmpty()) return null
+        return runCatching { MandatoryRaces.parse(json) }
+            .onFailure { MessageLog.e(TAG, "Failed to parse characterObjectivesData: ${it.message}") }
+            .getOrNull()
+            ?.also { cachedObjectives = it }
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // JSON parsers
@@ -1590,6 +1646,22 @@ object SmartRaceSolverIntegration {
     }
 
     /**
+     * See [parseRacesJsonField] - same omit-after-prime contract for character objectives data.
+     *
+     * @param json Inline character objectives JSON, or null/empty to use the cached payload.
+     * @return Parsed objectives map. Null when no payload has ever been parsed.
+     */
+    private fun parseObjectivesJsonField(json: String?): Map<String, List<CharacterMandatoryRace>>? {
+        if (json.isNullOrEmpty()) return cachedInlineObjectives?.second
+        val hash = jsonContentFingerprint(json)
+        cachedInlineObjectives?.let { (cachedHash, value) -> if (cachedHash == hash) return value }
+        return runCatching { MandatoryRaces.parse(json) }
+            .onFailure { MessageLog.e(TAG, "Failed to parse inline objectivesDataJson: ${it.message}") }
+            .getOrNull()
+            ?.also { cachedInlineObjectives = hash to it }
+    }
+
+    /**
      * Parses a races JSON document into a turn-keyed candidate pool. Each entry must include
      * a `turnNumber` field - entries with `turnNumber <= 0` are silently dropped.
      *
@@ -1736,6 +1808,7 @@ object SmartRaceSolverIntegration {
                     entry.put("raceKey", decision.raceKey)
                     entry.put("name", race?.name ?: decision.raceKey)
                     entry.put("grade", race?.grade?.name ?: "")
+                    if (race?.isMandatory == true) entry.put("mandatory", true)
                 }
                 Decision.Train -> entry.put("type", "Train")
                 Decision.Rest -> entry.put("type", "Rest")
@@ -1791,6 +1864,8 @@ object SmartRaceSolverIntegration {
         val racesByTurn = loadAllRaces() ?: return null
         val epithets = loadEpithets() ?: emptyList()
         val filteredEpithets = epithetsForActiveContext(epithets, currentRunScenario)
+        val characterPreset = readRacingString("smartRaceSolverCharacterPreset").ifEmpty { null }
+        val augmentedRaces = applyMandatoryRaces(currentRunScenario, characterPreset, effectiveAptitudes(), racesByTurn, emptyMap()).racesByTurn
 
         val schedule: Schedule =
             if (reuseSchedule && cachedSchedule != null) {
@@ -1802,19 +1877,20 @@ object SmartRaceSolverIntegration {
 
         val winsSnapshot = synchronized(raceHistory) { raceHistory.toList() }
         val lossesSnapshot = synchronized(raceLosses) { raceLosses.toList() }
-        val contributionsByTurn = contributionsForSchedule(filteredEpithets, racesByTurn, schedule, winsSnapshot)
+        val contributionsByTurn = contributionsForSchedule(filteredEpithets, augmentedRaces, schedule, winsSnapshot)
 
         val decisions = JSONObject()
         for ((turn, decision) in schedule.decisions) {
             val entry = JSONObject()
             when (decision) {
                 is Decision.RaceDecision -> {
-                    val race = findCandidate(turn, decision.raceKey, decision.raceKey, racesByTurn)
+                    val race = findCandidate(turn, decision.raceKey, decision.raceKey, augmentedRaces)
                     entry.put("type", "Race")
                     entry.put("raceKey", decision.raceKey)
                     entry.put("name", race?.name ?: decision.raceKey)
                     entry.put("grade", race?.grade?.name ?: "")
                     if (race != null) addRaceDetails(entry, race)
+                    if (race?.isMandatory == true) entry.put("mandatory", true)
                     contributionsByTurn[turn]?.let { entry.put("contributions", it) }
                 }
                 Decision.Train -> entry.put("type", "Train")
@@ -1825,10 +1901,10 @@ object SmartRaceSolverIntegration {
 
         val results = JSONArray()
         for (win in winsSnapshot) {
-            results.put(buildResultEntry(win.turnNumber, win.raceKey, win.name, racesByTurn, RaceOutcome.WIN, contributionsByTurn[win.turnNumber]))
+            results.put(buildResultEntry(win.turnNumber, win.raceKey, win.name, augmentedRaces, RaceOutcome.WIN, contributionsByTurn[win.turnNumber]))
         }
         for (loss in lossesSnapshot) {
-            results.put(buildResultEntry(loss.turnNumber, loss.raceKey, loss.name, racesByTurn, RaceOutcome.LOSE, null))
+            results.put(buildResultEntry(loss.turnNumber, loss.raceKey, loss.name, augmentedRaces, RaceOutcome.LOSE, null))
         }
 
         // Always append a synthetic entry for the in-game Junior Make Debut race. This row is purely a visual breadcrumb in the Remote Log
@@ -1899,6 +1975,7 @@ object SmartRaceSolverIntegration {
                 .put("grade", race?.grade?.name ?: "")
                 .put("outcome", outcome.name)
         if (race != null) addRaceDetails(obj, race)
+        if (race?.isMandatory == true) obj.put("mandatory", true)
         if (contributions != null) obj.put("contributions", contributions)
         return obj
     }
