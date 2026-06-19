@@ -1191,7 +1191,7 @@ const ParentFarmingSettings = () => {
                                             <SearchableItem
                                                 id="parent-farming-goal-queue"
                                                 title="Goal queue"
-                                                description="Ordered list of character bundles and goal presets for mixed overnight farming."
+                                                description="Ordered list of character bundles and goal presets for mixed overnight farming. Loops back to the top once the multi-run count exceeds the queue length."
                                             >
                                                 <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
                                                     <ParentFarmingGoalQueueEditor items={goalQueueItems} onChange={updateGoalQueue} />

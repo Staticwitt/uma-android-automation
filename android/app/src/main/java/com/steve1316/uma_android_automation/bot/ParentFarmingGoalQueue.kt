@@ -64,11 +64,13 @@ object ParentFarmingGoalQueue {
         characterOverride = character?.takeIf { it.isNotEmpty() }
     }
 
+    /** Wraps [runIndex] into the queue so sessions longer than the queue cycle back to the start instead of repeating the last entry. */
+    fun wrappedIndex(runIndex: Int, queueSize: Int): Int = if (queueSize <= 0) 0 else runIndex % queueSize
+
     /** Read-only lookup of the patch for an upcoming run, without mutating the active patch. */
     fun peekPatchForRunIndex(runIndex: Int): ResolvedPatch? {
         if (!isEnabled() || patches.isEmpty()) return null
-        val index = runIndex.coerceIn(0, patches.lastIndex)
-        return patches[index]
+        return patches[wrappedIndex(runIndex, patches.size)]
     }
 
     fun applyForRunIndex(runIndex: Int) {
@@ -77,7 +79,7 @@ object ParentFarmingGoalQueue {
             activeIndex = -1
             return
         }
-        val index = runIndex.coerceIn(0, patches.lastIndex)
+        val index = wrappedIndex(runIndex, patches.size)
         activeIndex = index
         activePatch = patches[index]
         MessageLog.i(TAG, "Goal queue run ${runIndex + 1}/${patches.size}: ${activePatch!!.label}")
