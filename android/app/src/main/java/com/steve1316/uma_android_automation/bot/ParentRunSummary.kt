@@ -601,7 +601,7 @@ object ParentRunSummary {
             if (quality.score >= comparison.bestQualityScore) {
                 "New best quality score (previous best: ${comparison.bestGrade} · ${comparison.bestQualityScore}/100)"
             } else {
-                "vs best: ${comparison.bestGrade} · ${comparison.bestQualityScore}/100, ${formatNumber(comparison.bestFans)} fans"
+                "vs best: ${comparison.bestGrade} · ${comparison.bestQualityScore}/100, ${formatNumber(comparison.bestFans.toLong())} fans"
             }
         return "$vsAvg\n$vsBest"
     }
