@@ -333,6 +333,10 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableParentFarmingHarvestReport = true
             anyMigrated = true
         }
+        if (typeof racing.enableParentFarmingRespectSolverTraining !== "boolean") {
+            racing.enableParentFarmingRespectSolverTraining = false
+            anyMigrated = true
+        }
     }
 
     // Migration: Re-resolve parent-farming slices when mode is on and resolver revision is stale.

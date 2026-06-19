@@ -69,9 +69,9 @@ Runtime consumers of active patch:
 - `SmartRaceSolverIntegration.kt` — character preset and solver context
 - `ParentFarmingGoalQueue.kt` — `applyForRunIndex()` between multi-run careers
 
-### Kotlin gate (no navigation)
+### Kotlin gate (auto-navigates)
 
-`ParentFarmingGenerationFarm.kt` logs a throttled warning if breeding plan is on but the screen is not career selection. It does **not** navigate.
+`ParentFarmingGenerationFarm.kt` drives home → Career hub → trainee → scenario navigation (same machinery used between generations) whenever breeding plan is on and the screen is not career selection — including before the very first generation. Falls back to a throttled warning only once auto-navigation has nothing to do (no resolved target trainee yet, or it already gave up for this generation).
 
 ---
 
@@ -166,11 +166,12 @@ Safe to close #69 and #70 if still open.
 
 ## Known gaps / follow-ups
 
-1. **Manual career selection between gens** — user must return to career selection and re-pick trainee/scenario; bot does not navigate home or open Career hub.
-2. **Generation farm warn-only** — if started on wrong screen, bot logs warnings but does not block; user must self-correct.
-3. **Breeding plan vs manual goal queue** — breeding plan auto-builds the queue on bot start; separate “Multi-goal queue” editor under Automation still exists for non-breeding use cases.
-4. **Profile import** — Grass Wonder → Oguri profile is repo-only; not a built-in app preset (import JSON manually).
-5. **Draft PR backlog** — several UI/optimization branches not merged; see table above.
+1. **Breeding plan vs manual goal queue** — breeding plan auto-builds the queue on bot start; separate “Multi-goal queue” editor under Automation still exists for non-breeding use cases.
+2. **Draft PR backlog** — several UI/optimization branches not merged; see table above.
+
+Resolved: career-selection auto-navigation (including before the first generation) and a built-in
+Grass Wonder → Oguri preset both shipped in the "Generation farm: nav resilience..." commit — this
+section previously listed them as open gaps; the doc was stale.
 
 ---
 

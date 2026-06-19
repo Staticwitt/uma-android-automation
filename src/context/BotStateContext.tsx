@@ -136,6 +136,8 @@ export interface Settings {
         enableParentFarmingHarvestReport: boolean
         /** Bias training stat priorities toward weak parent aptitudes. */
         enableParentFarmingTrainingOptimizer: boolean
+        /** When the Smart Race Solver recommends training, skip the fan-farming interval race fallback instead of racing anyway. */
+        enableParentFarmingRespectSolverTraining: boolean
         /** Surface dead-epithet recovery guidance mid-run. */
         enableParentFarmingRecoveryCoach: boolean
         /** Scroll friend borrow lists when visible slots fail OCR. */
@@ -407,6 +409,7 @@ export const defaultSettings: Settings = {
         enableParentFarmingGameDataFactorOcr: true,
         enableParentFarmingHarvestReport: true,
         enableParentFarmingTrainingOptimizer: true,
+        enableParentFarmingRespectSolverTraining: false,
         enableParentFarmingRecoveryCoach: true,
         enableParentFarmingBorrowIntelligence: true,
         enableParentFarmingAutoScenario: true,

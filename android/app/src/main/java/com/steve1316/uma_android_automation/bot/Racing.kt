@@ -70,6 +70,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     /** Whether to enable farming fans through extra races. */
     val enableFarmingFans = SettingsHelper.getBooleanSetting("racing", "enableFarmingFans")
 
+    /** When parent farming mode is on, skip the fan-farming interval race fallback instead of racing whenever the Smart Race Solver recommends training. */
+    private val enableParentFarmingRespectSolverTraining = SettingsHelper.getBooleanSetting("racing", "enableParentFarmingRespectSolverTraining", false)
+
     /** Whether to ignore the warning that appears when racing three times in a row. */
     val ignoreConsecutiveRaceWarning = SettingsHelper.getBooleanSetting("racing", "ignoreConsecutiveRaceWarning")
 
@@ -773,6 +776,14 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             if (!SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)) {
                 MessageLog.i(TAG, "[RACE] Smart Race Solver has no race planned for turn ${campaign.date.day}. Skipping the extra-race fallback.")
                 campaign.decisionTracer.recordRaceEligibility(eligible = false, reason = "Smart Race Solver has no race planned for this turn")
+                return false
+            }
+            if (enableParentFarmingRespectSolverTraining) {
+                MessageLog.i(
+                    TAG,
+                    "[RACE] Parent farming mode: Smart Race Solver has no race planned for turn ${campaign.date.day}. Respecting solver's training call (fan-farming fallback disabled).",
+                )
+                campaign.decisionTracer.recordRaceEligibility(eligible = false, reason = "Parent farming mode: respecting Smart Race Solver's training call instead of fan-farming interval fallback")
                 return false
             }
             MessageLog.i(

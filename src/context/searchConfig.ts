@@ -436,6 +436,12 @@ const searchConfig: SearchOption[] = [
         page: "ParentFarmingSettings",
     },
     {
+        id: "enable-parent-farming-respect-solver-training",
+        title: "Respect Solver Training Calls",
+        description: "Skip fan-farming race fallback when the Smart Race Solver recommends training instead.",
+        page: "ParentFarmingSettings",
+    },
+    {
         id: "enable-parent-farming-recovery-coach",
         title: "Recovery Coach",
         description: "Dead epithet guidance in message log and Discord.",

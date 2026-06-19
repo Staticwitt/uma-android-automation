@@ -74,14 +74,26 @@ object ParentFarmingGenerationFarm {
             SettingsHelper.getBooleanSetting("racing", "enableParentFarmingBreedingPlan", false)
 
     /**
-     * Logs a throttled reminder when generation farm is active but the screen is not career selection.
-     * Does not navigate or block other automation; auto-navigation between careers happens via
-     * [tryAdvanceNavigation], driven from [ParentFarmingRunLoop].
+     * Drives the same home → Career hub → trainee → scenario navigation used between generations
+     * (see [tryAdvanceNavigation]) when generation farm is active but the screen is not career
+     * selection — e.g. before the very first generation, when the user hasn't navigated there yet.
+     * Falls back to a throttled reminder once auto-navigation has nothing to do (no resolved target
+     * trainee, or [hasFailed] already gave up for this generation).
      */
     fun tryGate(game: Game, campaign: Campaign) {
         if (!isEnabled()) return
         if (campaign.checkMainScreen()) return
         if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
+            iteration = 0
+            return
+        }
+
+        val pendingPatch = ParentFarmingGoalQueue.peekPatchForRunIndex(ParentFarmingRunLoop.sessionRunsCompleted())
+        val targetCharacter = pendingPatch?.characterPreset ?: ""
+        val targetScenario =
+            pendingPatch?.scenario?.ifEmpty { null } ?: SettingsHelper.getStringSetting("general", "scenario", "Trackblazer")
+
+        if (targetCharacter.isNotEmpty() && !hasFailed() && tryAdvanceNavigation(game, campaign, targetCharacter, targetScenario)) {
             iteration = 0
             return
         }
