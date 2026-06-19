@@ -1,27 +1,30 @@
 package com.steve1316.uma_android_automation.bot
 
-import android.graphics.Bitmap
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
-import com.steve1316.uma_android_automation.utils.CustomImageUtils
 
 /**
- * Auto-equips the four owned support slots at career selection using OCR on slot labels
- * and scroll-list matching in the support picker.
+ * Auto-equips the owned support slots at career selection via a tap-and-pick pass over the
+ * 3x2 owned-slot grid (the trailing grid cell is the friend slot and is never tapped here).
+ *
+ * The grid slots render card art with no name text, so there is no reliable OCR signal to
+ * check whether a slot is already "satisfied" — every enabled slot is tapped and re-picked
+ * each run, bounded by [MAX_EQUIP_ATTEMPTS] as a timing safety net only.
  */
 object OwnedSupportDeckEquipper {
     private const val TAG = "[OWNED_SUPPORT]"
     private const val MAX_EQUIP_ATTEMPTS = 2
 
-    /** Horizontal centers for owned support slots on career selection (fraction of screen width). */
-    private val OWNED_SLOT_X_FRACTIONS = doubleArrayOf(0.14, 0.32, 0.50, 0.68)
-
-    /** Vertical center for owned slot OCR/taps (fraction of screen height). */
-    private const val OWNED_SLOT_Y_FRACTION = 0.56
-
-    private const val OCR_WIDTH_FRACTION = 0.16
-    private const val OCR_HEIGHT_FRACTION = 0.08
+    /** Centers (x, y fractions of screen size) for the 5 owned-card slots in the 3x2 career-selection grid. */
+    private val OWNED_SLOT_FRACTIONS =
+        listOf(
+            0.205 to 0.373,
+            0.499 to 0.373,
+            0.794 to 0.373,
+            0.205 to 0.548,
+            0.499 to 0.548,
+        )
 
     @Volatile private var equipAttemptedThisRun = false
     @Volatile private var equipAttempts = 0
@@ -53,15 +56,7 @@ object OwnedSupportDeckEquipper {
 
         if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
 
-        val imageUtils = game.imageUtils
-        val sourceBitmap = imageUtils.getSourceBitmap()
-        var slotTexts = ocrOwnedSlotTexts(imageUtils, sourceBitmap)
-        val targetCount = ownedCards.size.coerceAtMost(4)
-        if (countSatisfiedSlotsFromTexts(slotTexts, ownedCards) >= targetCount) {
-            equipAttemptedThisRun = true
-            MessageLog.i(TAG, "Owned support slots already match saved deck.")
-            return false
-        }
+        val targetCount = ownedCards.size.coerceAtMost(OWNED_SLOT_FRACTIONS.size)
 
         equipAttempts++
         MessageLog.i(
@@ -69,83 +64,36 @@ object OwnedSupportDeckEquipper {
             "Equipping owned support deck (attempt $equipAttempts/$MAX_EQUIP_ATTEMPTS): ${ownedCards.joinToString(" · ")}",
         )
 
-        for (index in ownedCards.indices.take(OWNED_SLOT_X_FRACTIONS.size)) {
+        var equippedCount = 0
+        for (index in ownedCards.indices.take(OWNED_SLOT_FRACTIONS.size)) {
             val cardName = ownedCards[index]
             if (SupportCardSelection.isTraineeCharacter(cardName)) {
                 MessageLog.w(TAG, "Skipping owned slot $index — \"$cardName\" matches the trainee.")
                 continue
             }
-            if (slotMatchesCard(slotTexts.getOrNull(index).orEmpty(), cardName)) {
-                MessageLog.i(TAG, "Slot $index already shows \"$cardName\".")
-                continue
-            }
 
-            val centerX = SharedData.displayWidth * OWNED_SLOT_X_FRACTIONS[index]
-            val centerY = SharedData.displayHeight * OWNED_SLOT_Y_FRACTION
+            val (xFraction, yFraction) = OWNED_SLOT_FRACTIONS[index]
+            val centerX = SharedData.displayWidth * xFraction
+            val centerY = SharedData.displayHeight * yFraction
             game.tap(centerX, centerY)
             game.wait(0.8)
             if (SupportCardSelection.findAndTapCardInList(game, cardName, TAG)) {
-                slotTexts =
-                    slotTexts.toMutableList().also { texts ->
-                        texts[index] = ocrOwnedSlotText(imageUtils, imageUtils.getSourceBitmap(), index)
-                    }
+                equippedCount++
             } else {
                 MessageLog.w(TAG, "Could not select owned support \"$cardName\" for slot $index.")
             }
         }
 
-        slotTexts = ocrOwnedSlotTexts(imageUtils, imageUtils.getSourceBitmap())
-        val satisfiedAfterPass = countSatisfiedSlotsFromTexts(slotTexts, ownedCards)
-        MessageLog.i(TAG, "Owned support equip finished ($satisfiedAfterPass/$targetCount slots).")
+        MessageLog.i(TAG, "Owned support equip finished ($equippedCount/$targetCount slots).")
 
-        if (satisfiedAfterPass >= targetCount) {
+        if (equippedCount >= targetCount || equipAttempts >= MAX_EQUIP_ATTEMPTS) {
             equipAttemptedThisRun = true
-            return false
-        }
-
-        if (equipAttempts >= MAX_EQUIP_ATTEMPTS) {
-            equipAttemptedThisRun = true
-            MessageLog.w(TAG, "Giving up on owned support equip after $MAX_EQUIP_ATTEMPTS attempts.")
+            if (equippedCount < targetCount) {
+                MessageLog.w(TAG, "Giving up on owned support equip after $MAX_EQUIP_ATTEMPTS attempts.")
+            }
             return false
         }
 
         return true
     }
-
-    internal fun countSatisfiedSlots(
-        imageUtils: CustomImageUtils,
-        sourceBitmap: Bitmap,
-        ownedCards: List<String>,
-    ): Int = countSatisfiedSlotsFromTexts(ocrOwnedSlotTexts(imageUtils, sourceBitmap), ownedCards)
-
-    internal fun countSatisfiedSlotsFromTexts(slotTexts: List<String>, ownedCards: List<String>): Int {
-        var satisfied = 0
-        for (index in ownedCards.indices.take(OWNED_SLOT_X_FRACTIONS.size)) {
-            val cardName = ownedCards[index]
-            if (SupportCardSelection.isTraineeCharacter(cardName)) continue
-            if (slotMatchesCard(slotTexts.getOrNull(index).orEmpty(), cardName)) {
-                satisfied++
-            }
-        }
-        return satisfied
-    }
-
-    internal fun ocrOwnedSlotTexts(imageUtils: CustomImageUtils, sourceBitmap: Bitmap): List<String> =
-        OWNED_SLOT_X_FRACTIONS.indices.map { index -> ocrOwnedSlotText(imageUtils, sourceBitmap, index) }
-
-    internal fun ocrOwnedSlotText(imageUtils: CustomImageUtils, sourceBitmap: Bitmap, index: Int): String {
-        val centerX = SharedData.displayWidth * OWNED_SLOT_X_FRACTIONS[index]
-        val centerY = SharedData.displayHeight * OWNED_SLOT_Y_FRACTION
-        return SupportCardSelection.ocrRegion(
-            imageUtils,
-            sourceBitmap,
-            centerX,
-            centerY,
-            OCR_WIDTH_FRACTION,
-            OCR_HEIGHT_FRACTION,
-            "owned_support_slot_$index",
-        )
-    }
-
-    internal fun slotMatchesCard(ocrText: String, cardName: String): Boolean = SupportCardSelection.matchesName(ocrText, cardName)
 }

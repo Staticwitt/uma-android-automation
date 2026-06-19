@@ -1,21 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.43</latestVersion>
-    <latestVersionCode>133</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.43</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.43/v5.9.43-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.43/v5.9.43-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.44</latestVersion>
+    <latestVersionCode>134</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.44</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.44/v5.9.44-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.44/v5.9.44-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.43 - Quality breakdown and run history comparison in Discord notifications
+v5.9.44 - Fix owned support deck auto-equip grid layout
 
-Features
+Fixes
 ---
-- The end-of-career Discord embed now shows a breakdown of the parent quality score
-  (epithets, fans, forced routes, race record, sparks, bonus) instead of just the total
-  grade, so it's clear what drove the score.
-- Added a History field comparing the finished run against your archived run history:
-  delta vs. session average and vs. your personal best fan count/quality score, or a
-  "new best" callout when the run breaks your record.
+- The owned support deck auto-equip now matches the actual 3x2 career-selection grid
+  (5 owned slots + 1 friend slot) instead of a hardcoded 4-slot single row, so all
+  configured owned cards get tapped into the correct slots.
+- Removed the OCR "already equipped" check for owned slots, since the grid renders
+  card art with no name text to read; equipping now always taps and re-picks each
+  slot, bounded by a fixed attempt cap.
 
     </releaseNotes>
   </update>
