@@ -291,12 +291,12 @@ class Game(val myContext: Context) {
             )
         }
         if (debugMode) MessageLog.w(TAG, "[WARN] ⚠️ Debug Mode is enabled. All bot operations will be significantly slower as a result.")
-        if (SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble() != imageUtils.customScale) {
+        if (SettingsHelper.getDoubleSetting("debug", "templateMatchCustomScale", 1.0) != imageUtils.customScale) {
             MessageLog.i(TAG, "[INFO] Effective template match scale: ${imageUtils.customScale}")
-        } else if (SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble() != 1.0) {
+        } else if (SettingsHelper.getDoubleSetting("debug", "templateMatchCustomScale", 1.0) != 1.0) {
             MessageLog.w(
                 TAG,
-                "[WARN] Manual scale has been set to ${SettingsHelper.getStringSetting("debug", "templateMatchCustomScale").toDouble()}",
+                "[WARN] Manual scale has been set to ${SettingsHelper.getDoubleSetting("debug", "templateMatchCustomScale", 1.0)}",
             )
         }
         MessageLog.w(
