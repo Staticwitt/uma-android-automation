@@ -157,6 +157,7 @@ const ParentFarmingSettings = () => {
         enableParentFarmingGameDataFactorOcr,
         enableParentFarmingHarvestReport,
         enableParentFarmingTrainingOptimizer,
+        enableParentFarmingRespectSolverTraining,
         enableParentFarmingRecoveryCoach,
         enableParentFarmingBorrowIntelligence,
         enableParentFarmingAutoScenario,
@@ -718,6 +719,17 @@ const ParentFarmingSettings = () => {
                                         <Switch
                                             checked={enableParentFarmingTrainingOptimizer}
                                             onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingTrainingOptimizer", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-parent-farming-respect-solver-training"
+                                    title="Respect solver training calls"
+                                    description="When the Smart Race Solver says train instead of race, skip the fan-farming interval fallback instead of racing anyway. Trades fan progress for more consistent spark training."
+                                    right={
+                                        <Switch
+                                            checked={enableParentFarmingRespectSolverTraining}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingRespectSolverTraining", checked)}
                                         />
                                     }
                                 />
