@@ -33,7 +33,7 @@ export const deepMerge = <T extends Record<string, any>>(target: T, source: Part
  *
  * Categories of entries:
  * - `misc.formattedSettingsString` — built and persisted directly by `MessageLog`'s debounced effect.
- * - `racing.{racesData,epithetsData,characterPresetsData}` — bundled JSON assets for the Smart Race
+ * - `racing.{racesData,epithetsData,characterPresetsData,characterObjectivesData}` — bundled JSON assets for the Smart Race
  *   Solver, written once at bootstrap by `populateSolverData`; only consumed by Kotlin via
  *   `SettingsHelper.getStringSetting`.
  * - `racing.racingPlanData` — bundled racing plan blob written by the racing-plan generator;
@@ -46,6 +46,7 @@ export const DB_OWNED_KEYS: readonly (readonly [string, string])[] = [
     ["racing", "racesData"],
     ["racing", "epithetsData"],
     ["racing", "characterPresetsData"],
+    ["racing", "characterObjectivesData"],
     ["racing", "racingPlanData"],
     ["trainingEvent", "characterEventData"],
     ["trainingEvent", "supportEventData"],
