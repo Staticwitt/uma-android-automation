@@ -2,19 +2,13 @@ package com.steve1316.uma_android_automation.bot
 
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.nio.file.Files
-import java.nio.file.Paths
+import java.io.File
 
 /** Guards career-selection automation order in [Campaign.process]. */
 class CareerSelectionAutomationOrderTest {
     @Test
     fun campaignProcess_runsParentsBeforeOwnedEquipAndBorrow() {
-        val source =
-            Files.readString(
-                Paths.get(
-                    "src/main/java/com/steve1316/uma_android_automation/bot/Campaign.kt",
-                ),
-            )
+        val source = File("src/main/java/com/steve1316/uma_android_automation/bot/Campaign.kt").readText()
         val legacyIndex = source.indexOf("LegacyParentSelector.tryTriggerAutoSelect")
         val equipIndex = source.indexOf("OwnedSupportDeckEquipper.tryEquipOwnedDeck")
         val borrowIndex = source.indexOf("SupportCardBorrower.tryOpenBorrowDialog")
