@@ -12,7 +12,9 @@ class CareerSelectionAutomationOrderTest {
         val legacyIndex = source.indexOf("LegacyParentSelector.tryTriggerAutoSelect")
         val equipIndex = source.indexOf("OwnedSupportDeckEquipper.tryEquipOwnedDeck")
         val borrowIndex = source.indexOf("SupportCardBorrower.tryOpenBorrowDialog")
-        val startIndex = source.indexOf("CareerSelectionAutomation.tryStartCareer")
+        // Search from borrowIndex: an unrelated, earlier "final_confirmation" call site also matches
+        // this string, which would otherwise make startIndex resolve before borrowIndex.
+        val startIndex = source.indexOf("CareerSelectionAutomation.tryStartCareer", borrowIndex)
 
         assertTrue(legacyIndex >= 0 && equipIndex > legacyIndex, "legacy parent step should appear before owned equip")
         assertTrue(equipIndex >= 0 && borrowIndex > equipIndex, "owned equip should appear before borrow")

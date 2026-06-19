@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
 
 /** Unit tests for [SupportCardSelection] OCR matching helpers. */
 class SupportCardSelectionTest {
@@ -50,10 +51,12 @@ class SupportCardSelectionTest {
 
     @Test
     fun entryDedupeKey_usesBoundingBox() {
+        // entryDedupeKey only reads bbox; a real Bitmap can't be constructed under the
+        // unmocked Android-stub unit-test runtime (Bitmap.createBitmap returns null), so mock it.
         val entry =
             ScrollListEntry(
                 index = 0,
-                bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
+                bitmap = mock(Bitmap::class.java),
                 bbox = BoundingBox(x = 10, y = 20, w = 100, h = 50),
             )
         assertEquals("10:20:100:50", SupportCardSelection.entryDedupeKey(entry))

@@ -266,6 +266,9 @@ dependencies {
     testImplementation("org.json:json:20240303")
     // XmlPullParserFactory needs a JVM implementation for parseUpdateXml unit tests.
     testImplementation("net.sf.kxml:kxml2:2.3.0")
+    // Mockito (inline mock maker) to stand in for Android stub classes like Bitmap, which the
+    // unit-test runtime cannot instantiate directly (no Robolectric in this project).
+    testImplementation("org.mockito:mockito-core:5.12.0")
 
     // ONNX Runtime for YOLOv8 inference and on-device doc embedding for the documentation chatbot.
     implementation(libs.onnxruntime)
