@@ -1,18 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.38</latestVersion>
-    <latestVersionCode>128</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.38</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.38/v5.9.38-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.38/v5.9.38-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.39</latestVersion>
+    <latestVersionCode>129</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.39</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.39/v5.9.39-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.39/v5.9.39-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.38 - Fix parent farming crash on Complete Career dialog
+v5.9.39 - Fix Trackblazer shop on Samsung devices
 
 Fixes
 ---
-- Handle the Complete Career confirmation dialog during multi-run parent farming so the bot can return to career selection instead of crashing with Unhandled dialog: complete_career
+- Shop item scanning now anchors rows on shop checkboxes instead of the training-items + button
+- Shop list detection uses dialog scroll markers (works on 1080x2340 @ 450 DPI Samsung layouts)
 
-Includes v5.9.37 Trackblazer shop fix and v5.9.36 race win detection.
+Includes v5.9.37 shop dialog fix, v5.9.38 Complete Career dialog fix.
 
     </releaseNotes>
   </update>

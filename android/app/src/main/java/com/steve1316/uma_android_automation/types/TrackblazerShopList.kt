@@ -702,18 +702,25 @@ class TrackblazerShopList(private val game: Game) {
     fun processItemsWithFallback(keyExtractor: ((ScrollListEntry) -> String?)? = null, callback: (ScrollListEntry) -> Boolean): Boolean {
         // Training Items dialog uses specific scroll regions if detected.
         val isTrainingItems = ButtonConfirmUse.check(game.imageUtils)
-        val topLeft = if (isTrainingItems) IconDialogScrollListTopLeft else null
-        val bottomRight = if (isTrainingItems) IconDialogScrollListBottomRight else null
 
         if (!isTrainingItems) {
             // Always check if the shop is on sale for default shop lists.
             isShopOnSale = LabelOnSale.check(game.imageUtils)
         }
 
+        // Training Items rows use the + button; Trackblazer Shop rows use checkboxes. On Samsung (1080x2340)
+        // the shop screen does not expose race-list scroll markers, so use dialog-list corners and anchor
+        // each row on CheckboxShopItem instead of ButtonSkillUp.
+        val rowComponent = if (isTrainingItems) ButtonSkillUp else CheckboxShopItem
+        val topLeft = IconDialogScrollListTopLeft
+        val bottomRight = IconDialogScrollListBottomRight
+        val bForceComponentDetection = !isTrainingItems
+
         return ScrollList.processWithFallback(
             game,
             keyExtractor = keyExtractor,
-            fallbackComponent = ButtonSkillUp,
+            fallbackComponent = rowComponent,
+            bForceComponentDetection = bForceComponentDetection,
             listTopLeftComponent = topLeft,
             listBottomRightComponent = bottomRight,
         ) { _, entry: ScrollListEntry ->
