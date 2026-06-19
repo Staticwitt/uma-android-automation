@@ -166,6 +166,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     /** Tracks if the last race selected was a Rival Race. */
     var lastRaceIsRival: Boolean = false
 
+    /** Latched when the Congratulations banner is seen during race result flow (avoids false losses). */
+    private var raceFirstPlaceDetected = false
+
     /** Tracks if the current race has already been retried. */
     var bRetriedCurrentRace: Boolean = false
 
@@ -1218,6 +1221,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
      */
     fun runRaceWithRetries(): Boolean {
         MessageLog.i(TAG, "[RACE] Proceeding to handle the race...")
+        raceFirstPlaceDetected = false
         game.wait(0.5, skipWaitingForLoading = true)
 
         // Flag used to prevent us from attempting to select a running style after we've already successfully selected a running style once.
@@ -1240,6 +1244,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             }
 
             val bitmap: Bitmap = game.imageUtils.getSourceBitmap()
+            noteCongratulationsIfVisible(bitmap)
 
             when {
                 // Handle the race prep screen (See/View Results / Go to Race Results / manual race).
@@ -1365,6 +1370,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 }
 
                 ButtonNext.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                    noteCongratulationsIfVisible(bitmap)
                     MessageLog.i(TAG, "[RACE] Reached race results screen. Exiting race retry loop...")
                     return true
                 }
@@ -1376,6 +1382,37 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 }
             }
         } while (true)
+    }
+
+    /** Records 1st place when the Congratulations banner is visible on the current frame. */
+    private fun noteCongratulationsIfVisible(sourceBitmap: Bitmap? = null) {
+        if (raceFirstPlaceDetected) return
+        val detected =
+            if (sourceBitmap != null) {
+                LabelCongratulations.check(game.imageUtils, sourceBitmap = sourceBitmap, tries = 2)
+            } else {
+                LabelCongratulations.check(game.imageUtils, tries = 2)
+            }
+        if (detected) {
+            raceFirstPlaceDetected = true
+            MessageLog.i(TAG, "[RACE] Congratulations banner detected (1st place).")
+        }
+    }
+
+    /**
+     * Detects a 1st-place finish by latching the banner during [runRaceWithRetries] and polling
+     * on the results screen. A single missed frame previously recorded wins as losses.
+     */
+    private fun detectFirstPlaceFinish(): Boolean {
+        if (raceFirstPlaceDetected) return true
+        repeat(20) { attempt ->
+            noteCongratulationsIfVisible()
+            if (raceFirstPlaceDetected) return true
+            if (attempt < 19) {
+                game.wait(0.25, skipWaitingForLoading = true)
+            }
+        }
+        return false
     }
 
     /**
@@ -1394,14 +1431,16 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         // Bot should be at the screen where it shows the final positions of all participants.
         if (!ButtonNext.check(game.imageUtils, tries = 30)) {
             MessageLog.e(TAG, "[ERROR] finalizeRaceResults:: Cannot start the cleanup process for finishing the race. Moving on...")
-            SmartRaceSolverIntegration.commitPendingRace(won = false)
+            val firstPlace = detectFirstPlaceFinish()
+            MessageLog.i(TAG, "[RACE] Race result (no Next button) — 1st place: $firstPlace.")
+            SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
             return false
         }
 
         // Use the Congratulations banner to confirm 1st place — only real wins should land
         // in the solver's history. Losses drop the pending entry so the next plan sees the
         // unchanged history.
-        val firstPlace = LabelCongratulations.check(game.imageUtils)
+        val firstPlace = detectFirstPlaceFinish()
         MessageLog.i(TAG, "[RACE] Race result detected — 1st place: $firstPlace.")
         SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
 

@@ -1,23 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.35</latestVersion>
-    <latestVersionCode>125</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.35</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.35/v5.9.35-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.35/v5.9.35-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.36</latestVersion>
+    <latestVersionCode>126</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.36</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.36/v5.9.36-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.36/v5.9.36-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.35 - Navigation resilience, resumable sessions, lineage view, more presets
+v5.9.36 - Fix false race loss on Discord / solver
 
-Changes
+Fixes
 ---
-- Generation farm auto-navigation now retries with a bounded limit and sends a Discord alert on failure instead of silently spinning
-- Optional fallback to the previous generation's trainee when the next one can't be found, keeping the multi-run session going
-- Breeding-plan validation warnings (unknown bundle/preset keys) now show in the editor and as a confirm dialog before bot start
-- Multi-run sessions resume at the last completed generation after a bot restart, with a "Reset progress" action
-- New lineage view in the run archive: chains a breeding-plan session's runs into a generation-ordered pedigree
-- 7 additional built-in breeding-plan presets (Classic Crown 3-gen chain, Triple Tiara, Unity Aoharu, stayer/senior-finale, alt mile-sprint route)
+- Smart Race Solver no longer records a loss when you actually won: Congratulations banner is latched during the full race result flow and polled with retries before committing win/loss
+- Stops incorrect "Race lost" Discord alerts and epithets marked dead after a win
 
-Includes v5.9.34 generation farm auto-navigation.
+Includes v5.9.35 generation farm and session improvements.
 
     </releaseNotes>
   </update>
