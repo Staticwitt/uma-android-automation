@@ -106,6 +106,10 @@ export interface Settings {
         enableParentFarmingStopOnForcedEpithetFail: boolean
         /** Rotate friend borrow priority each run in a multi-run session. */
         enableParentFarmingBorrowRotation: boolean
+        /** Resume a multi-run session at its last completed generation after a bot restart, if the breeding plan is unchanged. */
+        enableParentFarmingResumeSession: boolean
+        /** Fall back to the previous generation's trainee when generation-farm auto-navigation can't find the next one. */
+        enableParentFarmingNavFallbackTrainee: boolean
         /** End-to-end unattended: career-complete skills + carat race retry. */
         enableParentFarmingFullUnattended: boolean
         /** Re-sync preset-owned fields when conflicting toggles are changed. */
@@ -388,6 +392,8 @@ export const defaultSettings: Settings = {
         enableParentFarmingKeepBestRun: true,
         enableParentFarmingStopOnForcedEpithetFail: false,
         enableParentFarmingBorrowRotation: false,
+        enableParentFarmingResumeSession: true,
+        enableParentFarmingNavFallbackTrainee: false,
         enableParentFarmingFullUnattended: true,
         enableParentFarmingLockPreset: false,
         enableParentFarmingAutoDowngradeForcedEpithets: true,

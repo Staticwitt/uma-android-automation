@@ -143,6 +143,8 @@ const ParentFarmingSettings = () => {
         enableParentFarmingKeepBestRun,
         enableParentFarmingStopOnForcedEpithetFail,
         enableParentFarmingBorrowRotation,
+        enableParentFarmingResumeSession,
+        enableParentFarmingNavFallbackTrainee,
         enableParentFarmingFullUnattended,
         enableParentFarmingLockPreset,
         enableParentFarmingAutoDowngradeForcedEpithets,
@@ -1252,6 +1254,32 @@ const ParentFarmingSettings = () => {
                                                     checked={enableParentFarmingStopOnForcedEpithetFail}
                                                     onCheckedChange={(checked) =>
                                                         updateRacingSetting("enableParentFarmingStopOnForcedEpithetFail", checked)
+                                                    }
+                                                />
+                                            }
+                                        />
+                                        <SettingRow
+                                            id="enable-parent-farming-resume-session"
+                                            title="Resume after bot restart"
+                                            searchTitle="Resume multi-run session"
+                                            description="Pick up at the last completed generation if the bot restarts mid breeding-plan, as long as the plan hasn't changed."
+                                            right={
+                                                <Switch
+                                                    checked={enableParentFarmingResumeSession}
+                                                    onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingResumeSession", checked)}
+                                                />
+                                            }
+                                        />
+                                        <SettingRow
+                                            id="enable-parent-farming-nav-fallback-trainee"
+                                            title="Fall back to previous trainee"
+                                            searchTitle="Generation farm navigation fallback"
+                                            description="If generation-farm auto-navigation can't find the next trainee, continue with the previous generation's trainee instead of stopping the session."
+                                            right={
+                                                <Switch
+                                                    checked={enableParentFarmingNavFallbackTrainee}
+                                                    onCheckedChange={(checked) =>
+                                                        updateRacingSetting("enableParentFarmingNavFallbackTrainee", checked)
                                                     }
                                                 />
                                             }

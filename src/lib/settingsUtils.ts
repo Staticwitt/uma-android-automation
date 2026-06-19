@@ -293,6 +293,14 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableParentFarmingBorrowRotation = false
             anyMigrated = true
         }
+        if (typeof racing.enableParentFarmingResumeSession !== "boolean") {
+            racing.enableParentFarmingResumeSession = true
+            anyMigrated = true
+        }
+        if (typeof racing.enableParentFarmingNavFallbackTrainee !== "boolean") {
+            racing.enableParentFarmingNavFallbackTrainee = false
+            anyMigrated = true
+        }
         if (typeof racing.enableParentFarmingFullUnattended !== "boolean") {
             racing.enableParentFarmingFullUnattended = true
             anyMigrated = true

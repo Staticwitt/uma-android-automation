@@ -36,6 +36,9 @@ object ParentFarmingGoalQueue {
     @Volatile private var activeIndex: Int = -1
     @Volatile private var activePatch: ResolvedPatch? = null
 
+    /** Set when generation-farm auto-navigation falls back to a different trainee than the active patch specifies. */
+    @Volatile private var characterOverride: String? = null
+
     fun isEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
             SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMultiRun", false) &&
@@ -45,10 +48,20 @@ object ParentFarmingGoalQueue {
         patches = loadPatches()
         activeIndex = if (isEnabled() && patches.isNotEmpty()) 0 else -1
         activePatch = patches.getOrNull(activeIndex)
+        characterOverride = null
         if (activePatch != null) {
             MessageLog.i(TAG, "Goal queue session started (${patches.size} goals). First: ${activePatch!!.label}")
             logActivePatch(activePatch!!)
         }
+    }
+
+    /**
+     * Overrides the trainee reported by [overrideString] for "smartRaceSolverCharacterPreset" so runtime
+     * consumers (solver, legacy parent selector) read the trainee actually in play, not the patch's
+     * originally-intended one. Used when auto-navigation falls back to a different trainee. Pass null to clear.
+     */
+    fun setCharacterOverride(character: String?) {
+        characterOverride = character?.takeIf { it.isNotEmpty() }
     }
 
     /** Read-only lookup of the patch for an upcoming run, without mutating the active patch. */
@@ -83,7 +96,7 @@ object ParentFarmingGoalQueue {
     fun overrideString(key: String, fallback: String): String {
         val patch = activePatch ?: return fallback
         return when (key) {
-            "smartRaceSolverCharacterPreset" -> patch.characterPreset.ifEmpty { fallback }
+            "smartRaceSolverCharacterPreset" -> characterOverride ?: patch.characterPreset.ifEmpty { fallback }
             "smartRaceSolverAptitudes" -> patch.aptitudes.ifEmpty { fallback }
             "smartRaceSolverTargetEpithets" -> patch.targetEpithets.ifEmpty { fallback }
             "smartRaceSolverForcedEpithets" -> patch.forcedEpithets.ifEmpty { fallback }

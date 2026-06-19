@@ -128,6 +128,48 @@ export const buildBreedingPlanGoalQueueResolved = (
     return patches
 }
 
+export interface ParentFarmingBreedingPlanWarning {
+    generationIndex: number
+    label: string
+    message: string
+}
+
+/**
+ * Flags generations whose bundleKey/goalPresetKey don't resolve to a known entry. applyBreedingGenerationToSettings
+ * silently no-ops on an unresolved key (the generation just inherits the previous generation's settings unchanged),
+ * so this is the only signal the user gets that an imported/hand-edited plan has a stale or typo'd key.
+ */
+export const validateBreedingPlan = (plan: ParentFarmingBreedingPlan): ParentFarmingBreedingPlanWarning[] => {
+    const warnings: ParentFarmingBreedingPlanWarning[] = []
+    plan.generations.forEach((gen, index) => {
+        const label = gen.label || `Gen ${index + 1}`
+        if (gen.bundleKey) {
+            if (!findParentFarmingCharacterBundle(gen.bundleKey)) {
+                warnings.push({
+                    generationIndex: index,
+                    label,
+                    message: `Unknown character bundle "${gen.bundleKey}" — this generation will keep the previous generation's settings unchanged.`,
+                })
+            }
+        } else if (gen.goalPresetKey) {
+            if (!findParentFarmingGoalPreset(gen.goalPresetKey)) {
+                warnings.push({
+                    generationIndex: index,
+                    label,
+                    message: `Unknown goal preset "${gen.goalPresetKey}" — this generation will keep the previous generation's settings unchanged.`,
+                })
+            }
+        } else {
+            warnings.push({
+                generationIndex: index,
+                label,
+                message: "No goal preset or character bundle selected — this generation will keep the previous generation's settings unchanged.",
+            })
+        }
+    })
+    return warnings
+}
+
 export const defaultBreedingPlan = (): ParentFarmingBreedingPlan => ({
     generations: [
         {
@@ -144,3 +186,119 @@ export const defaultBreedingPlan = (): ParentFarmingBreedingPlan => ({
         },
     ],
 })
+
+export interface ParentFarmingBuiltInBreedingPlan {
+    key: string
+    label: string
+    description: string
+    plan: ParentFarmingBreedingPlan
+}
+
+/** Curated breeding plans selectable in the editor's empty state, without needing to hand-edit JSON. */
+export const builtInBreedingPlans = (): ParentFarmingBuiltInBreedingPlan[] => [
+    {
+        key: "generic-2gen",
+        label: "Generic 2-gen template",
+        description: "Skill-hint base parent, then a fan/epithet chase with a factor target. Good starting point for any pair.",
+        plan: defaultBreedingPlan(),
+    },
+    {
+        key: "grass-wonder-oguri",
+        label: "Grass Wonder → Ashen Miracle Oguri",
+        description: "Mile parent first, then Oguri Cap inheriting Grass Wonder as legacy for Gourmand / Triple 7s / Corner Recovery.",
+        plan: {
+            generations: [
+                {
+                    label: "Gen 1 — Grass Wonder mile parent",
+                    bundleKey: "grass-wonder-mile",
+                    targetFactorSkills: [],
+                    usePreviousAsLegacy: false,
+                },
+                {
+                    label: "Gen 2 — Ashen Miracle Oguri",
+                    bundleKey: "oguri-cap-g1",
+                    targetFactorSkills: ["Gourmand", "Triple 7s", "Corner Recovery ○"],
+                    usePreviousAsLegacy: true,
+                },
+            ],
+        },
+    },
+    {
+        key: "special-week-gold-ship",
+        label: "Special Week → Gold Ship",
+        description: "Two G1 / fan parents back to back — Special Week first, then Gold Ship inheriting her as legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Special Week G1 parent", bundleKey: "special-week-g1", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Gold Ship G1 parent", bundleKey: "gold-ship-g1", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "classic-crown-chain",
+        label: "Mejiro McQueen → Biwa Hayahide → Rice Shower",
+        description: "Three-generation Classic Crown chain — each parent inherits the previous generation's legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Mejiro McQueen Crown parent", bundleKey: "mejiro-mcqueen-crown", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Biwa Hayahide Crown parent", bundleKey: "biwa-hayahide-crown", targetFactorSkills: [], usePreviousAsLegacy: true },
+                { label: "Gen 3 — Rice Shower Crown parent", bundleKey: "rice-shower-crown", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "vodka-king-halo",
+        label: "Vodka → King Halo",
+        description: "Triple Tiara parent pair — Vodka first, then King Halo inheriting her as legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Vodka Triple Tiara parent", bundleKey: "vodka-tiara", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — King Halo Triple Tiara parent", bundleKey: "king-halo-tiara", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "agnes-tachyon-special-week",
+        label: "Agnes Tachyon → Special Week (URA Finals)",
+        description: "Skill-hint base parent, then Special Week chasing a URA Finals run with Agnes Tachyon as legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Agnes Tachyon skill-hint parent", bundleKey: "agnes-tachyon-skill-hints", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Special Week URA Finals parent", bundleKey: "special-week-ura", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "super-creek-symboli-rudolf",
+        label: "Super Creek → Symboli Rudolf",
+        description: "Stamina-focused stayer parent first, then Symboli Rudolf's Senior Finale run inheriting that stamina legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Super Creek stayer parent", bundleKey: "super-creek-stayer", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Symboli Rudolf Senior Finale parent", bundleKey: "symboli-rudolf-senior", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "tokai-teio-nice-nature-unity",
+        label: "Tokai Teio → Nice Nature (Unity Aoharu)",
+        description: "Both parents built for the Unity Aoharu scenario — Tokai Teio first, then Nice Nature inheriting her as legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Tokai Teio Unity Aoharu parent", bundleKey: "tokai-teio-unity", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Nice Nature Unity Aoharu parent", bundleKey: "nice-nature-unity", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+    {
+        key: "silence-suzuka-maruzensky",
+        label: "Silence Suzuka → Maruzensky",
+        description: "Mile / sprint parent pair distinct from the Grass Wonder route — Silence Suzuka first, then Maruzensky inheriting her as legacy.",
+        plan: {
+            generations: [
+                { label: "Gen 1 — Silence Suzuka mile parent", bundleKey: "silence-suzuka-mile", targetFactorSkills: [], usePreviousAsLegacy: false },
+                { label: "Gen 2 — Maruzensky sprint parent", bundleKey: "maruzensky-sprint", targetFactorSkills: [], usePreviousAsLegacy: true },
+            ],
+        },
+    },
+]

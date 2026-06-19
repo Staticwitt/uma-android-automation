@@ -1,5 +1,6 @@
 package com.steve1316.uma_android_automation.bot
 
+import android.content.Context
 import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
@@ -23,19 +24,56 @@ object ParentFarmingRunLoop {
     @Volatile private var sessionBestQualityGrade = ""
     @Volatile private var sessionBestRunIndex = 0
     @Volatile private var borrowRotationOffset = 0
+    @Volatile private var sessionFingerprint = ""
 
-    fun resetSession() {
-        sessionId = UUID.randomUUID().toString()
-        sessionRunsCompleted = 0
-        sessionBestQualityScore = 0
-        sessionBestQualityGrade = ""
-        sessionBestRunIndex = 0
-        borrowRotationOffset = 0
+    fun resetSession(context: Context? = null) {
+        val fingerprint = ParentFarmingSessionState.currentFingerprint()
+        val saved = context?.takeIf { ParentFarmingSessionState.isEnabled() }?.let { ParentFarmingSessionState.load(it) }
+        val resuming = saved != null && saved.fingerprint.isNotEmpty() && saved.fingerprint == fingerprint && saved.runsCompleted > 0
+
+        if (resuming) {
+            sessionId = saved!!.sessionId
+            sessionRunsCompleted = saved.runsCompleted
+            sessionBestQualityScore = saved.bestQualityScore
+            sessionBestQualityGrade = saved.bestQualityGrade
+            sessionBestRunIndex = saved.bestRunIndex
+            borrowRotationOffset = saved.borrowRotationOffset
+            MessageLog.i(TAG, "Resuming parent farming session $sessionId at run ${sessionRunsCompleted + 1}.")
+        } else {
+            sessionId = UUID.randomUUID().toString()
+            sessionRunsCompleted = 0
+            sessionBestQualityScore = 0
+            sessionBestQualityGrade = ""
+            sessionBestRunIndex = 0
+            borrowRotationOffset = 0
+        }
+        sessionFingerprint = fingerprint
+
         ParentFarmingForcedEpithetGuard.reset()
         ParentFarmingAdaptiveMultiRun.reset()
         ParentFarmingGoalQueue.resetSession()
+        if (resuming && sessionRunsCompleted > 0) {
+            ParentFarmingGoalQueue.applyForRunIndex(sessionRunsCompleted)
+        }
         ParentFarmingGenerationFarm.resetSession()
         ParentFarmingRecoveryCoach.reset()
+
+        if (context != null) persistSessionState(context)
+    }
+
+    private fun persistSessionState(context: Context) {
+        ParentFarmingSessionState.save(
+            context,
+            ParentFarmingSessionState.Saved(
+                fingerprint = sessionFingerprint,
+                sessionId = sessionId,
+                runsCompleted = sessionRunsCompleted,
+                bestQualityScore = sessionBestQualityScore,
+                bestQualityGrade = sessionBestQualityGrade,
+                bestRunIndex = sessionBestRunIndex,
+                borrowRotationOffset = borrowRotationOffset,
+            ),
+        )
     }
 
     fun sessionId(): String = sessionId
@@ -131,11 +169,20 @@ object ParentFarmingRunLoop {
 
         if (!navigateBackToCareerSelection(campaign, game)) {
             MessageLog.w(TAG, "Could not return to career selection; stopping multi-run loop.")
-            finalizeSession(game)
+            if (ParentFarmingGenerationFarm.hasFailed()) {
+                val pendingPatch = ParentFarmingGoalQueue.peekPatchForRunIndex(sessionRunsCompleted)
+                ParentDiscordNotifier.sendNavigationFailed(
+                    trainee = pendingPatch?.characterPreset ?: "",
+                    scenario = pendingPatch?.scenario ?: "",
+                    runIndex = sessionRunsCompleted,
+                )
+            }
+            finalizeSession(game, clearResumeState = false)
             return false
         }
 
         resetCampaignForNextRun(campaign, game)
+        persistSessionState(game.myContext)
         MessageLog.i(TAG, "Ready for parent run ${sessionRunsCompleted + 1}.")
         if (DiscordUtils.enableDiscordNotifications && ParentDiscordNotifier.isParentFarmingRun()) {
             ParentDiscordNotifier.maybeSendParentRunStart(game.scenario)
@@ -148,11 +195,17 @@ object ParentFarmingRunLoop {
         return ParentFarmingForcedEpithetGuard.shouldStopMultiRunAfterCareer(input.forcedEpithets, completed)
     }
 
-    private fun finalizeSession(game: Game) {
+    /**
+     * @param clearResumeState False when the session stopped due to a recoverable navigation failure —
+     * the resume checkpoint from the last successful transition should survive so a retry after the user
+     * fixes the issue (e.g. a stale bundle key) picks up at the same generation instead of from gen 1.
+     */
+    private fun finalizeSession(game: Game, clearResumeState: Boolean = true) {
         if (keepBestRunEnabled() && sessionBestQualityScore > 0) {
             MessageLog.i(TAG, "Multi-run complete. Best session run: ${sessionBestQualitySummary()}.")
             ParentRunArchive.markSessionBest(game.myContext, sessionId, sessionBestRunIndex)
         }
+        if (clearResumeState) ParentFarmingSessionState.clear(game.myContext)
         maybeSendSessionCompleteDiscord(game)
     }
 
@@ -191,32 +244,61 @@ object ParentFarmingRunLoop {
         DiscordEmbedService.flushBlocking()
     }
 
+    private fun fallbackTrainingEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableParentFarmingNavFallbackTrainee", false)
+
     private fun navigateBackToCareerSelection(campaign: Campaign, game: Game): Boolean {
         if (ButtonCompleteCareer.check(game.imageUtils)) {
             ButtonCompleteCareer.click(game.imageUtils)
             game.wait(1.0)
         }
 
+        ParentFarmingGoalQueue.setCharacterOverride(null)
+
         val nextPatch = ParentFarmingGoalQueue.peekPatchForRunIndex(sessionRunsCompleted)
         val autoSelect = ParentFarmingGenerationFarm.isEnabled() && nextPatch?.characterPreset?.isNotEmpty() == true
+        val intendedTrainee = nextPatch?.characterPreset ?: ""
         val targetScenario =
             nextPatch?.scenario?.ifEmpty { SettingsHelper.getStringSetting("general", "scenario", "Trackblazer") } ?: ""
+        val previousTrainee =
+            if (sessionRunsCompleted > 0) {
+                ParentFarmingGoalQueue.peekPatchForRunIndex(sessionRunsCompleted - 1)?.characterPreset ?: ""
+            } else {
+                ""
+            }
+        val fallbackAllowed = autoSelect && fallbackTrainingEnabled() && previousTrainee.isNotEmpty() && previousTrainee != intendedTrainee
         if (autoSelect) {
             ParentFarmingGenerationFarm.resetNavigation()
-            MessageLog.i(TAG, "Generation farm: auto-navigating to next career (trainee=${nextPatch!!.characterPreset}, scenario=$targetScenario).")
+            MessageLog.i(TAG, "Generation farm: auto-navigating to next career (trainee=$intendedTrainee, scenario=$targetScenario).")
         }
+
+        var activeCharacter = intendedTrainee
+        var usedFallback = false
 
         val deadline = System.currentTimeMillis() + if (autoSelect) 180_000 else 90_000
         while (System.currentTimeMillis() < deadline) {
             campaign.tryHandleAllDialogs(timeoutMs = 2_000)
             if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
                 game.wait(1.0)
+                if (usedFallback) {
+                    ParentDiscordNotifier.sendNavigationFallbackUsed(intendedTrainee, activeCharacter, sessionRunsCompleted)
+                }
                 return true
             }
-            if (autoSelect &&
-                ParentFarmingGenerationFarm.tryAdvanceNavigation(game, campaign, nextPatch!!.characterPreset, targetScenario)
-            ) {
-                continue
+            if (autoSelect) {
+                if (!usedFallback && fallbackAllowed && ParentFarmingGenerationFarm.hasFailed()) {
+                    MessageLog.w(
+                        TAG,
+                        "Auto-navigation failed for \"$activeCharacter\"; falling back to previous trainee \"$previousTrainee\".",
+                    )
+                    ParentFarmingGenerationFarm.resetNavigation()
+                    ParentFarmingGoalQueue.setCharacterOverride(previousTrainee)
+                    activeCharacter = previousTrainee
+                    usedFallback = true
+                }
+                if (ParentFarmingGenerationFarm.tryAdvanceNavigation(game, campaign, activeCharacter, targetScenario)) {
+                    continue
+                }
             }
             when {
                 ButtonToHome.click(game.imageUtils) -> game.wait(1.0)

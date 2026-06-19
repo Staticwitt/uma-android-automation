@@ -3,13 +3,14 @@ import MessageLog from "../../components/MessageLog"
 import { useContext, useEffect, useMemo, useRef, useState } from "react"
 import { BotMetaContext, GeneralMiscContext, useSettingsSnapshot } from "../../context/BotStateContext"
 import { prepareSettingsForBotStart } from "../../lib/prepareSettingsForBotStart"
+import { parseParentFarmingBreedingPlan, validateBreedingPlan } from "../../lib/parentFarmingBreedingPlan"
 import { useSettings } from "../../context/SettingsContext"
 import { logWithTimestamp, logErrorWithTimestamp } from "../../lib/logger"
 import { Animated, DeviceEventEmitter, StyleSheet, View, NativeModules } from "react-native"
 import { MessageLogDispatchContext } from "../../context/MessageLogContext"
 import { useToast } from "../../context/ToastContext"
 import { Text } from "../../components/ui/text"
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../components/ui/alert-dialog"
 import Ionicons from "@react-native-vector-icons/ionicons"
 import PageHeader from "../../components/PageHeader"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
@@ -55,6 +56,8 @@ const Home = () => {
     const [unsupportedReason, setUnsupportedReason] = useState<string | null>(null)
     const [showPermissionDialog, setShowPermissionDialog] = useState<boolean>(false)
     const [abiMismatch, setAbiMismatch] = useState<boolean>(false)
+    const [breedingPlanWarnings, setBreedingPlanWarnings] = useState<string[]>([])
+    const [showBreedingPlanWarningDialog, setShowBreedingPlanWarningDialog] = useState<boolean>(false)
 
     const { readyStatus, setReadyStatus, setAppName, setAppVersion, setSettings } = useContext(BotMetaContext)
     const { general, updateGeneral } = useContext(GeneralMiscContext)
@@ -168,6 +171,16 @@ const Home = () => {
             logErrorWithTimestamp("[Home] Failed to check permission statuses:", error)
         }
 
+        if (settings.racing.enableParentFarmingMode && settings.racing.enableParentFarmingBreedingPlan) {
+            const plan = parseParentFarmingBreedingPlan(settings.racing.parentFarmingBreedingPlan)
+            const warnings = validateBreedingPlan(plan)
+            if (warnings.length > 0) {
+                setBreedingPlanWarnings(warnings.map((w) => `${w.label}: ${w.message}`))
+                setShowBreedingPlanWarningDialog(true)
+                return
+            }
+        }
+
         await proceedToStart()
     }
 
@@ -234,6 +247,31 @@ const Home = () => {
                     <AlertDialogFooter>
                         <AlertDialogAction onPress={() => setShowNotReadyDialog(false)}>
                             <Text>OK</Text>
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={showBreedingPlanWarningDialog} onOpenChange={setShowBreedingPlanWarningDialog}>
+                <AlertDialogContent onDismiss={() => setShowBreedingPlanWarningDialog(false)}>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Breeding plan has unresolved generations</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {breedingPlanWarnings.join("\n\n")}
+                            {"\n\nThese generations will keep the previous generation's settings unchanged. Fix them in Parent Farming settings, or start anyway."}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onPress={() => setShowBreedingPlanWarningDialog(false)}>
+                            <Text>Cancel</Text>
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onPress={() => {
+                                setShowBreedingPlanWarningDialog(false)
+                                proceedToStart()
+                            }}
+                        >
+                            <Text>Start anyway</Text>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

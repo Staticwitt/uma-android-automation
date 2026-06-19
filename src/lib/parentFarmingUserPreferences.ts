@@ -22,6 +22,8 @@ export const PARENT_FARMING_USER_PREFERENCE_RACING_KEYS: ReadonlyArray<keyof Set
     "enableParentFarmingKeepBestRun",
     "enableParentFarmingStopOnForcedEpithetFail",
     "enableParentFarmingBorrowRotation",
+    "enableParentFarmingResumeSession",
+    "enableParentFarmingNavFallbackTrainee",
     "enableParentFarmingFullUnattended",
     "enableParentFarmingLockPreset",
     "enableParentFarmingAutoDowngradeForcedEpithets",

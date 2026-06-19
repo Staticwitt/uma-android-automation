@@ -26,6 +26,7 @@ import {
     type ParentQualityBreakdown,
 } from "../lib/parentQuality"
 import { formatParentFarmingSessionSummary, latestSessionId } from "../lib/parentFarmingSessionSummary"
+import { buildLineage, formatLineageGenerationLabel, listSessionIds } from "../lib/parentFarmingLineage"
 import { copyToClipboard } from "../lib/utils"
 import {
     exportHorseJsonForUmaTools,
@@ -71,6 +72,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
     const [loading, setLoading] = useState(false)
     const [search, setSearch] = useState("")
     const [expandedId, setExpandedId] = useState<string | null>(null)
+    const [lineageSessionId, setLineageSessionId] = useState<string | null>(null)
 
     const refresh = useCallback(async () => {
         setLoading(true)
@@ -86,9 +88,17 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         if (visible) {
             setSearch("")
             setExpandedId(null)
+            setLineageSessionId(null)
             refresh()
         }
     }, [visible, refresh])
+
+    const sessionIds = useMemo(() => listSessionIds(runs), [runs])
+    const lineageRuns = useMemo(() => (lineageSessionId ? buildLineage(runs, lineageSessionId) : []), [runs, lineageSessionId])
+
+    const handleViewLineage = useCallback(() => {
+        setLineageSessionId(latestSessionId(runs))
+    }, [runs])
 
     const filteredRuns = useMemo(() => {
         const q = search.trim().toLowerCase()
@@ -173,6 +183,18 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                 empty: { ...TYPE.body, color: colors.textMuted, textAlign: "center", marginTop: SPACING.lg },
                 copyBtn: { ...TYPE.caption, color: colors.brand, fontWeight: "600", marginTop: SPACING.sm },
                 copyRow: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.md, marginTop: SPACING.sm },
+                sessionPicker: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.xs, marginBottom: SPACING.md },
+                sessionChip: {
+                    paddingHorizontal: SPACING.sm,
+                    paddingVertical: 6,
+                    borderRadius: RADII.sm,
+                    borderWidth: 1,
+                    borderColor: colors.borderHair,
+                    backgroundColor: colors.bg,
+                },
+                sessionChipActive: { borderColor: colors.brand, backgroundColor: colors.brandSubtle },
+                lineageArrow: { ...TYPE.caption, color: colors.textMuted, textAlign: "center", marginVertical: SPACING.xs },
+                lineageInheritance: { ...TYPE.caption, color: colors.brand, marginTop: SPACING.xs },
             }),
         [colors],
     )
@@ -189,6 +211,11 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
 
     const footer = (
         <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end", flexWrap: "wrap" }}>
+            {lineageSessionId ? (
+                <ModalFooterChip label="Back to list" onPress={() => setLineageSessionId(null)} tone="neutral" />
+            ) : (
+                <ModalFooterChip label="View lineage" onPress={handleViewLineage} tone="neutral" />
+            )}
             <ModalFooterChip label="Copy session summary" onPress={handleCopySessionSummary} tone="neutral" />
             <ModalFooterChip label="Export JSON" onPress={handleExport} tone="neutral" />
             <ModalFooterChip label="Close" onPress={onClose} tone="neutral" />
@@ -200,6 +227,52 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         <SheetModal visible={visible} onRequestClose={onClose} header={header} footer={footer} maxWidth={640} heightFraction={0.8}>
             {loading ? (
                 <ActivityIndicator color={colors.brand} style={{ marginTop: SPACING.lg }} />
+            ) : lineageSessionId ? (
+                <ScrollView keyboardShouldPersistTaps="handled">
+                    {sessionIds.length > 1 && (
+                        <View style={styles.sessionPicker}>
+                            {sessionIds.map((id) => (
+                                <Pressable
+                                    key={id}
+                                    onPress={() => setLineageSessionId(id)}
+                                    style={[styles.sessionChip, id === lineageSessionId && styles.sessionChipActive]}
+                                    accessibilityRole="button"
+                                >
+                                    <Text style={{ ...TYPE.caption, color: colors.text }}>{id === latestSessionId(runs) ? "Latest" : id.slice(0, 8)}</Text>
+                                </Pressable>
+                            ))}
+                        </View>
+                    )}
+                    {lineageRuns.length === 0 ? (
+                        <Text style={styles.empty}>No runs found for this session.</Text>
+                    ) : (
+                        lineageRuns.map((run, index) => {
+                            const quality = scoreParentRunArchiveEntry(run)
+                            return (
+                                <View key={run.id}>
+                                    <View style={styles.row}>
+                                        <Text style={styles.title}>{formatLineageGenerationLabel(run, index + 1)}</Text>
+                                        <Text style={styles.meta}>
+                                            {formatQualityLabel(quality)} · {run.fans.toLocaleString()} fans · {run.raceWins}W/{run.raceLosses}L
+                                        </Text>
+                                        {run.goalPresetLabel || run.bundleLabel ? (
+                                            <Text style={styles.meta}>{run.bundleLabel || run.goalPresetLabel}</Text>
+                                        ) : null}
+                                        {run.inheritanceSummary ? (
+                                            <Text style={styles.lineageInheritance}>Inheritance: {run.inheritanceSummary}</Text>
+                                        ) : null}
+                                        {run.harvestSummary ? <Text style={styles.meta}>Harvest: {run.harvestSummary}</Text> : null}
+                                        {run.completedTargetEpithets.length > 0 ? (
+                                            <Text style={styles.meta}>Completed: {run.completedTargetEpithets.join(" · ")}</Text>
+                                        ) : null}
+                                        {run.isSessionBest ? <Text style={styles.best}>Session best run</Text> : null}
+                                    </View>
+                                    {index < lineageRuns.length - 1 && <Text style={styles.lineageArrow}>↓ legacy parent ↓</Text>}
+                                </View>
+                            )
+                        })
+                    )}
+                </ScrollView>
             ) : (
                 <ScrollView keyboardShouldPersistTaps="handled">
                     {filteredRuns.length === 0 ? (

@@ -1,16 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { View, Text, Pressable } from "react-native"
+import { View, Text, Pressable, Alert } from "react-native"
 import { useTheme } from "../context/ThemeContext"
 import {
-    defaultBreedingPlan,
+    builtInBreedingPlans,
     formatTargetFactorSkillsInput,
     parseParentFarmingBreedingPlan,
     parseTargetFactorSkillsInput,
     serializeParentFarmingBreedingPlan,
+    validateBreedingPlan,
     type ParentFarmingBreedingGeneration,
 } from "../lib/parentFarmingBreedingPlan"
 import { PARENT_FARMING_GOAL_PRESETS } from "../lib/parentFarmingGoalPresets"
 import { PARENT_FARMING_CHARACTER_BUNDLES } from "../lib/parentFarmingCharacterBundles"
+import { clearParentFarmingSessionState } from "../lib/parentFarmingSessionState"
 import { Input } from "./ui/input"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
@@ -24,11 +26,12 @@ interface ParentFarmingBreedingPlanEditorProps {
 interface BreedingGenerationRowProps {
     gen: ParentFarmingBreedingGeneration
     index: number
+    warning?: string
     onUpdate: (index: number, patch: Partial<ParentFarmingBreedingGeneration>) => void
     onRemove: (index: number) => void
 }
 
-const BreedingGenerationRow = ({ gen, index, onUpdate, onRemove }: BreedingGenerationRowProps) => {
+const BreedingGenerationRow = ({ gen, index, warning, onUpdate, onRemove }: BreedingGenerationRowProps) => {
     const { colors } = useTheme()
     const [factorText, setFactorText] = useState(() => formatTargetFactorSkillsInput(gen.targetFactorSkills))
 
@@ -46,12 +49,13 @@ const BreedingGenerationRow = ({ gen, index, onUpdate, onRemove }: BreedingGener
                 padding: SPACING.md,
                 borderRadius: RADII.md,
                 borderWidth: 1,
-                borderColor: colors.borderHair,
+                borderColor: warning ? (colors.warning ?? colors.borderHair) : colors.borderHair,
                 backgroundColor: colors.surface,
                 gap: SPACING.sm,
             }}
         >
             <Text style={{ ...TYPE.body, color: colors.text, fontWeight: "700" }}>{gen.label}</Text>
+            {warning && <Text style={{ ...TYPE.caption, color: colors.warningText ?? colors.warning }}>⚠️ {warning}</Text>}
             <Input value={gen.label} onChangeText={(label) => onUpdate(index, { label })} placeholder="Generation label" />
             <Text style={{ ...TYPE.caption, color: colors.textMuted }}>Goal preset</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.xs }}>
@@ -113,6 +117,8 @@ const BreedingGenerationRow = ({ gen, index, onUpdate, onRemove }: BreedingGener
 export const ParentFarmingBreedingPlanEditor = ({ json, onChange }: ParentFarmingBreedingPlanEditorProps) => {
     const { colors } = useTheme()
     const plan = useMemo(() => parseParentFarmingBreedingPlan(json), [json])
+    const warnings = useMemo(() => validateBreedingPlan(plan), [plan])
+    const warningByIndex = useMemo(() => new Map(warnings.map((w) => [w.generationIndex, w.message])), [warnings])
 
     const updateGenerations = useCallback(
         (generations: ParentFarmingBreedingGeneration[]) => {
@@ -148,38 +154,68 @@ export const ParentFarmingBreedingPlanEditor = ({ json, onChange }: ParentFarmin
         [plan.generations, updateGenerations],
     )
 
-    if (plan.generations.length === 0) {
-        return (
-            <Pressable
-                onPress={() => onChange(serializeParentFarmingBreedingPlan(defaultBreedingPlan()))}
-                style={{
-                    padding: SPACING.md,
-                    borderRadius: RADII.md,
-                    borderWidth: 1,
-                    borderColor: colors.brandBorder,
-                    backgroundColor: colors.brandSubtle,
-                }}
-                accessibilityRole="button"
-            >
-                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>Load example breeding plan</Text>
-            </Pressable>
+    const handleResetProgress = useCallback(() => {
+        Alert.alert(
+            "Reset breeding plan progress?",
+            "The next bot start will begin this breeding plan at generation 1 instead of resuming where it left off.",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Reset",
+                    style: "destructive",
+                    onPress: async () => {
+                        await clearParentFarmingSessionState()
+                    },
+                },
+            ],
         )
-    }
+    }, [])
 
     return (
         <View style={{ gap: SPACING.md }}>
+            {plan.generations.length === 0 && (
+                <View style={{ gap: SPACING.sm }}>
+                    <Text style={{ ...TYPE.caption, color: colors.textMuted }}>Start from a built-in plan, or add a generation manually below.</Text>
+                    {builtInBreedingPlans().map((builtIn) => (
+                        <Pressable
+                            key={builtIn.key}
+                            onPress={() => onChange(serializeParentFarmingBreedingPlan(builtIn.plan))}
+                            style={{
+                                padding: SPACING.md,
+                                borderRadius: RADII.md,
+                                borderWidth: 1,
+                                borderColor: colors.brandBorder,
+                                backgroundColor: colors.brandSubtle,
+                                gap: 4,
+                            }}
+                            accessibilityRole="button"
+                        >
+                            <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>{builtIn.label}</Text>
+                            <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{builtIn.description}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            )}
             {plan.generations.map((gen, index) => (
                 <BreedingGenerationRow
                     key={`breeding-gen-${index}`}
                     gen={gen}
                     index={index}
+                    warning={warningByIndex.get(index)}
                     onUpdate={updateGeneration}
                     onRemove={removeGeneration}
                 />
             ))}
-            <Pressable onPress={addGeneration} accessibilityRole="button">
-                <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Add generation</Text>
-            </Pressable>
+            <View style={{ flexDirection: "row", gap: SPACING.md, flexWrap: "wrap" }}>
+                <Pressable onPress={addGeneration} accessibilityRole="button">
+                    <Text style={{ ...TYPE.caption, color: colors.brand, fontWeight: "600" }}>Add generation</Text>
+                </Pressable>
+                {plan.generations.length > 0 && (
+                    <Pressable onPress={handleResetProgress} accessibilityRole="button">
+                        <Text style={{ ...TYPE.caption, color: colors.textMuted, fontWeight: "600" }}>Reset progress</Text>
+                    </Pressable>
+                )}
+            </View>
         </View>
     )
 }

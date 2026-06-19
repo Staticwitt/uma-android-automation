@@ -146,11 +146,13 @@ object ParentDiscordNotifier {
         if (ParentFarmingRunLoop.isEnabled()) {
             val completed = ParentFarmingRunLoop.sessionRunsCompleted()
             val target = ParentFarmingRunLoop.targetRunCount()
-            val sessionLine = if (target > 0) "Run ${completed + 1}/$target" else "Run ${completed + 1} (unlimited)"
+            val isGenerationFarm = ParentFarmingGenerationFarm.isEnabled()
+            val unit = if (isGenerationFarm) "Gen" else "Run"
+            val sessionLine = if (target > 0) "$unit ${completed + 1}/$target" else "$unit ${completed + 1} (unlimited)"
             val best = ParentFarmingRunLoop.sessionBestQualitySummary()
             fields.add(
                 DiscordEmbedField(
-                    "Multi-run",
+                    if (isGenerationFarm) "Generation" else "Multi-run",
                     if (best.isNotEmpty()) "$sessionLine · best $best" else sessionLine,
                     inline = false,
                 ),
@@ -218,6 +220,42 @@ object ParentDiscordNotifier {
                 title = "Parent quality target reached",
                 description = "$grade · $score/100 after run $runIndex",
                 colorRgb = DiscordEmbedColors.GREEN,
+                footer = MessageLog.getSystemTimeString(),
+            ),
+        )
+    }
+
+    /** Sent when generation-farm auto-navigation could not reach career selection and the multi-run loop stopped. */
+    fun sendNavigationFailed(trainee: String, scenario: String, runIndex: Int) {
+        if (!DiscordUtils.enableDiscordNotifications || !isParentFarmingRun()) return
+        AppDiscordNotifications.sendEmbed(
+            DiscordEmbedSpec(
+                title = "Parent farming: auto-navigation failed",
+                description = "Could not reach career selection for generation ${runIndex + 1}. Manual intervention needed.",
+                colorRgb = DiscordEmbedColors.RED,
+                fields =
+                    listOf(
+                        DiscordEmbedField("Trainee", trainee.ifEmpty { "—" }, inline = true),
+                        DiscordEmbedField("Scenario", scenario.ifEmpty { "—" }, inline = true),
+                    ),
+                footer = MessageLog.getSystemTimeString(),
+            ),
+        )
+    }
+
+    /** Sent when auto-navigation gave up on the intended trainee and fell back to the previous generation's trainee. */
+    fun sendNavigationFallbackUsed(intendedTrainee: String, fallbackTrainee: String, runIndex: Int) {
+        if (!DiscordUtils.enableDiscordNotifications || !isParentFarmingRun()) return
+        AppDiscordNotifications.sendEmbed(
+            DiscordEmbedSpec(
+                title = "Parent farming: trainee fallback used",
+                description = "Generation ${runIndex + 1} continued with the previous trainee instead of the planned one.",
+                colorRgb = DiscordEmbedColors.YELLOW,
+                fields =
+                    listOf(
+                        DiscordEmbedField("Planned", intendedTrainee.ifEmpty { "—" }, inline = true),
+                        DiscordEmbedField("Used instead", fallbackTrainee.ifEmpty { "—" }, inline = true),
+                    ),
                 footer = MessageLog.getSystemTimeString(),
             ),
         )

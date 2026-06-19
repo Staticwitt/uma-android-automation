@@ -35,6 +35,9 @@ object ParentFarmingGenerationFarm {
 
     private const val CHARACTER_LIST_OCR_SCALE = 1.5
 
+    private const val MAX_SCENARIO_TAP_ATTEMPTS = 3
+    private const val MAX_CHARACTER_PICK_ATTEMPTS = 5
+
     /** Explicit phases so character pick always precedes scenario pick. */
     internal enum class NavPhase {
         NAVIGATE_HOME,
@@ -47,6 +50,8 @@ object ParentFarmingGenerationFarm {
 
     @Volatile private var navPhase = NavPhase.NAVIGATE_HOME
     @Volatile private var scenarioTapAttempts = 0
+    @Volatile private var characterPickAttempts = 0
+    @Volatile private var navigationFailed = false
 
     fun resetSession() {
         iteration = 0
@@ -57,7 +62,12 @@ object ParentFarmingGenerationFarm {
     fun resetNavigation() {
         navPhase = NavPhase.NAVIGATE_HOME
         scenarioTapAttempts = 0
+        characterPickAttempts = 0
+        navigationFailed = false
     }
+
+    /** True once auto-navigation has given up on the trainee/scenario pick for this generation. */
+    fun hasFailed(): Boolean = navigationFailed
 
     fun isEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false) &&
@@ -93,6 +103,7 @@ object ParentFarmingGenerationFarm {
      */
     fun tryAdvanceNavigation(game: Game, campaign: Campaign, targetCharacter: String, targetScenario: String): Boolean {
         if (targetCharacter.isEmpty()) return false
+        if (navigationFailed) return false
         if (campaign.checkMainScreen()) return false
         if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
 
@@ -124,6 +135,15 @@ object ParentFarmingGenerationFarm {
                         game.wait(1.0)
                         true
                     } else {
+                        characterPickAttempts++
+                        if (characterPickAttempts >= MAX_CHARACTER_PICK_ATTEMPTS) {
+                            navigationFailed = true
+                            MessageLog.w(
+                                TAG,
+                                "Trainee \"$targetCharacter\" not found in roster after $characterPickAttempts attempts " +
+                                    "— giving up on auto-navigation for this generation.",
+                            )
+                        }
                         false
                     }
                 }
@@ -219,8 +239,15 @@ object ParentFarmingGenerationFarm {
     }
 
     private fun trySelectScenario(game: Game, targetScenario: String): Boolean {
-        if (scenarioTapAttempts >= 3) {
-            MessageLog.w(TAG, "Scenario picker taps exhausted; waiting for career selection or dialogs.")
+        if (scenarioTapAttempts >= MAX_SCENARIO_TAP_ATTEMPTS) {
+            if (!navigationFailed) {
+                navigationFailed = true
+                MessageLog.w(
+                    TAG,
+                    "Scenario picker taps exhausted for \"$targetScenario\" after $scenarioTapAttempts attempts " +
+                        "— giving up on auto-navigation for this generation.",
+                )
+            }
             return false
         }
 

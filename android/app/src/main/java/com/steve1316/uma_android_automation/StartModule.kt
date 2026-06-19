@@ -30,6 +30,7 @@ import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.utils.AppUpdateChecker
 import com.steve1316.uma_android_automation.utils.LogStreamServer
 import com.steve1316.uma_android_automation.bot.DiscordEmbedColors
+import com.steve1316.uma_android_automation.bot.ParentFarmingSessionState
 import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
@@ -638,6 +639,17 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("PARENT_RUN_ARCHIVE", "Failed to clear parent run archive: ${e.message}")
+        }
+    }
+
+    /** Clears the saved multi-run resume checkpoint so the next bot start begins the breeding plan at generation 1. */
+    @ReactMethod
+    fun clearParentFarmingSessionState(promise: Promise) {
+        try {
+            ParentFarmingSessionState.clear(context)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("PARENT_FARMING_SESSION_STATE", "Failed to clear parent farming session state: ${e.message}")
         }
     }
 

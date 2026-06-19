@@ -2,8 +2,10 @@ import type { Settings } from "../../context/BotStateContext"
 import {
     applyBreedingGenerationToSettings,
     buildBreedingPlanGoalQueueResolved,
+    builtInBreedingPlans,
     parseParentFarmingBreedingPlan,
     serializeParentFarmingBreedingPlan,
+    validateBreedingPlan,
 } from "../parentFarmingBreedingPlan"
 import { prepareSettingsForBotStart } from "../prepareSettingsForBotStart"
 
@@ -79,5 +81,60 @@ describe("breeding plan auto-advance", () => {
         const resolved = JSON.parse(prepared.racing.parentFarmingGoalQueueResolved)
         expect(resolved).toHaveLength(2)
         expect(resolved[1].usePreviousAsLegacy).toBe(true)
+    })
+
+    describe("validateBreedingPlan", () => {
+        it("returns no warnings for a plan with valid bundle/preset keys", () => {
+            expect(validateBreedingPlan(grasslandWonderOguriPlan())).toEqual([])
+        })
+
+        it("flags a generation with an unknown bundle key", () => {
+            const plan = parseParentFarmingBreedingPlan(
+                serializeParentFarmingBreedingPlan({
+                    generations: [
+                        { label: "Gen 1", bundleKey: "not-a-real-bundle", targetFactorSkills: [], usePreviousAsLegacy: false },
+                    ],
+                }),
+            )
+            const warnings = validateBreedingPlan(plan)
+            expect(warnings).toHaveLength(1)
+            expect(warnings[0].generationIndex).toBe(0)
+            expect(warnings[0].message).toMatch(/unknown character bundle/i)
+        })
+
+        it("flags a generation with an unknown goal preset key", () => {
+            const plan = parseParentFarmingBreedingPlan(
+                serializeParentFarmingBreedingPlan({
+                    generations: [
+                        { label: "Gen 1", goalPresetKey: "not-a-real-preset", targetFactorSkills: [], usePreviousAsLegacy: false },
+                    ],
+                }),
+            )
+            const warnings = validateBreedingPlan(plan)
+            expect(warnings).toHaveLength(1)
+            expect(warnings[0].message).toMatch(/unknown goal preset/i)
+        })
+
+        it("built-in plans never produce warnings (guards against stale bundle/preset keys)", () => {
+            for (const builtIn of builtInBreedingPlans()) {
+                expect(validateBreedingPlan(builtIn.plan)).toEqual([])
+            }
+        })
+
+        it("built-in plan keys are unique", () => {
+            const keys = builtInBreedingPlans().map((builtIn) => builtIn.key)
+            expect(new Set(keys).size).toBe(keys.length)
+        })
+
+        it("flags a generation with neither key set", () => {
+            const plan = parseParentFarmingBreedingPlan(
+                serializeParentFarmingBreedingPlan({
+                    generations: [{ label: "Gen 1", targetFactorSkills: [], usePreviousAsLegacy: false }],
+                }),
+            )
+            const warnings = validateBreedingPlan(plan)
+            expect(warnings).toHaveLength(1)
+            expect(warnings[0].message).toMatch(/no goal preset or character bundle/i)
+        })
     })
 })

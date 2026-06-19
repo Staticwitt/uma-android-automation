@@ -53,7 +53,8 @@ object ParentFarmingLiveStatus {
             if (ParentFarmingRunLoop.isEnabled()) {
                 val completed = ParentFarmingRunLoop.sessionRunsCompleted()
                 val target = ParentFarmingRunLoop.targetRunCount()
-                if (target > 0) " · run ${completed + 1}/$target" else " · run ${completed + 1}"
+                val unit = if (ParentFarmingGenerationFarm.isEnabled()) "gen" else "run"
+                if (target > 0) " · $unit ${completed + 1}/$target" else " · $unit ${completed + 1}"
             } else {
                 ""
             }

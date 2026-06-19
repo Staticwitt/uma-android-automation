@@ -19,6 +19,12 @@ class ParentFarmingGenerationFarmTest {
     }
 
     @Test
+    fun resetNavigation_clearsFailureFlag() {
+        ParentFarmingGenerationFarm.resetNavigation()
+        assertFalse(ParentFarmingGenerationFarm.hasFailed())
+    }
+
+    @Test
     fun scenarioKeywords_matchesKnownScenarios() {
         assertEquals(listOf("ura finale", "ura"), ParentFarmingGenerationFarm.scenarioKeywords("URA Finale"))
         assertEquals(listOf("unity cup", "unity", "aoharu"), ParentFarmingGenerationFarm.scenarioKeywords("Unity Cup"))
