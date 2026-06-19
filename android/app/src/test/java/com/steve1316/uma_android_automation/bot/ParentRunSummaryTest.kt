@@ -152,6 +152,92 @@ class ParentRunSummaryTest {
     }
 
     @Test
+    fun buildDiscordEmbed_includes_quality_breakdown() {
+        val trainee = Trainee()
+        trainee.name = "Special Week"
+        trainee.fans = 250000
+        trainee.fanCountClass = FanCountClass.GOLD
+
+        val embed =
+            ParentRunSummary.buildDiscordEmbed(
+                ParentRunSummaryInput(
+                    trainee = trainee,
+                    scenario = "Trackblazer",
+                    profileName = "Parents",
+                    bundleLabel = "Bundle",
+                    goalPresetLabel = "Goal",
+                    characterPreset = "Special Week",
+                    sparkStrategy = "StatAndAptitude",
+                    targetEpithets = listOf("Globe-Trotter"),
+                    completedTargetEpithets = listOf("Globe-Trotter"),
+                    incompleteTargetEpithets = emptyList(),
+                    extraCompletedEpithets = emptyList(),
+                    sparkPicks = emptyList(),
+                    fanWeight = 1.0,
+                    minimumFanTarget = 120000,
+                    minimumRaceGapTurns = 1,
+                    targetEpithetMultiplier = 4.0,
+                    raceStats = RunRaceStats(wins = 10, losses = 1),
+                    elapsedMs = 1800000L,
+                ),
+            )
+
+        val breakdownField = embed.fields.firstOrNull { it.name == "Quality breakdown" }
+        assertTrue(breakdownField != null, embed.fields.map { it.name }.toString())
+        assertTrue(breakdownField!!.value.contains("Epithets"), breakdownField.value)
+        assertTrue(breakdownField.value.contains("/35"), breakdownField.value)
+    }
+
+    @Test
+    fun buildDiscordEmbed_includes_history_comparison_when_provided() {
+        val trainee = Trainee()
+        trainee.name = "Special Week"
+        trainee.fans = 250000
+        trainee.fanCountClass = FanCountClass.GOLD
+
+        val input =
+            ParentRunSummaryInput(
+                trainee = trainee,
+                scenario = "Trackblazer",
+                profileName = "Parents",
+                bundleLabel = "Bundle",
+                goalPresetLabel = "Goal",
+                characterPreset = "Special Week",
+                sparkStrategy = "StatAndAptitude",
+                targetEpithets = listOf("Globe-Trotter"),
+                completedTargetEpithets = listOf("Globe-Trotter"),
+                incompleteTargetEpithets = emptyList(),
+                extraCompletedEpithets = emptyList(),
+                sparkPicks = emptyList(),
+                fanWeight = 1.0,
+                minimumFanTarget = 120000,
+                minimumRaceGapTurns = 1,
+                targetEpithetMultiplier = 4.0,
+                raceStats = RunRaceStats(wins = 10, losses = 1),
+                elapsedMs = 1800000L,
+            )
+
+        val comparison =
+            ParentRunArchive.RunComparison(
+                runCount = 5,
+                avgFans = 200000L,
+                avgQualityScore = 70.0,
+                bestFans = 300000,
+                bestQualityScore = 95,
+                bestGrade = "S",
+            )
+
+        val embedWithoutHistory = ParentRunSummary.buildDiscordEmbed(input)
+        assertTrue(embedWithoutHistory.fields.none { it.name == "History" })
+
+        val embedWithHistory = ParentRunSummary.buildDiscordEmbed(input, comparison)
+        val historyField = embedWithHistory.fields.firstOrNull { it.name == "History" }
+        assertTrue(historyField != null, embedWithHistory.fields.map { it.name }.toString())
+        assertTrue(historyField!!.value.contains("vs avg over 5 runs"), historyField.value)
+        assertTrue(historyField.value.contains("vs best"), historyField.value)
+    }
+
+    @Test
     fun chunkForDiscord_splits_long_text() {
         val longText = "line\n".repeat(500)
         val chunks = ParentRunSummary.chunkForDiscord(longText, 200)
