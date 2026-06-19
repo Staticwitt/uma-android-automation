@@ -1,21 +1,25 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.40</latestVersion>
-    <latestVersionCode>130</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.40</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.40/v5.9.40-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.40/v5.9.40-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.41</latestVersion>
+    <latestVersionCode>131</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.41</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.41/v5.9.41-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.41/v5.9.41-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.40 - Smart Race Solver training respect + generation-farm nav enforcement
+v5.9.41 - Mandatory race locking + settings crash hardening
 
 Additions
 ---
-- New "Respect solver training calls" toggle in Parent Farming Settings: when on, skips the
-  fan-farming interval race fallback whenever the Smart Race Solver recommends training instead,
-  trading fan progress for more consistent spark training (default off)
-- Generation farm's career-selection gate now actively auto-navigates (home -> Career hub ->
-  trainee -> scenario) instead of only logging a reminder, including before the very first
-  generation of a breeding plan
+- Smart Race Solver now locks each character's forced career-objective races onto their turn
+  (from GameTora's URA objectives data), so it never double-books a conflicting race; choice
+  turns (e.g. Oaks vs Derby) pick the best-aptitude option
+- Parent farming goal queue now loops back to the start instead of repeating the last preset
+  once a multi-run session outlasts the queue
+
+Fixes
+---
+- Settings reads that could throw on an empty/invalid stored value (template-match thresholds,
+  stat-priority list) now fall back safely instead of crashing on startup
 
     </releaseNotes>
   </update>
