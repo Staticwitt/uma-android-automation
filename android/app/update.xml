@@ -1,17 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.36</latestVersion>
-    <latestVersionCode>126</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.36</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.36/v5.9.36-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.36/v5.9.36-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.37</latestVersion>
+    <latestVersionCode>127</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.37</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.37/v5.9.37-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.37/v5.9.37-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.36 - Fix false race loss on Discord / solver
+v5.9.37 - Trackblazer shop fix + race win detection
 
 Fixes
 ---
-- Smart Race Solver no longer records a loss when you actually won: Congratulations banner is latched during the full race result flow and polled with retries before committing win/loss
-- Stops incorrect "Race lost" Discord alerts and epithets marked dead after a win
+- Trackblazer shop now buys items: unlock/discount dialog is dismissed before the purchase flow starts
+- Purchased-item detection tightened so buyable rows are not skipped on false badge matches
+- Smart Race Solver no longer records a loss when you actually won (Congratulations banner latched and retried)
+- Stops incorrect "Race lost" Discord alerts after a win
 
 Includes v5.9.35 generation farm and session improvements.
 

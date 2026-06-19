@@ -1071,8 +1071,13 @@ class Trackblazer(game: Game) : Campaign(game) {
     }
 
     override fun onBeforeMainScreenUpdate() {
-        // Buy items if a shop check is pending after a race.
+        // Buy items if a shop check is pending after a race. The shop unlocks on turn 13 (Junior Year Early July).
         if (bShouldCheckShop) {
+            if (date.day < 13) {
+                MessageLog.i(TAG, "[TRACKBLAZER] Shop check pending but shop is not unlocked yet (day ${date.day} < 13). Deferring.")
+                return
+            }
+
             MessageLog.i(TAG, "[TRACKBLAZER] Pending shop check detected! Checking Shop for new items...")
             game.wait(0.5)
             if (openShop()) {
@@ -1454,21 +1459,31 @@ class Trackblazer(game: Game) : Campaign(game) {
      * @return True if the shop was opened successfully, false otherwise.
      */
     fun openShop(tries: Int = 5): Boolean {
-        if (ButtonShopTrackblazer.click(game.imageUtils, tries = tries)) {
-            game.wait(game.dialogWaitDelay)
+        if (ButtonTrainingItems.check(game.imageUtils)) {
             return true
         }
 
-        val detectedDialog = DialogUtils.getDialog(game.imageUtils)
-        if (detectedDialog != null && detectedDialog.name == "shop") {
-            MessageLog.i(TAG, "[TRACKBLAZER] Shop dialog detected while trying to open the shop. Entering via dialog...")
-            if (detectedDialog.ok(game.imageUtils)) {
-                game.wait(game.dialogWaitDelay)
-                return ButtonTrainingItems.check(game.imageUtils)
-            }
+        if (ButtonShopTrackblazer.check(game.imageUtils)) {
+            ButtonShopTrackblazer.click(game.imageUtils, tries = tries)
+            game.wait(game.dialogWaitDelay)
         }
 
-        MessageLog.e(TAG, "[ERROR] openShop:: Unable to open the Shop due to failing to find its button.")
+        // Clicking the shop button (or returning after a race on a sale day) opens an unlock/discount dialog first.
+        val detectedDialog = DialogUtils.getDialog(game.imageUtils)
+        if (detectedDialog != null && detectedDialog.name == "shop") {
+            MessageLog.i(TAG, "[TRACKBLAZER] Shop dialog detected. Entering via dialog...")
+            if (!detectedDialog.ok(game.imageUtils)) {
+                MessageLog.e(TAG, "[ERROR] openShop:: Failed to click the OK button on the Shop dialog.")
+                return false
+            }
+            game.wait(game.dialogWaitDelay)
+        }
+
+        if (ButtonTrainingItems.check(game.imageUtils)) {
+            return true
+        }
+
+        MessageLog.e(TAG, "[ERROR] openShop:: Unable to open the Shop due to failing to find the Training Items button.")
         return false
     }
 

@@ -732,6 +732,13 @@ class TrackblazerShopList(private val game: Game) {
             ButtonSkillUp.checkDisabled(game.imageUtils, entryBitmap) == true
     }
 
+    /** True when the row shows the Purchased badge and has no buy controls (checkbox or plus button). */
+    private fun isEntryAlreadyPurchased(entryBitmap: Bitmap): Boolean {
+        if (CheckboxShopItem.findImageWithBitmap(game.imageUtils, entryBitmap) != null) return false
+        if (ButtonSkillUp.findImageWithBitmap(game.imageUtils, entryBitmap) != null) return false
+        return LabelPurchased.findImageWithBitmap(game.imageUtils, entryBitmap) != null
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -770,7 +777,7 @@ class TrackblazerShopList(private val game: Game) {
             val isDisabled = isEntryDisabled(entry.bitmap)
             val itemName = itemNameMap[entry.index] ?: getShopItemName(entry, isDisabled)
             if (itemName != null) {
-                if (LabelPurchased.findImageWithBitmap(game.imageUtils, entry.bitmap) != null) {
+                if (isEntryAlreadyPurchased(entry.bitmap)) {
                     // Already-purchased items can't be bought again, so track them only for the summary.
                     purchasedInShop.add(itemName)
                 } else {
