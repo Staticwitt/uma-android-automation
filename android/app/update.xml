@@ -1,13 +1,14 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.7.3</latestVersion>
+    <latestVersion>5.7.4</latestVersion>
     <url>https://github.com/steve1316/uma-android-automation/releases</url>
     <releaseNotes>
-v5.7.3 - Changelog
+v5.7.4 - Changelog
 
 Fixes
 ---
-- Fix visual bug in the `Smart Race Solver` page where the calendar preview popover was not scrollable on small screens.
+- Fix Trackblazer shop not buying items because the unlock/discount dialog was not dismissed before the purchase flow started.
+- Tighten purchased-item detection so buyable shop rows are not skipped when the Purchased badge template false-matches.
 
     </releaseNotes>
   </update>
