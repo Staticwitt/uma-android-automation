@@ -442,7 +442,7 @@ const searchConfig: SearchOption[] = [
         page: "ParentFarmingSettings",
     },
     {
-        id: "enable-parent-farming-breeding-plan",
+        id: "parent-farming-breeding-plan",
         title: "Breeding Plan",
         description: "Multi-generation parent farming queue with target factor skills.",
         page: "ParentFarmingSettings",

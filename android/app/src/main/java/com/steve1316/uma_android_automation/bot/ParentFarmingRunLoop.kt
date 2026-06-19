@@ -251,6 +251,7 @@ object ParentFarmingRunLoop {
         if (ButtonCompleteCareer.check(game.imageUtils)) {
             ButtonCompleteCareer.click(game.imageUtils)
             game.wait(1.0)
+            campaign.tryHandleAllDialogs(timeoutMs = 5_000)
         }
 
         ParentFarmingGoalQueue.setCharacterOverride(null)

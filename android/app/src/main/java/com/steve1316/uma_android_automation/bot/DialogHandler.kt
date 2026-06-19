@@ -199,6 +199,11 @@ open class DialogHandler(val game: Game) {
                 dialog.ok(game.imageUtils)
             }
 
+            "complete_career" -> {
+                MessageLog.i(TAG, "[DIALOG] Confirming Complete Career to return to career selection.")
+                dialog.ok(game.imageUtils)
+            }
+
             "epithets" -> {
                 dialog.close(game.imageUtils)
             }
