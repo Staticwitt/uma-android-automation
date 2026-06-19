@@ -21,14 +21,40 @@ export interface ParentAnalyticsCharacterRow {
     lastScenario: string
 }
 
+export interface ParentAnalyticsGoalPresetRow {
+    goalPresetKey: string
+    runCount: number
+    avgQuality: number
+    bestQuality: number
+    trend: string
+    lastScenario: string
+}
+
 export interface ParentFarmingAnalyticsSummary {
     totalRuns: number
     profiles: ParentAnalyticsProfileRow[]
     characters: ParentAnalyticsCharacterRow[]
+    goalPresets: ParentAnalyticsGoalPresetRow[]
     recentTrend: string
 }
 
 const characterKey = (run: ParentRunArchiveEntry): string => run.traineeName || run.characterPreset || "Unknown"
+
+const goalPresetKey = (run: ParentRunArchiveEntry): string => run.goalPresetLabel || run.bundleLabel || ""
+
+const trendForRuns = (runs: ParentRunArchiveEntry[], limit = 8): string =>
+    runs
+        .slice(0, limit)
+        .reverse()
+        .map((run) => {
+            const score = scoreParentRunArchiveEntry(run).score
+            if (score >= 90) return "S"
+            if (score >= 80) return "A"
+            if (score >= 70) return "B"
+            if (score >= 60) return "C"
+            return "D"
+        })
+        .join("→")
 
 export const buildParentFarmingAnalytics = (runs: ParentRunArchiveEntry[]): ParentFarmingAnalyticsSummary => {
     const profileMap = new Map<string, ParentRunArchiveEntry[]>()
@@ -75,47 +101,48 @@ export const buildParentFarmingAnalytics = (runs: ParentRunArchiveEntry[]): Pare
         const sorted = [...charRuns].sort((a, b) => b.completedAtMs - a.completedAtMs)
         const scores = sorted.map((run) => scoreParentRunArchiveEntry(run).score)
         const avgQuality = scores.reduce((sum, score) => sum + score, 0) / Math.max(1, scores.length)
-        const trend = sorted
-            .slice(0, 8)
-            .reverse()
-            .map((run) => {
-                const score = scoreParentRunArchiveEntry(run).score
-                if (score >= 90) return "S"
-                if (score >= 80) return "A"
-                if (score >= 70) return "B"
-                if (score >= 60) return "C"
-                return "D"
-            })
-            .join("→")
         return {
             characterKey: characterKeyValue,
             runCount: charRuns.length,
             avgQuality: Math.round(avgQuality),
             bestQuality: Math.round(Math.max(...scores, 0)),
-            trend,
+            trend: trendForRuns(sorted),
             lastScenario: sorted[0]?.scenario ?? "",
         }
     })
 
     characters.sort((a, b) => b.runCount - a.runCount)
 
-    const recentTrend = runs
-        .slice(0, 12)
-        .reverse()
-        .map((run) => {
-            const score = scoreParentRunArchiveEntry(run).score
-            if (score >= 90) return "S"
-            if (score >= 80) return "A"
-            if (score >= 70) return "B"
-            if (score >= 60) return "C"
-            return "D"
-        })
-        .join(" → ")
+    const goalPresetMap = new Map<string, ParentRunArchiveEntry[]>()
+    for (const run of runs) {
+        const key = goalPresetKey(run)
+        if (!key) continue
+        goalPresetMap.set(key, [...(goalPresetMap.get(key) ?? []), run])
+    }
+
+    const goalPresets: ParentAnalyticsGoalPresetRow[] = Array.from(goalPresetMap.entries()).map(([key, presetRuns]) => {
+        const sorted = [...presetRuns].sort((a, b) => b.completedAtMs - a.completedAtMs)
+        const scores = sorted.map((run) => scoreParentRunArchiveEntry(run).score)
+        const avgQuality = scores.reduce((sum, score) => sum + score, 0) / Math.max(1, scores.length)
+        return {
+            goalPresetKey: key,
+            runCount: presetRuns.length,
+            avgQuality: Math.round(avgQuality),
+            bestQuality: Math.round(Math.max(...scores, 0)),
+            trend: trendForRuns(sorted),
+            lastScenario: sorted[0]?.scenario ?? "",
+        }
+    })
+
+    goalPresets.sort((a, b) => b.avgQuality - a.avgQuality)
+
+    const recentTrend = trendForRuns(runs, 12).replace(/→/g, " → ")
 
     return {
         totalRuns: runs.length,
         profiles,
         characters,
+        goalPresets,
         recentTrend,
     }
 }

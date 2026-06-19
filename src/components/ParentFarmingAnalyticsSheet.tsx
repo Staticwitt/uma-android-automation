@@ -91,6 +91,20 @@ export const ParentFarmingAnalyticsSheet = ({ visible, onClose }: ParentFarmingA
                             </View>
                         ))}
                     </View>
+                    {summary.goalPresets.length > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.heading}>By goal queue slot</Text>
+                            {summary.goalPresets.map((row) => (
+                                <View key={row.goalPresetKey} style={styles.card}>
+                                    <Text style={styles.title}>{row.goalPresetKey}</Text>
+                                    <Text style={styles.meta}>
+                                        {row.runCount} runs · avg {row.avgQuality} · best {row.bestQuality} · last {row.lastScenario}
+                                    </Text>
+                                    {row.trend ? <Text style={styles.trend}>{row.trend}</Text> : null}
+                                </View>
+                            ))}
+                        </View>
+                    )}
                 </ScrollView>
             )}
         </SheetModal>

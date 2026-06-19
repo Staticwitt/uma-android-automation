@@ -44,4 +44,22 @@ describe("parentFarmingAnalytics", () => {
         expect(summary.characters.length).toBeGreaterThanOrEqual(2)
         expect(summary.profiles[0].profileName).toBeTruthy()
     })
+
+    it("groups runs by goal queue slot and ranks by average quality", () => {
+        const summary = buildParentFarmingAnalytics([
+            sampleRun({ id: "a", goalPresetLabel: "Slot 1", qualityScore: 90, qualityGrade: "S" }),
+            sampleRun({ id: "b", goalPresetLabel: "Slot 1", qualityScore: 80, qualityGrade: "A" }),
+            sampleRun({ id: "c", goalPresetLabel: "Slot 2", qualityScore: 50, qualityGrade: "D" }),
+        ])
+        expect(summary.goalPresets).toHaveLength(2)
+        expect(summary.goalPresets[0].goalPresetKey).toBe("Slot 1")
+        expect(summary.goalPresets[0].avgQuality).toBe(85)
+        expect(summary.goalPresets[0].runCount).toBe(2)
+        expect(summary.goalPresets[1].goalPresetKey).toBe("Slot 2")
+    })
+
+    it("omits the goal-preset breakdown when no run used the goal queue", () => {
+        const summary = buildParentFarmingAnalytics([sampleRun({ id: "a", goalPresetLabel: "" })])
+        expect(summary.goalPresets).toHaveLength(0)
+    })
 })
