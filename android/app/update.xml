@@ -1,20 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.34</latestVersion>
-    <latestVersionCode>124</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.34</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.34/v5.9.34-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.34/v5.9.34-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.35</latestVersion>
+    <latestVersionCode>125</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.35</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.35/v5.9.35-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.35/v5.9.35-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.34 - Generation farm auto-navigation
+v5.9.35 - Navigation resilience, resumable sessions, lineage view, more presets
 
 Changes
 ---
-- Generation farm now auto-navigates home → Career hub → trainee → scenario for the next breeding-plan generation instead of requiring a manual return to career selection
-- Restores targeted pieces of the removed cold-start navigation (team-home detection, OCR character-list pick, OCR scenario pick), scoped to mid-session run transitions only
-- Falls back to the prior generic click-through when no breeding-plan trainee is configured for the next run
+- Generation farm auto-navigation now retries with a bounded limit and sends a Discord alert on failure instead of silently spinning
+- Optional fallback to the previous generation's trainee when the next one can't be found, keeping the multi-run session going
+- Breeding-plan validation warnings (unknown bundle/preset keys) now show in the editor and as a confirm dialog before bot start
+- Multi-run sessions resume at the last completed generation after a bot restart, with a "Reset progress" action
+- New lineage view in the run archive: chains a breeding-plan session's runs into a generation-ordered pedigree
+- 7 additional built-in breeding-plan presets (Classic Crown 3-gen chain, Triple Tiara, Unity Aoharu, stayer/senior-finale, alt mile-sprint route)
 
-Includes v5.9.33 generation farm release.
+Includes v5.9.34 generation farm auto-navigation.
 
     </releaseNotes>
   </update>
