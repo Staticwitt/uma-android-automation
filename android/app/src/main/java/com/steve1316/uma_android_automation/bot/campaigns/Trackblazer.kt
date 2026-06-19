@@ -450,7 +450,11 @@ class Trackblazer(game: Game) : Campaign(game) {
                     bInitialShopCheckPerformed = true
 
                     game.wait(0.5)
-                    buyItems()
+                    if (openShop()) {
+                        buyItems()
+                    } else {
+                        MessageLog.e(TAG, "[ERROR] handleDialogs:: Failed to confirm the Shop screen after dismissing the Shop dialog.")
+                    }
                     return DialogHandlerResult.Handled(result.dialog)
                 } else {
                     MessageLog.e(TAG, "[ERROR] handleDialogs:: Failed to click the OK button on the Shop dialog.")
