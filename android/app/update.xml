@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.49</latestVersion>
-    <latestVersionCode>139</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.49</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.49/v5.9.49-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.49/v5.9.49-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.50</latestVersion>
+    <latestVersionCode>140</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.50</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.50/v5.9.50-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.50/v5.9.50-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.49 - Wider Samsung phone display recognition
+v5.9.50 - Dialog title detection fix
 
 Fixes
 -----
-- Display profile matching for Samsung 1080×2340 phones now accepts DPI 420-460 instead of requiring exactly 450. Devices reporting DPI outside that single value (e.g. Galaxy S23 FE at 425 DPI) were previously logged as an unrecognized display and excluded from profile-based tuning.
+- Fixed a bug where the dialog title OCR region could be computed with a negative width, silently breaking title detection. This happened when the title bar's gradient pattern was matched at a position right of screen center.
 
     </releaseNotes>
   </update>
