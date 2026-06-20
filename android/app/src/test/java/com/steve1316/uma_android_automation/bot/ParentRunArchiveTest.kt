@@ -57,6 +57,34 @@ class ParentRunArchiveTest {
         assertEquals(250000, records.getJSONObject(0).getInt("fans"))
     }
 
+    @Test
+    fun computeComparison_returns_null_for_empty_archive() {
+        assertEquals(null, ParentRunArchive.computeComparison(JSONArray()))
+    }
+
+    @Test
+    fun computeComparison_averages_and_tracks_best_run() {
+        val records = JSONArray()
+        records.put(recordWithFansAndQuality(fans = 100000, qualityScore = 60, qualityGrade = "C"))
+        records.put(recordWithFansAndQuality(fans = 300000, qualityScore = 90, qualityGrade = "A"))
+
+        val comparison = ParentRunArchive.computeComparison(records)
+
+        assertTrue(comparison != null)
+        assertEquals(2, comparison!!.runCount)
+        assertEquals(200000L, comparison.avgFans)
+        assertEquals(75.0, comparison.avgQualityScore)
+        assertEquals(300000, comparison.bestFans)
+        assertEquals(90, comparison.bestQualityScore)
+        assertEquals("A", comparison.bestGrade)
+    }
+
+    private fun recordWithFansAndQuality(fans: Int, qualityScore: Int, qualityGrade: String) =
+        org.json.JSONObject()
+            .put("fans", fans)
+            .put("qualityScore", qualityScore)
+            .put("qualityGrade", qualityGrade)
+
     private fun sampleTrainee(): Trainee {
         val trainee = Trainee()
         trainee.name = "Special Week"

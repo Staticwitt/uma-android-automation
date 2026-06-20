@@ -2287,9 +2287,11 @@ abstract class Campaign(game: Game) : Task(game) {
                 ) {
                     val summary = ParentRunSummary.build(summaryInput)
                     ParentRunSummary.logSummary(summary)
-                    game.taskEndDiscordEmbed = ParentRunSummary.buildDiscordEmbed(summaryInput)
+                    val archiveEnabled = SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)
+                    val comparison = if (archiveEnabled) ParentRunArchive.loadComparison(game.myContext) else null
+                    game.taskEndDiscordEmbed = ParentRunSummary.buildDiscordEmbed(summaryInput, comparison)
                     game.taskEndDiscordMessage = ParentRunSummary.buildDiscordMarkdown(summaryInput)
-                    if (SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
+                    if (archiveEnabled) {
                         ParentRunArchive.append(game.myContext, summaryInput)
                     }
                 } else if (summaryInput != null && SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {

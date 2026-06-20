@@ -308,7 +308,7 @@ object ParentRunSummary {
     }
 
     /** Structured embed for Discord rich notifications at career end. */
-    fun buildDiscordEmbed(input: ParentRunSummaryInput): DiscordEmbedSpec {
+    fun buildDiscordEmbed(input: ParentRunSummaryInput, comparison: ParentRunArchive.RunComparison? = null): DiscordEmbedSpec {
         val trainee = input.trainee
         val targetTotal = input.completedTargetEpithets.size + input.incompleteTargetEpithets.size
         val color =
@@ -411,6 +411,10 @@ object ParentRunSummary {
         }
         val quality = ParentRunQuality.score(input)
         fields.add(DiscordEmbedField("Quality", "${quality.grade} · ${quality.score}/100", inline = true))
+        fields.add(DiscordEmbedField("Quality breakdown", formatQualityBreakdown(quality.breakdown), inline = false))
+        if (comparison != null) {
+            fields.add(DiscordEmbedField("History", formatComparison(input, quality, comparison), inline = false))
+        }
         if (input.sessionRunIndex > 0) {
             val sessionLabel =
                 if (input.sessionRunTarget > 0) {
@@ -573,6 +577,40 @@ object ParentRunSummary {
             (0 until arr.length()).map { arr.getString(it) }
         }.getOrElse { emptyList() }
     }
+
+    private fun formatQualityBreakdown(breakdown: ParentRunQuality.Breakdown): String =
+        listOf(
+            "Epithets ${breakdown.epithetScore}/35",
+            "Fans ${breakdown.fanScore}/25",
+            "Forced ${breakdown.forcedScore}/20",
+            "Race ${breakdown.raceScore}/10",
+            "Sparks ${breakdown.sparkScore}/5",
+            "Bonus ${breakdown.bonusScore}/5",
+        ).joinToString(" · ")
+
+    private fun formatComparison(
+        input: ParentRunSummaryInput,
+        quality: ParentRunQuality.Result,
+        comparison: ParentRunArchive.RunComparison,
+    ): String {
+        val fanDelta = input.trainee.fans - comparison.avgFans
+        val scoreDelta = quality.score - comparison.avgQualityScore.toInt()
+        val vsAvg =
+            "vs avg over ${comparison.runCount} runs: ${formatSignedNumber(fanDelta)} fans, ${formatSignedInt(scoreDelta)} score"
+        val vsBest =
+            if (quality.score >= comparison.bestQualityScore) {
+                "New best quality score (previous best: ${comparison.bestGrade} · ${comparison.bestQualityScore}/100)"
+            } else {
+                "vs best: ${comparison.bestGrade} · ${comparison.bestQualityScore}/100, ${formatNumber(comparison.bestFans.toLong())} fans"
+            }
+        return "$vsAvg\n$vsBest"
+    }
+
+    private fun formatNumber(value: Long): String = "%,d".format(value)
+
+    private fun formatSignedNumber(value: Long): String = if (value >= 0) "+${formatNumber(value)}" else formatNumber(value)
+
+    private fun formatSignedInt(value: Int): String = if (value >= 0) "+$value" else "$value"
 
     private fun formatDecimal(value: Double): String =
         if (value % 1.0 == 0.0) {

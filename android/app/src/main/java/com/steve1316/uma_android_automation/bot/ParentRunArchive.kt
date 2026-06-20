@@ -20,7 +20,50 @@ object ParentRunArchive {
     private const val FILE_NAME = "parent_run_archive.json"
     private const val MAX_ENTRIES = 50
 
+    /** Aggregate stats from previously archived runs, used to compare a freshly completed run against history. */
+    data class RunComparison(
+        val runCount: Int,
+        val avgFans: Long,
+        val avgQualityScore: Double,
+        val bestFans: Int,
+        val bestQualityScore: Int,
+        val bestGrade: String,
+    )
+
     fun archiveFile(context: Context): File = File(context.filesDir, FILE_NAME)
+
+    /** Loads comparison stats from runs already on disk. Returns null if no prior runs are archived. */
+    fun loadComparison(context: Context): RunComparison? = computeComparison(readArray(archiveFile(context)))
+
+    internal fun computeComparison(records: JSONArray): RunComparison? {
+        if (records.length() == 0) return null
+        var totalFans = 0L
+        var totalQuality = 0L
+        var bestFans = 0
+        var bestQualityScore = 0
+        var bestGrade = ""
+        for (i in 0 until records.length()) {
+            val entry = records.getJSONObject(i)
+            val fans = entry.optInt("fans", 0)
+            val qualityScore = entry.optInt("qualityScore", 0)
+            totalFans += fans
+            totalQuality += qualityScore
+            if (fans > bestFans) bestFans = fans
+            if (qualityScore > bestQualityScore) {
+                bestQualityScore = qualityScore
+                bestGrade = entry.optString("qualityGrade", "")
+            }
+        }
+        val runCount = records.length()
+        return RunComparison(
+            runCount = runCount,
+            avgFans = totalFans / runCount,
+            avgQualityScore = totalQuality.toDouble() / runCount,
+            bestFans = bestFans,
+            bestQualityScore = bestQualityScore,
+            bestGrade = bestGrade,
+        )
+    }
 
     /**
      * Appends a run record built from [input]. Newest entries are stored first.
