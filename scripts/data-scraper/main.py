@@ -220,6 +220,7 @@ def download_image(url: str, out_fp: str):
     try:
         response = requests.get(url)
         response.raise_for_status()
+        Path(out_fp).parent.mkdir(parents=True, exist_ok=True)
         with open(out_fp, "wb") as f_out:
             f_out.write(response.content)
     except requests.exceptions.RequestException as exc:
@@ -961,6 +962,9 @@ class CharacterScraper(BaseScraper):
         driver.quit()
 
 
+SUPPORT_ICONS_DIR = "../pages/ParentFarmingSettings/icons/supports"
+
+
 class SupportCardScraper(BaseScraper):
     """Scrapes the support cards from the website."""
 
@@ -987,9 +991,19 @@ class SupportCardScraper(BaseScraper):
         logging.info(f"Found {len(filtered_support_card_items)} support cards.")
         support_card_links = [item.get_attribute("href") for item in filtered_support_card_items]
 
+        # Grab each card's grid thumbnail src directly from the rendered page so we don't have to guess
+        # GameTora's image filename convention.
+        support_card_image_urls = []
+        for item in filtered_support_card_items:
+            try:
+                support_card_image_urls.append(item.find_element(By.TAG_NAME, "img").get_attribute("src"))
+            except NoSuchElementException:
+                support_card_image_urls.append(None)
+
         # If this is a delta scrape, scrape the first 10 support cards as the list is now sorted by descending release date.
         if IS_DELTA:
             support_card_links = support_card_links[:DELTA_BACKLOG_COUNT]
+            support_card_image_urls = support_card_image_urls[:DELTA_BACKLOG_COUNT]
             logging.info(
                 f"Scraping the first {DELTA_BACKLOG_COUNT} support cards for the delta scrape as the list is now sorted by descending release date."
             )
@@ -1017,6 +1031,15 @@ class SupportCardScraper(BaseScraper):
             else:
                 # Fallback to a more basic method.
                 support_card_rarity = support_card_name.split(" ")[-1].replace(")", "").replace("(", "").strip()
+
+            # Download the card's portrait thumbnail, keyed by GameTora's support id (the leading digits
+            # of the detail page slug, e.g. "/umamusume/supports/30025-...").
+            image_url = support_card_image_urls[i]
+            support_id_match = re.search(r"/supports/(\d+)", link)
+            if image_url and support_id_match:
+                support_id = support_id_match.group(1)
+                ext = Path(image_url.split("?")[0]).suffix or ".png"
+                download_image(image_url, f"{SUPPORT_ICONS_DIR}/{support_id}{ext}")
 
             # Scrape all the Training Events.
             self.process_training_events(driver, support_card_name, self.data[support_card_name])
