@@ -231,7 +231,7 @@ object ButtonRaceRecommendationsForgeYourOwnPath : ButtonInterface {
 }
 
 object ButtonRaceResults : ButtonInterface {
-    override val template = Template("components/button/race_results", region = Region.bottomHalf)
+    override val template = Template("components/button/race_results")
 }
 
 object ButtonRestore : ButtonInterface {
