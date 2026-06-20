@@ -1,17 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.51</latestVersion>
-    <latestVersionCode>141</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.51</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.51/v5.9.51-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.51/v5.9.51-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.52</latestVersion>
+    <latestVersionCode>142</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.52</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.52/v5.9.52-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.52/v5.9.52-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.51 - Trackblazer Shop detection fix and log cleanup
+v5.9.52 - Training Items button retry budget fix
 
 Fixes
 -----
-- Fixed Trackblazer's Shop-opening flow failing outright when the Shop button or Training Items button wasn't detected on the first frame checked (e.g. right as the Main Screen loads). Both checks now use the function's existing retry budget instead of giving up after a single attempt.
-- Downgraded an expected "no dialog matched" log line from ERROR to VERBOSE. This fired on most ordinary screen transitions where no dialog is present and had no functional impact, just noisy logs.
+- Fixed Trackblazer's Shop opening still failing intermittently when the Training Items button wasn't detected on the first frame checked, even after the v5.9.51 fix. The opening flow's retry budget is now bumped to 30 attempts to match the budget already used elsewhere for the same button.
+- Fixed the per-turn inventory sync dialog failing to open on the first attempt, which could permanently break item usage for the rest of the run until it happened to succeed once. It now retries up to 30 times like the other Training Items button checks.
 
     </releaseNotes>
   </update>
