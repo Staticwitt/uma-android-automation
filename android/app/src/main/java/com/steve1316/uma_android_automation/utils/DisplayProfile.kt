@@ -44,11 +44,11 @@ object DisplayProfileRegistry {
             ),
             ProfileSpec(
                 id = "samsung_phone_1080p_450",
-                label = "1080×2340 @ 450 DPI (Samsung phone)",
+                label = "1080×2340 @ 420-460 DPI (Samsung phone)",
                 width = 1080,
                 height = 2340,
-                dpiMin = 450,
-                dpiMax = 450,
+                dpiMin = 420,
+                dpiMax = 460,
                 templateScale = 1.0,
             ),
             ProfileSpec(
