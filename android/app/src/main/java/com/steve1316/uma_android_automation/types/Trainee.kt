@@ -203,6 +203,14 @@ class Trainee {
     /** Stores the last recorded mismatch value for verification. */
     private val lastMismatchedValues: MutableMap<StatName, Int> = mutableMapOf()
 
+    /**
+     * The highest stat value the consecutive-mismatch "trust the new value" recovery (see [updateStats]) will ever
+     * accept, matching the project's standard assumption of 1200 as the practical stat cap (see [CustomImageUtils]'s
+     * `manualStatCap` fallback). Without this, two consecutive OCR misreads landing on the same wildly wrong digits
+     * (e.g. an extra leading digit) would be "confirmed" and trusted just as readily as a legitimate stat jump.
+     */
+    private val maxPlausibleStatValue = 1200
+
     /** True once aptitudes, stats, and skill points have all been updated at least once. */
     val bIsInitialized: Boolean
         get() = bHasUpdatedAptitudes && bHasUpdatedStats && bHasUpdatedSkillPoints
@@ -718,7 +726,7 @@ class Trainee {
      * To prevent "jumping" to incorrect values due to OCR misreads, this method implements a verification process:
      * 1. If a new value differs from the old one by >150, it is flagged as a potential error and rejected initially.
      * 2. The bot tracks consecutive "mismatches" for that stat.
-     * 3. If the "mismatched" value remains consistent across multiple updates, the bot recovers by trusting the new value (assuming the previous one was the actual error).
+     * 3. If the "mismatched" value remains consistent across multiple updates, the bot recovers by trusting the new value (assuming the previous one was the actual error), unless that value exceeds [maxPlausibleStatValue].
      *
      * @param imageUtils Reference to a [CustomImageUtils] instance.
      * @param sourceBitmap Optional bitmap to use (enables parallel processing).
@@ -784,8 +792,10 @@ class Trainee {
                         mismatchCounts[statName] = newCount
 
                         // If the "incorrect" value is detected multiple times, assume the previous
-                        // recorded value was the actual misread and update to the new one.
-                        if (newCount >= 2) {
+                        // recorded value was the actual misread and update to the new one. Never trust a value
+                        // beyond the plausible stat cap though, since a repeated OCR digit error (e.g. an extra
+                        // leading digit) can be just as "consistent" as a real stat jump.
+                        if (newCount >= 2 && newValue <= maxPlausibleStatValue) {
                             MessageLog.d(TAG, "[DEBUG] updateStats:: New $statName stat value has been consistent for $newCount updates. Trusting the new value: $newValue (was $oldValue)")
                             stats.setStat(statName, newValue)
                             bHasUpdatedStats = true
@@ -833,7 +843,7 @@ class Trainee {
                         val newCount = currentCount + 1
                         mismatchCounts[statName] = newCount
 
-                        if (newCount >= 2) {
+                        if (newCount >= 2 && newValue <= maxPlausibleStatValue) {
                             MessageLog.d(
                                 TAG,
                                 "[DEBUG] updateStats:: New $statName stat value has been consistent for $newCount updates via sequential processing. Trusting the new value: $newValue (was $oldValue)",
