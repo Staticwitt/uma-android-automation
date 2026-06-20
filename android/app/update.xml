@@ -1,18 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.45</latestVersion>
-    <latestVersionCode>135</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.45</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.45/v5.9.45-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.45/v5.9.45-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.46</latestVersion>
+    <latestVersionCode>136</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.46</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.46/v5.9.46-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.46/v5.9.46-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.45 - Fix friend support slot coordinates
+v5.9.46 - Decision Report Viewer, Trackblazer improvements, Career Planner
 
-Fixes
+New
 ---
-- Corrected the friend support slot's screen coordinates to match the actual
-  3x2 career-selection grid (trailing grid cell), fixing the OCR "already
-  borrowed" check that previously read the wrong location.
+- Decision Report Viewer: import Trackblazer decision logs and browse turn-by-turn cards explaining each bot choice
+- Opt-in Career Planner (Training Settings): soft stat-target bias inferred from your equipped support deck composition
+
+Trackblazer
+---
+- Race selection weights trainee aptitude (surface/distance B+)
+- Phase-aware Good-Luck Charm thresholds (tighter Junior, relaxed Finale)
+- Phase- and inventory-aware energy, consecutive-race, and mood-recovery logic
 
     </releaseNotes>
   </update>

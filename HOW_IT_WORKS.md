@@ -1,6 +1,6 @@
 # How It Works
 
-*Last updated: 2026-05-25*
+*Last updated: 2026-06-20*
 
 A comprehensive guide to the inner workings of the app. This document explains what the bot does at each step of a campaign, how it makes decisions, and how each scenario differs.
 
@@ -381,6 +381,12 @@ When `disableStatTargets` is enabled, the per-distance stat targets that normall
 </details>
 
 <details>
+<summary><strong>Career Planner (opt-in, off by default)</strong></summary>
+
+When `enableCareerPlanner` is enabled, the bot infers a target stat build from the **equipped support deck's stat-type composition** (Speed/Stamina/Power/Guts/Wit, read from the `supportDeckOwnedCards` setting) and uses it to nudge the per-distance stat targets that feed the Stat Efficiency component — e.g. a deck with three Speed-type supports raises the Speed target relative to the others. This is a **soft bias only**: it multiplies each stat's existing target by a factor derived from that stat's share of the deck (floor 0.7x for stats absent from the deck, scaling up for deck-favored stats), it does not reorder stat priorities, touch the training blacklist, or override rainbow/skill-hint/failure-chance logic. An evenly-balanced 5-stat deck is a no-op (multiplier 1.0x for every stat). If the equipped deck has no recognizable stat types (unset, all-Friend cards, or unrecognized names), the bias is skipped and targets are left untouched. Mutually exclusive in practice with `disableStatTargets` — when that setting is on, every target is already the scenario cap, so the bias is not applied.
+</details>
+
+<details>
 <summary><strong>Training Failure Fallbacks</strong></summary>
 
 When every training option is filtered out by the failure-chance or stat-cap rules, the bot follows a configurable fallback chain (e.g. rest, recover mood, or force Wit) instead of stalling on the turn. The fallback decision also respects negative statuses — for instance, with active negative conditions the forced fallback is Wit rather than Speed to avoid stat reductions from conditions like Slow Metabolism.
@@ -412,6 +418,7 @@ This lets the user, for example, push Speed during the year but lean into Stamin
 | Risky Training | false | Accept higher failure for larger gains |
 | Training Level Weighting | true | Amplify top-3 priority stats by OCR-detected facility level (1-5) |
 | Disable Per-Distance Stat Targets | false | Treat every stat's target as the scenario stat cap |
+| Career Planner | false | Bias stat targets toward the equipped support deck's stat-type composition |
 
 ---
 
