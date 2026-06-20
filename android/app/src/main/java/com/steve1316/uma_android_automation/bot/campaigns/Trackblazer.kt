@@ -17,6 +17,7 @@ import com.steve1316.uma_android_automation.components.ButtonBack
 import com.steve1316.uma_android_automation.components.ButtonCancel
 import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonConfirmUse
+import com.steve1316.uma_android_automation.components.ButtonHomeFullStats
 import com.steve1316.uma_android_automation.components.ButtonOk
 import com.steve1316.uma_android_automation.components.ButtonRaceDayRace
 import com.steve1316.uma_android_automation.components.ButtonRaceListFullStats
@@ -1529,7 +1530,12 @@ class Trackblazer(game: Game) : Campaign(game) {
      * @return True if the shop was opened successfully, false otherwise.
      */
     fun openShop(tries: Int = 30): Boolean {
-        if (ButtonTrainingItems.check(game.imageUtils)) {
+        // ButtonTrainingItems also matches the Main screen's round "Training Items" quick-access button
+        // (confirmed via a device debug capture: the same template scored 99%+ confidence against that button,
+        // and the resulting false "already open" return caused updateShopCoins() to read the Main screen's
+        // stat HUD instead of the real Shop screen). ButtonHomeFullStats only ever appears on the Main screen,
+        // so its absence disambiguates a genuine Shop-screen match from this false positive.
+        if (ButtonTrainingItems.check(game.imageUtils) && !ButtonHomeFullStats.check(game.imageUtils)) {
             return true
         }
 
@@ -1549,7 +1555,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             game.wait(game.dialogWaitDelay)
         }
 
-        if (ButtonTrainingItems.check(game.imageUtils, tries = tries)) {
+        if (ButtonTrainingItems.check(game.imageUtils, tries = tries) && !ButtonHomeFullStats.check(game.imageUtils)) {
             return true
         }
 
