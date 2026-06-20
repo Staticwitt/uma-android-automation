@@ -1,23 +1,33 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.46</latestVersion>
-    <latestVersionCode>136</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.46</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.46/v5.9.46-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.46/v5.9.46-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.47</latestVersion>
+    <latestVersionCode>137</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.47</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.47/v5.9.47-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.47/v5.9.47-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.46 - Decision Report Viewer, Trackblazer improvements, Career Planner
+v5.9.47 - Decision Report Viewer, Career Planner, training stat-bias features, Discord run history
 
 New
 ---
 - Decision Report Viewer: import Trackblazer decision logs and browse turn-by-turn cards explaining each bot choice
 - Opt-in Career Planner (Training Settings): soft stat-target bias inferred from your equipped support deck composition
+- Always-on Running-Style Stat Bias: nudges stat targets toward what actually matters in-race for the trainee's preferred running style
+- Opt-in Energy Banking (Training Settings): rest instead of training once energy is low and a mandatory race is coming up soon
+- Opt-in Goal Race Stat Reallocation (Training Settings): temporarily targets the upcoming mandatory race's actual distance instead of your preferred distance
+- Quality breakdown and run history comparison in Discord notifications
 
 Trackblazer
 ---
 - Race selection weights trainee aptitude (surface/distance B+)
 - Phase-aware Good-Luck Charm thresholds (tighter Junior, relaxed Finale)
 - Phase- and inventory-aware energy, consecutive-race, and mood-recovery logic
+
+Fixes
+---
+- Owned support deck auto-equip now matches the actual 3x2 career-selection grid and friend slot coordinates
+- Fixed stale "four slots" copy in the owned-support auto-equip setting
+- Reverted a race prep skip-detection change that wasn't working reliably, back to the prior known-good behavior
 
     </releaseNotes>
   </update>
