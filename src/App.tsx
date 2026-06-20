@@ -49,6 +49,7 @@ function SettingsStack() {
             <Stack.Screen name="SmartRaceSolverSettings" getComponent={lazyGetComponent(() => require("./pages/SmartRaceSolverSettings").default)} />
             <Stack.Screen name="Skills" getComponent={lazyGetComponent(() => require("./pages/Skills").default)} initialParams={{ tab: "skillPointCheck" }} />
             <Stack.Screen name="EventLogVisualizer" getComponent={lazyGetComponent(() => require("./pages/EventLogVisualizer").default)} />
+            <Stack.Screen name="DecisionReportViewer" getComponent={lazyGetComponent(() => require("./pages/DecisionReportViewer").default)} />
             <Stack.Screen name="ImportSettingsPreview" getComponent={lazyGetComponent(() => require("./pages/ImportSettingsPreview").default)} />
             <Stack.Screen name="ScenarioOverridesSettings" getComponent={lazyGetComponent(() => require("./pages/ScenarioOverridesSettings").default)} />
             <Stack.Screen name="DebugSettings" getComponent={lazyGetComponent(() => require("./pages/DebugSettings").default)} />

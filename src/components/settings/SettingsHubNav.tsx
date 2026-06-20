@@ -1,6 +1,6 @@
 import { View } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { BookOpen, Bug, Cpu, Dumbbell, FileText, Flag, Layers, MessageCircle, Sparkles } from "lucide-react-native"
+import { BookOpen, Bug, Cpu, Dumbbell, FileText, Flag, GitBranch, Layers, MessageCircle, Sparkles } from "lucide-react-native"
 import { useTheme } from "../../context/ThemeContext"
 import { Section } from "../ui/section"
 import { DomainLandingCard } from "../ui/domain-landing-card"
@@ -81,6 +81,12 @@ export const SettingsHubNav = () => {
                         description="Import logs and browse a day-by-day timeline."
                         icon={<FileText size={18} color={colors.textMuted} />}
                         onPress={() => navigation.navigate("EventLogVisualizer" as never)}
+                    />
+                    <DomainLandingCard
+                        title="Decision Report Viewer"
+                        description="Import bot logs and browse why the bot made each decision, turn by turn."
+                        icon={<GitBranch size={18} color={colors.textMuted} />}
+                        onPress={() => navigation.navigate("DecisionReportViewer" as never)}
                     />
                     <DomainLandingCard
                         title="Debug"
