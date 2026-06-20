@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.48</latestVersion>
-    <latestVersionCode>138</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.48</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.48/v5.9.48-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.48/v5.9.48-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.49</latestVersion>
+    <latestVersionCode>139</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.49</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.49/v5.9.49-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.49/v5.9.49-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.48 - Trackblazer Shop click diagnostic debug test
+v5.9.49 - Wider Samsung phone display recognition
 
-New
----
-- Debug Settings: "Start Trackblazer Shop Click Diagnostic Test" diagnoses reports of the Shop tapping the wrong areas (e.g. on some Samsung devices) without performing any taps. Logs each detected row's bounding box and exact tap point, plus saves an annotated overview screenshot.
+Fixes
+-----
+- Display profile matching for Samsung 1080×2340 phones now accepts DPI 420-460 instead of requiring exactly 450. Devices reporting DPI outside that single value (e.g. Galaxy S23 FE at 425 DPI) were previously logged as an unrecognized display and excluded from profile-based tuning.
 
     </releaseNotes>
   </update>
