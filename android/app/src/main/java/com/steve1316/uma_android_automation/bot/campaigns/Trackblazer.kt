@@ -829,6 +829,24 @@ class Trackblazer(game: Game) : Campaign(game) {
         MessageLog.i(TAG, "[TRACKBLAZER] Current consecutive race count: $consecutiveRaceCount.")
     }
 
+    /**
+     * Returns the consecutive-race limit ([consecutiveRacesLimit]) adjusted for how much energy-recovery
+     * inventory is on hand, beyond the emergency reserve floor. Extended when energy items are plentiful,
+     * since recovery right after racing is assured. Tightened when none are spare, since there would be no
+     * way to recover energy before the next race.
+     *
+     * @return The effective consecutive-race limit for this turn.
+     */
+    private fun effectiveConsecutiveRacesLimit(): Int {
+        val spareEnergyItems =
+            energyItemConservationOrder.sumOf { currentInventory[it] ?: 0 } - energyItemReserveCount + (currentInventory["Royal Kale Juice"] ?: 0)
+        return when {
+            spareEnergyItems <= 0 -> maxOf(consecutiveRacesLimit - 2, 0)
+            spareEnergyItems >= 3 -> consecutiveRacesLimit + 2
+            else -> consecutiveRacesLimit
+        }
+    }
+
     override fun shouldAllowConsecutiveRace(args: Map<String, Any>): Boolean {
         // Block racing at 0-1 energy with 3+ consecutive races to avoid -30 stat penalty.
         if (trainee.energy <= 1 && consecutiveRaceCount >= 3) {
@@ -879,31 +897,35 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Late December is the last racing opportunity before a mandatory goal race, so ignore the limit.
         val isLateDecember = date.month == DateMonth.DECEMBER && date.phase == DatePhase.LATE
 
-        if (consecutiveRaceCount < (consecutiveRacesLimit + 1) || onlyOneTurnLeft || isLateDecember) {
+        // The limit stretches when energy-recovery items are plentiful (recovery after racing is assured)
+        // and shrinks when none are spare, since there would be no way to recover before the next race.
+        val limit = effectiveConsecutiveRacesLimit()
+
+        if (consecutiveRaceCount < (limit + 1) || onlyOneTurnLeft || isLateDecember) {
             val allowReason: String
-            if (isLateDecember && consecutiveRaceCount >= (consecutiveRacesLimit + 1)) {
+            if (isLateDecember && consecutiveRaceCount >= (limit + 1)) {
                 MessageLog.i(
                     TAG,
-                    "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount >= ${consecutiveRacesLimit + 1}, but it is Late December. Ignoring limit to maximize races before mandatory goal race.",
+                    "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount >= ${limit + 1}, but it is Late December. Ignoring limit to maximize races before mandatory goal race.",
                 )
-                allowReason = "Late December override: ignoring limit to max races before goal ($consecutiveRaceCount >= ${consecutiveRacesLimit + 1})"
-            } else if (onlyOneTurnLeft && consecutiveRaceCount >= (consecutiveRacesLimit + 1)) {
+                allowReason = "Late December override: ignoring limit to max races before goal ($consecutiveRaceCount >= ${limit + 1})"
+            } else if (onlyOneTurnLeft && consecutiveRaceCount >= (limit + 1)) {
                 MessageLog.i(
                     TAG,
-                    "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount >= ${consecutiveRacesLimit + 1}, but only 1 turn remains before mandatory race. Racing is safe. Continuing.",
+                    "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount >= ${limit + 1}, but only 1 turn remains before mandatory race. Racing is safe. Continuing.",
                 )
-                allowReason = "Only 1 turn left before mandatory race - racing past limit is safe ($consecutiveRaceCount >= ${consecutiveRacesLimit + 1})"
+                allowReason = "Only 1 turn left before mandatory race - racing past limit is safe ($consecutiveRaceCount >= ${limit + 1})"
             } else {
-                MessageLog.i(TAG, "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount < ${consecutiveRacesLimit + 1}. Continuing.")
-                allowReason = "Under consecutive-race limit ($consecutiveRaceCount < ${consecutiveRacesLimit + 1})"
+                MessageLog.i(TAG, "[TRACKBLAZER] Consecutive race count $consecutiveRaceCount < ${limit + 1}. Continuing.")
+                allowReason = "Under consecutive-race limit ($consecutiveRaceCount < ${limit + 1})"
             }
             decisionTracer.recordRaceEligibility(eligible = true, reason = "Consecutive-race check: $allowReason")
             return true
         } else {
-            MessageLog.w(TAG, "[WARN] shouldAllowConsecutiveRace:: Consecutive race count $consecutiveRaceCount >= ${consecutiveRacesLimit + 1}. Aborting racing.")
+            MessageLog.w(TAG, "[WARN] shouldAllowConsecutiveRace:: Consecutive race count $consecutiveRaceCount >= ${limit + 1}. Aborting racing.")
             decisionTracer.recordRaceEligibility(
                 eligible = false,
-                reason = "Consecutive-race limit hit: $consecutiveRaceCount >= ${consecutiveRacesLimit + 1}, not Late December, more than 1 turn before mandatory",
+                reason = "Consecutive-race limit hit: $consecutiveRaceCount >= ${limit + 1}, not Late December, more than 1 turn before mandatory",
             )
             racing.encounteredRacingPopup = false
             return false
@@ -945,6 +967,19 @@ class Trackblazer(game: Game) : Campaign(game) {
             currentInventory.any { (name, count) ->
                 count > 0 && (name == "Berry Sweet Cupcake" || name == "Plain Cupcake")
             }
+
+        // Resting spends the entire turn on recovery (no training happens), while mood items fix mood
+        // alongside that turn's training. When a mandatory/goal race is imminent, every remaining turn of
+        // training matters, so prefer items over resting even if energy is high enough to otherwise rest.
+        val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+        val raceImminent = turnsRemaining in 1..2
+        if (raceImminent && hasMoodItems) {
+            MessageLog.i(
+                TAG,
+                "[TRACKBLAZER] Mood is ${trainee.mood} and a goal race is $turnsRemaining turn(s) away. Using mood items instead of resting to avoid losing a training turn.",
+            )
+            return false
+        }
 
         if (trainee.energy >= 70) {
             // If energy is high, we prefer to rest/recover mood naturally to save items.
@@ -1005,7 +1040,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             val dialogResult = handleDialogs()
             if (dialogResult is DialogHandlerResult.Handled &&
                 dialogResult.dialog.name == "consecutive_race_warning" &&
-                consecutiveRaceCount > consecutiveRacesLimit &&
+                consecutiveRaceCount > effectiveConsecutiveRacesLimit() &&
                 !racing.ignoreConsecutiveRaceWarning &&
                 !racing.enableForceRacing &&
                 game.imageUtils.determineTurnsRemainingBeforeNextGoal() != 1
@@ -2628,7 +2663,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                 (date.day >= 13 && failureChance >= charmFailureThreshold() && (nextInventory["Good-Luck Charm"] ?: 0) > 0)
 
         // Energy Items Check.
-        if (!charmBeingUsedThisTurn && passStartEnergy <= energyThresholdToUseEnergyItems && shopList.energyItemNames.contains(itemName)) {
+        if (!charmBeingUsedThisTurn && passStartEnergy <= energyItemThreshold() && shopList.energyItemNames.contains(itemName)) {
             // Conservation: hold back up to `energyItemReserveCount` units across the conservation order (lowest-tier first) for emergency race recovery.
             val reservedHere = reservedEnergyUnitsFor(itemName, nextInventory)
             if (reservedHere > 0 && (nextInventory[itemName] ?: 0) <= reservedHere) {
@@ -2639,7 +2674,7 @@ class Trackblazer(game: Game) : Campaign(game) {
 
             if (isBestEnergyItemToUse(trainee, itemName, nextInventory, remainingItemsOfInterest)) {
                 val gain = energyGains[itemName] ?: 0
-                val reason = "Restored energy (current: ${trainee.energy}%, pass start: $passStartEnergy%) because it fell below the $energyThresholdToUseEnergyItems% threshold."
+                val reason = "Restored energy (current: ${trainee.energy}%, pass start: $passStartEnergy%) because it fell below the ${energyItemThreshold()}% threshold."
                 if (clickItemPlusButton(itemName, entry, "[TRACKBLAZER] Queuing $itemName for use (Energy: ${trainee.energy}%, Gain: +$gain).", nextInventory, reason = reason)) {
                     val oldEnergy = trainee.energy
                     trainee.energy = (trainee.energy + gain).coerceAtMost(100)
@@ -2826,6 +2861,21 @@ class Trackblazer(game: Game) : Campaign(game) {
         }
 
     /**
+     * Returns the energy percentage at or below which energy items should be used, adjusted for game phase
+     * around the user-configured base ([energyThresholdToUseEnergyItems]). Tightened during Junior Year to
+     * conserve items when race density is low, and relaxed during the Finale (turns 73-75) so the trainee
+     * doesn't risk running dry on energy right before a mandatory race.
+     *
+     * @return The energy threshold (in percent) at or below which energy items should be used.
+     */
+    private fun energyItemThreshold(): Int =
+        when {
+            date.bIsFinaleSeason && date.day >= 73 -> minOf(energyThresholdToUseEnergyItems + 20, 100)
+            date.year == DateYear.JUNIOR -> maxOf(energyThresholdToUseEnergyItems - 10, 0)
+            else -> energyThresholdToUseEnergyItems
+        }
+
+    /**
      * Returns true when training-effect items (Megaphones, Good-Luck Charm) should be conserved this turn
      * because the trainee mood is below NORMAL AND the selected training's main stat gain is below the
      * user-configured floor. Mirrors the inline conservation checks in `handleInlineUsage()` so the
@@ -2904,7 +2954,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             !skipTrainingEffectItems && trainingSelected != null && !bUsedCharmToday && failureChance >= charmFailureThreshold() && (currentInventory["Good-Luck Charm"] ?: 0) > 0
 
         val potentialUse =
-            (trainee.energy <= energyThresholdToUseEnergyItems && hasEnergyItems) ||
+            (trainee.energy <= energyItemThreshold() && hasEnergyItems) ||
                 (trainee.mood <= Mood.NORMAL && trainee.energy < 70 && hasMoodItems) ||
                 (trainee.currentNegativeStatuses.isNotEmpty() && hasBadConditionItems) ||
                 hasStatItems ||
@@ -2915,7 +2965,7 @@ class Trackblazer(game: Game) : Campaign(game) {
         if (needSync || potentialUse) {
             val reasons = mutableListOf<String>()
             if (needSync) reasons.add("Sync needed")
-            if (trainee.energy <= energyThresholdToUseEnergyItems && hasEnergyItems) reasons.add("Low energy")
+            if (trainee.energy <= energyItemThreshold() && hasEnergyItems) reasons.add("Low energy")
             if (trainee.mood <= Mood.NORMAL && trainee.energy < 70 && hasMoodItems) reasons.add("Low mood")
             if (trainee.currentNegativeStatuses.isNotEmpty() && hasBadConditionItems) reasons.add("Bad conditions")
             if (hasStatItems) reasons.add("Stat items available")
