@@ -75,6 +75,7 @@ import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.Trainee
 import com.steve1316.uma_android_automation.utils.ScrollList
 import org.opencv.core.Point
@@ -164,6 +165,26 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Number of turns before the next mandatory race within which [enableEnergyBanking] applies. */
     protected val energyBankingLookaheadTurns: Int = SettingsHelper.getIntSetting("training", "energyBankingLookaheadTurns", 2)
+
+    /**
+     * Resolves the [TrackDistance] of the upcoming mandatory/scheduled race for [GoalRaceStatBias],
+     * or null when the feature is disabled, the race is outside its configured lookahead window, the
+     * turns-remaining OCR check fails, or the race's distance can't be uniquely determined from the
+     * race database (no match, or multiple races at that turn with conflicting distances).
+     *
+     * Lives here rather than on [GoalRaceStatBias] itself since it needs access to [racing], which is
+     * intentionally not exposed outside of [Campaign].
+     */
+    fun resolveGoalRaceDistance(): TrackDistance? {
+        if (!GoalRaceStatBias.isEnabled()) return null
+
+        val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+        if (turnsRemaining !in 1..GoalRaceStatBias.lookaheadTurns()) return null
+
+        val targetTurn = date.day + turnsRemaining
+        val distances = racing.lookupRacesForTurn(targetTurn).map { it.trackDistance }.distinct()
+        return distances.singleOrNull()
+    }
 
     /** The number of skill points required to trigger a check. */
     protected val skillPointsRequired: Int = SettingsHelper.getIntSetting("skills", "skillPointCheck")

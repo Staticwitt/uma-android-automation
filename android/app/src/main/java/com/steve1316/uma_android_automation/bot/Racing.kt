@@ -1671,6 +1671,74 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     }
 
     /**
+     * Looks up all races scheduled for a specific turn number, regardless of name. Used to peek ahead at
+     * the upcoming mandatory/scheduled race before it's actually reached, e.g. for goal-race stat biasing.
+     *
+     * @param turnNumber The turn number to look up races for.
+     * @return A list of [RaceData] objects scheduled for that turn, or an empty list if none found.
+     */
+    internal fun lookupRacesForTurn(turnNumber: Int): ArrayList<RaceData> {
+        val settingsManager = SQLiteSettingsManager(game.myContext)
+        if (!settingsManager.isAvailable()) {
+            MessageLog.e(TAG, "[ERROR] lookupRacesForTurn:: Database not available for race lookup.")
+            settingsManager.close()
+            return arrayListOf()
+        }
+
+        return try {
+            val database = settingsManager.readableDatabase
+            if (database == null) {
+                MessageLog.e(TAG, "[ERROR] lookupRacesForTurn:: Database is null for race lookup.")
+                return arrayListOf()
+            }
+
+            val cursor =
+                database.query(
+                    TABLE_RACES,
+                    arrayOf(
+                        RACES_COLUMN_NAME,
+                        RACES_COLUMN_GRADE,
+                        RACES_COLUMN_FANS,
+                        RACES_COLUMN_NAME_FORMATTED,
+                        RACES_COLUMN_TRACK_SURFACE,
+                        RACES_COLUMN_TRACK_DISTANCE,
+                        RACES_COLUMN_TURN_NUMBER,
+                    ),
+                    "$RACES_COLUMN_TURN_NUMBER = ?",
+                    arrayOf(turnNumber.toString()),
+                    null,
+                    null,
+                    null,
+                )
+
+            val matches = arrayListOf<RaceData>()
+            if (cursor.moveToFirst()) {
+                do {
+                    matches.add(
+                        RaceData(
+                            name = cursor.getString(0),
+                            grade = cursor.getString(1),
+                            fans = cursor.getInt(2),
+                            nameFormatted = cursor.getString(3),
+                            trackSurface = cursor.getString(4),
+                            trackDistance = cursor.getString(5),
+                            turnNumber = cursor.getInt(6),
+                        ),
+                    )
+                } while (cursor.moveToNext())
+            }
+            cursor.close()
+
+            matches
+        } catch (e: Exception) {
+            MessageLog.e(TAG, "[ERROR] lookupRacesForTurn:: Error looking up races for turn $turnNumber: ${e.message}.")
+            arrayListOf()
+        } finally {
+            settingsManager.close()
+        }
+    }
+
+    /**
      * Checks if any G1 races exist at the specified turn number in the database.
      *
      * @param turnNumber The turn number to check for G1 races.

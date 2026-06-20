@@ -228,6 +228,8 @@ export interface Settings {
         enableTrainingLevelWeighting: boolean
         disableStatTargets: boolean
         enableCareerPlanner: boolean
+        enableGoalRaceStatBias: boolean
+        goalRaceStatBiasLookaheadTurns: number
         enableTrainingAnalysisValidation: boolean
         enableYoloStatDetection: boolean
         classicMilestonePercent: number
@@ -561,6 +563,8 @@ export const defaultSettings: Settings = {
         enableTrainingLevelWeighting: true,
         disableStatTargets: false,
         enableCareerPlanner: false,
+        enableGoalRaceStatBias: false,
+        goalRaceStatBiasLookaheadTurns: 3,
         enableTrainingAnalysisValidation: false,
         enableYoloStatDetection: false,
         classicMilestonePercent: 33,

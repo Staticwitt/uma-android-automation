@@ -390,6 +390,12 @@ When `enableCareerPlanner` is enabled, the bot infers a target stat build from t
 </details>
 
 <details>
+<summary><strong>Goal Race Stat Reallocation (opt-in, off by default)</strong></summary>
+
+When `enableGoalRaceStatBias` is enabled, the bot looks ahead at the next mandatory/scheduled race using the same OCR-based "turns remaining" check that powers Energy Banking. If that race falls within the configurable `goalRaceStatBiasLookaheadTurns` window (default 3 turns), the bot looks up the race's distance in the race database (keyed by absolute turn number) and, if a single unambiguous distance match is found, **substitutes that distance** for the trainee's preferred distance when resolving per-distance stat targets — e.g. if a Mile race is coming up but the trainee's preferred distance is Long, stat targets temporarily shift to the Mile profile so training leads into the goal race appropriately. This is a substitution, not an additive bias: it changes which distance's target table is used, then Career Planner and Running-Style Stat Bias still apply on top as usual. If the lookahead check fails (OCR failure, outside the window, race day already here) or the race's distance can't be uniquely determined (no database match, or multiple races at that turn with conflicting distances), the trainee's normal preferred distance is used unchanged.
+</details>
+
+<details>
 <summary><strong>Running-Style Stat Bias (always on)</strong></summary>
 
 Independent of Career Planner, the bot also nudges stat targets based on the trainee's own aptitude-determined preferred running style (`Trainee.runningStyle`, the same OCR'd aptitude used for race-strategy selection in [Section 7.4](#74-race-execution)) — reflecting how the stats actually matter in-race for each style: Front Runners get a Power boost (breaking away early) and a small Wit reduction; Late Surgers and End Closers get a Guts boost (the late spurt) plus a small Power/Stamina boost; Pace Chaser gets a small Wit boost (positioning). Like Career Planner, this is a soft multiplicative bias on the existing per-distance targets, not a priority override. Unlike Career Planner, it's derived from the trainee's own aptitudes rather than a user preference, so there's no toggle — it applies automatically once aptitudes are read, and is skipped when `disableStatTargets` is on.
@@ -428,6 +434,7 @@ This lets the user, for example, push Speed during the year but lean into Stamin
 | Training Level Weighting | true | Amplify top-3 priority stats by OCR-detected facility level (1-5) |
 | Disable Per-Distance Stat Targets | false | Treat every stat's target as the scenario stat cap |
 | Career Planner | false | Bias stat targets toward the equipped support deck's stat-type composition |
+| Goal Race Stat Reallocation | false | Substitute the upcoming mandatory race's distance for stat targets when it falls within the lookahead window |
 | Running-Style Stat Bias | always on | Bias stat targets toward the trainee's aptitude-determined preferred running style |
 | Energy Banking | false | Rest instead of training when energy is low and a mandatory race is coming up soon (see [Section 5](#5-decision-engine)) |
 

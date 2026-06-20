@@ -147,6 +147,8 @@ const TrainingSettings = () => {
         enableTrainingLevelWeighting,
         disableStatTargets,
         enableCareerPlanner,
+        enableGoalRaceStatBias,
+        goalRaceStatBiasLookaheadTurns,
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
     } = trainingSettings
@@ -841,6 +843,32 @@ const TrainingSettings = () => {
                                         description="Infers a target stat build from your equipped support deck's stat-type composition (e.g. a Speed-heavy deck raises the Speed target) and nudges the stat targets above toward it. A soft bias only — rainbow training, skill hints, and failure chance still take priority. Off by default."
                                         right={<Switch checked={enableCareerPlanner} onCheckedChange={(checked) => updateTrainingSetting("enableCareerPlanner", checked)} />}
                                     />
+                                    <SettingRow
+                                        id="enable-goal-race-stat-bias"
+                                        title="Goal Race Stat Reallocation"
+                                        searchTitle="Enable Goal Race Stat Reallocation"
+                                        description="When enabled, if the next mandatory race is within the lookahead window below, stat targets are resolved using that race's actual distance instead of your preferred distance, so training leads into the goal race appropriately even when it differs from your long-term build. Off by default."
+                                        right={<Switch checked={enableGoalRaceStatBias} onCheckedChange={(checked) => updateTrainingSetting("enableGoalRaceStatBias", checked)} />}
+                                    />
+                                    {enableGoalRaceStatBias && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={goalRaceStatBiasLookaheadTurns || defaultSettings.training.goalRaceStatBiasLookaheadTurns}
+                                                placeholder={defaultSettings.training.goalRaceStatBiasLookaheadTurns}
+                                                onValueChange={(value) => updateTrainingSetting("goalRaceStatBiasLookaheadTurns", value)}
+                                                min={1}
+                                                max={5}
+                                                step={1}
+                                                label="Goal Race Lookahead"
+                                                labelUnit=" turns"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="How many turns before the next mandatory race its distance starts being used for stat targets."
+                                                searchId="goal-race-stat-bias-lookahead-turns"
+                                                parentId="enable-goal-race-stat-bias"
+                                            />
+                                        </View>
+                                    )}
 
                                     {/* Per-distance stat targets stay nested inside the Distance section so the whole distance domain reads as one block. */}
                                     <View style={disableStatTargets ? { opacity: 0.5 } : undefined} pointerEvents={disableStatTargets ? "none" : "auto"}>
