@@ -11,7 +11,6 @@ import com.steve1316.uma_android_automation.components.IconScrollListBottomRight
 import com.steve1316.uma_android_automation.components.IconScrollListTopLeft
 import com.steve1316.uma_android_automation.types.BoundingBox
 import org.opencv.core.Point
-import kotlin.math.abs
 
 /** Default maximum processing time in milliseconds. */
 const val MAX_PROCESS_TIME_DEFAULT_MS = 60000
@@ -257,21 +256,27 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             val x1 = (listBottomRight.x + (listBottomRightBitmap.width / 2)).toInt()
             val y1 = (listBottomRight.y + (listBottomRightBitmap.height / 2)).toInt()
 
+            // The corner icon templates are nearly featureless, so they occasionally false-match an unrelated spot on screen
+            // (e.g. the top-left icon matching somewhere down in the footer instead of the list's actual top-left corner).
+            // When that happens the corners come out crossed (bottom-right above/left of top-left), which produces a
+            // nonsensical region rather than a merely-inaccurate one. Reject it outright instead of clamping it into a
+            // bogus box, so callers fall back to component-based detection instead of silently scanning the wrong area.
+            if (y1 < y0 || x1 < x0) {
+                MessageLog.w(TAG, "[WARN] getListBoundingRegion:: Scroll list icons were detected out of order (top-left=($x0, $y0), bottom-right=($x1, $y1)). Rejecting.")
+                return null
+            }
+
             val bbox =
                 BoundingBox(
                     x = x0,
                     y = y0,
-                    w = abs(x1 - x0),
-                    h = abs(y1 - y0),
+                    w = x1 - x0,
+                    h = y1 - y0,
                 )
 
             if (bbox.w <= 0 || bbox.h <= 0) {
                 MessageLog.e(TAG, "[ERROR] getListBoundingRegion:: Invalid bounding box (zero width or height): $bbox")
                 return null
-            }
-
-            if (y1 < y0 || x1 < x0) {
-                MessageLog.w(TAG, "[WARN] getListBoundingRegion:: Scroll list icons were detected out of order. Normalized bounding box: $bbox")
             }
 
             if (game.debugMode) {
