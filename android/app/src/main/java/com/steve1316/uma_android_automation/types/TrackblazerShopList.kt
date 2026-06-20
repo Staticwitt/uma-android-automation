@@ -673,7 +673,7 @@ class TrackblazerShopList(private val game: Game) {
      * @return True if the dialog was opened successfully.
      */
     fun openTrainingItemsDialog(): Boolean {
-        if (ButtonTrainingItems.click(game.imageUtils)) {
+        if (ButtonTrainingItems.click(game.imageUtils, tries = 30)) {
             // Wait for the dialog to appear.
             game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
             return true

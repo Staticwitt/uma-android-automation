@@ -1523,10 +1523,12 @@ class Trackblazer(game: Game) : Campaign(game) {
     /**
      * Opens the Shop UI.
      *
-     * @param tries The number of scan attempts to perform to find the shop button.
+     * @param tries The number of scan attempts to perform to find the shop button. Defaults to 30 to match
+     * [updateShopCoins]'s budget for the same Training Items button, since the post-dialog/post-transition
+     * render of the Shop screen has been observed to take longer than a handful of attempts can cover.
      * @return True if the shop was opened successfully, false otherwise.
      */
-    fun openShop(tries: Int = 5): Boolean {
+    fun openShop(tries: Int = 30): Boolean {
         if (ButtonTrainingItems.check(game.imageUtils)) {
             return true
         }
