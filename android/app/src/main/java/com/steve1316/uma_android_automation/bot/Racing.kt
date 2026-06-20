@@ -647,7 +647,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
      * @param raceData The race data to check aptitudes against.
      * @return True if both track surface and distance aptitudes are B or greater; false otherwise.
      */
-    private fun checkRaceAptitudeMatch(raceData: RaceData): Boolean {
+    fun checkRaceAptitudeMatch(raceData: RaceData): Boolean {
         val trackSurfaceAptitude: Aptitude = campaign.trainee.checkTrackSurfaceAptitude(raceData.trackSurface)
         val trackDistanceAptitude: Aptitude = campaign.trainee.checkTrackDistanceAptitude(raceData.trackDistance)
 

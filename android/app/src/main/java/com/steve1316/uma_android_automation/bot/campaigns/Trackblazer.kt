@@ -634,7 +634,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                             val candidate = Candidate(screenPoint, race, detectedName, rivalFound)
                             allSuitableRaces.add(candidate)
                             val suffix = if (solverMatched) " [Smart Race Solver override]" else ""
-                            sb.appendLine("\n- Found Suitable Race: \"${race.name}\" (${race.grade}) Rival: $rivalFound$suffix")
+                            sb.appendLine("\n- Found Suitable Race: \"${race.name}\" (${race.grade}) Rival: $rivalFound Aptitude Match (B+): ${racing.checkRaceAptitudeMatch(race)}$suffix")
                             if (solverMatched) {
                                 solverMatchedCandidate = candidate
                             }
@@ -743,6 +743,7 @@ class Trackblazer(game: Game) : Campaign(game) {
         val sortedRaces =
             allSuitableRaces.sortedWith(
                 compareByDescending<Candidate> { it.isRival }
+                    .thenByDescending { racing.checkRaceAptitudeMatch(it.race) }
                     .thenByDescending {
                         val distanceMatch = preferredDistances.isEmpty() || it.race.trackDistance in preferredDistances
                         val surfaceMatch = preferredSurfaces.isEmpty() || it.race.trackSurface in preferredSurfaces
@@ -754,8 +755,11 @@ class Trackblazer(game: Game) : Campaign(game) {
 
         val winnerDistanceMatch = preferredDistances.isEmpty() || winner.race.trackDistance in preferredDistances
         val winnerSurfaceMatch = preferredSurfaces.isEmpty() || winner.race.trackSurface in preferredSurfaces
+        val winnerAptitudeMatch = racing.checkRaceAptitudeMatch(winner.race)
         sb.appendLine("\nSelected Race: ${winner.race.name} (${winner.race.grade}) Rival: ${winner.isRival}")
-        sb.appendLine("Distance: ${winner.race.trackDistance}, Surface: ${winner.race.trackSurface}, Preference Match: ${winnerDistanceMatch && winnerSurfaceMatch}")
+        sb.appendLine(
+            "Distance: ${winner.race.trackDistance}, Surface: ${winner.race.trackSurface}, Aptitude Match (B+): $winnerAptitudeMatch, Preference Match: ${winnerDistanceMatch && winnerSurfaceMatch}",
+        )
         sb.appendLine("================================================")
         MessageLog.v(TAG, sb.toString())
 
