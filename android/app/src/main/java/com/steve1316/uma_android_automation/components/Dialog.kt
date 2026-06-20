@@ -191,7 +191,7 @@ object DialogUtils {
                 return DialogTrophyWon.title
             }
 
-            MessageLog.e(TAG, "[ERROR] getTitle:: Failed to match any dialogs to the extracted title: $text")
+            MessageLog.v(TAG, "[VERBOSE] getTitle:: Failed to match any dialogs to the extracted title: $text")
             return null
         }
 

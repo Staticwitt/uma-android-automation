@@ -1531,7 +1531,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             return true
         }
 
-        if (ButtonShopTrackblazer.check(game.imageUtils)) {
+        if (ButtonShopTrackblazer.check(game.imageUtils, tries = tries)) {
             ButtonShopTrackblazer.click(game.imageUtils, tries = tries)
             game.wait(game.dialogWaitDelay)
         }
@@ -1547,7 +1547,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             game.wait(game.dialogWaitDelay)
         }
 
-        if (ButtonTrainingItems.check(game.imageUtils)) {
+        if (ButtonTrainingItems.check(game.imageUtils, tries = tries)) {
             return true
         }
 
