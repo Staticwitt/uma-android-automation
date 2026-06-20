@@ -1353,7 +1353,8 @@ class Trackblazer(game: Game) : Campaign(game) {
             if (!isScheduledRace && !isMandatoryRace) {
                 // Skip irregular training evaluation when energy is depleted. The charm cannot
                 // fire preemptively (it requires a selected training with measured failureChance
-                // >= 20), so charm presence in inventory is not a reason to enter the screen.
+                // at or above the phase-aware charmFailureThreshold()), so charm presence in
+                // inventory is not a reason to enter the screen.
                 if (trainee.energy <= 0) {
                     MessageLog.i(TAG, "[TRACKBLAZER] Skipping Irregular Training evaluation as energy is ${trainee.energy}%.")
                     bHasCheckedIrregularTrainingThisTurn = true
@@ -2591,8 +2592,11 @@ class Trackblazer(game: Game) : Campaign(game) {
                     decisionTracer.recordCharmGate(queued = false, blockingGate = "Already used a Good-Luck Charm this turn")
                 trainingSelected == null ->
                     decisionTracer.recordCharmGate(queued = false, blockingGate = "No training selected by analyzeTrainings (failureChance unknown)")
-                failureChance < 20 ->
-                    decisionTracer.recordCharmGate(queued = false, blockingGate = "Selected $trainingSelected has failureChance=$failureChance%, below 20% threshold")
+                failureChance < charmFailureThreshold() ->
+                    decisionTracer.recordCharmGate(
+                        queued = false,
+                        blockingGate = "Selected $trainingSelected has failureChance=$failureChance%, below ${charmFailureThreshold()}% threshold",
+                    )
                 shouldConserveTrainingEffectItems(trainingSelected, trainee) -> {
                     val selectedMainGain = training.cachedAnalysisResults?.firstOrNull { it.name == trainingSelected }?.statGains?.get(trainingSelected) ?: 0
                     decisionTracer.recordCharmGate(
@@ -2621,7 +2625,7 @@ class Trackblazer(game: Game) : Campaign(game) {
         // is subtracted after training — so using energy items would waste them.
         val charmBeingUsedThisTurn =
             bUsedCharmToday ||
-                (date.day >= 13 && failureChance >= 20 && (nextInventory["Good-Luck Charm"] ?: 0) > 0)
+                (date.day >= 13 && failureChance >= charmFailureThreshold() && (nextInventory["Good-Luck Charm"] ?: 0) > 0)
 
         // Energy Items Check.
         if (!charmBeingUsedThisTurn && passStartEnergy <= energyThresholdToUseEnergyItems && shopList.energyItemNames.contains(itemName)) {
@@ -2807,6 +2811,21 @@ class Trackblazer(game: Game) : Campaign(game) {
     }
 
     /**
+     * Returns the failure-chance percentage that triggers Good-Luck Charm usage, adjusted for game phase.
+     * Tightened during Junior Year, where stat gains matter less and charms are best conserved for later
+     * turns. Relaxed during the Finale (turns 73-75), where every stat point counts and a failed training
+     * cannot be afforded regardless of how low the measured risk is.
+     *
+     * @return The failureChance threshold (in percent) at or above which a Good-Luck Charm should be used.
+     */
+    private fun charmFailureThreshold(): Int =
+        when {
+            date.bIsFinaleSeason && date.day >= 73 -> 10
+            date.year == DateYear.JUNIOR -> 30
+            else -> 20
+        }
+
+    /**
      * Returns true when training-effect items (Megaphones, Good-Luck Charm) should be conserved this turn
      * because the trainee mood is below NORMAL AND the selected training's main stat gain is below the
      * user-configured floor. Mirrors the inline conservation checks in `handleInlineUsage()` so the
@@ -2881,7 +2900,8 @@ class Trackblazer(game: Game) : Campaign(game) {
                         }
                 }
         val failureChance = if (trainingSelected != null) training.trainingMap[trainingSelected]?.failureChance ?: 0 else 0
-        val hasCharm = !skipTrainingEffectItems && trainingSelected != null && !bUsedCharmToday && failureChance >= 20 && (currentInventory["Good-Luck Charm"] ?: 0) > 0
+        val hasCharm =
+            !skipTrainingEffectItems && trainingSelected != null && !bUsedCharmToday && failureChance >= charmFailureThreshold() && (currentInventory["Good-Luck Charm"] ?: 0) > 0
 
         val potentialUse =
             (trainee.energy <= energyThresholdToUseEnergyItems && hasEnergyItems) ||
@@ -2919,7 +2939,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                     when {
                         date.day < 13 -> "Day ${date.day} < 13 (training items not yet available)"
                         bUsedCharmToday -> "Already used a Good-Luck Charm this turn"
-                        else -> "Selected $trainingSelected has failureChance below 20% threshold (charm reserved for risky trainings)"
+                        else -> "Selected $trainingSelected has failureChance below ${charmFailureThreshold()}% threshold (charm reserved for risky trainings)"
                     }
                 decisionTracer.recordCharmGate(queued = false, blockingGate = "Item dialog skipped: $gate")
             }
