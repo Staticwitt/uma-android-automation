@@ -219,6 +219,13 @@ const searchConfig: SearchOption[] = [
         page: "TrainingSettings",
     },
     {
+        id: "enable-career-planner",
+        title: "Career Planner",
+        description:
+            "Infers a target stat build from your equipped support deck's stat-type composition (e.g. a Speed-heavy deck raises the Speed target) and nudges the stat targets above toward it. A soft bias only — rainbow training, skill hints, and failure chance still take priority. Off by default.",
+        page: "TrainingSettings",
+    },
+    {
         id: "stat-targets-by-distance",
         title: "Stat Targets by Distance",
         description: "Set target values for each stat based on race distance.",
