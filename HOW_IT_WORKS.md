@@ -387,6 +387,12 @@ When `enableCareerPlanner` is enabled, the bot infers a target stat build from t
 </details>
 
 <details>
+<summary><strong>Running-Style Stat Bias (always on)</strong></summary>
+
+Independent of Career Planner, the bot also nudges stat targets based on the trainee's own aptitude-determined preferred running style (`Trainee.runningStyle`, the same OCR'd aptitude used for race-strategy selection in [Section 7.4](#74-race-execution)) — reflecting how the stats actually matter in-race for each style: Front Runners get a Power boost (breaking away early) and a small Wit reduction; Late Surgers and End Closers get a Guts boost (the late spurt) plus a small Power/Stamina boost; Pace Chaser gets a small Wit boost (positioning). Like Career Planner, this is a soft multiplicative bias on the existing per-distance targets, not a priority override. Unlike Career Planner, it's derived from the trainee's own aptitudes rather than a user preference, so there's no toggle — it applies automatically once aptitudes are read, and is skipped when `disableStatTargets` is on.
+</details>
+
+<details>
 <summary><strong>Training Failure Fallbacks</strong></summary>
 
 When every training option is filtered out by the failure-chance or stat-cap rules, the bot follows a configurable fallback chain (e.g. rest, recover mood, or force Wit) instead of stalling on the turn. The fallback decision also respects negative statuses — for instance, with active negative conditions the forced fallback is Wit rather than Speed to avoid stat reductions from conditions like Slow Metabolism.
@@ -419,6 +425,7 @@ This lets the user, for example, push Speed during the year but lean into Stamin
 | Training Level Weighting | true | Amplify top-3 priority stats by OCR-detected facility level (1-5) |
 | Disable Per-Distance Stat Targets | false | Treat every stat's target as the scenario stat cap |
 | Career Planner | false | Bias stat targets toward the equipped support deck's stat-type composition |
+| Running-Style Stat Bias | always on | Bias stat targets toward the trainee's aptitude-determined preferred running style |
 
 ---
 

@@ -1788,7 +1788,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                     if (disableStatTargets) {
                         StatName.entries.associateWith { getScenarioStatCap(game.scenario, it) }
                     } else {
-                        val phaseTargets = campaign.trainee.getPhaseStatTargets(campaign.date.year)
+                        val phaseTargets = RunningStyleStatBias.applyRunningStyleBias(campaign.trainee.getPhaseStatTargets(campaign.date.year), campaign.trainee.runningStyle)
                         if (CareerPlanner.isEnabled()) CareerPlanner.applyDeckBias(phaseTargets) else phaseTargets
                     },
                 currentDate = campaign.date,
