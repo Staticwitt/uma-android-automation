@@ -23,9 +23,9 @@ object SupportCardBorrower {
     private const val OCR_WIDTH_FRACTION = 0.22
     private const val OCR_HEIGHT_FRACTION = 0.10
 
-    /** Friend borrow slot on career selection (right of the four owned slots). */
-    private const val FRIEND_SLOT_X_FRACTION = 0.86
-    private const val FRIEND_SLOT_Y_FRACTION = 0.56
+    /** Friend borrow slot on career selection (trailing cell of the 3x2 owned-slot grid). */
+    private const val FRIEND_SLOT_X_FRACTION = 0.794
+    private const val FRIEND_SLOT_Y_FRACTION = 0.548
     private const val FRIEND_SLOT_OCR_WIDTH_FRACTION = 0.16
     private const val FRIEND_SLOT_OCR_HEIGHT_FRACTION = 0.08
 
