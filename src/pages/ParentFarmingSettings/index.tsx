@@ -1025,7 +1025,7 @@ const ParentFarmingSettings = () => {
                                     description={
                                         parseOwnedSupportCards(supportDeckOwnedCards).length > 0
                                             ? `Slots: ${parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}`
-                                            : "Equip four saved owned slots at career selection before borrowing a friend card."
+                                            : "Equip up to five saved owned slots at career selection before borrowing a friend card."
                                     }
                                     right={
                                         <Switch
