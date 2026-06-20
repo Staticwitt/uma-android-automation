@@ -71,6 +71,7 @@ import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.Trainee
 import com.steve1316.uma_android_automation.utils.ScrollList
 import org.opencv.core.Point
@@ -151,6 +152,35 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Whether the bot must rest before Summer. */
     protected val mustRestBeforeSummer: Boolean = SettingsHelper.getBooleanSetting("training", "mustRestBeforeSummer")
+
+    /** Whether the bot should rest to bank energy ahead of an upcoming mandatory race, generalizing [mustRestBeforeSummer] beyond the Summer-prep window. */
+    protected val enableEnergyBanking: Boolean = SettingsHelper.getBooleanSetting("training", "enableEnergyBanking", false)
+
+    /** Energy percentage below which [enableEnergyBanking] forces rest instead of training ahead of an upcoming mandatory race. */
+    protected val energyBankingThreshold: Int = SettingsHelper.getIntSetting("training", "energyBankingThreshold", 50)
+
+    /** Number of turns before the next mandatory race within which [enableEnergyBanking] applies. */
+    protected val energyBankingLookaheadTurns: Int = SettingsHelper.getIntSetting("training", "energyBankingLookaheadTurns", 2)
+
+    /**
+     * Resolves the [TrackDistance] of the upcoming mandatory/scheduled race for [GoalRaceStatBias],
+     * or null when the feature is disabled, the race is outside its configured lookahead window, the
+     * turns-remaining OCR check fails, or the race's distance can't be uniquely determined from the
+     * race database (no match, or multiple races at that turn with conflicting distances).
+     *
+     * Lives here rather than on [GoalRaceStatBias] itself since it needs access to [racing], which is
+     * intentionally not exposed outside of [Campaign].
+     */
+    fun resolveGoalRaceDistance(): TrackDistance? {
+        if (!GoalRaceStatBias.isEnabled()) return null
+
+        val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+        if (turnsRemaining !in 1..GoalRaceStatBias.lookaheadTurns()) return null
+
+        val targetTurn = date.day + turnsRemaining
+        val distances = racing.lookupRacesForTurn(targetTurn).map { it.trackDistance }.distinct()
+        return distances.singleOrNull()
+    }
 
     /** The number of skill points required to trigger a check. */
     protected val skillPointsRequired: Int = SettingsHelper.getIntSetting("skills", "skillPointCheck")
@@ -2046,6 +2076,21 @@ abstract class Campaign(game: Game) : Task(game) {
             MessageLog.i(TAG, "[INFO] Bot has no injuries, mood is sufficient and extra races can be run today. Setting the action to RACE.")
             decisionTracer.recordActionChoice(MainScreenAction.RACE, "Extra-race eligible (no injury, sufficient mood, eligible day)")
             return MainScreenAction.RACE
+        }
+
+        if (enableEnergyBanking && !isFinals && trainee.energy < energyBankingThreshold) {
+            val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+            if (turnsRemaining in 1..energyBankingLookaheadTurns) {
+                MessageLog.i(
+                    TAG,
+                    "[INFO] Energy banking: $turnsRemaining turn(s) remain before the next mandatory race and energy is ${trainee.energy}% (< $energyBankingThreshold%). Resting instead of training.",
+                )
+                decisionTracer.recordActionChoice(
+                    MainScreenAction.REST,
+                    "Energy banking ($turnsRemaining turns remaining <= lookahead $energyBankingLookaheadTurns; energy ${trainee.energy}% < threshold $energyBankingThreshold%)",
+                )
+                return MainScreenAction.REST
+            }
         }
 
         decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Default fallback after racing/mood/injury checks did not trigger")

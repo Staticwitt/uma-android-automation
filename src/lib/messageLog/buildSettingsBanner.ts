@@ -143,6 +143,7 @@ export function buildSettingsBanner(settings: Settings): string {
 💡 Prioritize Skill Hints: ${settings.training.enablePrioritizeSkillHints ? "✅" : "❌"}
 📈 Weight Score by Training Level: ${settings.training.enableTrainingLevelWeighting ? "✅" : "❌"}
 ☀️ Must Rest Before Summer: ${settings.training.mustRestBeforeSummer ? "✅" : "❌"}
+🔋 Energy Banking: ${settings.training.enableEnergyBanking ? `✅ (threshold ${settings.training.energyBankingThreshold}%, lookahead ${settings.training.energyBankingLookaheadTurns} turns)` : "❌"}
 🎯 Train Wit During Finale: ${settings.training.trainWitDuringFinale ? "✅" : "❌"}
 🔍 Training Analysis Validation: ${settings.training.enableTrainingAnalysisValidation ? "✅" : "❌"}
 🤖 Enable YOLO Stat Detection: ${settings.training.enableYoloStatDetection ? "✅" : "❌"}
@@ -150,6 +151,7 @@ export function buildSettingsBanner(settings: Settings): string {
 ---------- Training Stat Targets by Distance ----------
 🛑 Disable Stat Targets: ${settings.training.disableStatTargets ? "✅ (all stats treated as cap=1200)" : "❌"}
 🧭 Career Planner (deck-inferred stat bias): ${settings.training.enableCareerPlanner ? "✅" : "❌"}
+🏁 Goal Race Stat Reallocation: ${settings.training.enableGoalRaceStatBias ? `✅ (lookahead ${settings.training.goalRaceStatBiasLookaheadTurns} turns)` : "❌"}
 🎯 Classic Year Milestone: ${settings.training.classicMilestonePercent}%
 🎯 Senior Year Milestone: ${settings.training.seniorMilestonePercent}%
 ${sprintTargetsString}

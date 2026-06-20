@@ -136,6 +136,9 @@ const TrainingSettings = () => {
         enablePrioritizeNearMaxFriendship,
         preferredDistanceOverride,
         mustRestBeforeSummer,
+        enableEnergyBanking,
+        energyBankingThreshold,
+        energyBankingLookaheadTurns,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
@@ -144,6 +147,8 @@ const TrainingSettings = () => {
         enableTrainingLevelWeighting,
         disableStatTargets,
         enableCareerPlanner,
+        enableGoalRaceStatBias,
+        goalRaceStatBiasLookaheadTurns,
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
     } = trainingSettings
@@ -693,6 +698,50 @@ const TrainingSettings = () => {
                                         description="When enabled, the bot will train Wit during URA finale turns (73, 74, 75) instead of recovering energy or mood, even if the failure chance is high."
                                         right={<Switch checked={trainWitDuringFinale} onCheckedChange={(checked) => updateTrainingSetting("trainWitDuringFinale", checked)} />}
                                     />
+                                    <SettingRow
+                                        id="enable-energy-banking"
+                                        title="Energy Banking"
+                                        description="When enabled, the bot will rest instead of training once energy drops below the threshold below, if the next mandatory race is within the lookahead window. Generalizes the Must Rest before Summer behavior to apply ahead of any mandatory race, not just before Summer Training."
+                                        right={<Switch checked={enableEnergyBanking} onCheckedChange={(checked) => updateTrainingSetting("enableEnergyBanking", checked)} />}
+                                    />
+                                    {enableEnergyBanking && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={energyBankingThreshold || defaultSettings.training.energyBankingThreshold}
+                                                placeholder={defaultSettings.training.energyBankingThreshold}
+                                                onValueChange={(value) => updateTrainingSetting("energyBankingThreshold", value)}
+                                                min={10}
+                                                max={90}
+                                                step={5}
+                                                label="Energy Banking Threshold"
+                                                labelUnit="%"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="Energy banking only triggers when energy is below this percentage."
+                                                searchId="energy-banking-threshold"
+                                                parentId="enable-energy-banking"
+                                            />
+                                        </View>
+                                    )}
+                                    {enableEnergyBanking && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={energyBankingLookaheadTurns || defaultSettings.training.energyBankingLookaheadTurns}
+                                                placeholder={defaultSettings.training.energyBankingLookaheadTurns}
+                                                onValueChange={(value) => updateTrainingSetting("energyBankingLookaheadTurns", value)}
+                                                min={1}
+                                                max={5}
+                                                step={1}
+                                                label="Energy Banking Lookahead"
+                                                labelUnit=" turns"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="How many turns before the next mandatory race energy banking starts checking."
+                                                searchId="energy-banking-lookahead-turns"
+                                                parentId="enable-energy-banking"
+                                            />
+                                        </View>
+                                    )}
                                 </Section>
                         )}
 
@@ -794,6 +843,32 @@ const TrainingSettings = () => {
                                         description="Infers a target stat build from your equipped support deck's stat-type composition (e.g. a Speed-heavy deck raises the Speed target) and nudges the stat targets above toward it. A soft bias only — rainbow training, skill hints, and failure chance still take priority. Off by default."
                                         right={<Switch checked={enableCareerPlanner} onCheckedChange={(checked) => updateTrainingSetting("enableCareerPlanner", checked)} />}
                                     />
+                                    <SettingRow
+                                        id="enable-goal-race-stat-bias"
+                                        title="Goal Race Stat Reallocation"
+                                        searchTitle="Enable Goal Race Stat Reallocation"
+                                        description="When enabled, if the next mandatory race is within the lookahead window below, stat targets are resolved using that race's actual distance instead of your preferred distance, so training leads into the goal race appropriately even when it differs from your long-term build. Off by default."
+                                        right={<Switch checked={enableGoalRaceStatBias} onCheckedChange={(checked) => updateTrainingSetting("enableGoalRaceStatBias", checked)} />}
+                                    />
+                                    {enableGoalRaceStatBias && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={goalRaceStatBiasLookaheadTurns || defaultSettings.training.goalRaceStatBiasLookaheadTurns}
+                                                placeholder={defaultSettings.training.goalRaceStatBiasLookaheadTurns}
+                                                onValueChange={(value) => updateTrainingSetting("goalRaceStatBiasLookaheadTurns", value)}
+                                                min={1}
+                                                max={5}
+                                                step={1}
+                                                label="Goal Race Lookahead"
+                                                labelUnit=" turns"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="How many turns before the next mandatory race its distance starts being used for stat targets."
+                                                searchId="goal-race-stat-bias-lookahead-turns"
+                                                parentId="enable-goal-race-stat-bias"
+                                            />
+                                        </View>
+                                    )}
 
                                     {/* Per-distance stat targets stay nested inside the Distance section so the whole distance domain reads as one block. */}
                                     <View style={disableStatTargets ? { opacity: 0.5 } : undefined} pointerEvents={disableStatTargets ? "none" : "auto"}>

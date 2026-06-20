@@ -217,6 +217,9 @@ export interface Settings {
         enablePrioritizeNearMaxFriendship: boolean
         preferredDistanceOverride: string
         mustRestBeforeSummer: boolean
+        enableEnergyBanking: boolean
+        energyBankingThreshold: number
+        energyBankingLookaheadTurns: number
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
@@ -225,6 +228,8 @@ export interface Settings {
         enableTrainingLevelWeighting: boolean
         disableStatTargets: boolean
         enableCareerPlanner: boolean
+        enableGoalRaceStatBias: boolean
+        goalRaceStatBiasLookaheadTurns: number
         enableTrainingAnalysisValidation: boolean
         enableYoloStatDetection: boolean
         classicMilestonePercent: number
@@ -547,6 +552,9 @@ export const defaultSettings: Settings = {
         enablePrioritizeNearMaxFriendship: true,
         preferredDistanceOverride: "Auto",
         mustRestBeforeSummer: false,
+        enableEnergyBanking: false,
+        energyBankingThreshold: 50,
+        energyBankingLookaheadTurns: 2,
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,
@@ -555,6 +563,8 @@ export const defaultSettings: Settings = {
         enableTrainingLevelWeighting: true,
         disableStatTargets: false,
         enableCareerPlanner: false,
+        enableGoalRaceStatBias: false,
+        goalRaceStatBiasLookaheadTurns: 3,
         enableTrainingAnalysisValidation: false,
         enableYoloStatDetection: false,
         classicMilestonePercent: 33,
