@@ -1,17 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.52</latestVersion>
-    <latestVersionCode>142</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.52</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.52/v5.9.52-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.52/v5.9.52-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.53</latestVersion>
+    <latestVersionCode>143</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.53</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.53/v5.9.53-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.53/v5.9.53-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.52 - Training Items button retry budget fix
+v5.9.53 - WIT stat corruption and Shop Coins OCR fixes
 
 Fixes
 -----
-- Fixed Trackblazer's Shop opening still failing intermittently when the Training Items button wasn't detected on the first frame checked, even after the v5.9.51 fix. The opening flow's retry budget is now bumped to 30 attempts to match the budget already used elsewhere for the same button.
-- Fixed the per-turn inventory sync dialog failing to open on the first attempt, which could permanently break item usage for the rest of the run until it happened to succeed once. It now retries up to 30 times like the other Training Items button checks.
+- Fixed a stat-tracking bug where two consecutive identical OCR misreads of a wildly implausible value (e.g. WIT misread as 3361) could get permanently "trusted" as if it were a real stat jump. Misread recovery is now capped at a plausible stat value of 1200.
+- Fixed Trackblazer's Shop Coins reading as "Skill" instead of a coin count on every check. The Training Items button template was matching the Main screen's quick-access button instead of the real Shop screen's tab, causing the Shop to never actually be opened. The Main screen's Full Stats button is now used to detect and reject this false match.
 
     </releaseNotes>
   </update>
