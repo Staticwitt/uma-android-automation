@@ -1,17 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.53</latestVersion>
-    <latestVersionCode>143</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.53</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.53/v5.9.53-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.53/v5.9.53-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.54</latestVersion>
+    <latestVersionCode>144</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.54</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.54/v5.9.54-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.54/v5.9.54-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.53 - WIT stat corruption and Shop Coins OCR fixes
+v5.9.54 - Shop list bounding box fix
 
 Fixes
 -----
-- Fixed a stat-tracking bug where two consecutive identical OCR misreads of a wildly implausible value (e.g. WIT misread as 3361) could get permanently "trusted" as if it were a real stat jump. Misread recovery is now capped at a plausible stat value of 1200.
-- Fixed Trackblazer's Shop Coins reading as "Skill" instead of a coin count on every check. The Training Items button template was matching the Main screen's quick-access button instead of the real Shop screen's tab, causing the Shop to never actually be opened. The Main screen's Full Stats button is now used to detect and reject this false match.
+- Fixed the Shop's item list occasionally failing to scan or buy any items despite Shop Coins being available. The list's corner-icon templates could false-match an unrelated area of the screen (e.g. the footer), producing a bogus bounding box that caused scrollbar and item detection to silently find nothing. This bad detection is now rejected so the bot falls back to its existing, more robust detection method instead.
 
     </releaseNotes>
   </update>
