@@ -263,7 +263,9 @@ flowchart TD
     H -->|Yes| RECOVER
     H -->|No| I{"Eligible for\nextra racing?"}
     I -->|Yes| RACE
-    I -->|No| TRAIN["→ TRAIN"]
+    I -->|No| J{"Energy banking?\n(opt-in; low energy near\nan upcoming mandatory race)"}
+    J -->|Yes| REST
+    J -->|No| TRAIN["→ TRAIN"]
 ```
 
 **Priority explanations:**
@@ -279,7 +281,8 @@ flowchart TD
 7. **Injury Check:** If an injury is detected, the bot handles it (usually by resting). This check is **skipped during Finale turns** since those races are mandatory.
 8. **Mood Recovery:** If mood has dropped to Normal or below, the bot recovers before training (bad mood penalizes training gains).
 9. **Extra Racing:** If the bot is eligible for extra races (based on farming fans, racing plan, or smart racing logic), it races.
-10. **Default: Train.** If nothing else applies, the bot trains.
+10. **Energy Banking (opt-in, off by default):** If enabled, and energy is below a configurable threshold (default 50%) while the next mandatory race is within a configurable lookahead window (default 2 turns, read via the same "turns remaining before next goal" OCR Racing.kt uses for extra-race timing), the bot rests instead of training. This generalizes the Pre-Summer Prep energy check (item 5) so the same "don't enter a mandatory race running on empty" logic applies year-round, ahead of *any* mandatory race, not just before Summer.
+11. **Default: Train.** If nothing else applies, the bot trains.
 
 > [!NOTE]
 > **Trackblazer override:** Before calling the base decision logic, Trackblazer's `decideNextAction()` first checks for **Irregular Training** — evaluating whether a high-value training opportunity exists that's worth skipping a race for. See [Section 11.6](#116-irregular-training) for details.
@@ -426,6 +429,7 @@ This lets the user, for example, push Speed during the year but lean into Stamin
 | Disable Per-Distance Stat Targets | false | Treat every stat's target as the scenario stat cap |
 | Career Planner | false | Bias stat targets toward the equipped support deck's stat-type composition |
 | Running-Style Stat Bias | always on | Bias stat targets toward the trainee's aptitude-determined preferred running style |
+| Energy Banking | false | Rest instead of training when energy is low and a mandatory race is coming up soon (see [Section 5](#5-decision-engine)) |
 
 ---
 

@@ -156,6 +156,15 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Whether the bot must rest before Summer. */
     protected val mustRestBeforeSummer: Boolean = SettingsHelper.getBooleanSetting("training", "mustRestBeforeSummer")
 
+    /** Whether the bot should rest to bank energy ahead of an upcoming mandatory race, generalizing [mustRestBeforeSummer] beyond the Summer-prep window. */
+    protected val enableEnergyBanking: Boolean = SettingsHelper.getBooleanSetting("training", "enableEnergyBanking", false)
+
+    /** Energy percentage below which [enableEnergyBanking] forces rest instead of training ahead of an upcoming mandatory race. */
+    protected val energyBankingThreshold: Int = SettingsHelper.getIntSetting("training", "energyBankingThreshold", 50)
+
+    /** Number of turns before the next mandatory race within which [enableEnergyBanking] applies. */
+    protected val energyBankingLookaheadTurns: Int = SettingsHelper.getIntSetting("training", "energyBankingLookaheadTurns", 2)
+
     /** The number of skill points required to trigger a check. */
     protected val skillPointsRequired: Int = SettingsHelper.getIntSetting("skills", "skillPointCheck")
 
@@ -2056,6 +2065,21 @@ abstract class Campaign(game: Game) : Task(game) {
             MessageLog.i(TAG, "[INFO] Bot has no injuries, mood is sufficient and extra races can be run today. Setting the action to RACE.")
             decisionTracer.recordActionChoice(MainScreenAction.RACE, "Extra-race eligible (no injury, sufficient mood, eligible day)")
             return MainScreenAction.RACE
+        }
+
+        if (enableEnergyBanking && !isFinals && trainee.energy < energyBankingThreshold) {
+            val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+            if (turnsRemaining in 1..energyBankingLookaheadTurns) {
+                MessageLog.i(
+                    TAG,
+                    "[INFO] Energy banking: $turnsRemaining turn(s) remain before the next mandatory race and energy is ${trainee.energy}% (< $energyBankingThreshold%). Resting instead of training.",
+                )
+                decisionTracer.recordActionChoice(
+                    MainScreenAction.REST,
+                    "Energy banking ($turnsRemaining turns remaining <= lookahead $energyBankingLookaheadTurns; energy ${trainee.energy}% < threshold $energyBankingThreshold%)",
+                )
+                return MainScreenAction.REST
+            }
         }
 
         decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Default fallback after racing/mood/injury checks did not trigger")

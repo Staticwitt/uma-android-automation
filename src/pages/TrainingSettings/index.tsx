@@ -136,6 +136,9 @@ const TrainingSettings = () => {
         enablePrioritizeNearMaxFriendship,
         preferredDistanceOverride,
         mustRestBeforeSummer,
+        enableEnergyBanking,
+        energyBankingThreshold,
+        energyBankingLookaheadTurns,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
@@ -693,6 +696,50 @@ const TrainingSettings = () => {
                                         description="When enabled, the bot will train Wit during URA finale turns (73, 74, 75) instead of recovering energy or mood, even if the failure chance is high."
                                         right={<Switch checked={trainWitDuringFinale} onCheckedChange={(checked) => updateTrainingSetting("trainWitDuringFinale", checked)} />}
                                     />
+                                    <SettingRow
+                                        id="enable-energy-banking"
+                                        title="Energy Banking"
+                                        description="When enabled, the bot will rest instead of training once energy drops below the threshold below, if the next mandatory race is within the lookahead window. Generalizes the Must Rest before Summer behavior to apply ahead of any mandatory race, not just before Summer Training."
+                                        right={<Switch checked={enableEnergyBanking} onCheckedChange={(checked) => updateTrainingSetting("enableEnergyBanking", checked)} />}
+                                    />
+                                    {enableEnergyBanking && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={energyBankingThreshold || defaultSettings.training.energyBankingThreshold}
+                                                placeholder={defaultSettings.training.energyBankingThreshold}
+                                                onValueChange={(value) => updateTrainingSetting("energyBankingThreshold", value)}
+                                                min={10}
+                                                max={90}
+                                                step={5}
+                                                label="Energy Banking Threshold"
+                                                labelUnit="%"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="Energy banking only triggers when energy is below this percentage."
+                                                searchId="energy-banking-threshold"
+                                                parentId="enable-energy-banking"
+                                            />
+                                        </View>
+                                    )}
+                                    {enableEnergyBanking && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={energyBankingLookaheadTurns || defaultSettings.training.energyBankingLookaheadTurns}
+                                                placeholder={defaultSettings.training.energyBankingLookaheadTurns}
+                                                onValueChange={(value) => updateTrainingSetting("energyBankingLookaheadTurns", value)}
+                                                min={1}
+                                                max={5}
+                                                step={1}
+                                                label="Energy Banking Lookahead"
+                                                labelUnit=" turns"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="How many turns before the next mandatory race energy banking starts checking."
+                                                searchId="energy-banking-lookahead-turns"
+                                                parentId="enable-energy-banking"
+                                            />
+                                        </View>
+                                    )}
                                 </Section>
                         )}
 

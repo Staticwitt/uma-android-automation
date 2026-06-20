@@ -217,6 +217,9 @@ export interface Settings {
         enablePrioritizeNearMaxFriendship: boolean
         preferredDistanceOverride: string
         mustRestBeforeSummer: boolean
+        enableEnergyBanking: boolean
+        energyBankingThreshold: number
+        energyBankingLookaheadTurns: number
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
@@ -547,6 +550,9 @@ export const defaultSettings: Settings = {
         enablePrioritizeNearMaxFriendship: true,
         preferredDistanceOverride: "Auto",
         mustRestBeforeSummer: false,
+        enableEnergyBanking: false,
+        energyBankingThreshold: 50,
+        energyBankingLookaheadTurns: 2,
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,
