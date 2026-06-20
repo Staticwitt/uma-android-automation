@@ -293,6 +293,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                 "debugMode_startTrackblazerRaceSelectionTest" to ::startTrackblazerRaceSelectionTest,
                 "debugMode_startTrackblazerInventorySyncTest" to ::startTrackblazerInventorySyncTest,
                 "debugMode_startTrackblazerBuyItemsTest" to ::startTrackblazerBuyItemsTest,
+                "debugMode_startTrackblazerShopClickDiagnosticTest" to ::startTrackblazerShopClickDiagnosticTest,
             )
 
         for ((settingName, fn) in fnMap) {
@@ -388,6 +389,29 @@ class Trackblazer(game: Game) : Campaign(game) {
             buyItems(bDryRun = true)
         } else {
             MessageLog.e(TAG, "[ERROR] startTrackblazerBuyItemsTest:: Shop not detected. Ending test.")
+        }
+    }
+
+    /**
+     * Debug test that diagnoses Shop/Training Items row click-position issues (e.g. wrong areas being tapped on
+     * Samsung devices) without performing any taps. Navigates to the Shop if needed, then delegates to
+     * [TrackblazerShopList.startShopClickDiagnosticTest].
+     */
+    fun startTrackblazerShopClickDiagnosticTest() {
+        MessageLog.i(TAG, "\n[TEST] Now beginning Trackblazer Shop click diagnostic test.")
+
+        // If on Main Screen, open the Shop.
+        if (checkMainScreen()) {
+            MessageLog.i(TAG, "[TEST] Currently on Main Screen. Opening Shop...")
+            openShop()
+            game.wait(1.0)
+        }
+
+        // Check if we are in the Shop or Training Items dialog.
+        if (ButtonTrainingItems.check(game.imageUtils) || ButtonConfirmUse.check(game.imageUtils)) {
+            shopList.startShopClickDiagnosticTest()
+        } else {
+            MessageLog.e(TAG, "[ERROR] startTrackblazerShopClickDiagnosticTest:: Shop/Training Items dialog not detected. Ending test.")
         }
     }
 

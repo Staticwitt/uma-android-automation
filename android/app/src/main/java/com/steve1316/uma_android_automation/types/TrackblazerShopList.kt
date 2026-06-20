@@ -750,6 +750,54 @@ class TrackblazerShopList(private val game: Game) {
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
+     * Read-only diagnostic test for the Shop/Training Items row-detection geometry, performing no taps.
+     *
+     * Logs the exact bounding box and tap point ([buyItems] would use `bbox.cx`/`bbox.cy`) computed for every
+     * detected row, alongside the row's reference landmark point and detected item name, then saves an annotated
+     * overview screenshot (green boxes, red tap-point markers) so click-position bugs can be confirmed from real
+     * device output rather than from re-derived geometry.
+     */
+    fun startShopClickDiagnosticTest() {
+        MessageLog.i(TAG, "\n[TEST] Now beginning Shop click diagnostic test.")
+
+        val isTrainingItems = ButtonConfirmUse.check(game.imageUtils)
+        MessageLog.i(TAG, "[TEST] Dialog type detected: ${if (isTrainingItems) "Training Items" else "Trackblazer Shop"}.")
+        MessageLog.i(TAG, "[TEST] Display: ${SharedData.displayWidth}x${SharedData.displayHeight} @ ${SharedData.displayDPI} DPI.")
+
+        val overviewBitmap = game.imageUtils.getSourceBitmap()
+        val bboxes = mutableListOf<BoundingBox>()
+        val tapPoints = mutableListOf<Point>()
+        var entryCount = 0
+
+        processItemsWithFallback { entry ->
+            entryCount++
+            val isDisabled = isEntryDisabled(entry.bitmap)
+            val isPurchased = isEntryAlreadyPurchased(entry.bitmap)
+            val itemName = getShopItemName(entry, isDisabled)
+            val tapX = entry.bbox.cx
+            val tapY = entry.bbox.cy
+
+            MessageLog.i(
+                TAG,
+                "[TEST] Entry #${entry.index}: bbox=(x=${entry.bbox.x}, y=${entry.bbox.y}, w=${entry.bbox.w}, h=${entry.bbox.h}), " +
+                    "tapPoint=($tapX, $tapY), refPoint=(${entry.refX}, ${entry.refY}), disabled=$isDisabled, purchased=$isPurchased, " +
+                    "detectedName=\"$itemName\"",
+            )
+
+            bboxes.add(entry.bbox)
+            tapPoints.add(Point(tapX.toDouble(), tapY.toDouble()))
+
+            false
+        }
+
+        MessageLog.i(TAG, "[TEST] Detected $entryCount total entries.")
+
+        game.imageUtils.saveDebugImageWithBboxesAndPoints(overviewBitmap, bboxes, tapPoints, "shop_click_diagnostic")
+        MessageLog.i(TAG, "[TEST] Saved annotated overview screenshot as \"shop_click_diagnostic.png\" (green = detected bbox, red = tap point).")
+        MessageLog.i(TAG, "[TEST] Shop click diagnostic test complete. No taps were performed.")
+    }
+
+    /**
      * Buy items from the Shop list based on a priority list and currency amount.
      *
      * @param priorityList An ordered list of item names to buy.

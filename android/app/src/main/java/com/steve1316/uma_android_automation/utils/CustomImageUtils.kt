@@ -2643,6 +2643,37 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     }
 
     /**
+     * Draws bounding boxes and point markers on a bitmap and saves it as a debug image.
+     *
+     * Used to visualize a detected row's bounding box alongside the exact tap point that will be used to interact
+     * with it, so click-position bugs can be confirmed visually from a single annotated screenshot.
+     *
+     * @param bitmap The source bitmap to draw on.
+     * @param bboxes The list of bounding boxes to visualize in green.
+     * @param points The list of points (e.g. tap targets) to visualize as red circles.
+     * @param filename The output filename.
+     */
+    fun saveDebugImageWithBboxesAndPoints(bitmap: Bitmap, bboxes: List<BoundingBox>, points: List<Point>, filename: String) {
+        val mat = Mat()
+        Utils.bitmapToMat(bitmap, mat)
+
+        for (bbox in bboxes) {
+            val pt1 = Point(bbox.x.toDouble(), bbox.y.toDouble())
+            val pt2 = Point((bbox.x + bbox.w).toDouble(), (bbox.y + bbox.h).toDouble())
+            // Draw a green rectangle.
+            Imgproc.rectangle(mat, pt1, pt2, Scalar(0.0, 255.0, 0.0), 5)
+        }
+
+        for (point in points) {
+            // Draw a filled red circle at the tap target.
+            Imgproc.circle(mat, point, 12, Scalar(0.0, 0.0, 255.0), -1)
+        }
+
+        Imgcodecs.imwrite("$matchFilePath/$filename.png", mat)
+        mat.release()
+    }
+
+    /**
      * Saves a cropped portion of a bitmap for debugging.
      *
      * @param bitmap The bitmap to crop and save. If null, a new screenshot is taken.

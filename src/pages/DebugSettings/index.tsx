@@ -47,6 +47,7 @@ interface DebugTestDescriptor {
         | "debugMode_startTrackblazerRaceSelectionTest"
         | "debugMode_startTrackblazerInventorySyncTest"
         | "debugMode_startTrackblazerBuyItemsTest"
+        | "debugMode_startTrackblazerShopClickDiagnosticTest"
     /** Stable id used for search registration. */
     searchId: string
     /** Visible Row title. */
@@ -123,6 +124,13 @@ const DEBUG_TESTS: DebugTestDescriptor[] = [
         title: "Start Trackblazer Buy Items Test",
         description:
             "Disables normal bot operations and starts the Trackblazer buy items test. Opens the Shop if on the Main Screen and logs shop contents and purchase intentions without actually buying anything.",
+    },
+    {
+        key: "debugMode_startTrackblazerShopClickDiagnosticTest",
+        searchId: "debug-trackblazer-shop-click-diagnostic-test",
+        title: "Start Trackblazer Shop Click Diagnostic Test",
+        description:
+            "Disables normal bot operations and starts the Trackblazer Shop click diagnostic test. Opens the Shop if on the Main Screen and logs the detected bounding box and tap point for every row, plus saves an annotated screenshot, without performing any taps. Useful for diagnosing click-position issues such as the Shop tapping the wrong areas on some devices.",
     },
 ]
 
