@@ -285,6 +285,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔍 Start Trackblazer Race Selection Test: ${settings.debug.debugMode_startTrackblazerRaceSelectionTest ? "✅" : "❌"}
 🔍 Start Trackblazer Inventory Sync Test: ${settings.debug.debugMode_startTrackblazerInventorySyncTest ? "✅" : "❌"}
 🔍 Start Trackblazer Buy Items Test: ${settings.debug.debugMode_startTrackblazerBuyItemsTest ? "✅" : "❌"}
+🔍 Start Trackblazer Shop Click Diagnostic Test: ${settings.debug.debugMode_startTrackblazerShopClickDiagnosticTest ? "✅" : "❌"}
 
 ---------- Discord Options ----------
 🔔 Discord Notifications: ${settings.discord?.enableDiscordNotifications ? "✅" : "❌"}
