@@ -446,6 +446,61 @@ object ParentRunSummary {
     fun discordEmbedFromSettings(trainee: Trainee, scenario: String, elapsedMs: Long?): DiscordEmbedSpec =
         buildDiscordEmbed(inputFromSettings(trainee, scenario, elapsedMs))
 
+    /** Structured embed for Discord rich notifications at the end of a regular (non-parent-farming) career. */
+    fun buildSimpleDiscordEmbed(
+        trainee: Trainee,
+        scenario: String,
+        elapsedMs: Long?,
+        raceStats: RunRaceStats,
+        harvestResult: ParentHarvestScanner.HarvestResult? = null,
+    ): DiscordEmbedSpec {
+        val description =
+            buildString {
+                if (trainee.name.isNotEmpty()) {
+                    append(trainee.name)
+                }
+                if (scenario.isNotEmpty()) {
+                    if (isNotEmpty()) append(" · ")
+                    append(scenario)
+                }
+            }.ifEmpty { null }
+
+        val fields = mutableListOf<DiscordEmbedField>()
+        if (elapsedMs != null && elapsedMs >= 0) {
+            fields.add(DiscordEmbedField("Runtime", MessageLog.formatElapsedTime(0, elapsedMs), inline = true))
+        }
+        fields.add(DiscordEmbedField("Races", "${raceStats.wins} wins · ${raceStats.losses} losses", inline = true))
+        fields.add(
+            DiscordEmbedField(
+                "Fans",
+                "${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})",
+                inline = true,
+            ),
+        )
+        fields.add(DiscordEmbedField("Skill points", trainee.skillPoints.toString(), inline = true))
+        fields.add(DiscordEmbedField("Stats", trainee.stats.toString(), inline = false))
+        fields.add(DiscordEmbedField("Surface", formatSurfaceAptitudes(trainee).removePrefix("Surface: "), inline = true))
+        fields.add(DiscordEmbedField("Distance", formatDistanceAptitudes(trainee).removePrefix("Distance: "), inline = true))
+        fields.add(DiscordEmbedField("Style", formatStyleAptitudes(trainee).removePrefix("Style: "), inline = true))
+        if (trainee.currentPositiveStatuses.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Positive", trainee.currentPositiveStatuses.joinToString(", "), inline = false))
+        }
+        if (trainee.currentNegativeStatuses.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Negative", trainee.currentNegativeStatuses.joinToString(", "), inline = false))
+        }
+        if (harvestResult != null && harvestResult.summary.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Harvest", harvestResult.summary, inline = false))
+        }
+
+        return DiscordEmbedSpec(
+            title = "Career complete",
+            description = description,
+            colorRgb = DiscordEmbedColors.GREEN,
+            fields = fields,
+            footer = MessageLog.getSystemTimeString(),
+        )
+    }
+
     /** Writes the summary to the message log with a visible banner. */
     fun logSummary(summary: String) {
         MessageLog.i(TAG, LOG_BANNER)

@@ -2331,6 +2331,10 @@ abstract class Campaign(game: Game) : Task(game) {
                     }
                 } else if (summaryInput != null && SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
                     ParentRunArchive.append(game.myContext, summaryInput)
+                } else if (summaryInput == null) {
+                    val raceStats = SmartRaceSolverIntegration.snapshotRaceStats()
+                    game.taskEndDiscordEmbed =
+                        ParentRunSummary.buildSimpleDiscordEmbed(trainee, game.scenario, elapsedMs, raceStats, harvestResult)
                 }
 
                 if (ParentFarmingRunLoop.tryContinueAfterCareerEnd(this, game, summaryInput)) {
