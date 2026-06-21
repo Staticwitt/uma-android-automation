@@ -1,21 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.56</latestVersion>
-    <latestVersionCode>146</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.56</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.56/v5.9.56-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.56/v5.9.56-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.57</latestVersion>
+    <latestVersionCode>147</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.57</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.57/v5.9.57-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.57/v5.9.57-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.56 - Support card data fix, umapyoi cross-validation, manual game-data refresh
+v5.9.57 - Running-style aptitudes, outfit growth-rate bonuses, tunable legacy-parent weights
 
 New
 ---
-- Added a "Manually Refresh Game Data" option under Settings → Data Management that opens the GitHub Actions page for the game-data scraper, so support card stats/types can be refreshed on demand instead of waiting for the weekly automatic run.
-- The game-data scraper now cross-validates each support card's type and rarity against umapyoi.net's independently-sourced data and logs a warning on any mismatch, to catch bad scrapes before they reach the app.
-
-Fixes
------
-- Removed fabricated support card data: a nonexistent "Gold Ship (Guts)" variant and incorrect type overrides for Gold Ship, Grass Wonder, Matikanefukukitaru, and Symboli Rudolf were overriding the real scraped data and corrupting deck recommendation labels, friend-borrow scoring, and deck-fit scoring.
+- The game-data scraper now also captures Front/Pace/Late/End running-style aptitudes from GameTora's character pages, and the bot seeds each Trainee's running-style aptitudes from the selected Smart Race Solver character preset at career start instead of leaving them all-G until OCR'd mid-run, fixing a silent early-run bias toward Front Runner in skill evaluation and training stat bias.
+- Outfit/costume variants (e.g. "Special Week (Wedding)") now get their own character preset entry carrying a per-stat growth-rate bonus, which the Smart Race Solver factors into race scoring via a distance-type stat split heuristic.
+- Added an Oguri Cap (Christmas) outfit preset (+15% Speed/Stamina growth) and a matching high-rank training profile (Settings → Import settings → oguri-cap-christmas-high-rank.json).
+- StatAndAptitude legacy-parent scoring weights are now tunable instead of hardcoded.
 
     </releaseNotes>
   </update>
