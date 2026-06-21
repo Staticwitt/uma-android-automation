@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot.solver
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
+import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
 
@@ -211,6 +212,9 @@ data class RaceLossRecord(
  * @property weights Active scoring weights.
  * @property initialEnergy Trainee energy (0..100) at solve time. Preview defaults to 100.
  * @property initialMood Trainee mood at solve time. Preview defaults to [Mood.NORMAL].
+ * @property growthBonus Per-stat growth-rate bonus percentages (e.g. `10.0` = +10%) from the selected outfit/costume
+ *   preset, read by [ScoringFunctions.raceValue]. Empty when no preset is selected or the preset carries no bonus,
+ *   in which case race-value scoring is unchanged from before this field existed.
  */
 data class SolverState(
     val currentTurn: TurnNumber,
@@ -233,6 +237,7 @@ data class SolverState(
     val currentFans: Int = 0,
     val initialEnergy: Int = EnergyModel.MAX_ENERGY,
     val initialMood: Mood = Mood.NORMAL,
+    val growthBonus: Map<StatName, Double> = emptyMap(),
 ) {
     val epithetsByName: Map<String, Epithet> by lazy { epithets.associateBy { it.name } }
 

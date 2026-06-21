@@ -19,6 +19,7 @@ import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
+import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
 import org.json.JSONArray
@@ -873,6 +874,7 @@ object SmartRaceSolverIntegration {
                     } else {
                         Mood.fromName(config.optString("initialMood", Mood.NORMAL.name)) ?: Mood.NORMAL
                     },
+                growthBonus = readGrowthBonus(characterPreset),
             )
 
         val schedule =
@@ -973,8 +975,47 @@ object SmartRaceSolverIntegration {
             deadEpithets = runtimeDeadEpithets,
             initialEnergy = currentRunEnergy,
             initialMood = currentRunMood,
+            growthBonus = readGrowthBonus(characterPreset),
         )
     }
+
+    /**
+     * Reads the selected character preset's per-stat growth-rate bonus directly from the
+     * `characterPresetsData` bridge payload, mirroring `Trainee`'s running-style-aptitude seeding
+     * pattern rather than a separate resolved-snapshot setting - growth bonus is purely derived
+     * from the active outfit preset, with no per-slot user override.
+     *
+     * @param characterPreset Selected preset name, or null when no preset is active.
+     * @return Map of [StatName] -> bonus percentage (e.g. `10.0` = +10%). Empty when no preset is
+     *   selected, the preset has no growth bonus, or the setting is missing/unparseable.
+     */
+    private fun readGrowthBonus(characterPreset: String?): Map<StatName, Double> {
+        if (characterPreset.isNullOrEmpty()) return emptyMap()
+        val presetsJson = SettingsHelper.getStringSetting("racing", "characterPresetsData")
+        if (presetsJson.isEmpty()) return emptyMap()
+        return runCatching {
+            val growth = JSONObject(presetsJson).optJSONObject(characterPreset)?.optJSONObject("growthBonus") ?: return@runCatching emptyMap()
+            buildMap {
+                StatName.entries.forEach { stat ->
+                    val pct = growth.optDouble(statKeyName(stat), 0.0)
+                    if (pct != 0.0) put(stat, pct)
+                }
+            }
+        }.getOrElse { emptyMap() }
+    }
+
+    /**
+     * Maps a [StatName] to the display key used in `characterPresets.json`'s `growthBonus` object
+     * (e.g. `"Speed"`), matching the `STAT_KEYS` casing produced by the scraper and TS constants.
+     */
+    private fun statKeyName(stat: StatName): String =
+        when (stat) {
+            StatName.SPEED -> "Speed"
+            StatName.STAMINA -> "Stamina"
+            StatName.POWER -> "Power"
+            StatName.GUTS -> "Guts"
+            StatName.WIT -> "Wit"
+        }
 
     /**
      * Applies the selected character's mandatory career races onto [racesByTurn] / [baseLocks]

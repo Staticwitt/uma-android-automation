@@ -53,6 +53,12 @@ export interface CharacterPresetEntry {
     /** Default running-style aptitude grades (S..G) seeded when this preset is applied. Optional: absent on
      *  presets scraped before this field was added, until the next weekly data refresh backfills it. */
     runningStyleAptitudes?: { "Front Runner": string; "Pace Chaser": string; "Late Surger": string; "End Closer": string }
+    /** Per-stat growth-rate bonus percentages (e.g. `10` = +10%) for this specific outfit/costume, mirroring the
+     *  in-game "growth rate" stat shown on alternate-costume character pages. Outfit variants are keyed in
+     *  `characterPresets.json` by their outfit-qualified display name (e.g. "Special Week (Wedding)"), distinct
+     *  from the base character's entry. Zero for stats with no bonus. Optional: absent on presets scraped before
+     *  this field was added, or on outfits with no growth bonus, until the next weekly data refresh backfills it. */
+    growthBonus?: Record<StatName, number>
 }
 
 export interface AptitudeMap {
@@ -144,6 +150,11 @@ export interface PreviewStats {
 // //////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 
+/** The five trainable stats. Mirrors `StatName` in `Types.kt` (scoring-shared) and the Kotlin solver's `growthBonus` map keys. */
+export type StatName = "Speed" | "Stamina" | "Power" | "Guts" | "Wit"
+
+export const STAT_KEYS: StatName[] = ["Speed", "Stamina", "Power", "Guts", "Wit"]
+
 export const APTITUDE_RANKS = ["S", "A", "B", "C", "D", "E", "F", "G"]
 
 export const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -157,6 +168,18 @@ export const YEAR_LABELS: { name: string; startTurn: number }[] = [
 /** Reference Trackblazer scoring breakdown (matches `solver-browser.js` BASE_REWARD). */
 export const BASE_STAT_BY_GRADE: Record<string, number> = { G1: 10, G2: 8, G3: 8, OP: 5, PRE_OP: 5 }
 export const BASE_SP_BY_GRADE: Record<string, number> = { G1: 35, G2: 25, G3: 25, OP: 15, PRE_OP: 10 }
+
+/** Heuristic per-stat share of a race's flat `BASE_STAT_BY_GRADE` reward, keyed by `RaceEntry.distanceType`. The
+ *  bundled race data models each race's reward as a single aggregate number per grade tier - there is no real
+ *  per-stat breakdown anywhere in this app's data. This table is a tunable approximation (each row sums to 1.0)
+ *  used ONLY to apply outfit `growthBonus` percentages proportionally to the stats a race's distance favors; it is
+ *  not sourced from exact game data. Mirror of `RACE_STAT_SPLIT_BY_DISTANCE_TYPE` in `ScoringFunctions.kt`. */
+export const RACE_STAT_SPLIT_BY_DISTANCE_TYPE: Record<string, Record<StatName, number>> = {
+    Sprint: { Speed: 0.35, Stamina: 0.1, Power: 0.3, Guts: 0.15, Wit: 0.1 },
+    Mile: { Speed: 0.3, Stamina: 0.15, Power: 0.2, Guts: 0.15, Wit: 0.2 },
+    Medium: { Speed: 0.25, Stamina: 0.2, Power: 0.2, Guts: 0.2, Wit: 0.15 },
+    Long: { Speed: 0.15, Stamina: 0.3, Power: 0.15, Guts: 0.25, Wit: 0.15 },
+}
 
 export const GRADE_COLORS: Record<string, string> = {
     G1: "#2563eb",
@@ -243,6 +266,24 @@ export const turnDateLabel = (turnInYear: number): string => {
     const month = MONTH_LABELS[Math.floor(turnInYear / 2)]
     const half = turnInYear % 2 === 0 ? "Early" : "Late"
     return `${half} ${month}`
+}
+
+/**
+ * Growth-bonus-adjusted base stat reward for a race grade. Distributes the flat `BASE_STAT_BY_GRADE[grade]` reward
+ * across the 5 stats per `RACE_STAT_SPLIT_BY_DISTANCE_TYPE[distanceType]`, scales each stat's share by
+ * `(1 + growthBonus[stat] / 100)`, and sums back into a single number. Falls back to the unadjusted base reward
+ * when `distanceType` or `growthBonus` is missing, so callers without an active outfit preset see unchanged behavior.
+ *
+ * @param grade Race grade key (matches `BASE_STAT_BY_GRADE`).
+ * @param distanceType Race `distanceType` key (matches `RACE_STAT_SPLIT_BY_DISTANCE_TYPE`), or undefined to skip adjustment.
+ * @param growthBonus Per-stat growth bonus percentages from the active character preset, or undefined to skip adjustment.
+ * @returns The growth-adjusted base stat reward.
+ */
+export const growthAdjustedBaseStat = (grade: string, distanceType: string | undefined, growthBonus: Record<StatName, number> | undefined): number => {
+    const base = BASE_STAT_BY_GRADE[grade] ?? 0
+    const split = distanceType ? RACE_STAT_SPLIT_BY_DISTANCE_TYPE[distanceType] : undefined
+    if (!split || !growthBonus) return base
+    return STAT_KEYS.reduce((sum, stat) => sum + base * split[stat] * (1 + (growthBonus[stat] ?? 0) / 100), 0)
 }
 
 const RACE_NAME_ABBREVIATIONS: Record<string, string> = {
