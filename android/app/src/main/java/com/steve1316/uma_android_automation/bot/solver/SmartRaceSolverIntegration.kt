@@ -1401,6 +1401,10 @@ object SmartRaceSolverIntegration {
             minWinRateGuard = obj.optDouble("minWinRateGuard", 0.0),
             lowEnergyRacePenalty = obj.optDouble("lowEnergyRacePenalty", 4.0),
             energyRestValue = obj.optDouble("energyRestValue", 2.0),
+            maxRaceDistance = obj.optInt("maxRaceDistance", 0),
+            fourConsecutiveRacePenalty = obj.optDouble("fourConsecutiveRacePenalty", 0.0),
+            championsMeetingPreset = obj.optString("championsMeetingPreset", ""),
+            hintMatchWeight = obj.optDouble("hintMatchWeight", 10.0),
         )
     }
 
@@ -1736,6 +1740,7 @@ object SmartRaceSolverIntegration {
                     distanceMeters = r.optInt("distanceMeters", 0),
                     fans = r.optInt("fans", 0),
                     turnNumber = turn,
+                    direction = r.optString("direction", "").ifEmpty { null },
                 )
             out.getOrPut(turn) { mutableListOf() }.add(candidate)
         }

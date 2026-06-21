@@ -96,6 +96,15 @@ data class Aptitudes(
  * @property minWinRateGuard Hard floor on P(win) for eligible races. 0 disables the guard.
  * @property lowEnergyRacePenalty Extra objective penalty when racing below [EnergyModel.LOW_ENERGY_THRESHOLD].
  * @property energyRestValue Score bonus for planning Rest when energy is low.
+ * @property maxRaceDistance Hard cap (meters) on eligible race distance. 0 disables the cap. Mirrors the reference
+ *   Trackblazer solver's max-distance filter, used to keep the solver away from races whose distance would trigger
+ *   unwanted epithets.
+ * @property fourConsecutiveRacePenalty Extra objective penalty stacked on top of [consecutiveRacePenalty] once a
+ *   race turn is the 4th (or later) in an unbroken run of consecutive race turns.
+ * @property championsMeetingPreset Selected Champions Meeting calendar id (e.g. "CM7"), or empty to disable
+ *   Champions-Meeting-aware scoring. See [ChampionsMeeting].
+ * @property hintMatchWeight Coefficient scaling [ChampionsMeeting.buildTargetBonus]'s per-axis match score into an
+ *   objective bonus. Mirrors the reference solver's tunable `hint_match_weight`.
  */
 data class Weights(
     val raceValue: Double = 1.0,
@@ -118,6 +127,10 @@ data class Weights(
     val minWinRateGuard: Double = 0.0,
     val lowEnergyRacePenalty: Double = 4.0,
     val energyRestValue: Double = 2.0,
+    val maxRaceDistance: Int = 0,
+    val fourConsecutiveRacePenalty: Double = 0.0,
+    val championsMeetingPreset: String = "",
+    val hintMatchWeight: Double = 10.0,
 )
 
 /**
@@ -137,6 +150,8 @@ data class Weights(
  * @property turnNumber Turn the race takes place on (1..72).
  * @property isMandatory True when this candidate is a forced career-objective race the solver
  *   locked onto its turn (not an optional race from the pool). Drives the calendar's mandatory styling.
+ * @property direction Track handedness for this race's venue: "Left" or "Right", or null when unknown (e.g. a
+ *   live-OCR-derived candidate with no direction data). Used by [ChampionsMeeting.buildTargetBonus]'s handedness axis.
  */
 data class RaceCandidate(
     val key: String,
@@ -152,6 +167,7 @@ data class RaceCandidate(
     val fans: Int,
     val turnNumber: TurnNumber,
     val isMandatory: Boolean = false,
+    val direction: String? = null,
 )
 
 /**

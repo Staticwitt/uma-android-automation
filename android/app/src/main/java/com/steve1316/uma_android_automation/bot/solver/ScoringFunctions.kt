@@ -116,10 +116,11 @@ object ScoringFunctions {
      * Returns the value of running a single race, ignoring epithet contributions.
      *
      * Direct port of the reference Trackblazer solver's `weightedRaceValue`, extended with a
-     * tunable per-fan term so users can opt into a fan-weighted optimization mode:
+     * tunable per-fan term so users can opt into a fan-weighted optimization mode and a Champions
+     * Meeting build-target term (see [ChampionsMeeting.buildTargetBonus]):
      *   gross = statWeight * floor(baseStat * (1 + raceBonus)) + spWeight * floor(baseSp * (1 + raceBonus))
      *   cost  = (raceCostPct / 100) * costBaseline(grade)
-     *   value = (gross - cost) * raceValue + fans * fanWeight
+     *   value = (gross - cost) * raceValue + fans * fanWeight + cmBonus
      *
      * With defaults (raceBonus 50, raceCost 100, fanWeight 0) G2/G3 net to zero gross-cost - they
      * tie with Train (which carries a tiny positive anti-race bias in [trainValue]) and are skipped
@@ -153,7 +154,8 @@ object ScoringFunctions {
             } else {
                 race.fans * weights.fanWeight
             }
-        var value = (gross - cost) * weights.raceValue + fanTerm
+        val cmBonus = ChampionsMeeting.buildTargetBonus(race, weights)
+        var value = (gross - cost) * weights.raceValue + fanTerm + cmBonus
         if (state != null) {
             val winRate = RaceWinModel.effectiveWinRate(race, state.aptitudes, weights)
             value *= winRate
@@ -235,12 +237,15 @@ object ScoringFunctions {
      * Penalty applied when scheduling a third (or later) consecutive race. The reference
      * solver penalises the *start* of a 3-race chain. We apply it on every additional race
      * past the second to keep beams deterministic and incremental. Returns zero on Late-Dec
-     * windows (turns 23, 47, 71) to match the reference's end-of-year exemption.
+     * windows (turns 23, 47, 71) to match the reference's end-of-year exemption. From the fourth
+     * consecutive race onward, [Weights.fourConsecutiveRacePenalty] stacks on top of
+     * [Weights.consecutiveRacePenalty] so long race chains are penalised more steeply.
      *
      * @param consecutiveRaceCount Number of consecutive races including the current one.
      * @param turn Turn the third+ race lands on. Checked against [LATE_DEC_FREE_TURNS].
-     * @param weights Active weights providing [Weights.consecutiveRacePenalty].
-     * @return The configured penalty when the chain is >= 3 and [turn] is not Late-Dec, else 0.0.
+     * @param weights Active weights providing [Weights.consecutiveRacePenalty] and [Weights.fourConsecutiveRacePenalty].
+     * @return The configured penalty (stacked from the 4th race onward) when the chain is >= 3 and
+     *   [turn] is not Late-Dec, else 0.0.
      */
     fun consecutiveRacePenalty(
         consecutiveRaceCount: Int,
@@ -249,7 +254,11 @@ object ScoringFunctions {
     ): Double {
         if (consecutiveRaceCount < 3) return 0.0
         if (turn in LATE_DEC_FREE_TURNS) return 0.0
-        return weights.consecutiveRacePenalty
+        return if (consecutiveRaceCount >= 4) {
+            weights.consecutiveRacePenalty + weights.fourConsecutiveRacePenalty
+        } else {
+            weights.consecutiveRacePenalty
+        }
     }
 
     /**
@@ -270,12 +279,12 @@ object ScoringFunctions {
      * Hard eligibility check: a race is eligible only if both the matching distance aptitude
      * and surface aptitude meet [Weights.aptitudeThreshold]. OP/Pre-OP grades are also gated by
      * [Weights.includeOpAndPreOp]. Below threshold, the race is dropped from the candidate set
-     * entirely.
+     * entirely. Races farther than [Weights.maxRaceDistance] are also dropped when that cap is set.
      *
      * @param race Race candidate to test.
      * @param state Solver state providing aptitudes and weights.
-     * @return True if the race passes the OP filter (when applicable) and both aptitudes meet
-     *   the threshold. False otherwise.
+     * @return True if the race passes the OP filter (when applicable), both aptitudes meet
+     *   the threshold, and the distance cap (when set) is satisfied. False otherwise.
      */
     fun isEligible(race: RaceCandidate, state: SolverState): Boolean {
         if (race.grade in OP_GRADES && !state.weights.includeOpAndPreOp) return false
@@ -285,6 +294,7 @@ object ScoringFunctions {
         if (!distApt.atLeast(threshold) || !surfApt.atLeast(threshold)) return false
         if (!RaceWinModel.passesWinRateGuard(race, state.aptitudes, state.weights)) return false
         if (race.turnNumber == state.currentTurn && state.initialEnergy < EnergyModel.RACE_COST) return false
+        if (state.weights.maxRaceDistance > 0 && race.distanceMeters > state.weights.maxRaceDistance) return false
         return true
     }
 

@@ -5,6 +5,7 @@ import { previewSchedule, getLiveCalendarSnapshot, parseLiveCalendarSnapshot, Sc
 import {
     APTITUDE_RANKS,
     AptitudeMap,
+    CHAMPIONS_MEETING_CALENDAR,
     CharacterPresetEntry,
     DEFAULT_APTITUDES,
     DEFAULT_WEIGHTS,
@@ -240,6 +241,9 @@ const SmartRaceSolverSettings = () => {
     const [assumedRaceWinRateInput, setAssumedRaceWinRateInput] = useState((weights.assumedRaceWinRate ?? 1).toString())
     const [minWinRateGuardInput, setMinWinRateGuardInput] = useState((weights.minWinRateGuard ?? 0).toString())
     const [energyRestValueInput, setEnergyRestValueInput] = useState((weights.energyRestValue ?? 2).toString())
+    const [maxRaceDistanceInput, setMaxRaceDistanceInput] = useState((weights.maxRaceDistance ?? 0).toString())
+    const [fourConsecPenaltyInput, setFourConsecPenaltyInput] = useState((weights.fourConsecutiveRacePenalty ?? 0).toString())
+    const [hintMatchWeightInput, setHintMatchWeightInput] = useState((weights.hintMatchWeight ?? 10).toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
@@ -255,6 +259,9 @@ const SmartRaceSolverSettings = () => {
     useEffect(() => setAssumedRaceWinRateInput(String(weights.assumedRaceWinRate ?? 1)), [weights.assumedRaceWinRate])
     useEffect(() => setMinWinRateGuardInput(String(weights.minWinRateGuard ?? 0)), [weights.minWinRateGuard])
     useEffect(() => setEnergyRestValueInput(String(weights.energyRestValue ?? 2)), [weights.energyRestValue])
+    useEffect(() => setMaxRaceDistanceInput(String(weights.maxRaceDistance ?? 0)), [weights.maxRaceDistance])
+    useEffect(() => setFourConsecPenaltyInput(String(weights.fourConsecutiveRacePenalty ?? 0)), [weights.fourConsecutiveRacePenalty])
+    useEffect(() => setHintMatchWeightInput(String(weights.hintMatchWeight ?? 10)), [weights.hintMatchWeight])
 
     const [liveRunActive, setLiveRunActive] = useState(false)
     const currentOptimizeMode: OptimizeModeKey = weights.fanWeight > 0.0 ? "FANS_EPITAPH" : "STAT_EPITAPH"
@@ -1802,7 +1809,14 @@ const SmartRaceSolverSettings = () => {
                                                 <ScrollView style={styles.epithetList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                     <View style={styles.row}>
                                                         {filteredEpithets.map((ep) => (
-                                                            <EpithetChip key={ep.name} epithet={ep} selected={targetEpithets.includes(ep.name)} onToggle={toggleTargetEpithet} styles={styles} />
+                                                            <EpithetChip
+                                                                key={ep.name}
+                                                                epithet={ep}
+                                                                selected={targetEpithets.includes(ep.name)}
+                                                                onToggle={toggleTargetEpithet}
+                                                                styles={styles}
+                                                                progress={preview ? epithetProgress(72, ep, preview, racesByKey) : null}
+                                                            />
                                                         ))}
                                                     </View>
                                                 </ScrollView>
@@ -2069,6 +2083,22 @@ const SmartRaceSolverSettings = () => {
                                                     </Pressable>
 
                                                     <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Four-in-a-Row Penalty</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={fourConsecPenaltyInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setFourConsecPenaltyInput(t)}
+                                                            onBlur={() => updateWeight("fourConsecutiveRacePenalty", parseFloat(fourConsecPenaltyInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="0.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Extra penalty stacked on top of Consecutive Race Penalty once a race turn is the 4th (or later) in an unbroken race chain. Late-Dec turns are
+                                                            exempt. Set to 0 to disable.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
                                                         <Text style={styles.inputLabel}>Summer Block Penalty</Text>
                                                         <Input
                                                             style={styles.input}
@@ -2112,6 +2142,67 @@ const SmartRaceSolverSettings = () => {
                                                         <Text style={styles.inputDescription}>
                                                             Cost subtracted from each race's reward, expressed as a percentage of a G2 race's baseline value. At 100 (default), G2 and G3 races score
                                                             zero net and only get raced when they progress an epithet. Lower this to schedule more races.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Max Race Distance (m)</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={maxRaceDistanceInput}
+                                                            onChangeText={(t) => /^\d*$/.test(t) && setMaxRaceDistanceInput(t)}
+                                                            onBlur={() => updateWeight("maxRaceDistance", parseInt(maxRaceDistanceInput, 10) || 0)}
+                                                            keyboardType="number-pad"
+                                                            placeholder="0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Hard cap on eligible race distance, in meters. Races longer than this are never considered, even if they would complete an epithet. Set to 0 to
+                                                            disable.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Champions Meeting Calendar</Text>
+                                                        <View style={styles.row}>
+                                                            <Pressable
+                                                                onPress={() => updateWeight("championsMeetingPreset", "")}
+                                                                style={[styles.distanceChip, weights.championsMeetingPreset === "" && styles.distanceChipActive]}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                            >
+                                                                <Text style={[styles.distanceChipText, weights.championsMeetingPreset === "" && styles.distanceChipTextActive]}>None</Text>
+                                                            </Pressable>
+                                                            {CHAMPIONS_MEETING_CALENDAR.map((cm) => (
+                                                                <Pressable
+                                                                    key={cm.id}
+                                                                    onPress={() => updateWeight("championsMeetingPreset", cm.id)}
+                                                                    style={[styles.distanceChip, weights.championsMeetingPreset === cm.id && styles.distanceChipActive]}
+                                                                    android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                >
+                                                                    <Text style={[styles.distanceChipText, weights.championsMeetingPreset === cm.id && styles.distanceChipTextActive]}>
+                                                                        {cm.label}
+                                                                    </Text>
+                                                                </Pressable>
+                                                            ))}
+                                                        </View>
+                                                        <Text style={styles.inputDescription}>
+                                                            When set, the solver scores races higher when they match the selected Champions Meeting's build-target distance/surface/handedness/season.
+                                                            Calendar ported from a third-party Trackblazer scheduler reference and not independently verified against uma.guide or GameTora.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Hint Match Weight</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={hintMatchWeightInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setHintMatchWeightInput(t)}
+                                                            onBlur={() => updateWeight("hintMatchWeight", parseFloat(hintMatchWeightInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="10.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Coefficient scaling the Champions Meeting build-target match score into a scoring bonus. Only has an effect when a Champions Meeting Calendar
+                                                            is selected above.
                                                         </Text>
                                                     </Pressable>
                                                 </View>

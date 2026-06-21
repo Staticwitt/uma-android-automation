@@ -26,6 +26,8 @@ export interface RaceEntry {
     fans: number
     /** Race-track venue name (e.g. "Tokyo", "Hanshin"). */
     raceTrack: string
+    /** Track handedness at this venue: "Left" or "Right". Used by the Champions Meeting build-target bonus. */
+    direction?: string
 }
 
 export interface EpithetEntry {
@@ -118,6 +120,14 @@ export interface WeightsMap {
     lowEnergyRacePenalty: number
     /** Score bonus for planning Rest when energy is low. */
     energyRestValue: number
+    /** Hard cap (meters) on eligible race distance. 0 disables the cap. */
+    maxRaceDistance: number
+    /** Extra penalty stacked on top of `consecutiveRacePenalty` once a race turn is the 4th (or later) in an unbroken race chain. */
+    fourConsecutiveRacePenalty: number
+    /** Selected Champions Meeting calendar id (see `CHAMPIONS_MEETING_CALENDAR`), or "" to disable Champions-Meeting-aware scoring. */
+    championsMeetingPreset: string
+    /** Coefficient scaling the Champions Meeting build-target match score into an objective bonus. */
+    hintMatchWeight: number
 }
 
 /** Progress against a single matcher or a whole epithet. `current` is capped at `required`. */
@@ -216,6 +226,10 @@ export const DEFAULT_WEIGHTS: WeightsMap = {
     minWinRateGuard: 0,
     lowEnergyRacePenalty: 4.0,
     energyRestValue: 2.0,
+    maxRaceDistance: 0,
+    fourConsecutiveRacePenalty: 0.0,
+    championsMeetingPreset: "",
+    hintMatchWeight: 10.0,
 }
 
 /** Named optimization-mode presets for the Smart Race Solver. Selecting a mode in the UI snaps the
@@ -245,6 +259,30 @@ export const TRAIN_LOCK_SENTINEL = "__TRAIN__"
 export const APT_ORDER: Record<string, number> = { G: 0, F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7 }
 
 export const OP_GRADES = new Set(["OP", "PRE_OP", "Pre-OP", "PreOP"])
+
+/** UI picker labels for the Champions Meeting preset selector. `id` must match `ChampionsMeeting.CM_CALENDAR`'s
+ *  `id` field in the Kotlin solver - the actual build-target weighting math lives there, this is display-only.
+ *  Ported (ids/labels only) from the reference Trackblazer scheduler's `CM_CALENDAR`; see `ChampionsMeeting.kt`'s
+ *  class doc for the "not independently verified" caveat on this calendar data. */
+export const CHAMPIONS_MEETING_CALENDAR: { id: string; label: string }[] = [
+    { id: "cm01_taurus", label: "CM1 — Taurus Cup" },
+    { id: "cm02_gemini", label: "CM2 — Gemini Cup" },
+    { id: "cm03_cancer", label: "CM3 — Cancer Cup" },
+    { id: "cm04_leo", label: "CM4 — Leo Cup" },
+    { id: "cm05_virgo", label: "CM5 — Virgo Cup" },
+    { id: "cm06_libra", label: "CM6 — Libra Cup" },
+    { id: "cm07_scorpio", label: "CM7 — Scorpio Cup" },
+    { id: "cm08_sagittarius", label: "CM8 — Sagittarius Cup" },
+    { id: "cm09_capricorn", label: "CM9 — Capricorn Cup" },
+    { id: "cm10_aquarius", label: "CM10 — Aquarius Cup" },
+    { id: "cm11_pisces", label: "CM11 — Pisces Cup" },
+    { id: "cm12_aries", label: "CM12 — Aries Cup" },
+    { id: "cm13_taurus_2", label: "CM13 — Taurus Cup (2)" },
+    { id: "cm14_gemini_2", label: "CM14 — Gemini Cup (2)" },
+    { id: "cm15_cancer_2", label: "CM15 — Cancer Cup (2)" },
+    { id: "cm16_leo_2", label: "CM16 — Leo Cup (2)" },
+    { id: "cm17_virgo_2", label: "CM17 — Virgo Cup (2)" },
+]
 
 /** Mirror of `EpithetFilters.COUNTRY_NAMES` in `Epithet.kt`. Keep these two lists in sync.
  *  Used by the `nameContainsCountry` branch of the `winCount` filter (Globe-Trotter epithet).
