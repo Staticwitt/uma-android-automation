@@ -158,6 +158,8 @@ export interface Settings {
         legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
         legacyParentPreferredPair: string
+        /** JSON object of tunable weight overrides for the "StatAndAptitude" legacy parent strategy. Empty/missing falls back to defaults. */
+        legacyParentStatAptitudeWeights: string
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
         /** JSON array of support cards the user owns (filters recommendations). */
@@ -427,6 +429,7 @@ export const defaultSettings: Settings = {
         enableAutoSelectLegacyParents: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
+        legacyParentStatAptitudeWeights: "{}",
         supportBorrowPreferredCards: "[]",
         ownedSupportCards: "[]",
         supportDeckOwnedCards: "[]",

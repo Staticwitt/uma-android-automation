@@ -1930,28 +1930,51 @@ class EpithetScraper(BaseScraper):
 
 
 class CharacterPresetScraper(BaseScraper):
-    """Scrapes per-character distance and surface aptitudes for the Smart Race Solver.
+    """Scrapes per-character distance, surface, and running-style aptitudes for the Smart Race Solver.
 
-    Each character page on GameTora has a "Track aptitude" panel with six grade letters
-    (Sprint, Mile, Medium, Long, Turf, Dirt). The Smart Race Solver feeds these into its
-    aptitude eligibility filter, so they need to stay in sync with what's in the game.
+    Each character page on GameTora has a "Track aptitude" panel with ten grade letters
+    (Sprint, Mile, Medium, Long, Turf, Dirt, Front Runner, Pace Chaser, Late Surger, End Closer).
+    The Smart Race Solver feeds the distance/surface grades into its aptitude eligibility filter; the
+    running-style grades seed the bot's running-style aptitude guess before it can OCR the real values
+    off the race-prep screen.
 
-    Output schema (one entry per character) matches `src/data/characterPresets.json`:
+    Outfit/costume variants (e.g. "Special Week (Wedding)") get their own entry keyed by the
+    outfit-qualified display name, distinct from the base character's entry, since each outfit can
+    carry its own per-stat growth-rate bonus (`growthBonus`) - a fixed percentage that boosts all
+    gains for that stat throughout a career run. Stats with no bonus default to 0.0.
+
+    Output schema (one entry per character/outfit) matches `src/data/characterPresets.json`:
 
         {
             "<character name>": {
                 "name": "<character name>",
                 "distanceAptitudes": { "Sprint": "F", "Mile": "C", "Medium": "A", "Long": "C" },
-                "surfaceAptitudes": { "Turf": "A", "Dirt": "G" }
+                "surfaceAptitudes": { "Turf": "A", "Dirt": "G" },
+                "runningStyleAptitudes": { "Front Runner": "B", "Pace Chaser": "A", "Late Surger": "B", "End Closer": "C" },
+                "growthBonus": { "Speed": 10.0, "Stamina": 0.0, "Power": 10.0, "Guts": 0.0, "Wit": 0.0 }
             }
         }
     """
 
     DISTANCE_KEYS = ("Sprint", "Mile", "Medium", "Long")
     SURFACE_KEYS = ("Turf", "Dirt")
+    RUNNING_STYLE_KEYS = ("Front Runner", "Pace Chaser", "Late Surger", "End Closer")
+    STAT_KEYS = ("Speed", "Stamina", "Power", "Guts", "Wit")
     VALID_GRADES = ("S", "A", "B", "C", "D", "E", "F", "G")
-    # GameTora labels the sprint distance "Short". The rest of the labels match our output keys directly.
-    PAGE_LABEL_TO_KEY = {"Short": "Sprint", "Mile": "Mile", "Medium": "Medium", "Long": "Long", "Turf": "Turf", "Dirt": "Dirt"}
+    # GameTora labels the sprint distance "Short" and the running styles "Front"/"Pace"/"Late"/"End".
+    # The rest of the labels match our output keys directly.
+    PAGE_LABEL_TO_KEY = {
+        "Short": "Sprint",
+        "Mile": "Mile",
+        "Medium": "Medium",
+        "Long": "Long",
+        "Turf": "Turf",
+        "Dirt": "Dirt",
+        "Front": "Front Runner",
+        "Pace": "Pace Chaser",
+        "Late": "Late Surger",
+        "End": "End Closer",
+    }
 
     def __init__(self):
         super().__init__("https://gametora.com/umamusume/characters", "characterPresets.json")
@@ -2014,25 +2037,34 @@ class CharacterPresetScraper(BaseScraper):
                 driver.get(link)
                 time.sleep(2)
 
-                name = driver.find_element(By.XPATH, "//main//h1").text
-                name = name.replace("(Original)", "").strip()
-                name = re.sub(r"\s*\(.*?\)", "", name).strip()
-                if not name:
+                raw_name = driver.find_element(By.XPATH, "//main//h1").text
+                # display_name keeps any outfit qualifier (e.g. "Special Week (Wedding)") so alternate
+                # costumes get their own characterPresets.json entry instead of collapsing into the base
+                # character's. "(Original)" is GameTora's label for the base costume, not a real outfit name.
+                display_name = raw_name.replace("(Original)", "").strip()
+                # base_name additionally strips any remaining parenthetical, used only to check EN
+                # availability against the manifest (which lists base character names, not outfit variants).
+                base_name = re.sub(r"\s*\(.*?\)", "", display_name).strip()
+                if not display_name:
                     continue
 
-                if released_en is not None and name not in released_en:
-                    logging.info(f"Skipping {name}: not playable on EN server.")
+                if released_en is not None and base_name not in released_en:
+                    logging.info(f"Skipping {display_name}: not playable on EN server.")
                     continue
 
                 aptitudes = self._extract_aptitudes(driver)
                 if aptitudes is None:
-                    logging.warning(f"Skipping {name}: aptitude panel not found.")
+                    logging.warning(f"Skipping {display_name}: aptitude panel not found.")
                     continue
 
-                self.data[name] = {
-                    "name": name,
+                growth_bonus = self._extract_growth_bonus(driver)
+
+                self.data[display_name] = {
+                    "name": display_name,
                     "distanceAptitudes": {k: aptitudes.get(k, "G") for k in self.DISTANCE_KEYS},
                     "surfaceAptitudes": {k: aptitudes.get(k, "G") for k in self.SURFACE_KEYS},
+                    "runningStyleAptitudes": {k: aptitudes.get(k, "G") for k in self.RUNNING_STYLE_KEYS},
+                    "growthBonus": {k: growth_bonus.get(k, 0.0) for k in self.STAT_KEYS},
                 }
             except NoSuchElementException as e:
                 logging.warning(f"Skipping character at {link}: {e}")
@@ -2042,12 +2074,13 @@ class CharacterPresetScraper(BaseScraper):
         driver.quit()
 
     def _extract_aptitudes(self, driver: webdriver.Chrome) -> Optional[Dict[str, str]]:
-        """Pulls the distance and surface grade letters from the character's aptitude infobox.
+        """Pulls the distance, surface, and running-style grade letters from the character's aptitude infobox.
 
         GameTora renders each aptitude as an infobox row whose first child is the label and whose grade is an `<img>`
         alt letter (e.g. "A", "G") inside a "characters_aptitude_rank_icon" element. Running-style rows (Front, Pace,
-        Late, End) share the same markup, so they are filtered out by `PAGE_LABEL_TO_KEY`. Class fragments are matched
-        by prefix to tolerate the hashed suffixes GameTora appends to its CSS-module class names.
+        Late, End) share the same markup as the distance/surface rows and are mapped to their output keys by
+        `PAGE_LABEL_TO_KEY` just like the rest. Class fragments are matched by prefix to tolerate the hashed suffixes
+        GameTora appends to its CSS-module class names.
 
         Args:
             driver: An active Selenium webdriver positioned on a character page.
@@ -2080,6 +2113,38 @@ class CharacterPresetScraper(BaseScraper):
             if grade in self.VALID_GRADES:
                 out[key] = grade
         return out if out else None
+
+    def _extract_growth_bonus(self, driver: webdriver.Chrome) -> Dict[str, float]:
+        """Best-effort extraction of the character's per-stat growth-rate bonus (e.g. "+10% Speed").
+
+        GameTora surfaces this as a short text blurb near the top of the character page (its exact
+        markup couldn't be verified against a live page in this environment), so rather than depend
+        on a specific element structure, this scans all text within the main content area for
+        "<stat name> ... N%" / "N% ... <stat name>" patterns and pairs each stat with the percentage
+        found in the same line. Any stat not matched defaults to 0.0 via the caller.
+
+        Args:
+            driver: An active Selenium webdriver positioned on a character page.
+
+        Returns:
+            Dict mapping stat name to bonus percentage. Empty when no growth-bonus text is found.
+        """
+        out: Dict[str, float] = {}
+        try:
+            main_text = driver.find_element(By.XPATH, "//main").text
+        except NoSuchElementException:
+            return out
+
+        stat_pattern = "|".join(self.STAT_KEYS)
+        for line in main_text.splitlines():
+            if "%" not in line:
+                continue
+            for stat_match in re.finditer(stat_pattern, line):
+                stat = stat_match.group(0)
+                pct_match = re.search(r"(\d+(?:\.\d+)?)\s*%", line)
+                if pct_match:
+                    out[stat] = float(pct_match.group(1))
+        return out
 
 
 class CharacterObjectivesScraper(BaseScraper):

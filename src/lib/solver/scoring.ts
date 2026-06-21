@@ -3,13 +3,14 @@ import {
     APT_ORDER,
     AptitudeMap,
     BASE_SP_BY_GRADE,
-    BASE_STAT_BY_GRADE,
     COUNTRY_NAMES,
     EpithetEntry,
+    growthAdjustedBaseStat,
     MatcherProgress,
     OP_GRADES,
     PreviewStats,
     RaceEntry,
+    StatName,
     WeightsMap,
 } from "./constants"
 import { SchedulePreview } from "./preview"
@@ -589,14 +590,21 @@ export const turnsContributingToEpithet = (ep: EpithetEntry, preview: SchedulePr
 
 /**
  * Aggregate stats for the reference Trackblazer-style summary panel: race count, epithet count,
- * total race stats (BASE_STAT * (1 + raceBonusPct/100)), race SP, epithet stats, and hint count.
+ * total race stats (BASE_STAT * (1 + raceBonusPct/100), growth-bonus-adjusted), race SP, epithet stats, and hint count.
  *
  * @param preview Schedule preview to summarise.
  * @param weights Solver weights (only `raceBonusPct` is read).
  * @param racesByKey Lookup table from race key to race entry.
+ * @param growthBonus Per-stat growth-rate bonus percentages from the active character preset's outfit, or undefined
+ *   when no preset (or no bonus) is active - in which case `raceStats` matches the unadjusted legacy behavior.
  * @returns The aggregate {@link PreviewStats}.
  */
-export const computePreviewStats = (preview: SchedulePreview, weights: Pick<WeightsMap, "raceBonusPct">, racesByKey: Record<string, RaceEntry>): PreviewStats => {
+export const computePreviewStats = (
+    preview: SchedulePreview,
+    weights: Pick<WeightsMap, "raceBonusPct">,
+    racesByKey: Record<string, RaceEntry>,
+    growthBonus?: Record<StatName, number>
+): PreviewStats => {
     const epithetsAll = epithetsData as unknown as Record<string, EpithetEntry>
     const rb = Math.max(0, weights.raceBonusPct) / 100
     let races = 0
@@ -608,7 +616,7 @@ export const computePreviewStats = (preview: SchedulePreview, weights: Pick<Weig
         races += 1
         const race = entry.raceKey ? racesByKey[entry.raceKey] : undefined
         const grade = (race?.grade ?? entry.grade ?? "").replace("-", "_")
-        raceStats += Math.floor((BASE_STAT_BY_GRADE[grade] ?? 0) * (1 + rb))
+        raceStats += Math.floor(growthAdjustedBaseStat(grade, race?.distanceType, growthBonus) * (1 + rb))
         raceSp += Math.floor((BASE_SP_BY_GRADE[grade] ?? 0) * (1 + rb))
         fans += race?.fans ?? 0
     }

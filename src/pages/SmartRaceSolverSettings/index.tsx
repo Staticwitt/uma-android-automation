@@ -1368,7 +1368,16 @@ const SmartRaceSolverSettings = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [allRaces, aptitudes, weights.aptitudeThreshold, weights.includeOpAndPreOp])
 
-    const previewStats = useMemo(() => (preview ? computePreviewStats(preview, weights, racesByKey) : null), [preview, weights, racesByKey])
+    /** Active outfit's growth-bonus percentages, or undefined when no preset is selected (or the preset has none). */
+    const activeGrowthBonus = useMemo(
+        () => findCharacterPresetEntry(smartRaceSolverCharacterPreset)?.growthBonus,
+        [smartRaceSolverCharacterPreset],
+    )
+
+    const previewStats = useMemo(
+        () => (preview ? computePreviewStats(preview, weights, racesByKey, activeGrowthBonus) : null),
+        [preview, weights, racesByKey, activeGrowthBonus],
+    )
 
     /** Turns whose scheduled race actually counts toward completing the highlighted epithet, capped at each matcher's required count. */
     const contributingTurnsForHighlight = useMemo<Set<number>>(() => {

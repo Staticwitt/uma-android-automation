@@ -3,6 +3,8 @@ package com.steve1316.uma_android_automation.bot.solver
 import com.steve1316.uma_android_automation.types.Aptitude
 import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.RaceGrade
+import com.steve1316.uma_android_automation.types.StatName
+import com.steve1316.uma_android_automation.types.TrackDistance
 
 /**
  * Pure scoring helpers consumed by the heuristic. Each function takes the minimum required
@@ -44,6 +46,39 @@ object ScoringFunctions {
             RaceGrade.PRE_OP -> 10.0
             else -> 0.0
         }
+
+    /**
+     * Heuristic per-stat share of a race's flat [baseStat] reward, keyed by [TrackDistance]. The app models each
+     * race's reward as a single aggregate number per grade tier - there is no real per-stat breakdown anywhere in
+     * this app's data. This table is a tunable approximation (each row sums to 1.0) used ONLY to apply outfit
+     * [SolverState.growthBonus] percentages proportionally to the stats a race's distance favors; it is not sourced
+     * from exact game data. Mirror of `RACE_STAT_SPLIT_BY_DISTANCE_TYPE` in `constants.ts`.
+     */
+    private val RACE_STAT_SPLIT_BY_DISTANCE_TYPE: Map<TrackDistance, Map<StatName, Double>> =
+        mapOf(
+            TrackDistance.SPRINT to mapOf(StatName.SPEED to 0.35, StatName.STAMINA to 0.1, StatName.POWER to 0.3, StatName.GUTS to 0.15, StatName.WIT to 0.1),
+            TrackDistance.MILE to mapOf(StatName.SPEED to 0.3, StatName.STAMINA to 0.15, StatName.POWER to 0.2, StatName.GUTS to 0.15, StatName.WIT to 0.2),
+            TrackDistance.MEDIUM to mapOf(StatName.SPEED to 0.25, StatName.STAMINA to 0.2, StatName.POWER to 0.2, StatName.GUTS to 0.2, StatName.WIT to 0.15),
+            TrackDistance.LONG to mapOf(StatName.SPEED to 0.15, StatName.STAMINA to 0.3, StatName.POWER to 0.15, StatName.GUTS to 0.25, StatName.WIT to 0.15),
+        )
+
+    /**
+     * Growth-bonus-adjusted base stat reward for [grade]. Distributes [baseStat] across the 5 stats per
+     * [RACE_STAT_SPLIT_BY_DISTANCE_TYPE] for [distanceType], scales each stat's share by `(1 + growthBonus[stat] /
+     * 100)`, and sums back into a single number. Falls back to the unadjusted [baseStat] when [growthBonus] is
+     * empty, so runs without a selected outfit preset see unchanged behavior.
+     *
+     * @param grade Race grade to look up.
+     * @param distanceType Race distance category used to look up the stat split.
+     * @param growthBonus Per-stat growth bonus percentages from [SolverState.growthBonus].
+     * @return The growth-adjusted base stat reward.
+     */
+    private fun growthAdjustedBaseStat(grade: RaceGrade, distanceType: TrackDistance, growthBonus: Map<StatName, Double>): Double {
+        val base = baseStat(grade)
+        if (growthBonus.isEmpty()) return base
+        val split = RACE_STAT_SPLIT_BY_DISTANCE_TYPE[distanceType] ?: return base
+        return split.entries.sumOf { (stat, share) -> base * share * (1.0 + (growthBonus[stat] ?: 0.0) / 100.0) }
+    }
 
     /**
      * Baseline used to scale [Weights.raceCostPct] into a concrete subtracted cost. Graded races
@@ -93,6 +128,11 @@ object ScoringFunctions {
      * preserved; with a non-zero `fanWeight` (the "Fans + Epitaphs" preset uses 1e-3) fan-rich races
      * such as G1s become more attractive without dominating epithet contributions.
      *
+     * When [state] carries a non-empty [SolverState.growthBonus] (the selected outfit's growth-rate bonus), `stat`
+     * is computed via [growthAdjustedBaseStat] instead of the plain [baseStat] lookup, so the bonus boosts only the
+     * stats the race's distance favors. [cost] is never growth-adjusted - it is a fixed comparison baseline, not
+     * the character's actual reward.
+     *
      * @param race Race candidate to score.
      * @param weights Active scoring weights.
      * @param currentFans Trainee fan count at solve time. When fans meet [Weights.minimumFanTarget],
@@ -102,7 +142,8 @@ object ScoringFunctions {
      */
     fun raceValue(race: RaceCandidate, weights: Weights, currentFans: Int = 0, state: SolverState? = null): Double {
         val rb = weights.raceBonusPct.coerceAtLeast(0.0) / 100.0
-        val stat = Math.floor(baseStat(race.grade) * (1.0 + rb))
+        val growthBonus = state?.growthBonus ?: emptyMap()
+        val stat = Math.floor(growthAdjustedBaseStat(race.grade, race.distanceType, growthBonus) * (1.0 + rb))
         val sp = Math.floor(baseSp(race.grade) * (1.0 + rb))
         val gross = weights.statWeight * stat + weights.spWeight * sp
         val cost = weights.raceCostPct / 100.0 * costBaseline(race.grade, weights)

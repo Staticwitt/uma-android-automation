@@ -1,6 +1,7 @@
 package com.steve1316.uma_android_automation.bot
 
 import com.steve1316.automation_library.utils.SettingsHelper
+import org.json.JSONObject
 
 /**
  * Scores legacy parent OCR snippets for factor-aware pair selection at career selection.
@@ -38,17 +39,60 @@ object LegacyParentScorer {
     private val APTITUDE_GRADE_PATTERN = Regex("(?i)\\b([sabcdefg])\\b")
     private val STAT_VALUE_PATTERN = Regex("(?i)(speed|stamina|power|guts|wit|wisdom|spd|sta|pow)\\D{0,8}(\\d{2,4})")
 
+    /**
+     * Tunable weights for the "StatAndAptitude" strategy, user-editable in Parent Farming settings.
+     * Defaults match the values this strategy used before it became tunable.
+     *
+     * @property skillHintBonus Bonus when OCR text has a skill-hint signal and the user enabled "prioritize skill hints".
+     * @property blueFactorBonus Bonus when OCR text signals a blue (stat) factor.
+     * @property statPriorityBase Bonus for a stat-priority keyword match at priority index 0.
+     * @property statPriorityDecay Subtracted from [statPriorityBase] per priority index step (lower-priority stats score less).
+     * @property aptitudeKeywordBonus Bonus per distance/surface aptitude keyword found in OCR text.
+     * @property statValueWeight Multiplier applied to parsed numeric stat values (e.g. "Speed +120") weighted by priority.
+     * @property aptitudeGradeWeight Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text.
+     */
+    data class StatAptitudeWeights(
+        val skillHintBonus: Double = 45.0,
+        val blueFactorBonus: Double = 15.0,
+        val statPriorityBase: Double = 120.0,
+        val statPriorityDecay: Double = 12.0,
+        val aptitudeKeywordBonus: Double = 90.0,
+        val statValueWeight: Double = 0.35,
+        val aptitudeGradeWeight: Double = 8.0,
+    )
+
     data class Context(
         val strategy: String,
         val statPriorities: List<String>,
         val preferSkillHints: Boolean,
+        val statAptitudeWeights: StatAptitudeWeights = StatAptitudeWeights(),
     )
 
     fun contextFromSettings(): Context {
         val strategy = SettingsHelper.getStringSetting("racing", "legacyParentSelectionStrategy").ifEmpty { "Default" }
         val statPriorities = SettingsHelper.getStringArraySetting("training", "statPrioritization").filter { it.isNotBlank() }
         val preferSkillHints = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)
-        return Context(strategy = strategy, statPriorities = statPriorities, preferSkillHints = preferSkillHints)
+        val statAptitudeWeights = readStatAptitudeWeights()
+        return Context(strategy = strategy, statPriorities = statPriorities, preferSkillHints = preferSkillHints, statAptitudeWeights = statAptitudeWeights)
+    }
+
+    /** Parses the user's saved "StatAndAptitude" weight overrides. Falls back to [StatAptitudeWeights] defaults when empty or unparseable. */
+    private fun readStatAptitudeWeights(): StatAptitudeWeights {
+        val json = SettingsHelper.getStringSetting("racing", "legacyParentStatAptitudeWeights")
+        if (json.isEmpty()) return StatAptitudeWeights()
+        return runCatching {
+            val obj = JSONObject(json)
+            val defaults = StatAptitudeWeights()
+            StatAptitudeWeights(
+                skillHintBonus = obj.optDouble("skillHintBonus", defaults.skillHintBonus),
+                blueFactorBonus = obj.optDouble("blueFactorBonus", defaults.blueFactorBonus),
+                statPriorityBase = obj.optDouble("statPriorityBase", defaults.statPriorityBase),
+                statPriorityDecay = obj.optDouble("statPriorityDecay", defaults.statPriorityDecay),
+                aptitudeKeywordBonus = obj.optDouble("aptitudeKeywordBonus", defaults.aptitudeKeywordBonus),
+                statValueWeight = obj.optDouble("statValueWeight", defaults.statValueWeight),
+                aptitudeGradeWeight = obj.optDouble("aptitudeGradeWeight", defaults.aptitudeGradeWeight),
+            )
+        }.getOrElse { StatAptitudeWeights() }
     }
 
     fun isFactorSelectionEnabled(): Boolean = contextFromSettings().strategy != "Default"
@@ -80,8 +124,8 @@ object LegacyParentScorer {
                 if (blueFactorSignal) total += 25.0
             }
             "StatAndAptitude" -> {
-                if (skillSignal && context.preferSkillHints) total += 45.0
-                if (blueFactorSignal) total += 15.0
+                if (skillSignal && context.preferSkillHints) total += context.statAptitudeWeights.skillHintBonus
+                if (blueFactorSignal) total += context.statAptitudeWeights.blueFactorBonus
             }
         }
 
@@ -89,7 +133,7 @@ object LegacyParentScorer {
             if (lower.contains(stat.lowercase())) {
                 total +=
                     when (context.strategy) {
-                        "StatAndAptitude" -> 120.0 - index * 12.0
+                        "StatAndAptitude" -> context.statAptitudeWeights.statPriorityBase - index * context.statAptitudeWeights.statPriorityDecay
                         "Balanced" -> 70.0 - index * 8.0
                         "SkillHints" -> 30.0
                         else -> 0.0
@@ -101,7 +145,7 @@ object LegacyParentScorer {
             if (lower.contains(keyword)) {
                 total +=
                     when (context.strategy) {
-                        "StatAndAptitude" -> 90.0
+                        "StatAndAptitude" -> context.statAptitudeWeights.aptitudeKeywordBonus
                         "Balanced" -> 50.0
                         else -> 20.0
                     }
@@ -134,7 +178,7 @@ object LegacyParentScorer {
             if (priorityIndex < 0) continue
             val weight =
                 when (context.strategy) {
-                    "StatAndAptitude" -> 0.35
+                    "StatAndAptitude" -> context.statAptitudeWeights.statValueWeight
                     "Balanced" -> 0.2
                     else -> 0.08
                 }
@@ -151,7 +195,7 @@ object LegacyParentScorer {
             val value = gradeValues[grade] ?: continue
             bonus +=
                 when (context.strategy) {
-                    "StatAndAptitude" -> value * 8.0
+                    "StatAndAptitude" -> value * context.statAptitudeWeights.aptitudeGradeWeight
                     "Balanced" -> value * 5.0
                     else -> value * 2.0
                 }

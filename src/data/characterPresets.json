@@ -519,6 +519,26 @@
             "Dirt": "B"
         }
     },
+    "Oguri Cap (Christmas)": {
+        "name": "Oguri Cap (Christmas)",
+        "distanceAptitudes": {
+            "Sprint": "E",
+            "Mile": "A",
+            "Medium": "A",
+            "Long": "B"
+        },
+        "surfaceAptitudes": {
+            "Turf": "A",
+            "Dirt": "B"
+        },
+        "growthBonus": {
+            "Speed": 15,
+            "Stamina": 15,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 0
+        }
+    },
     "Rice Shower": {
         "name": "Rice Shower",
         "distanceAptitudes": {
