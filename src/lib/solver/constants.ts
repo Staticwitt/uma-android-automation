@@ -50,6 +50,9 @@ export interface CharacterPresetEntry {
     distanceAptitudes: { Sprint: string; Mile: string; Medium: string; Long: string }
     /** Default surface aptitude grades (S..G) seeded when this preset is applied. */
     surfaceAptitudes: { Turf: string; Dirt: string }
+    /** Default running-style aptitude grades (S..G) seeded when this preset is applied. Optional: absent on
+     *  presets scraped before this field was added, until the next weekly data refresh backfills it. */
+    runningStyleAptitudes?: { "Front Runner": string; "Pace Chaser": string; "Late Surger": string; "End Closer": string }
 }
 
 export interface AptitudeMap {

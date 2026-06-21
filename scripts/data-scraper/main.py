@@ -1930,11 +1930,13 @@ class EpithetScraper(BaseScraper):
 
 
 class CharacterPresetScraper(BaseScraper):
-    """Scrapes per-character distance and surface aptitudes for the Smart Race Solver.
+    """Scrapes per-character distance, surface, and running-style aptitudes for the Smart Race Solver.
 
-    Each character page on GameTora has a "Track aptitude" panel with six grade letters
-    (Sprint, Mile, Medium, Long, Turf, Dirt). The Smart Race Solver feeds these into its
-    aptitude eligibility filter, so they need to stay in sync with what's in the game.
+    Each character page on GameTora has a "Track aptitude" panel with ten grade letters
+    (Sprint, Mile, Medium, Long, Turf, Dirt, Front Runner, Pace Chaser, Late Surger, End Closer).
+    The Smart Race Solver feeds the distance/surface grades into its aptitude eligibility filter; the
+    running-style grades seed the bot's running-style aptitude guess before it can OCR the real values
+    off the race-prep screen.
 
     Output schema (one entry per character) matches `src/data/characterPresets.json`:
 
@@ -1942,16 +1944,30 @@ class CharacterPresetScraper(BaseScraper):
             "<character name>": {
                 "name": "<character name>",
                 "distanceAptitudes": { "Sprint": "F", "Mile": "C", "Medium": "A", "Long": "C" },
-                "surfaceAptitudes": { "Turf": "A", "Dirt": "G" }
+                "surfaceAptitudes": { "Turf": "A", "Dirt": "G" },
+                "runningStyleAptitudes": { "Front Runner": "B", "Pace Chaser": "A", "Late Surger": "B", "End Closer": "C" }
             }
         }
     """
 
     DISTANCE_KEYS = ("Sprint", "Mile", "Medium", "Long")
     SURFACE_KEYS = ("Turf", "Dirt")
+    RUNNING_STYLE_KEYS = ("Front Runner", "Pace Chaser", "Late Surger", "End Closer")
     VALID_GRADES = ("S", "A", "B", "C", "D", "E", "F", "G")
-    # GameTora labels the sprint distance "Short". The rest of the labels match our output keys directly.
-    PAGE_LABEL_TO_KEY = {"Short": "Sprint", "Mile": "Mile", "Medium": "Medium", "Long": "Long", "Turf": "Turf", "Dirt": "Dirt"}
+    # GameTora labels the sprint distance "Short" and the running styles "Front"/"Pace"/"Late"/"End".
+    # The rest of the labels match our output keys directly.
+    PAGE_LABEL_TO_KEY = {
+        "Short": "Sprint",
+        "Mile": "Mile",
+        "Medium": "Medium",
+        "Long": "Long",
+        "Turf": "Turf",
+        "Dirt": "Dirt",
+        "Front": "Front Runner",
+        "Pace": "Pace Chaser",
+        "Late": "Late Surger",
+        "End": "End Closer",
+    }
 
     def __init__(self):
         super().__init__("https://gametora.com/umamusume/characters", "characterPresets.json")
@@ -2033,6 +2049,7 @@ class CharacterPresetScraper(BaseScraper):
                     "name": name,
                     "distanceAptitudes": {k: aptitudes.get(k, "G") for k in self.DISTANCE_KEYS},
                     "surfaceAptitudes": {k: aptitudes.get(k, "G") for k in self.SURFACE_KEYS},
+                    "runningStyleAptitudes": {k: aptitudes.get(k, "G") for k in self.RUNNING_STYLE_KEYS},
                 }
             except NoSuchElementException as e:
                 logging.warning(f"Skipping character at {link}: {e}")
@@ -2042,12 +2059,13 @@ class CharacterPresetScraper(BaseScraper):
         driver.quit()
 
     def _extract_aptitudes(self, driver: webdriver.Chrome) -> Optional[Dict[str, str]]:
-        """Pulls the distance and surface grade letters from the character's aptitude infobox.
+        """Pulls the distance, surface, and running-style grade letters from the character's aptitude infobox.
 
         GameTora renders each aptitude as an infobox row whose first child is the label and whose grade is an `<img>`
         alt letter (e.g. "A", "G") inside a "characters_aptitude_rank_icon" element. Running-style rows (Front, Pace,
-        Late, End) share the same markup, so they are filtered out by `PAGE_LABEL_TO_KEY`. Class fragments are matched
-        by prefix to tolerate the hashed suffixes GameTora appends to its CSS-module class names.
+        Late, End) share the same markup as the distance/surface rows and are mapped to their output keys by
+        `PAGE_LABEL_TO_KEY` just like the rest. Class fragments are matched by prefix to tolerate the hashed suffixes
+        GameTora appends to its CSS-module class names.
 
         Args:
             driver: An active Selenium webdriver positioned on a character page.

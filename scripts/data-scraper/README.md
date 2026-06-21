@@ -45,7 +45,7 @@ The script writes its output into [`src/data/`](../../src/data/) regardless of t
 3.  **Support Cards**: Scrapes support card training events and effects.
 4.  **Races**: Scrapes race information and calculates turn numbers for the in-game calendar.
 5.  **Epithets**: Scrapes nickname rewards and conditions; regenerates `matchers` via `derive_matchers` in the scraper (bullets are preserved from GameTora).
-6.  **Character Presets**: Scrapes per-character distance and surface aptitudes used by the Smart Race Solver as starting aptitude defaults (`characterPresets.json`). Selectors are best-effort and may need updating if gametora reshuffles its CSS modules.
+6.  **Character Presets**: Scrapes per-character distance, surface, and running-style aptitudes used by the Smart Race Solver and the bot's running-style stat bias as starting aptitude defaults (`characterPresets.json`). Selectors are best-effort and may need updating if gametora reshuffles its CSS modules.
 7.  **Manifest (HTTP)**: Refreshes `supportCardStats.json`, `supportCardTypes.json`, `manifestVersions.json`, and `releasedCharacters.json` from GameTora's JSON manifest API. Runs on every invocation; Selenium is skipped when manifest hashes are unchanged unless `--full` is passed.
 
 > [!NOTE]

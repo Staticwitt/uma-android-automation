@@ -6,6 +6,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.ParentFarmingGoalQueue
 import com.steve1316.uma_android_automation.components.ButtonConditions
 import com.steve1316.uma_android_automation.components.ComponentInterface
 import com.steve1316.uma_android_automation.components.IconMoodAwful
@@ -36,6 +37,7 @@ import com.steve1316.uma_android_automation.types.TrackSurface
 import com.steve1316.uma_android_automation.utils.CustomImageUtils
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
+import org.json.JSONObject
 import org.opencv.core.Point
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -245,6 +247,35 @@ class Trainee {
 
     init {
         setStatTargetsByDistances()
+        seedRunningStyleAptitudesFromPreset()
+    }
+
+    /**
+     * Seeds [runningStyleAptitudes] from the user's selected Smart Race Solver character preset, if any.
+     *
+     * Without this, [runningStyleAptitudes] starts all-G (a tie, which [getMaxAptitude] breaks toward
+     * [RunningStyle.FRONT_RUNNER]) until the race-prep screen is OCR'd, which silently biases
+     * [com.steve1316.uma_android_automation.bot.RunningStyleStatBias] and skill evaluation toward Front
+     * Runner for the early turns of every run. Seeding from the preset gives a real guess from turn 1;
+     * [updateRunningStyleAptitudes] still overwrites these with OCR'd ground truth once available.
+     */
+    private fun seedRunningStyleAptitudesFromPreset() {
+        val presetName =
+            ParentFarmingGoalQueue.overrideString(
+                "smartRaceSolverCharacterPreset",
+                SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset"),
+            )
+        if (presetName.isEmpty()) return
+        val presetsJson = SettingsHelper.getStringSetting("racing", "characterPresetsData")
+        if (presetsJson.isEmpty()) return
+
+        runCatching {
+            val styles = JSONObject(presetsJson).optJSONObject(presetName)?.optJSONObject("runningStyleAptitudes") ?: return@runCatching
+            runningStyleAptitudes[RunningStyle.FRONT_RUNNER] = Aptitude.fromName(styles.optString("Front Runner", "G")) ?: Aptitude.G
+            runningStyleAptitudes[RunningStyle.PACE_CHASER] = Aptitude.fromName(styles.optString("Pace Chaser", "G")) ?: Aptitude.G
+            runningStyleAptitudes[RunningStyle.LATE_SURGER] = Aptitude.fromName(styles.optString("Late Surger", "G")) ?: Aptitude.G
+            runningStyleAptitudes[RunningStyle.END_CLOSER] = Aptitude.fromName(styles.optString("End Closer", "G")) ?: Aptitude.G
+        }
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
