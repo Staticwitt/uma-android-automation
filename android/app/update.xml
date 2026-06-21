@@ -1,16 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.54</latestVersion>
-    <latestVersionCode>144</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.54</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.54/v5.9.54-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.54/v5.9.54-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.55</latestVersion>
+    <latestVersionCode>145</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.55</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.55/v5.9.55-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.55/v5.9.55-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.54 - Shop list bounding box fix
+v5.9.55 - Samsung device fixes, Shop scrolling, Discord career-complete embed
+
+New
+---
+- Career-complete Discord notifications for regular (non-parent-farming) runs now show a full embed (runtime, race record, fan count, final stats/aptitudes) instead of just a bare success message.
 
 Fixes
 -----
-- Fixed the Shop's item list occasionally failing to scan or buy any items despite Shop Coins being available. The list's corner-icon templates could false-match an unrelated area of the screen (e.g. the footer), producing a bogus bounding box that caused scrollbar and item detection to silently find nothing. This bad detection is now rejected so the bot falls back to its existing, more robust detection method instead.
+- Fixed the Trackblazer Shop list still only scanning its first screen of items after the v5.9.54 fix. Scrolling depended on detecting an in-game scrollbar that the Shop doesn't reliably expose; it now uses forced swipe-based scrolling so the full item list gets scanned.
+- Fixed the root cause behind the v5.9.54 Shop bounding-box symptoms recurring on some Samsung devices: screenshots that come back a few pixels wider than the cached display width (due to ImageReader row-stride padding) were being mistaken for cropped sub-images, which silently disabled the corner-icon search region and let it cross-match into the wrong half of the screen.
+- Fixed the bot stalling indefinitely on the race prep screen with no recovery action when the ViewResults button couldn't be detected and the running style was already locked in from an earlier race.
+- Fixed findTrainingFailureChance discarding a successful OCR read if a later retry attempt failed, instead of keeping the first successful result.
 
     </releaseNotes>
   </update>
