@@ -51,6 +51,8 @@ interface EpithetChipProps {
     onToggle: (name: string) => void
     /** Style sheet from the parent (stable across renders). */
     styles: any
+    /** Projected end-of-career progress toward this epithet's matchers, or null/undefined when not tracked or no preview is computed yet. */
+    progress?: { current: number; required: number } | null
 }
 
 /**
@@ -59,7 +61,7 @@ interface EpithetChipProps {
  * @param props The {@link EpithetChipProps} for this chip.
  * @returns The rendered epithet chip.
  */
-export const EpithetChip = memo(({ epithet, selected, onToggle, styles }: EpithetChipProps) => {
+export const EpithetChip = memo(({ epithet, selected, onToggle, styles, progress }: EpithetChipProps) => {
     const { colors } = useTheme()
     const bullets = epithet.bullet_points ?? []
     // Last bullet is the reward; earlier bullets are conditions.
@@ -70,7 +72,10 @@ export const EpithetChip = memo(({ epithet, selected, onToggle, styles }: Epithe
     return (
         <Pressable style={[styles.chip, selected && styles.chipActive]} onPress={() => onToggle(epithet.name)} android_ripple={{ color: colors.ripple, foreground: true }}>
             {hasMatchers ? null : <View style={styles.chipNoMatcherDot} />}
-            <Text style={selected ? styles.chipTextActive : styles.chipText}>{epithet.name}</Text>
+            <Text style={selected ? styles.chipTextActive : styles.chipText}>
+                {epithet.name}
+                {progress ? ` (${progress.current}/${progress.required})` : ""}
+            </Text>
             {conditionBullets.map((b, idx) => (
                 <Text key={idx} style={selected ? styles.chipConditionActive : styles.chipCondition} numberOfLines={2}>
                     {b}

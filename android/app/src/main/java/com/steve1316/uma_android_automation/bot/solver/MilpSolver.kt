@@ -13,11 +13,13 @@ import org.ojalgo.optimisation.Variable
  *  - `r[turn][raceKey]` - which specific race is picked. sum(r[turn][*]) = x[turn].
  *  - `y[epithet]` - whether the epithet is completed by the end of the schedule.
  *  - `z[turn]` - third-or-later consecutive race indicator (turns currentTurn+2..LAST_TURN).
+ *  - `w[turn]` - fourth-or-later consecutive race indicator (turns currentTurn+3..LAST_TURN).
  *
  * Objective (maximize):
- *   sum(r[turn][race] * raceValue(race))
+ *   sum(r[turn][race] * raceValue(race))   (raceValue includes the Champions Meeting build-target bonus, see [ChampionsMeeting])
  *   + sum(y[epithet] * epithetContribution(epithet))
  *   - sum(z[turn] * consecutiveRacePenalty)   (zero on Late-Dec turns 23, 47, 71)
+ *   - sum(w[turn] * fourConsecutiveRacePenalty)   (stacks on top of the z-penalty, zero on Late-Dec turns)
  *   - sum(x[summer turn] * summerPenalty)
  *
  * Each [EpithetMatcher] becomes one or two linear inequalities tying y[e] to the relevant
@@ -103,6 +105,12 @@ object MilpSolver {
                 .filter { t -> (t - 2) in turns }
                 .associateWith { t -> model.newVariable("z_$t").binary() }
 
+        // w[turn] - fourth-or-later consecutive race indicator.
+        private val wVars: Map<TurnNumber, Variable> =
+            turns
+                .filter { t -> (t - 3) in turns }
+                .associateWith { t -> model.newVariable("w_$t").binary() }
+
         /**
          * Wires every constraint and the objective onto [model] then solves it.
          *
@@ -114,6 +122,7 @@ object MilpSolver {
             wireManualLocks()
             wireMinimumRaceGap()
             wireConsecutiveRaceIndicators()
+            wireFourConsecutiveRaceIndicators()
             wireEpithetMatchers()
             wireDependsOn()
             wireForcedEpithets()
@@ -211,6 +220,24 @@ object MilpSolver {
         }
 
         /**
+         * w[t] >= x[t] + x[t-1] + x[t-2] + x[t-3] - 3. Pushed to 1 only when all four are 1, since the
+         * objective prefers w=0 (negative weight). Stacks on top of [zVars]'s 3-in-a-row penalty so a
+         * 4th (or later) consecutive race incurs both penalties.
+         */
+        private fun wireFourConsecutiveRaceIndicators() {
+            for ((t, w) in wVars) {
+                val expr = model.newExpression("consec4_$t")
+                expr.set(w, 1.0)
+                expr.set(xVars[t]!!, -1.0)
+                expr.set(xVars[t - 1]!!, -1.0)
+                expr.set(xVars[t - 2]!!, -1.0)
+                expr.set(xVars[t - 3]!!, -1.0)
+                // expr = w - x - x - x - x >= -3
+                expr.lower(-3.0)
+            }
+        }
+
+        /**
          * For every epithet, emits one linear inequality per matcher:
          * `required * y[epithet] <= sum(progress_terms) + history_constant`. With y binary, this
          * forces `y = 1` only when every matcher's running tally (history + future picks) clears its required threshold.
@@ -281,8 +308,9 @@ object MilpSolver {
          * Builds the objective by setting per-variable weights. Each race r-variable gets its
          * [ScoringFunctions.raceValue] minus the summer penalty when applicable. Each epithet
          * y-variable gets its [ScoringFunctions.epithetContribution]. Each consecutive-race
-         * z-variable gets a negative weight equal to the configured penalty (zero on Late-Dec
-         * turns, mirroring the reference solver's exemption).
+         * z-variable gets a negative weight equal to the configured penalty, and each w-variable
+         * (4th+ consecutive race) gets an additional negative weight (zero on Late-Dec turns,
+         * mirroring the reference solver's exemption).
          */
         private fun wireObjective() {
             for ((t, races) in raceVars) {
@@ -310,6 +338,10 @@ object MilpSolver {
             for ((t, v) in zVars) {
                 if (t in LATE_DEC_FREE_TURNS) continue
                 v.weight(-state.weights.consecutiveRacePenalty)
+            }
+            for ((t, v) in wVars) {
+                if (t in LATE_DEC_FREE_TURNS) continue
+                v.weight(-state.weights.fourConsecutiveRacePenalty)
             }
         }
 

@@ -127,16 +127,22 @@ const isOpenOrAboveRace = (grade: string): boolean => isGradedRace(grade) || gra
 
 /**
  * TS mirror of `ScoringFunctions.isEligible`. A race is eligible iff its distance and surface
- * aptitudes both meet `weights.aptitudeThreshold`, and OP/Pre-OP races are only allowed when
- * `weights.includeOpAndPreOp` is true.
+ * aptitudes both meet `weights.aptitudeThreshold`, OP/Pre-OP races are only allowed when
+ * `weights.includeOpAndPreOp` is true, and its distance does not exceed `weights.maxRaceDistance`
+ * (0 disables the cap).
  *
  * @param race The race to test.
  * @param aptitudes Trainee's distance + surface aptitudes.
- * @param weights Solver weights (only `aptitudeThreshold` and `includeOpAndPreOp` are read).
+ * @param weights Solver weights (only `aptitudeThreshold`, `includeOpAndPreOp`, and `maxRaceDistance` are read).
  * @returns True when the race passes the eligibility filter.
  */
-export const isRaceEligible = (race: RaceEntry, aptitudes: AptitudeMap, weights: Pick<WeightsMap, "aptitudeThreshold" | "includeOpAndPreOp">): boolean => {
+export const isRaceEligible = (
+    race: RaceEntry,
+    aptitudes: AptitudeMap,
+    weights: Pick<WeightsMap, "aptitudeThreshold" | "includeOpAndPreOp" | "maxRaceDistance">
+): boolean => {
     if (OP_GRADES.has(race.grade) && !weights.includeOpAndPreOp) return false
+    if (weights.maxRaceDistance > 0 && race.distanceMeters > weights.maxRaceDistance) return false
     const threshold = APT_ORDER[weights.aptitudeThreshold] ?? 4
     const distKey = race.distanceType === "Sprint" ? "Sprint" : race.distanceType === "Mile" ? "Mile" : race.distanceType === "Medium" ? "Medium" : race.distanceType === "Long" ? "Long" : null
     const surfKey = race.terrain === "Turf" ? "Turf" : race.terrain === "Dirt" ? "Dirt" : null

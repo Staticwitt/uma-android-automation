@@ -56,6 +56,14 @@ export interface SolverConfigSnapshot {
         minWinRateGuard?: number
         lowEnergyRacePenalty?: number
         energyRestValue?: number
+        /** Hard cap (meters) on eligible race distance. 0 disables the cap. */
+        maxRaceDistance?: number
+        /** Extra penalty stacked on top of `consecutiveRacePenalty` once a race turn is the 4th (or later) in an unbroken race chain. */
+        fourConsecutiveRacePenalty?: number
+        /** Selected Champions Meeting calendar id, or "" to disable Champions-Meeting-aware scoring. */
+        championsMeetingPreset?: string
+        /** Coefficient scaling the Champions Meeting build-target match score into an objective bonus. */
+        hintMatchWeight?: number
     }
     /** When true, merge live bot run wins/losses from [SmartRaceSolverIntegration]. */
     useLiveRunState?: boolean
