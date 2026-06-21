@@ -1,19 +1,19 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.57</latestVersion>
-    <latestVersionCode>147</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.57</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.57/v5.9.57-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.57/v5.9.57-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.58</latestVersion>
+    <latestVersionCode>148</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.58</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.58/v5.9.58-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.58/v5.9.58-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.57 - Running-style aptitudes, outfit growth-rate bonuses, tunable legacy-parent weights
+v5.9.58 - Champions Meeting weighting, max race distance cap, 4-in-a-row race penalty, epithet progress
 
 New
 ---
-- The game-data scraper now also captures Front/Pace/Late/End running-style aptitudes from GameTora's character pages, and the bot seeds each Trainee's running-style aptitudes from the selected Smart Race Solver character preset at career start instead of leaving them all-G until OCR'd mid-run, fixing a silent early-run bias toward Front Runner in skill evaluation and training stat bias.
-- Outfit/costume variants (e.g. "Special Week (Wedding)") now get their own character preset entry carrying a per-stat growth-rate bonus, which the Smart Race Solver factors into race scoring via a distance-type stat split heuristic.
-- Added an Oguri Cap (Christmas) outfit preset (+15% Speed/Stamina growth) and a matching high-rank training profile (Settings → Import settings → oguri-cap-christmas-high-rank.json).
-- StatAndAptitude legacy-parent scoring weights are now tunable instead of hardcoded.
+- Smart Race Solver: added an optional Champions Meeting (CM1-CM17) calendar preset that scores races higher when they match the upcoming CM's distance/surface/handedness/season profile, nudging the schedule toward useful prep races. The calendar is ported from a community Trackblazer scheduler reference and has not been independently re-verified against uma.guide/GameTora.
+- Smart Race Solver: added a Max Race Distance setting that hard-caps how far a race's distance can be, so the solver won't pick distance outliers just to chase an epithet.
+- Smart Race Solver: added a separate Four-in-a-Row Penalty that stacks on top of the existing 3+ consecutive-race penalty once a race turn is the 4th or later in an unbroken chain.
+- Smart Race Solver settings now show "(current/required)" progress counters on each target epithet chip, based on the projected schedule.
 
     </releaseNotes>
   </update>
