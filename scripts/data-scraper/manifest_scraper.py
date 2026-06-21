@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -15,6 +16,7 @@ import requests
 DATA_DIR = Path(__file__).resolve().parents[2] / "src" / "data"
 GAMETORA_MANIFESTS_URL = "https://gametora.com/data/manifests/umamusume.json"
 GAMETORA_MANIFEST_DATA_BASE_URL = "https://gametora.com/data/umamusume"
+UMAPYOI_SUPPORT_URL = "https://umapyoi.net/api/v1/support/{support_id}"
 
 MANIFEST_TRACK_KEYS = (
     "characters",
@@ -58,6 +60,18 @@ INIT_STAT_EFFECTS = {
     12: "guts",
     13: "wit",
     30: "skillPoints",
+}
+
+# umapyoi.net's support-card `type` field uses its own vocabulary (confirmed via a live
+# sample: support 30054 returns type="Wisdom"). Unrecognized values are left unmapped
+# rather than guessed, since a wrong guess would silently defeat cross-validation.
+UMAPYOI_TYPE_LABEL = {
+    "speed": "Speed",
+    "stamina": "Stamina",
+    "power": "Power",
+    "guts": "Guts",
+    "wisdom": "Wit",
+    "friend": "Groupe",
 }
 
 
@@ -161,6 +175,74 @@ def build_support_card_types(stats: Dict[str, Dict[str, Any]]) -> Dict[str, Dict
     }
 
 
+def fetch_umapyoi_support_card(support_id: int) -> Optional[Dict[str, Any]]:
+    """Fetches a single support card entry from umapyoi.net by its GameTora support id."""
+    url = UMAPYOI_SUPPORT_URL.format(support_id=support_id)
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as exc:
+        logging.warning("Failed to fetch umapyoi support card %s: %s", support_id, exc)
+        return None
+
+
+def find_umapyoi_mismatch(
+    card_name: str,
+    gametora_entry: Dict[str, Any],
+    umapyoi_entry: Dict[str, Any],
+) -> Optional[str]:
+    """Compares a GameTora-derived stats entry against its umapyoi.net counterpart.
+
+    Returns a human-readable mismatch description, or None when type and rarity agree
+    (an unrecognized umapyoi type is logged separately and treated as inconclusive).
+    """
+    messages: List[str] = []
+
+    umapyoi_type_raw = umapyoi_entry.get("type")
+    umapyoi_type = UMAPYOI_TYPE_LABEL.get((umapyoi_type_raw or "").lower())
+    if umapyoi_type is None:
+        logging.warning(
+            "%s: unrecognized umapyoi type %r, skipping type cross-validation.", card_name, umapyoi_type_raw
+        )
+    elif umapyoi_type != gametora_entry.get("type"):
+        messages.append(f"type GameTora={gametora_entry.get('type')!r} vs umapyoi={umapyoi_type!r}")
+
+    umapyoi_rarity = umapyoi_entry.get("rarity_string")
+    if umapyoi_rarity and umapyoi_rarity != gametora_entry.get("rarity"):
+        messages.append(f"rarity GameTora={gametora_entry.get('rarity')!r} vs umapyoi={umapyoi_rarity!r}")
+
+    if not messages:
+        return None
+    return f"{card_name}: " + "; ".join(messages)
+
+
+def cross_validate_with_umapyoi(stats: Dict[str, Dict[str, Any]]) -> List[str]:
+    """Fetches each card's umapyoi.net entry and logs a warning for any type/rarity disagreement.
+
+    This is the automated check for the class of error that let a fabricated "Gold Ship
+    (Guts)" entry ship undetected: any future scrape that disagrees with umapyoi's
+    independently-sourced data now gets flagged immediately instead of drifting silently.
+
+    Returns the list of mismatch descriptions (also logged as warnings) for callers that
+    want to surface them (e.g. failing CI).
+    """
+    mismatches: List[str] = []
+    for name, entry in stats.items():
+        support_id = entry.get("supportId")
+        if support_id is None:
+            continue
+        umapyoi_entry = fetch_umapyoi_support_card(support_id)
+        time.sleep(0.1)
+        if umapyoi_entry is None:
+            continue
+        mismatch = find_umapyoi_mismatch(name, entry, umapyoi_entry)
+        if mismatch:
+            mismatches.append(mismatch)
+            logging.warning("umapyoi cross-validation mismatch: %s", mismatch)
+    return mismatches
+
+
 def load_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
@@ -188,6 +270,7 @@ def update_manifest_game_data(
     *,
     en_only: bool = True,
     restrict_to_supports_json: bool = True,
+    cross_validate: bool = True,
 ) -> Dict[str, Any]:
     """Regenerates supportCardStats.json, supportCardTypes.json, manifestVersions.json."""
     index = fetch_manifest_index()
@@ -213,18 +296,22 @@ def update_manifest_game_data(
         {"updatedFromManifest": versions.get("characters"), "characters": en_chars},
     )
 
+    umapyoi_mismatches = cross_validate_with_umapyoi(stats) if cross_validate else []
+
     result = {
         "manifestChanged": manifest_changed(previous_versions, versions),
         "previousVersions": previous_versions,
         "versions": versions,
         "supportStatsCount": len(stats),
         "releasedCharacterCount": len(en_chars),
+        "umapyoiMismatches": umapyoi_mismatches,
     }
     logging.info(
-        "Manifest update: %s support stats, %s EN characters, changed=%s",
+        "Manifest update: %s support stats, %s EN characters, changed=%s, umapyoi mismatches=%s",
         len(stats),
         len(en_chars),
         result["manifestChanged"],
+        len(umapyoi_mismatches),
     )
     return result
 

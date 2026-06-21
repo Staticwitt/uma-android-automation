@@ -2,6 +2,7 @@ import {
     buildSupportCardMetadata,
     getSupportCardMetadata,
     getSupportCardScrapedStats,
+    mergeSupportCardStats,
     parseSupportOptionRewards,
 } from "../supportCardMetadata"
 
@@ -45,8 +46,12 @@ describe("supportCardMetadata", () => {
     })
 
     it("applies manual overrides on top of scraped stats", () => {
-        const meta = getSupportCardMetadata("Gold Ship")
-        expect(meta!.stats?.hintFrequency).toBe(60)
-        expect(meta!.type).toBe("Guts")
+        const merged = mergeSupportCardStats(
+            "Test Card",
+            { rarity: "SSR", type: "Speed", hintFrequency: 40 },
+            { type: "Guts", hintFrequency: 60 },
+        )
+        expect(merged?.hintFrequency).toBe(60)
+        expect(merged?.type).toBe("Guts")
     })
 })
