@@ -187,8 +187,12 @@ interface ComponentInterface : BaseComponentInterface {
     override fun findImageWithBitmap(imageUtils: CustomImageUtils, sourceBitmap: Bitmap, region: IntArray?, confidence: Double?): Point? {
         // If we are searching within a cropped bitmap (like an entry bitmap), we should default to searching the entire bitmap
         // if no specific region is provided. This prevents out-of-bounds errors from default regions intended for full-screen use.
+        // Note: some devices' ImageReader returns screenshots with extra row-stride padding columns appended on the right
+        // edge, making the bitmap slightly WIDER than displayWidth even though it's still a genuine full-screen capture.
+        // Only treat the bitmap as a distinct cropped sub-image (and thus drop the region) if it's narrower/shorter than
+        // expected; a wider-than-expected bitmap with the correct height is still safe to search with the normal region.
         val searchRegion =
-            if (region == null && (sourceBitmap.width != SharedData.displayWidth || sourceBitmap.height != SharedData.displayHeight)) {
+            if (region == null && (sourceBitmap.width < SharedData.displayWidth || sourceBitmap.height != SharedData.displayHeight)) {
                 intArrayOf(0, 0, 0, 0)
             } else {
                 region ?: template.region
@@ -390,8 +394,10 @@ interface ComplexComponentInterface : BaseComponentInterface {
     }
 
     override fun findImageWithBitmap(imageUtils: CustomImageUtils, sourceBitmap: Bitmap, region: IntArray?, confidence: Double?): Point? {
+        // See the corresponding note in ComponentInterface.findImageWithBitmap: a bitmap that's wider than expected
+        // (row-stride padding) is still a genuine full-screen capture, so don't drop the region for it.
         val searchRegion =
-            if (region == null && (sourceBitmap.width != SharedData.displayWidth || sourceBitmap.height != SharedData.displayHeight)) {
+            if (region == null && (sourceBitmap.width < SharedData.displayWidth || sourceBitmap.height != SharedData.displayHeight)) {
                 intArrayOf(0, 0, 0, 0)
             } else {
                 region
