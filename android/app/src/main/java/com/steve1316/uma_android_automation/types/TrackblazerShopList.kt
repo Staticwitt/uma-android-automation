@@ -716,6 +716,11 @@ class TrackblazerShopList(private val game: Game) {
         val bottomRight = IconDialogScrollListBottomRight
         val bForceComponentDetection = !isTrainingItems
 
+        // The Shop list's on-screen scrollbar isn't reliably detected, which left bIsScrollable false and
+        // scrolling a no-op once the dialog corners started resolving a valid region. The Shop always has
+        // far more items than fit on one screen, so force swipe-style scrolling for it specifically.
+        val bForceSwipeMode = !isTrainingItems
+
         return ScrollList.processWithFallback(
             game,
             keyExtractor = keyExtractor,
@@ -723,6 +728,7 @@ class TrackblazerShopList(private val game: Game) {
             bForceComponentDetection = bForceComponentDetection,
             listTopLeftComponent = topLeft,
             listBottomRightComponent = bottomRight,
+            bForceSwipeMode = bForceSwipeMode,
         ) { _, entry: ScrollListEntry ->
             callback(entry)
         }
