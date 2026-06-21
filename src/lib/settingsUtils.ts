@@ -282,6 +282,10 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.legacyParentSelectionStrategy = "Default"
             anyMigrated = true
         }
+        if (typeof racing.legacyParentStatAptitudeWeights !== "string") {
+            racing.legacyParentStatAptitudeWeights = "{}"
+            anyMigrated = true
+        }
         if (typeof racing.smartRaceSolverEpithetTiers !== "string") {
             racing.smartRaceSolverEpithetTiers = ""
             anyMigrated = true

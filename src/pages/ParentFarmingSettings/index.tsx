@@ -54,6 +54,7 @@ import {
     hasParentFarmingQualityTargetDrift,
 } from "../../lib/parentFarmingDrift"
 import { recommendLegacyParents, formatLegacyParentRecommendation } from "../../lib/legacyParentRecommendations"
+import { DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS, type LegacyParentStatAptitudeWeights } from "../../lib/legacyParentWeights"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -167,6 +168,7 @@ const ParentFarmingSettings = () => {
         enableAutoSelectLegacyParents,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
+        legacyParentStatAptitudeWeights,
         supportBorrowPreferredCards,
         ownedSupportCards,
         supportDeckOwnedCards,
@@ -227,6 +229,14 @@ const ParentFarmingSettings = () => {
         () => recommendLegacyParents(parentFarmingGoalPresetKey, legacyParentSelectionStrategy, parentFarmingTraineeName),
         [parentFarmingGoalPresetKey, legacyParentSelectionStrategy, parentFarmingTraineeName],
     )
+
+    const statAptitudeWeights = useMemo(() => {
+        try {
+            return { ...DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS, ...JSON.parse(legacyParentStatAptitudeWeights || "{}") }
+        } catch {
+            return DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS
+        }
+    }, [legacyParentStatAptitudeWeights])
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
     const parentFarmingFeasibilityWarnings = useMemo(
@@ -442,6 +452,13 @@ const ParentFarmingSettings = () => {
             updateRacingSetting("legacyParentPreferredPair", JSON.stringify([next[0].trim(), next[1].trim()]))
         },
         [legacyParentNames, updateRacingSetting],
+    )
+
+    const updateStatAptitudeWeight = useCallback(
+        (key: keyof LegacyParentStatAptitudeWeights, value: number) => {
+            updateRacingSetting("legacyParentStatAptitudeWeights", JSON.stringify({ ...statAptitudeWeights, [key]: value }))
+        },
+        [statAptitudeWeights, updateRacingSetting],
     )
 
     const saveOwnedInventory = useCallback(
@@ -1093,6 +1110,113 @@ const ParentFarmingSettings = () => {
                                                 />
                                             }
                                         />
+                                        {legacyParentSelectionStrategy === "StatAndAptitude" && (
+                                            <View style={{ gap: SPACING.sm }}>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Tune how OCR signals are weighted when scoring parent cards for "StatAndAptitude":
+                                                </Text>
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hint-bonus"
+                                                    searchTitle="Skill hint bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a skill-hint signal and 'prioritize skill hints' is enabled."
+                                                    label="Skill hint bonus"
+                                                    min={0}
+                                                    max={150}
+                                                    step={5}
+                                                    value={statAptitudeWeights.skillHintBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.skillHintBonus}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("skillHintBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                    description="Only applies when 'Prioritize Skill Hints' is enabled in Training settings."
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-blue-factor-bonus"
+                                                    searchTitle="Blue factor bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a blue (stat) factor signal."
+                                                    label="Blue factor bonus"
+                                                    min={0}
+                                                    max={100}
+                                                    step={5}
+                                                    value={statAptitudeWeights.blueFactorBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.blueFactorBonus}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("blueFactorBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-stat-priority-base"
+                                                    searchTitle="Stat priority base weight"
+                                                    searchDescription="Bonus for a stat-priority keyword match at priority index 0."
+                                                    label="Stat priority base"
+                                                    min={0}
+                                                    max={300}
+                                                    step={10}
+                                                    value={statAptitudeWeights.statPriorityBase}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.statPriorityBase}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("statPriorityBase", value)}
+                                                    showValue
+                                                    showLabels
+                                                    description="Lower-priority stat matches score less, decaying by the next setting per priority step."
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-stat-priority-decay"
+                                                    searchTitle="Stat priority decay weight"
+                                                    searchDescription="Subtracted from the stat priority base weight per priority index step."
+                                                    label="Stat priority decay"
+                                                    min={0}
+                                                    max={50}
+                                                    step={1}
+                                                    value={statAptitudeWeights.statPriorityDecay}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.statPriorityDecay}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("statPriorityDecay", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-aptitude-keyword-bonus"
+                                                    searchTitle="Aptitude keyword bonus weight"
+                                                    searchDescription="Bonus per distance/surface aptitude keyword found in OCR text."
+                                                    label="Aptitude keyword bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={statAptitudeWeights.aptitudeKeywordBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.aptitudeKeywordBonus}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("aptitudeKeywordBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-stat-value-weight"
+                                                    searchTitle="Stat value multiplier weight"
+                                                    searchDescription="Multiplier applied to parsed numeric stat values (e.g. 'Speed +120'), weighted by priority."
+                                                    label="Stat value multiplier"
+                                                    min={0}
+                                                    max={2}
+                                                    step={0.05}
+                                                    value={statAptitudeWeights.statValueWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.statValueWeight}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("statValueWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-aptitude-grade-weight"
+                                                    searchTitle="Aptitude grade multiplier weight"
+                                                    searchDescription="Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text."
+                                                    label="Aptitude grade multiplier"
+                                                    min={0}
+                                                    max={30}
+                                                    step={1}
+                                                    value={statAptitudeWeights.aptitudeGradeWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.aptitudeGradeWeight}
+                                                    onValueChange={(value) => updateStatAptitudeWeight("aptitudeGradeWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                            </View>
+                                        )}
                                         <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
                                             Optional preferred parent pair (leave blank for factor scoring or Auto-Select):
                                         </Text>
