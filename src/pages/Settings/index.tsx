@@ -1,7 +1,7 @@
 import { useMemo, useContext, useEffect, useState, useRef, useCallback } from "react"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import { BotMetaContext, GeneralMiscContext } from "../../context/BotStateContext"
-import { InteractionManager, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { InteractionManager, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { Ionicons } from "@react-native-vector-icons/ionicons"
 import ThemeToggle from "../../components/ThemeToggle"
 import { useTheme } from "../../context/ThemeContext"
@@ -23,6 +23,9 @@ import { useToast } from "../../context/ToastContext"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
+
+/** GitHub Actions page for the game-data scraper workflow; shows the "Run workflow" button for signed-in maintainers. */
+const GAME_DATA_WORKFLOW_URL = "https://github.com/Staticwitt/uma-android-automation/actions/workflows/update-game-data.yml"
 
 /**
  * The main Settings page of the application.
@@ -378,6 +381,16 @@ const Settings = () => {
                             </View>
                         </View>
                     </SearchableItem>
+                </Section>
+
+                <Section label="GAME DATA">
+                    <SettingRow
+                        id="settings-refresh-game-data"
+                        title="Manually Refresh Game Data"
+                        description="Opens the GitHub Actions page to trigger an immediate refresh of support card stats/types and other scraped data, instead of waiting for the weekly automatic run."
+                        onPress={() => Linking.openURL(GAME_DATA_WORKFLOW_URL)}
+                        right={<Ionicons name="open-outline" size={18} color={colors.textMuted} />}
+                    />
                 </Section>
 
                 <Callout variant="warning" style={{ marginTop: 0, marginBottom: SPACING.md }}>
