@@ -1111,6 +1111,10 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         var bDidSelectRaceStrategy = false
         var retriesThisRace = 0
 
+        // Tracks consecutive iterations stuck on the race prep screen with no ViewResults button found, so we can nudge the
+        // screen with a tap instead of polling indefinitely (e.g. on slower connections where the server response lags).
+        var consecutiveViewResultsNotFoundCount = 0
+
         // Safety counter to prevent infinite loop.
         var loopCount = 0
         val maxLoopCount = 100
@@ -1145,6 +1149,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
 
                     when (ButtonViewResults.checkDisabled(game.imageUtils, bitmap)) {
                         true -> {
+                            consecutiveViewResultsNotFoundCount = 0
                             if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
                                 MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
                                 // Clicking this button triggers connection to server.
@@ -1155,6 +1160,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         }
 
                         false -> {
+                            consecutiveViewResultsNotFoundCount = 0
                             if (ButtonViewResults.click(game.imageUtils, sourceBitmap = bitmap)) {
                                 MessageLog.i(TAG, "[RACE] Clicked ViewResults button to skip race.")
                                 // Clicking this button triggers connection to server.
@@ -1165,7 +1171,16 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         }
 
                         null -> {
+                            consecutiveViewResultsNotFoundCount++
                             MessageLog.w(TAG, "[WARN] runRaceWithRetries:: At Race prep screen but failed to detect ViewResults button.")
+
+                            // We've been stuck here for a while with nothing to click. Nudge the screen with a tap in case
+                            // the game is waiting on input we're not detecting, rather than just polling indefinitely.
+                            if (consecutiveViewResultsNotFoundCount >= 5) {
+                                MessageLog.w(TAG, "[WARN] runRaceWithRetries:: Stuck on race prep screen for $consecutiveViewResultsNotFoundCount tries. Tapping to nudge it forward...")
+                                game.tap(350.0, 450.0, taps = 3)
+                                consecutiveViewResultsNotFoundCount = 0
+                            }
                         }
                     }
                 }

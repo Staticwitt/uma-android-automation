@@ -102,8 +102,14 @@ data class ScrollListEntryDetectionConfig(
  * @param bboxList The bounding region of the full list.
  * @param bboxEntries The refined [bboxList] with a buffer on the top and bottom to prevent partial entries.
  * @param entryDetectionConfig The configuration for image detection.
+ * @param bForceSwipeMode If true, treat this list as swipe-scrollable regardless of the global setting or scrollbar detection. Useful for lists (e.g. the Trackblazer Shop) whose on-screen scrollbar isn't reliably detectable but are known to always exceed one screen.
  */
-class ScrollList private constructor(private val game: Game, private val bboxList: BoundingBox, entryDetectionConfig: ScrollListEntryDetectionConfig) {
+class ScrollList private constructor(
+    private val game: Game,
+    private val bboxList: BoundingBox,
+    entryDetectionConfig: ScrollListEntryDetectionConfig,
+    bForceSwipeMode: Boolean = false,
+) {
     /** The minimum height for a single entry. */
     private val defaultMinEntryHeight: Int = game.imageUtils.relHeight((SharedData.displayHeight * 0.0781).toInt()) // 150px on 1920h
 
@@ -179,8 +185,8 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
     var bIsScrollable: Boolean = false
         private set
 
-    /** Whether to scroll by blind swipes instead of relying on in-game scrollbar detection. Read from the user setting. */
-    private val swipeMode: Boolean = SettingsHelper.getBooleanSetting("general", "enableSwipeBasedScrolling")
+    /** Whether to scroll by blind swipes instead of relying on in-game scrollbar detection. Read from the user setting, or forced on for lists with undetectable scrollbars. */
+    private val swipeMode: Boolean = SettingsHelper.getBooleanSetting("general", "enableSwipeBasedScrolling") || bForceSwipeMode
 
     companion object {
         private val TAG: String = "[${MainActivity.loggerTag}]ScrollList"
@@ -193,6 +199,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
          * @param listTopLeftComponent An image component used to detect the top left corner of the list.
          * @param listBottomRightComponent An image component used to detect the bottom right corner of the list.
          * @param entryDetectionConfig Optional image detection configuration.
+         * @param bForceSwipeMode If true, treat the created list as swipe-scrollable regardless of the global setting or scrollbar detection.
          * @return On success, the [ScrollList] instance. Otherwise, null.
          */
         fun create(
@@ -201,9 +208,10 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             listTopLeftComponent: ComponentInterface? = null,
             listBottomRightComponent: ComponentInterface? = null,
             entryDetectionConfig: ScrollListEntryDetectionConfig? = null,
+            bForceSwipeMode: Boolean = false,
         ): ScrollList? {
             val bboxList: BoundingBox = getListBoundingRegion(game, bitmap, listTopLeftComponent, listBottomRightComponent) ?: return null
-            return ScrollList(game, bboxList, entryDetectionConfig ?: ScrollListEntryDetectionConfig())
+            return ScrollList(game, bboxList, entryDetectionConfig ?: ScrollListEntryDetectionConfig(), bForceSwipeMode)
         }
 
         /**
@@ -298,6 +306,7 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
          * @param listTopLeftComponent Optional top-left corner component for the scroll list.
          * @param listBottomRightComponent Optional bottom-right corner component for the scroll list.
          * @param entryDetectionConfig Optional config for entry detection.
+         * @param bForceSwipeMode If true, treat the list as swipe-scrollable regardless of the global setting or scrollbar detection. Useful for lists whose on-screen scrollbar isn't reliably detectable but are known to always exceed one screen.
          * @param onEntry Callback executed for each entry. Return true to exit early.
          * @return True if processing completed or exited early via callback.
          */
@@ -311,12 +320,13 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             listTopLeftComponent: ComponentInterface? = null,
             listBottomRightComponent: ComponentInterface? = null,
             entryDetectionConfig: ScrollListEntryDetectionConfig? = null,
+            bForceSwipeMode: Boolean = false,
             onEntry: OnEntryDetectedCallback,
         ): Boolean {
             val sourceBitmap = game.imageUtils.getSourceBitmap()
 
             // Step 1: Attempt to create a standard ScrollList.
-            val list = create(game, sourceBitmap, listTopLeftComponent, listBottomRightComponent, entryDetectionConfig)
+            val list = create(game, sourceBitmap, listTopLeftComponent, listBottomRightComponent, entryDetectionConfig, bForceSwipeMode)
             if (list != null) {
                 MessageLog.d(TAG, "[DEBUG] processWithFallback:: Standard ScrollList detected. Processing...")
                 return list.process(maxTimeMs, bScrollBottomToTop, keyExtractor, fallbackComponent, bForceComponentDetection, onEntry)
@@ -325,10 +335,10 @@ class ScrollList private constructor(private val game: Game, private val bboxLis
             // Step 2: Fallback to component-based detection.
             MessageLog.d(TAG, "[DEBUG] processWithFallback:: ScrollList region not found. Falling back to ${fallbackComponent.template.basename} detection.")
 
-            val swipeMode = SettingsHelper.getBooleanSetting("general", "enableSwipeBasedScrolling")
+            val swipeMode = SettingsHelper.getBooleanSetting("general", "enableSwipeBasedScrolling") || bForceSwipeMode
             if (swipeMode) {
                 // The list region wasn't found, so swipe a full-screen pseudo-list and dedupe by key across frames.
-                val fullScreen = ScrollList(game, BoundingBox(0, 0, sourceBitmap.width, sourceBitmap.height), entryDetectionConfig ?: ScrollListEntryDetectionConfig())
+                val fullScreen = ScrollList(game, BoundingBox(0, 0, sourceBitmap.width, sourceBitmap.height), entryDetectionConfig ?: ScrollListEntryDetectionConfig(), bForceSwipeMode)
                 val processedKeys = mutableSetOf<String>()
                 val startTime: Long = System.currentTimeMillis()
                 var consecutiveNoNewFrames = 0

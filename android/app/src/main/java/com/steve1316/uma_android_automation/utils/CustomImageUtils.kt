@@ -436,6 +436,9 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
             if (result == -1) {
                 MessageLog.w(TAG, "[WARN] findTrainingFailureChance:: Failed to detect training failure chance (attempt $i of $tries)")
+            } else {
+                // Stop retrying once we have a valid read instead of burning the remaining attempts.
+                break
             }
         }
 

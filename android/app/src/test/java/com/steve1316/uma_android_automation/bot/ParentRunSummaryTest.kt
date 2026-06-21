@@ -238,6 +238,32 @@ class ParentRunSummaryTest {
     }
 
     @Test
+    fun buildSimpleDiscordEmbed_includes_basic_run_stats() {
+        val trainee = Trainee()
+        trainee.name = "Special Week"
+        trainee.fans = 250000
+        trainee.fanCountClass = FanCountClass.GOLD
+        trainee.skillPoints = 420
+        trainee.trackSurfaceAptitudes[TrackSurface.TURF] = Aptitude.A
+        trainee.trackSurfaceAptitudes[TrackSurface.DIRT] = Aptitude.C
+
+        val embed =
+            ParentRunSummary.buildSimpleDiscordEmbed(
+                trainee = trainee,
+                scenario = "Trackblazer",
+                elapsedMs = 1800000L,
+                raceStats = RunRaceStats(wins = 10, losses = 1),
+            )
+
+        assertTrue(embed.title == "Career complete", embed.title)
+        assertTrue(embed.description?.contains("Special Week") == true, embed.description.toString())
+        assertTrue(embed.fields.any { it.name == "Runtime" }, embed.fields.map { it.name }.toString())
+        assertTrue(embed.fields.any { it.name == "Races" && it.value.contains("10 wins") }, embed.fields.map { it.name }.toString())
+        assertTrue(embed.fields.any { it.name == "Fans" && it.value.contains("250000") }, embed.fields.map { it.name }.toString())
+        assertTrue(embed.fields.none { it.name == "Harvest" }, embed.fields.map { it.name }.toString())
+    }
+
+    @Test
     fun chunkForDiscord_splits_long_text() {
         val longText = "line\n".repeat(500)
         val chunks = ParentRunSummary.chunkForDiscord(longText, 200)
