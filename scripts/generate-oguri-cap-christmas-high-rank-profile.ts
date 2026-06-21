@@ -4,16 +4,16 @@ import { applyGeneralSolverPreset } from "../src/lib/generalSolverPreset"
 import { OPTIMIZE_MODE_PRESETS } from "../src/lib/solver/constants"
 import { prepareSettingsForBotStart } from "../src/lib/prepareSettingsForBotStart"
 
-// "Oguri Cap (Christmas)" isn't in characterPresets.json yet (no scraped outfit-specific growth-rate data),
-// so this seeds the base Oguri Cap race aptitudes - outfits don't change distance/surface aptitude, only the
-// optional per-stat growth bonus, which the solver will pick up automatically once that outfit entry exists.
+// Outfits don't change race aptitude, only the per-stat growth bonus (+15% Speed / +15% Stamina for this
+// costume per GameTora), so this reuses the base Oguri Cap distance/surface aptitudes under the outfit-qualified
+// "Oguri Cap (Christmas)" preset key, which the Smart Race Solver reads growthBonus from at solve time.
 const OGURI_CAP_APTITUDES = { Sprint: "E", Mile: "A", Medium: "A", Long: "B", Turf: "A", Dirt: "B" }
 
 let settings = { ...defaultSettings }
 settings = applyGeneralSolverPreset(settings)
 
 Object.assign(settings.racing, {
-    smartRaceSolverCharacterPreset: "Oguri Cap",
+    smartRaceSolverCharacterPreset: "Oguri Cap (Christmas)",
     smartRaceSolverAptitudes: JSON.stringify(OGURI_CAP_APTITUDES),
     // "Ideal Idol" is Oguri Cap-exclusive and lines up with her Mile/Medium turf strengths (Mile Championship,
     // Yasuda Kinen, Arima Kinen). The rest are generic G1-win-count epithets that reward stats/SP/fans at any rank.
@@ -31,11 +31,11 @@ Object.assign(settings.racing, {
 })
 
 Object.assign(settings.training, {
-    // Speed/Power lead since Mile and Medium (her two A-aptitude distances) are Speed+Power races; Wit ahead of
-    // Guts for skill points + training efficiency, which both count toward the final career score.
-    statPrioritization: ["Speed", "Power", "Stamina", "Wit", "Guts"],
-    eventChoiceStatPriority: ["Speed", "Power", "Stamina", "Wit", "Guts"],
-    summerTrainingStatPriority: ["Speed", "Power", "Stamina", "Wit", "Guts"],
+    // Speed and Stamina lead since this outfit's +15%/+15% growth bonus makes them the most efficient stats to
+    // train (more stat gain per training action); Power stays ahead of Wit/Guts for her Speed+Power Mile/Medium races.
+    statPrioritization: ["Speed", "Stamina", "Power", "Wit", "Guts"],
+    eventChoiceStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
+    summerTrainingStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
     preferredDistanceOverride: "Auto",
     maximumFailureChance: 15,
     disableStatTargets: true,

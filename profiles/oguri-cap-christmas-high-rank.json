@@ -47,7 +47,7 @@
             "Long": "Default"
         },
         "enableSmartRaceSolver": true,
-        "smartRaceSolverCharacterPreset": "Oguri Cap",
+        "smartRaceSolverCharacterPreset": "Oguri Cap (Christmas)",
         "smartRaceSolverAptitudes": "{\"Sprint\":\"E\",\"Mile\":\"A\",\"Medium\":\"A\",\"Long\":\"B\",\"Turf\":\"A\",\"Dirt\":\"B\"}",
         "smartRaceSolverTargetEpithets": "[\"Ideal Idol\",\"G1 Hunter\",\"Epoch Pioneer\",\"First Step to Glory\",\"The GOAT\"]",
         "smartRaceSolverForcedEpithets": "[]",
@@ -106,22 +106,22 @@
         "trainingBlacklist": [],
         "statPrioritization": [
             "Speed",
-            "Power",
             "Stamina",
+            "Power",
             "Wit",
             "Guts"
         ],
         "eventChoiceStatPriority": [
             "Speed",
-            "Power",
             "Stamina",
+            "Power",
             "Wit",
             "Guts"
         ],
         "summerTrainingStatPriority": [
             "Speed",
-            "Power",
             "Stamina",
+            "Power",
             "Wit",
             "Guts"
         ],
