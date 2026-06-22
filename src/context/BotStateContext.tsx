@@ -40,6 +40,10 @@ export interface Settings {
         stopAtDates: string[]
         waitDelay: number
         dialogWaitDelay: number
+        /** Log a Wait Delay calibration summary (measured loading-wait stats + a tuning suggestion) at the end of each run. */
+        enableDelayCalibrationTelemetry: boolean
+        /** JSON map of action key -> override delay in seconds, applied in place of the relevant hardcoded default (e.g. `"tapFollowUpDelay"`). */
+        delayOverrides: string
     }
 
     // Racing settings
@@ -76,6 +80,10 @@ export interface Settings {
         // through React state inflated re-renders by ~160 KB and made every toggle re-write the
         // blobs to SQLite via the auto-save effect.
         enableSmartRaceSolver: boolean
+        /** Auto-select a character preset by fuzzy-matching the OCR'd trainee name, when no preset is manually set. */
+        enableAutoDetectCharacterPreset: boolean
+        /** Minimum Jaro-Winkler match confidence (0-100) required for [enableAutoDetectCharacterPreset] to apply a match. */
+        autoDetectCharacterPresetConfidence: number
         smartRaceSolverCharacterPreset: string
         smartRaceSolverAptitudes: string
         smartRaceSolverTargetEpithets: string
@@ -327,6 +335,12 @@ export interface Settings {
         trackblazerRetryRacesBeforeFinalGrades: string[]
         trackblazerEnableIrregularTraining: boolean
         trackblazerIrregularTrainingMinStatGain: number
+        trackblazerIrregularTrainingRaceLookahead: number
+        trackblazerEnableMegaphoneForceRaceForecast: boolean
+        trackblazerMegaphoneForceRaceForecastThreshold: number
+        trackblazerEnableMegaphoneTierOverwrite: boolean
+        trackblazerMegaphoneTierOverwriteMinGain: number
+        trackblazerMegaphoneSurplusBurnReserve: number
         trackblazerExcludedItems: string[]
         trackblazerShopCheckFrequency: number
         trackblazerPreferredDistances: string[]
@@ -352,6 +366,8 @@ export const defaultSettings: Settings = {
         stopAtDates: ["Senior January Early"],
         waitDelay: 0.5,
         dialogWaitDelay: 0.5,
+        enableDelayCalibrationTelemetry: false,
+        delayOverrides: "{}",
     },
     racing: {
         enableParentFarmingMode: false,
@@ -379,6 +395,8 @@ export const defaultSettings: Settings = {
         juniorYearPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
         originalPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
         enableSmartRaceSolver: false,
+        enableAutoDetectCharacterPreset: false,
+        autoDetectCharacterPresetConfidence: 85,
         smartRaceSolverCharacterPreset: "Special Week",
         smartRaceSolverAptitudes: JSON.stringify({
             Sprint: "F",
@@ -647,6 +665,12 @@ export const defaultSettings: Settings = {
         trackblazerRetryRacesBeforeFinalGrades: ["G1", "G2", "G3"],
         trackblazerEnableIrregularTraining: false,
         trackblazerIrregularTrainingMinStatGain: 30,
+        trackblazerIrregularTrainingRaceLookahead: 0,
+        trackblazerEnableMegaphoneForceRaceForecast: false,
+        trackblazerMegaphoneForceRaceForecastThreshold: 0,
+        trackblazerEnableMegaphoneTierOverwrite: false,
+        trackblazerMegaphoneTierOverwriteMinGain: 30,
+        trackblazerMegaphoneSurplusBurnReserve: 0,
         trackblazerExcludedItems: [],
         trackblazerShopCheckFrequency: 3,
         trackblazerPreferredDistances: [] as string[],

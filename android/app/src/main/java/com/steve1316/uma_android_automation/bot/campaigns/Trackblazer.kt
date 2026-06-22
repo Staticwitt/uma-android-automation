@@ -252,6 +252,13 @@ class Trackblazer(game: Game) : Campaign(game) {
     /** The minimum stat gain threshold for irregular training evaluation. */
     private val minIrregularGain: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerIrregularTrainingMinStatGain", 30)
 
+    /**
+     * When the Smart Race Solver has a race planned within this many turns (including the current turn), the Irregular
+     * Training pre-screen is skipped entirely so energy/charm resources are kept available for that race. 0 = disabled
+     * (Irregular Training always runs its own pre-screen, ignoring the solver's plan).
+     */
+    private val irregularTrainingRaceLookahead: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerIrregularTrainingRaceLookahead", 0)
+
     /** Ordered list of energy items from lowest to highest gain, used for conservation priority. */
     private val energyItemConservationOrder = listOf("Energy Drink MAX", "Vita 20", "Vita 40", "Vita 65")
 
@@ -263,6 +270,34 @@ class Trackblazer(game: Game) : Campaign(game) {
      * Prevents wasting items on structurally low-return turns where the mood multiplier caps the gain.
      */
     private val lowMainStatGainItemFloor: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerSkipBadMoodItemsBelowGain", 15)
+
+    /** Whether the Megaphone Race-Forecast Force override is enabled (see [megaphoneForceRaceForecastThreshold]). */
+    private val enableMegaphoneForceRaceForecast: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "trackblazerEnableMegaphoneForceRaceForecast", false)
+
+    /**
+     * Maximum solver-forecasted race count within a megaphone's buff-duration window (2/3/4 turns for Empowering/Motivating/Coaching)
+     * that still forces the megaphone to be used despite the [shouldConserveTrainingEffectItems] conservation gate. The idea: if few or no
+     * races are forecasted to interrupt the buff window, this is a "clean" multi-turn training stretch where the megaphone's full duration
+     * will be realized, so it's worth spending even on a currently low-gain/bad-mood turn. Only consulted when [enableMegaphoneForceRaceForecast] is on.
+     */
+    private val megaphoneForceRaceForecastThreshold: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerMegaphoneForceRaceForecastThreshold", 0)
+
+    /** Whether the Megaphone Tier Overwrite override is enabled (see [megaphoneTierOverwriteMinGain]). */
+    private val enableMegaphoneTierOverwrite: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "trackblazerEnableMegaphoneTierOverwrite", false)
+
+    /**
+     * Minimum selected-training main stat gain required to replace an already-active, weaker-tier megaphone with a strictly better
+     * available tier (e.g. swap an active Coaching Megaphone for an in-inventory Empowering Megaphone). The remaining duration of the
+     * weaker megaphone is discarded in favor of the better tier's full duration. Only consulted when [enableMegaphoneTierOverwrite] is on.
+     */
+    private val megaphoneTierOverwriteMinGain: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerMegaphoneTierOverwriteMinGain", 30)
+
+    /**
+     * Megaphone inventory count (summed across all 3 tiers) above which the [shouldConserveTrainingEffectItems] conservation gate is
+     * bypassed for megaphones specifically, so a surplus stockpile gets burned down instead of sitting unused for the rest of the career.
+     * 0 = disabled (megaphones are always subject to the normal conservation gate).
+     */
+    private val megaphoneSurplusBurnReserve: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerMegaphoneSurplusBurnReserve", 0)
 
     /** The frequency to check the shop after a race. */
     private val shopCheckFrequency: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerShopCheckFrequency", 3)
@@ -1047,6 +1082,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                 // Mandatory races bypass executeAction(), so decrement the megaphone counter here to match the per-turn decrement applied to other actions.
                 if (result && trainee.megaphoneTurnCounter > 0) {
                     trainee.megaphoneTurnCounter--
+                    if (trainee.megaphoneTurnCounter == 0) trainee.activeMegaphoneTier = null
                     MessageLog.i(TAG, "[TRACKBLAZER] Megaphone duration reduced. Turns remaining: ${trainee.megaphoneTurnCounter}.")
                 }
                 return result
@@ -1184,7 +1220,17 @@ class Trackblazer(game: Game) : Campaign(game) {
             .add("Consecutive Races Limit", consecutiveRacesLimit)
             .add("Skip Bad-Mood Items Below Gain", lowMainStatGainItemFloor)
             .add("Whistle Forces Training", whistleForcesTraining)
-            .add("Irregular Training", if (enableIrregularTraining) "on (min main $minIrregularGain)" else "off")
+            .add(
+                "Irregular Training",
+                if (enableIrregularTraining) {
+                    "on (min main $minIrregularGain, race lookahead ${if (irregularTrainingRaceLookahead > 0) "$irregularTrainingRaceLookahead turn(s)" else "off"})"
+                } else {
+                    "off"
+                },
+            )
+            .add("Megaphone Race-Forecast Force", if (enableMegaphoneForceRaceForecast) "<= $megaphoneForceRaceForecastThreshold races" else "off")
+            .add("Megaphone Tier Overwrite", if (enableMegaphoneTierOverwrite) "on (min main $megaphoneTierOverwriteMinGain)" else "off")
+            .add("Megaphone Surplus-Burn Reserve", if (megaphoneSurplusBurnReserve > 0) megaphoneSurplusBurnReserve else "off")
             .add("Enable In-Game Race Agenda", racing.enableUserInGameRaceAgenda)
             .add("Max Failure Chance", "${SettingsHelper.getIntSetting("training", "maximumFailureChance")}%")
             .add(
@@ -1410,7 +1456,19 @@ class Trackblazer(game: Game) : Campaign(game) {
             val isScheduledRace = LabelScheduledRace.check(game.imageUtils)
             val isMandatoryRace = IconRaceDayRibbon.check(game.imageUtils) || IconGoalRibbon.check(game.imageUtils)
 
-            if (!isScheduledRace && !isMandatoryRace) {
+            val raceImminent =
+                irregularTrainingRaceLookahead > 0 &&
+                    racing.enableSmartRaceSolver &&
+                    SmartRaceSolverIntegration.peekRaceCountInWindow(date.day, game.scenario, irregularTrainingRaceLookahead) > 0
+
+            if (raceImminent) {
+                MessageLog.i(
+                    TAG,
+                    "[TRACKBLAZER] Skipping Irregular Training evaluation: Smart Race Solver has a race planned within $irregularTrainingRaceLookahead turn(s).",
+                )
+                decisionTracer.recordNote("Irregular Training skipped: Smart Race Solver has a race planned within $irregularTrainingRaceLookahead turn(s)")
+                bHasCheckedIrregularTrainingThisTurn = true
+            } else if (!isScheduledRace && !isMandatoryRace) {
                 // Skip irregular training evaluation when energy is depleted. The charm cannot
                 // fire preemptively (it requires a selected training with measured failureChance
                 // at or above the phase-aware charmFailureThreshold()), so charm presence in
@@ -1483,6 +1541,7 @@ class Trackblazer(game: Game) : Campaign(game) {
             // Turn is over, decrement megaphone counter.
             if (trainee.megaphoneTurnCounter > 0) {
                 trainee.megaphoneTurnCounter--
+                if (trainee.megaphoneTurnCounter == 0) trainee.activeMegaphoneTier = null
                 MessageLog.i(TAG, "[TRACKBLAZER] Megaphone duration reduced. Turns remaining: ${trainee.megaphoneTurnCounter}.")
             }
 
@@ -2417,7 +2476,7 @@ class Trackblazer(game: Game) : Campaign(game) {
                                 (isEnergy && trainee != null && trainee.energy <= 100) ||
                                 // We might want any energy item if not full.
                                 (isMood && trainee != null && trainee.mood < Mood.GREAT) ||
-                                (isMegaphone && trainee != null && trainingSelected != null && trainee.megaphoneTurnCounter == 0 && !shouldConserveTrainingEffectItems(trainingSelected, trainee)) ||
+                                (isMegaphone && isMegaphoneActionable(name, trainingSelected, trainee, currentInventory)) ||
                                 (isAnkleWeight && trainee != null && trainingSelected != null) ||
                                 (isCharm && trainee != null && trainingSelected != null && !shouldConserveTrainingEffectItems(trainingSelected, trainee))
 
@@ -2790,10 +2849,15 @@ class Trackblazer(game: Game) : Campaign(game) {
 
         // Megaphone Check.
         val megaphoneNames = listOf("Empowering Megaphone", "Motivating Megaphone", "Coaching Megaphone")
-        if (trainee.megaphoneTurnCounter == 0 && trainingSelected != null && megaphoneNames.contains(itemName)) {
-            // When mood is below NORMAL, the mood multiplier caps gain. Megaphones multiply gain across multiple
-            // turns, so squandering one on a low-gain selected training is worse than conserving for a better turn.
-            if (shouldConserveTrainingEffectItems(trainingSelected, trainee)) {
+        val tierOverwriteEligible = isMegaphoneTierOverwriteEligible(itemName, trainingSelected, trainee)
+        if (trainingSelected != null && megaphoneNames.contains(itemName) && (trainee.megaphoneTurnCounter == 0 || tierOverwriteEligible)) {
+            val forcedByRaceForecast = isMegaphoneForcedByRaceForecast(itemName)
+            val surplusBurnActive = isMegaphoneSurplusBurnActive(nextInventory)
+
+            // When mood is below NORMAL, the mood multiplier caps gain. Megaphones multiply gain across multiple turns, so squandering
+            // one on a low-gain selected training is worse than conserving for a better turn. The race-forecast-force and surplus-burn
+            // overrides bypass this gate when explicitly enabled via their respective settings.
+            if (shouldConserveTrainingEffectItems(trainingSelected, trainee) && !forcedByRaceForecast && !surplusBurnActive) {
                 val selectedMainGain = training.cachedAnalysisResults?.firstOrNull { it.name == trainingSelected }?.statGains?.get(trainingSelected) ?: 0
                 MessageLog.i(
                     TAG,
@@ -2804,6 +2868,22 @@ class Trackblazer(game: Game) : Campaign(game) {
                     DecisionTracer.ItemVerdict.CONSERVED,
                     "Conservation: mood=${trainee.mood}, $trainingSelected main gain ($selectedMainGain) below floor ($lowMainStatGainItemFloor)",
                 )
+                return null
+            }
+
+            if (tierOverwriteEligible) {
+                val previousTier = trainee.activeMegaphoneTier
+                val reason = "Upgrading active $previousTier to stronger $itemName."
+                if (clickItemPlusButton(itemName, entry, "[TRACKBLAZER] Tier-overwriting active megaphone \"$previousTier\" with \"$itemName\".", nextInventory, reason = reason)) {
+                    trainee.megaphoneTurnCounter = megaphoneDurationFor(itemName)
+                    trainee.activeMegaphoneTier = itemName
+                    decisionTracer.recordItemDecision(
+                        itemName,
+                        DecisionTracer.ItemVerdict.USED,
+                        "Tier overwrite: replaced active $previousTier; new megaphone turn duration ${trainee.megaphoneTurnCounter}",
+                    )
+                    return reason
+                }
                 return null
             }
 
@@ -2821,15 +2901,15 @@ class Trackblazer(game: Game) : Campaign(game) {
                 }
 
             if (!hasBetterAvailable) {
-                val reason = "Increasing training gains for the next few turns."
+                val reason =
+                    when {
+                        forcedByRaceForecast -> "Clear training window ahead before the next race; increasing gains while it's available."
+                        surplusBurnActive -> "Burning down megaphone surplus."
+                        else -> "Increasing training gains for the next few turns."
+                    }
                 if (clickItemPlusButton(itemName, entry, "[TRACKBLAZER] Queuing best available megaphone: \"$itemName\".", nextInventory, reason = reason)) {
-                    trainee.megaphoneTurnCounter =
-                        when (itemName) {
-                            "Empowering Megaphone" -> 2
-                            "Motivating Megaphone" -> 3
-                            "Coaching Megaphone" -> 4
-                            else -> 0
-                        }
+                    trainee.megaphoneTurnCounter = megaphoneDurationFor(itemName)
+                    trainee.activeMegaphoneTier = itemName
                     decisionTracer.recordItemDecision(
                         itemName,
                         DecisionTracer.ItemVerdict.USED,
@@ -2924,6 +3004,72 @@ class Trackblazer(game: Game) : Campaign(game) {
         return selectedMainGain < lowMainStatGainItemFloor
     }
 
+    /** Megaphone tiers ordered weakest to strongest, used to compare/overwrite an active megaphone with a stronger one. */
+    private val megaphoneTierOrder = listOf("Coaching Megaphone", "Motivating Megaphone", "Empowering Megaphone")
+
+    /** Returns the buff duration (in turns) for the given megaphone tier, or 0 if `itemName` is not a megaphone. */
+    private fun megaphoneDurationFor(itemName: String): Int =
+        when (itemName) {
+            "Empowering Megaphone" -> 2
+            "Motivating Megaphone" -> 3
+            "Coaching Megaphone" -> 4
+            else -> 0
+        }
+
+    /** Returns true when `itemName` outranks `currentTier` in `megaphoneTierOrder` (a null `currentTier` is always outranked). */
+    private fun isStrictlyBetterMegaphoneTier(itemName: String, currentTier: String?): Boolean {
+        val currentRank = currentTier?.let { megaphoneTierOrder.indexOf(it) } ?: -1
+        return megaphoneTierOrder.indexOf(itemName) > currentRank
+    }
+
+    /**
+     * Returns true when `itemName` should replace the trainee's currently active (weaker) megaphone: tier overwrite is enabled,
+     * a megaphone is already active, `itemName` strictly outranks it, and the selected training's main gain clears
+     * [megaphoneTierOverwriteMinGain].
+     */
+    private fun isMegaphoneTierOverwriteEligible(itemName: String, trainingSelected: StatName?, trainee: Trainee): Boolean {
+        if (!enableMegaphoneTierOverwrite || trainee.megaphoneTurnCounter <= 0 || trainingSelected == null) return false
+        if (!isStrictlyBetterMegaphoneTier(itemName, trainee.activeMegaphoneTier)) return false
+        val selectedMainGain = training.cachedAnalysisResults?.firstOrNull { it.name == trainingSelected }?.statGains?.get(trainingSelected) ?: 0
+        return selectedMainGain >= megaphoneTierOverwriteMinGain
+    }
+
+    /**
+     * Returns true when `itemName` (a megaphone) should be force-used despite the mood/gain conservation gate, because the Smart Race
+     * Solver forecasts at most [megaphoneForceRaceForecastThreshold] races within the megaphone's buff-duration window starting this turn.
+     * A clear window means the buff won't be cut short by an upcoming race, so even a low-gain turn is a good time to spend it.
+     */
+    private fun isMegaphoneForcedByRaceForecast(itemName: String): Boolean {
+        if (!enableMegaphoneForceRaceForecast || !racing.enableSmartRaceSolver) return false
+        val duration = megaphoneDurationFor(itemName)
+        if (duration <= 0) return false
+        val forecastedRaceCount = SmartRaceSolverIntegration.peekRaceCountInWindow(date.day, game.scenario, duration)
+        return forecastedRaceCount in 0..megaphoneForceRaceForecastThreshold
+    }
+
+    /**
+     * Returns true when the megaphone surplus-burn override applies: total megaphone count across all 3 tiers in `inventory`
+     * exceeds [megaphoneSurplusBurnReserve], so the mood/gain conservation gate is bypassed for megaphones specifically.
+     */
+    private fun isMegaphoneSurplusBurnActive(inventory: Map<String, Int>): Boolean {
+        if (megaphoneSurplusBurnReserve <= 0) return false
+        return megaphoneTierOrder.sumOf { inventory[it] ?: 0 } > megaphoneSurplusBurnReserve
+    }
+
+    /**
+     * Returns true when `itemName` (a megaphone) is actionable this turn: either no megaphone is currently active, or a strictly-better
+     * tier is available and clears the Tier Overwrite gain floor; AND either the mood/gain conservation gate doesn't apply, or one of the
+     * Race-Forecast-Force / Surplus-Burn overrides bypasses it. Centralizes the megaphone eligibility check shared by the early-exit
+     * scroll filter ([remainingItemsOfInterest] in [manageInventoryItems]), the Training Items dialog open-gate (`hasMegaphones` in
+     * [useItems]), and the actual queuing decision in [handleInlineUsage].
+     */
+    private fun isMegaphoneActionable(itemName: String, trainingSelected: StatName?, trainee: Trainee?, inventory: Map<String, Int>): Boolean {
+        if (trainee == null || trainingSelected == null) return false
+        if (trainee.megaphoneTurnCounter != 0 && !isMegaphoneTierOverwriteEligible(itemName, trainingSelected, trainee)) return false
+        if (!shouldConserveTrainingEffectItems(trainingSelected, trainee)) return true
+        return isMegaphoneForcedByRaceForecast(itemName) || isMegaphoneSurplusBurnActive(inventory)
+    }
+
     /**
      * Returns true when the given heal item targets at least one of the trainee's currently active negative statuses.
      * Miracle Cure heals every status; every other entry in `badConditionMap` heals exactly one specific status.
@@ -2962,12 +3108,11 @@ class Trackblazer(game: Game) : Campaign(game) {
 
         val skipTrainingEffectItems = shouldConserveTrainingEffectItems(trainingSelected, trainee)
         val hasMegaphones =
-            !skipTrainingEffectItems &&
-                trainingSelected != null &&
-                trainee.megaphoneTurnCounter == 0 &&
-                currentInventory.any { (name, count) ->
-                    count > 0 && (name == "Empowering Megaphone" || name == "Motivating Megaphone" || name == "Coaching Megaphone")
-                }
+            currentInventory.any { (name, count) ->
+                count > 0 &&
+                    (name == "Empowering Megaphone" || name == "Motivating Megaphone" || name == "Coaching Megaphone") &&
+                    isMegaphoneActionable(name, trainingSelected, trainee, currentInventory)
+            }
         val hasAnkleWeights =
             trainingSelected != null &&
                 currentInventory.any { (name, count) ->

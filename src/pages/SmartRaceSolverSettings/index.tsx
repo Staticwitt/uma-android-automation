@@ -48,6 +48,7 @@ import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision
 import { copyToClipboard } from "../../lib/utils"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
+import CustomSlider from "../../components/CustomSlider"
 import { Callout } from "../../components/ui/callout"
 import { Input } from "../../components/ui/input"
 import racesData from "../../data/races.json"
@@ -127,6 +128,8 @@ const SmartRaceSolverSettings = () => {
         enableSmartRaceSolver,
         enableParentFarmingMode,
         enableParentFarmingLockPreset,
+        enableAutoDetectCharacterPreset,
+        autoDetectCharacterPresetConfidence,
         smartRaceSolverCharacterPreset,
         smartRaceSolverAptitudes,
         smartRaceSolverTargetEpithets,
@@ -1506,6 +1509,36 @@ const SmartRaceSolverSettings = () => {
                                     >
                                         <View style={[sectionsDisabledStyle, { padding: SPACING.md }]}>
                                             <Text style={styles.description}>Selected: {smartRaceSolverCharacterPreset || "(none)"}</Text>
+                                            <SettingRow
+                                                id="enable-auto-detect-character-preset"
+                                                title="Auto-Detect Character Preset"
+                                                description="Fuzzy-match the OCR'd trainee name against character presets and use it as a fallback whenever no preset is manually selected above."
+                                                right={
+                                                    <Switch
+                                                        checked={enableAutoDetectCharacterPreset}
+                                                        onCheckedChange={(checked) => updateRacingSetting("enableAutoDetectCharacterPreset", checked)}
+                                                    />
+                                                }
+                                            />
+                                            {enableAutoDetectCharacterPreset && (
+                                                <CustomSlider
+                                                    searchId="auto-detect-character-preset-confidence"
+                                                    searchCondition={enableAutoDetectCharacterPreset}
+                                                    parentId="enable-auto-detect-character-preset"
+                                                    value={autoDetectCharacterPresetConfidence}
+                                                    placeholder={defaultSettings.racing.autoDetectCharacterPresetConfidence}
+                                                    onValueChange={(value) => updateRacingSetting("autoDetectCharacterPresetConfidence", value)}
+                                                    onSlidingComplete={(value) => updateRacingSetting("autoDetectCharacterPresetConfidence", value)}
+                                                    min={50}
+                                                    max={100}
+                                                    step={1}
+                                                    label="Match Confidence"
+                                                    labelUnit="%"
+                                                    showValue={true}
+                                                    showLabels={true}
+                                                    description="Minimum fuzzy-match confidence required to auto-apply a detected character preset. Lower values tolerate more OCR noise but risk matching the wrong character."
+                                                />
+                                            )}
                                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: SPACING.xs, marginBottom: SPACING.sm }}>
                                                 {(
                                                     [

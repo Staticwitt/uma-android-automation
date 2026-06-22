@@ -275,3 +275,71 @@ export const formatFansDelta = (current: number, previous: number): string => {
     const sign = delta > 0 ? "+" : ""
     return `${sign}${delta.toLocaleString()} fans vs previous ${previous.toLocaleString()}`
 }
+
+const csvEscape = (value: string | number): string => {
+    const str = String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+}
+
+const PARENT_RUN_CSV_HEADERS = [
+    "completedAt",
+    "scenario",
+    "traineeName",
+    "characterPreset",
+    "goalPresetLabel",
+    "sparkStrategy",
+    "qualityGrade",
+    "qualityScore",
+    "fans",
+    "fanClass",
+    "raceWins",
+    "raceLosses",
+    "skillPoints",
+    "speed",
+    "stamina",
+    "power",
+    "guts",
+    "wit",
+    "durationMinutes",
+    "completedTargetEpithets",
+    "incompleteTargetEpithets",
+    "forcedEpithets",
+    "inheritanceSummary",
+] as const
+
+/**
+ * Build a full CSV export (one row per saved parent run) for spreadsheet analysis.
+ * Distinct from `exportRunForUmaToolsCsv`, which produces a single uma-tools-schema row for one run.
+ */
+export const exportParentRunArchiveCsv = (runs: ParentRunArchiveEntry[]): string => {
+    const lines = [PARENT_RUN_CSV_HEADERS.join(",")]
+    for (const run of runs) {
+        const row: Record<(typeof PARENT_RUN_CSV_HEADERS)[number], string | number> = {
+            completedAt: formatParentRunTimestamp(run.completedAtMs),
+            scenario: run.scenario,
+            traineeName: run.traineeName,
+            characterPreset: run.characterPreset,
+            goalPresetLabel: run.goalPresetLabel,
+            sparkStrategy: run.sparkStrategy,
+            qualityGrade: run.qualityGrade ?? "",
+            qualityScore: run.qualityScore ?? "",
+            fans: run.fans,
+            fanClass: formatFanClassLabel(run.fanClass),
+            raceWins: run.raceWins,
+            raceLosses: run.raceLosses,
+            skillPoints: run.skillPoints,
+            speed: run.stats.speed,
+            stamina: run.stats.stamina,
+            power: run.stats.power,
+            guts: run.stats.guts,
+            wit: run.stats.wit,
+            durationMinutes: run.elapsedMs >= 0 ? Math.floor(run.elapsedMs / 60000) : "",
+            completedTargetEpithets: run.completedTargetEpithets.join("; "),
+            incompleteTargetEpithets: run.incompleteTargetEpithets.join("; "),
+            forcedEpithets: run.forcedEpithets.join("; "),
+            inheritanceSummary: run.inheritanceSummary ?? "",
+        }
+        lines.push(PARENT_RUN_CSV_HEADERS.map((key) => csvEscape(row[key])).join(","))
+    }
+    return lines.join("\n")
+}

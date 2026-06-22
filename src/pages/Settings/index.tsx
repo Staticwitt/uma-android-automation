@@ -43,6 +43,30 @@ const Settings = () => {
     const { openDataDirectory, resetSettings } = useSettings()
     const { handleImportSettings, handleExportSettings, showImportDialog, setShowImportDialog, showResetDialog, setShowResetDialog } = useSettingsFileManager()
 
+    const delayOverrides = useMemo<Record<string, number>>(() => {
+        try {
+            return JSON.parse(general.delayOverrides || "{}")
+        } catch {
+            return {}
+        }
+    }, [general.delayOverrides])
+
+    const tapFollowUpOverrideEnabled = delayOverrides.tapFollowUpDelay !== undefined
+    const tapFollowUpOverrideValue = delayOverrides.tapFollowUpDelay ?? 0.2
+
+    const updateTapFollowUpOverride = useCallback(
+        (enabled: boolean, value?: number) => {
+            const next = { ...delayOverrides }
+            if (enabled) {
+                next.tapFollowUpDelay = value ?? tapFollowUpOverrideValue
+            } else {
+                delete next.tapFollowUpDelay
+            }
+            updateGeneral({ delayOverrides: JSON.stringify(next) })
+        },
+        [delayOverrides, tapFollowUpOverrideValue, updateGeneral],
+    )
+
     const styles = useMemo(
         () =>
             StyleSheet.create({
@@ -348,6 +372,52 @@ const Settings = () => {
                             description="Sets the delay between clicking a button that opens dialog and actually handling the dialog. Lowering this will make the bot run faster at an increased risk of the bot incorrectly handling dialogs that pop up."
                         />
                     </View>
+
+                    <SettingRow
+                        id="settings-enable-delay-calibration-telemetry"
+                        title="Enable Delay Calibration Telemetry"
+                        description="Logs how long loading screens actually took this run, plus a suggestion on whether to raise or lower Wait Delay."
+                        right={
+                            <Switch
+                                checked={general.enableDelayCalibrationTelemetry}
+                                onCheckedChange={(checked) => updateGeneral({ enableDelayCalibrationTelemetry: checked })}
+                            />
+                        }
+                    />
+
+                    <SearchableItem
+                        id="settings-tap-follow-up-delay-override"
+                        title="Tap Follow-Up Delay Override"
+                        description="Per-action override for the brief settle delay after every tap, used instead of the default 0.2s."
+                    >
+                        <View style={{ padding: SPACING.md }}>
+                            <SettingRow
+                                id="settings-enable-tap-follow-up-override"
+                                title="Override Tap Follow-Up Delay"
+                                description="Use a custom delay after every tap instead of the default 0.2s, independent of Wait Delay above."
+                                right={<Switch checked={tapFollowUpOverrideEnabled} onCheckedChange={(checked) => updateTapFollowUpOverride(checked)} />}
+                            />
+                            {tapFollowUpOverrideEnabled && (
+                                <CustomSlider
+                                    searchId="settings-tap-follow-up-delay-value"
+                                    searchCondition={tapFollowUpOverrideEnabled}
+                                    parentId="settings-enable-tap-follow-up-override"
+                                    value={tapFollowUpOverrideValue}
+                                    placeholder={0.2}
+                                    onValueChange={(value) => updateTapFollowUpOverride(true, value)}
+                                    onSlidingComplete={(value) => updateTapFollowUpOverride(true, value)}
+                                    min={0.0}
+                                    max={1.0}
+                                    step={0.05}
+                                    label="Tap Follow-Up Delay"
+                                    labelUnit="s"
+                                    showValue={true}
+                                    showLabels={true}
+                                    description="Delay after every tap before checking for loading screens. Overrides the default 0.2s for this specific action only."
+                                />
+                            )}
+                        </View>
+                    </SearchableItem>
                 </Section>
 
                 <Section label="DATA MANAGEMENT">

@@ -635,6 +635,9 @@ abstract class Campaign(game: Game) : Task(game) {
                 // Read the trainee's name once per run while the dialog is still open.
                 if (trainee.name.isEmpty()) {
                     trainee.readName(game.imageUtils)
+                    if (trainee.name.isNotEmpty()) {
+                        SmartRaceSolverIntegration.applyOcrDetectedCharacterPreset(trainee.name)
+                    }
                 }
 
                 if (trainee.runningStyle != prevRunningStyle) {
@@ -2307,6 +2310,12 @@ abstract class Campaign(game: Game) : Task(game) {
 
                 // Print the final Trainee information.
                 trainee.logInfo()
+
+                if (game.enableDelayCalibrationTelemetry) {
+                    DelayCalibration.buildTelemetrySummary(game.waitDelay)?.let { summary ->
+                        MessageLog.i(TAG, "[DELAY CALIBRATION] $summary")
+                    }
+                }
 
                 val elapsedMs = System.currentTimeMillis() - game.runStartTimeMillis
                 val summaryInput =
