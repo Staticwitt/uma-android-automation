@@ -63,6 +63,7 @@ object OwnedSupportDeckEquipper {
         if (ownedCards.isEmpty()) return false
 
         if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
+        if (CareerSelectionAutomation.isInsideLegacyPicker(game)) return false
 
         val targetCount = ownedCards.size.coerceAtMost(OWNED_SLOT_FRACTIONS.size)
 
