@@ -196,6 +196,9 @@ class Trainee {
     /** The remaining duration (in turns) of an active megaphone training item. */
     var megaphoneTurnCounter: Int = 0
 
+    /** The name of the megaphone currently active (e.g. "Coaching Megaphone"), or null when none is active. Tracked so a strictly-better tier can overwrite a weaker active megaphone. */
+    var activeMegaphoneTier: String? = null
+
     /** The trainee's ranking category ([FanCountClass]) based on their current fan total. */
     var fanCountClass: FanCountClass = FanCountClass.DEBUT
 

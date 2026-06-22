@@ -70,6 +70,9 @@ class Game(val myContext: Context) {
     /** The wait delay specifically for dialog interactions. */
     val dialogWaitDelay: Double = SettingsHelper.getDoubleSetting("general", "dialogWaitDelay")
 
+    /** Whether to log [DelayCalibration] telemetry and a Wait Delay tuning suggestion at the end of the run. */
+    val enableDelayCalibrationTelemetry: Boolean = SettingsHelper.getBooleanSetting("general", "enableDelayCalibrationTelemetry", false)
+
     /** Holds the task instance corresponding to the selected scenario. */
     val task: Task =
         when (scenario) {
@@ -150,6 +153,7 @@ class Game(val myContext: Context) {
      * Note that this function is responsible for dictating how fast the bot will run so adjusting this should be done with caution.
      */
     fun waitForLoading() {
+        val startMillis = System.currentTimeMillis()
         var loadingCounter = 0
         while (checkLoading(suppressLogging = loadingCounter % 10 != 0)) {
             // Avoid an infinite loop by setting the flag to true.
@@ -159,6 +163,7 @@ class Game(val myContext: Context) {
                 loadingCounter = 0
             }
         }
+        DelayCalibration.recordLoadingWait(System.currentTimeMillis() - startMillis)
     }
 
     /**
@@ -208,7 +213,7 @@ class Game(val myContext: Context) {
 
         if (!ignoreWaiting) {
             // Now check if the game is waiting for a server response from the tap and wait if necessary.
-            wait(0.20)
+            wait(DelayCalibration.resolveDelay(DelayCalibration.TAP_FOLLOW_UP_KEY, 0.20))
             waitForLoading()
         }
     }
@@ -254,6 +259,7 @@ class Game(val myContext: Context) {
         SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()
         OwnedSupportDeckEquipper.resetForNewRun()
+        DelayCalibration.reset()
 
         // Print current app settings at the start of the run.
         try {

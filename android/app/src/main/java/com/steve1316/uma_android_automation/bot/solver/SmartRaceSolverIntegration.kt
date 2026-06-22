@@ -22,6 +22,8 @@ import com.steve1316.uma_android_automation.types.RaceGrade
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
+import net.ricecode.similarity.JaroWinklerStrategy
+import net.ricecode.similarity.StringSimilarityServiceImpl
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
@@ -158,6 +160,13 @@ object SmartRaceSolverIntegration {
     /** Live trainee mood observed during the current run. */
     @Volatile private var currentRunMood: Mood = Mood.NORMAL
 
+    /**
+     * Character preset name auto-matched from the OCR'd trainee name (see [applyOcrDetectedCharacterPreset]).
+     * Consulted by [readRacingString] as a fallback only when the user hasn't manually selected a preset; never
+     * persisted to settings, so it has no effect once the user picks a preset (manually or via a future run).
+     */
+    @Volatile private var ocrDetectedCharacterPreset: String? = null
+
     /** Updates the fan count used by live solver decisions for [Weights.minimumFanTarget]. */
     fun updateCurrentFans(fans: Int) {
         currentRunFans = fans.coerceAtLeast(0)
@@ -245,6 +254,7 @@ object SmartRaceSolverIntegration {
         currentRunAptitudes = null
         currentRunEnergy = EnergyModel.MAX_ENERGY
         currentRunMood = Mood.NORMAL
+        ocrDetectedCharacterPreset = null
         SparkPickHistory.reset()
     }
 
@@ -789,6 +799,28 @@ object SmartRaceSolverIntegration {
     fun isRaceKeyMatch(raceData: RaceData, raceKey: String): Boolean = raceData.name == raceKey || raceData.name == raceNameFromKey(raceKey)
 
     /**
+     * Counts how many races the solver has planned within the next [windowTurns] turns (inclusive of [currentTurn]),
+     * by reusing the cached/re-solved full-career [Schedule]. Lets campaign code look ahead at the solver's plan
+     * before committing turn-local resources (e.g. skip an irregular-training detour, or force-use a megaphone
+     * to cover an upcoming race cluster) instead of only seeing the current turn via [peekDecisionForTurn].
+     *
+     * @param currentTurn The bot's current turn number (start of the lookahead window).
+     * @param scenario Active scenario name from `settings.general.scenario`.
+     * @param windowTurns Number of turns to look ahead, starting at [currentTurn].
+     * @return The number of solver-planned races within the window, or -1 when the solver cannot be consulted
+     *   (feature disabled or required data missing).
+     */
+    fun peekRaceCountInWindow(currentTurn: TurnNumber, scenario: String, windowTurns: Int): Int {
+        if (!SettingsHelper.getBooleanSetting("racing", "enableSmartRaceSolver")) return -1
+        val epithets = loadEpithets() ?: return -1
+        val racesByTurn = loadAllRaces() ?: return -1
+
+        val schedule = solveOrReuseSchedule(currentTurn, scenario, epithets, racesByTurn)
+        val lastTurn = currentTurn + windowTurns - 1
+        return (currentTurn..lastTurn).count { schedule.decisionAt(it) is Decision.RaceDecision }
+    }
+
+    /**
      * Computes a preview schedule from the user-supplied [configJson], without consulting any
      * runtime race history. Used by the settings UI to render a calendar preview of what the
      * solver would do if a fresh run started today with the current configuration.
@@ -1275,8 +1307,13 @@ object SmartRaceSolverIntegration {
      *
      * @return Parsed [Aptitudes]. Returns [Aptitudes.DEFAULT_A] when the setting is empty or invalid.
      */
-    private fun readRacingString(key: String): String =
-        ParentFarmingGoalQueue.overrideString(key, SettingsHelper.getStringSetting("racing", key))
+    private fun readRacingString(key: String): String {
+        val resolved = ParentFarmingGoalQueue.overrideString(key, SettingsHelper.getStringSetting("racing", key))
+        if (key == "smartRaceSolverCharacterPreset" && resolved.isEmpty()) {
+            ocrDetectedCharacterPreset?.let { return it }
+        }
+        return resolved
+    }
 
     private fun readUserAptitudes(): Aptitudes {
         val json = readRacingString("smartRaceSolverAptitudes")
@@ -1462,6 +1499,40 @@ object SmartRaceSolverIntegration {
             .onFailure { MessageLog.e(TAG, "Failed to parse characterPresetsData: ${it.message}") }
             .getOrNull()
             ?.also { cachedPresets = it }
+    }
+
+    /**
+     * Auto-detects and applies a character preset by fuzzy-matching [traineeName] (OCR'd from the trainee details
+     * dialog via [Trainee.readName]) against [loadCharacterPresets]'s preset names with Jaro-Winkler similarity,
+     * the same algorithm [com.steve1316.uma_android_automation.bot.TrainingEventRecognizer] uses for event-title OCR matching.
+     *
+     * Only takes effect when `racing.enableAutoDetectCharacterPreset` is on and the user hasn't already selected a
+     * preset for the current run (`smartRaceSolverCharacterPreset` is empty) — this is a convenience fallback, not an
+     * override of an explicit user choice. The match is applied in-memory only via [ocrDetectedCharacterPreset]
+     * (consulted by [readRacingString]); it is never written back to settings.
+     *
+     * @param traineeName The OCR'd trainee name.
+     */
+    fun applyOcrDetectedCharacterPreset(traineeName: String) {
+        if (traineeName.isBlank()) return
+        if (!SettingsHelper.getBooleanSetting("racing", "enableAutoDetectCharacterPreset")) return
+        if (SettingsHelper.getStringSetting("racing", "smartRaceSolverCharacterPreset").isNotEmpty()) return
+        val presets = loadCharacterPresets() ?: return
+        if (presets.isEmpty()) return
+
+        val service = StringSimilarityServiceImpl(JaroWinklerStrategy())
+        val bestMatch = presets.keys.map { it to service.score(traineeName, it) }.maxByOrNull { it.second } ?: return
+        val minConfidence = SettingsHelper.getIntSetting("racing", "autoDetectCharacterPresetConfidence", 85).toDouble() / 100.0
+        if (bestMatch.second < minConfidence) {
+            MessageLog.i(
+                TAG,
+                "[SOLVER] No confident character preset match for OCR'd trainee name \"$traineeName\" (best: \"${bestMatch.first}\" @ ${"%.2f".format(bestMatch.second)}).",
+            )
+            return
+        }
+
+        ocrDetectedCharacterPreset = bestMatch.first
+        MessageLog.i(TAG, "[SOLVER] Auto-detected character preset \"${bestMatch.first}\" from OCR'd trainee name \"$traineeName\" (confidence ${"%.2f".format(bestMatch.second)}).")
     }
 
     /**

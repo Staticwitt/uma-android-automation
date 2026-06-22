@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert } from "react-native"
+import { File, Paths } from "expo-file-system"
+import * as Sharing from "expo-sharing"
 import { useTheme } from "../context/ThemeContext"
 import { SheetModal } from "./ui/sheet-modal"
 import { ModalFooterChip } from "./ui/modal-list"
 import { Input } from "./ui/input"
+import { logErrorWithTimestamp } from "../lib/logger"
 import {
     buildQualityTrendForCharacter,
     clearParentRunArchive,
+    exportParentRunArchiveCsv,
     exportParentRunArchiveJson,
     findPreviousRunForCharacter,
     formatFanClassLabel,
@@ -132,6 +136,28 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         Alert.alert("Copied", "Parent run archive JSON copied to clipboard.")
     }, [])
 
+    const handleExportCsv = useCallback(async () => {
+        if (runs.length === 0) {
+            Alert.alert("No runs", "There are no saved parent runs to export.")
+            return
+        }
+        try {
+            const csv = exportParentRunArchiveCsv(runs)
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-")
+            const file = new File(Paths.document, `UAA-parent-runs-${timestamp}.csv`)
+            file.write(csv)
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "Export Parent Run History" })
+            } else {
+                Alert.alert("Exported", `Saved to ${file.uri}`)
+            }
+        } catch (error) {
+            logErrorWithTimestamp("Error exporting parent run archive CSV:", error)
+            Alert.alert("Export failed", "Could not export the parent run history as CSV.")
+        }
+    }, [runs])
+
     const handleCopyRun = useCallback(async (run: ParentRunArchiveEntry) => {
         await copyToClipboard(formatParentRunExportEntry(run))
         Alert.alert("Copied", "Run summary copied to clipboard.")
@@ -218,6 +244,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
             )}
             <ModalFooterChip label="Copy session summary" onPress={handleCopySessionSummary} tone="neutral" />
             <ModalFooterChip label="Export JSON" onPress={handleExport} tone="neutral" />
+            <ModalFooterChip label="Export CSV" onPress={handleExportCsv} tone="neutral" />
             <ModalFooterChip label="Close" onPress={onClose} tone="neutral" />
             <ModalFooterChip label="Clear history" onPress={handleClear} tone="danger" />
         </View>

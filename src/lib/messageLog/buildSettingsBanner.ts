@@ -85,6 +85,13 @@ export function buildSettingsBanner(settings: Settings): string {
             return {} as Record<string, string>
         }
     })()
+    const delayOverridesObj = (() => {
+        try {
+            return JSON.parse(settings.general.delayOverrides || "{}") as Record<string, number>
+        } catch {
+            return {} as Record<string, number>
+        }
+    })()
 
     return `🏁 Campaign Selected: ${settings.general.scenario !== "" ? `${settings.general.scenario}` : "Please select one in the Select Campaign option"}
 👤 Profile Selected: ${settings.misc.currentProfileName ? `${settings.misc.currentProfileName}` : "Default Profile"}
@@ -202,6 +209,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 ---------- Smart Race Solver Options ----------
 🤖 Enable Smart Race Solver: ${settings.racing.enableSmartRaceSolver ? "✅" : "❌"}
 🎭 Solver Character Preset: ${settings.racing.smartRaceSolverCharacterPreset || "(none)"}
+🔍 Auto-Detect Character Preset: ${settings.racing.enableAutoDetectCharacterPreset ? "✅" : "❌"}
+🔍 Auto-Detect Character Preset Confidence: ${settings.racing.autoDetectCharacterPresetConfidence}%
 🐎 Solver Aptitudes: Spr ${smartRaceSolverAptitudesObj.Sprint ?? "?"}, Mile ${smartRaceSolverAptitudesObj.Mile ?? "?"}, Med ${smartRaceSolverAptitudesObj.Medium ?? "?"}, Lng ${smartRaceSolverAptitudesObj.Long ?? "?"}, Trf ${smartRaceSolverAptitudesObj.Turf ?? "?"}, Drt ${smartRaceSolverAptitudesObj.Dirt ?? "?"}
 🎯 Solver Optimize Mode: ${smartRaceSolverOptimizeMode}
 ⚖️ Solver Weights: race ${smartRaceSolverWeightsObj.raceValue ?? "?"}, epithet ${smartRaceSolverWeightsObj.epithetValue ?? "?"}, target ${smartRaceSolverWeightsObj.targetEpithetMultiplier ?? 3}x, fans ${smartRaceSolverWeightsObj.fanWeight ?? 0}, fanFloor ${smartRaceSolverWeightsObj.minimumFanTarget ?? 0}, gap ${smartRaceSolverWeightsObj.minimumRaceGapTurns ?? 0}, hint ${smartRaceSolverWeightsObj.hintWeight ?? "?"}, consec −${smartRaceSolverWeightsObj.consecutiveRacePenalty ?? "?"}, summer −${smartRaceSolverWeightsObj.summerPenalty ?? "?"}, raceBonus ${smartRaceSolverWeightsObj.raceBonusPct ?? "?"}%, raceCost ${smartRaceSolverWeightsObj.raceCostPct ?? "?"}%, threshold ${smartRaceSolverWeightsObj.aptitudeThreshold ?? "?"}, includeOP ${smartRaceSolverWeightsObj.includeOpAndPreOp ? "✅" : "❌"}, summerRacing ${smartRaceSolverWeightsObj.allowSummerRacing ? "✅" : "❌"}
@@ -247,6 +256,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔄 Trackblazer Retry Grades: ${settings.scenarioOverrides?.trackblazerRetryRacesBeforeFinalGrades?.join(", ")}
 ✨ Trackblazer Enable Irregular Training: ${settings.scenarioOverrides?.trackblazerEnableIrregularTraining ? "✅" : "❌"}
 ✨ Trackblazer Irregular Training Min Gain: ${settings.scenarioOverrides?.trackblazerIrregularTrainingMinStatGain}
+✨ Trackblazer Irregular Training Race Lookahead: ${settings.scenarioOverrides?.trackblazerIrregularTrainingRaceLookahead}
 🏇 Trackblazer Preferred Distances: ${settings.scenarioOverrides?.trackblazerPreferredDistances?.length === 0 ? "None" : settings.scenarioOverrides?.trackblazerPreferredDistances?.join(", ")}
 🏇 Trackblazer Preferred Surfaces: ${settings.scenarioOverrides?.trackblazerPreferredSurfaces?.length === 0 ? "None" : settings.scenarioOverrides?.trackblazerPreferredSurfaces?.join(", ")}
 🔋 Trackblazer Energy Item Reserve: ${settings.scenarioOverrides?.trackblazerEnergyItemReserve}
@@ -256,6 +266,11 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔨 Trackblazer Artisan Hammer Min Stock G2: ${settings.scenarioOverrides?.trackblazerArtisanHammerMinStockForG2}
 ✨ Trackblazer Glow Stick Final-Day Reserve: ${settings.scenarioOverrides?.trackblazerGlowStickFinalReserve}
 ✨ Trackblazer Glow Stick Min Fans: ${settings.scenarioOverrides?.trackblazerGlowStickMinFans}
+📣 Trackblazer Enable Megaphone Tier Overwrite: ${settings.scenarioOverrides?.trackblazerEnableMegaphoneTierOverwrite ? "✅" : "❌"}
+📣 Trackblazer Megaphone Tier Overwrite Min Gain: ${settings.scenarioOverrides?.trackblazerMegaphoneTierOverwriteMinGain}
+📣 Trackblazer Enable Megaphone Race-Forecast Force: ${settings.scenarioOverrides?.trackblazerEnableMegaphoneForceRaceForecast ? "✅" : "❌"}
+📣 Trackblazer Megaphone Race-Forecast Force Threshold: ${settings.scenarioOverrides?.trackblazerMegaphoneForceRaceForecastThreshold}
+📣 Trackblazer Megaphone Surplus-Burn Reserve: ${settings.scenarioOverrides?.trackblazerMegaphoneSurplusBurnReserve}
 
 ---------- Misc Options ----------
 🔍 Enable Crane Game Attempt: ${settings.general.enableCraneGameAttempt ? "✅" : "❌"}
@@ -264,6 +279,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🛑 Stop At Date: ${settings.general.enableStopAtDate ? `✅ (${settings.general.stopAtDates.join(", ")})` : "❌"}
 ⏰ Wait Delay: ${settings.general.waitDelay}s
 ⏰ Dialog Wait Delay: ${settings.general.dialogWaitDelay}s
+⏰ Enable Delay Calibration Telemetry: ${settings.general.enableDelayCalibrationTelemetry ? "✅" : "❌"}
+⏰ Tap Follow-Up Delay Override: ${delayOverridesObj.tapFollowUpDelay !== undefined ? `✅ (${delayOverridesObj.tapFollowUpDelay}s)` : "❌"}
 
 ---------- Debug Options ----------
 🐛 Debug Mode: ${settings.debug.enableDebugMode ? "✅" : "❌"}

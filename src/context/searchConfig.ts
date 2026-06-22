@@ -80,6 +80,32 @@ const searchConfig: SearchOption[] = [
         page: "SettingsMain",
     },
     {
+        id: "settings-enable-delay-calibration-telemetry",
+        title: "Enable Delay Calibration Telemetry",
+        description: "Logs how long loading screens actually took this run, plus a suggestion on whether to raise or lower Wait Delay.",
+        page: "SettingsMain",
+    },
+    {
+        id: "settings-tap-follow-up-delay-override",
+        title: "Tap Follow-Up Delay Override",
+        description: "Per-action override for the brief settle delay after every tap, used instead of the default 0.2s.",
+        page: "SettingsMain",
+    },
+    {
+        id: "settings-enable-tap-follow-up-override",
+        title: "Override Tap Follow-Up Delay",
+        description: "Use a custom delay after every tap instead of the default 0.2s, independent of Wait Delay above.",
+        page: "SettingsMain",
+        parentId: "settings-tap-follow-up-delay-override",
+    },
+    {
+        id: "settings-tap-follow-up-delay-value",
+        title: "Tap Follow-Up Delay",
+        description: "Delay after every tap before checking for loading screens. Overrides the default 0.2s for this specific action only.",
+        page: "SettingsMain",
+        parentId: "settings-enable-tap-follow-up-override",
+    },
+    {
         id: "settings-overlay-button-size",
         title: "Overlay Button Size",
         description: "Sets the size of the floating overlay button in density-independent pixels (dp). Higher values make the button easier to tap.",
@@ -710,6 +736,20 @@ const searchConfig: SearchOption[] = [
         parentId: "enable-smart-race-solver",
     },
     {
+        id: "enable-auto-detect-character-preset",
+        title: "Auto-Detect Character Preset",
+        description: "Fuzzy-match the OCR'd trainee name against character presets and use it as a fallback whenever no preset is manually selected above.",
+        page: "SmartRaceSolverSettings",
+        parentId: "enable-smart-race-solver",
+    },
+    {
+        id: "auto-detect-character-preset-confidence",
+        title: "Auto-Detect Character Preset Match Confidence",
+        description: "Minimum fuzzy-match confidence required to auto-apply a detected character preset. Lower values tolerate more OCR noise but risk matching the wrong character.",
+        page: "SmartRaceSolverSettings",
+        parentId: "enable-auto-detect-character-preset",
+    },
+    {
         id: "smart-solver-aptitudes",
         title: "Aptitudes",
         description: "Distance and surface aptitude grades. Races below the threshold are skipped by the solver.",
@@ -1004,6 +1044,46 @@ const searchConfig: SearchOption[] = [
         id: "trackblazer-irregular-training-min-stat-gain",
         title: "Trackblazer Irregular Training Minimum Stat Gain",
         description: "Sets the minimum main stat gain required to skip racing and perform Irregular Training instead.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-irregular-training-race-lookahead",
+        title: "Trackblazer Irregular Training Race Lookahead",
+        description:
+            "When greater than 0, the Smart Race Solver's planned schedule is consulted this many turns ahead before evaluating Irregular Training, skipping it if a race is planned within that window.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-enable-megaphone-tier-overwrite",
+        title: "Trackblazer Enable Megaphone Tier Overwrite",
+        description:
+            "When enabled, a strictly better megaphone tier can replace a weaker one already active, discarding its remaining duration in favor of the better tier's full duration.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-megaphone-tier-overwrite-min-gain",
+        title: "Trackblazer Megaphone Tier Overwrite Minimum Stat Gain",
+        description: "The selected training's main stat gain must clear this floor before a better megaphone tier is allowed to overwrite a weaker active one.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-enable-megaphone-force-race-forecast",
+        title: "Trackblazer Enable Megaphone Race-Forecast Force",
+        description:
+            "When enabled, a megaphone is used despite the mood/gain conservation gate if the Smart Race Solver forecasts a clear window across the megaphone's buff duration.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-megaphone-force-race-forecast-threshold",
+        title: "Trackblazer Megaphone Race-Forecast Force Threshold",
+        description: "The Smart Race Solver's planned schedule must show at most this many races within the megaphone's buff-duration window for the force-use override to apply.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-megaphone-surplus-burn-reserve",
+        title: "Trackblazer Megaphone Surplus-Burn Reserve",
+        description:
+            "When total megaphone count across all 3 tiers exceeds this reserve, the mood/gain conservation gate is bypassed for megaphones so the surplus gets burned down.",
         page: "ScenarioOverridesSettings",
     },
     {

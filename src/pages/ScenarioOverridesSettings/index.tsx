@@ -125,6 +125,7 @@ const ScenarioOverridesSettings = () => {
     const resetTrainingDefaults = useCallback(() => {
         updateOverrideSetting("trackblazerSkipRiskyCharmTrainingBelowGain", defaultSettings.scenarioOverrides.trackblazerSkipRiskyCharmTrainingBelowGain)
         updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", defaultSettings.scenarioOverrides.trackblazerIrregularTrainingMinStatGain)
+        updateOverrideSetting("trackblazerIrregularTrainingRaceLookahead", defaultSettings.scenarioOverrides.trackblazerIrregularTrainingRaceLookahead)
         updateOverrideSetting("trackblazerEnableIrregularTraining", defaultSettings.scenarioOverrides.trackblazerEnableIrregularTraining)
         updateOverrideSetting("trackblazerWhistleForcesTraining", defaultSettings.scenarioOverrides.trackblazerWhistleForcesTraining)
     }, [updateOverrideSetting, defaultSettings])
@@ -145,6 +146,11 @@ const ScenarioOverridesSettings = () => {
         updateOverrideSetting("trackblazerArtisanHammerMinStockForG2", defaultSettings.scenarioOverrides.trackblazerArtisanHammerMinStockForG2)
         updateOverrideSetting("trackblazerGlowStickFinalReserve", defaultSettings.scenarioOverrides.trackblazerGlowStickFinalReserve)
         updateOverrideSetting("trackblazerGlowStickMinFans", defaultSettings.scenarioOverrides.trackblazerGlowStickMinFans)
+        updateOverrideSetting("trackblazerEnableMegaphoneTierOverwrite", defaultSettings.scenarioOverrides.trackblazerEnableMegaphoneTierOverwrite)
+        updateOverrideSetting("trackblazerMegaphoneTierOverwriteMinGain", defaultSettings.scenarioOverrides.trackblazerMegaphoneTierOverwriteMinGain)
+        updateOverrideSetting("trackblazerEnableMegaphoneForceRaceForecast", defaultSettings.scenarioOverrides.trackblazerEnableMegaphoneForceRaceForecast)
+        updateOverrideSetting("trackblazerMegaphoneForceRaceForecastThreshold", defaultSettings.scenarioOverrides.trackblazerMegaphoneForceRaceForecastThreshold)
+        updateOverrideSetting("trackblazerMegaphoneSurplusBurnReserve", defaultSettings.scenarioOverrides.trackblazerMegaphoneSurplusBurnReserve)
     }, [updateOverrideSetting, defaultSettings])
 
     /** Reset all scenario overrides to defaults. */
@@ -475,6 +481,24 @@ const ScenarioOverridesSettings = () => {
                                                 showLabels={true}
                                                 description="Sets the minimum main stat gain required to skip racing and perform Irregular Training instead."
                                             />
+
+                                            <CustomSlider
+                                                searchId="trackblazer-irregular-training-race-lookahead"
+                                                searchCondition={scenarioOverrides.trackblazerEnableIrregularTraining}
+                                                parentId="trackblazer-enable-irregular-training"
+                                                value={scenarioOverrides.trackblazerIrregularTrainingRaceLookahead}
+                                                placeholder={defaultSettings.scenarioOverrides.trackblazerIrregularTrainingRaceLookahead}
+                                                onValueChange={(value) => updateOverrideSetting("trackblazerIrregularTrainingRaceLookahead", value)}
+                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerIrregularTrainingRaceLookahead", value)}
+                                                min={0}
+                                                max={5}
+                                                step={1}
+                                                label="Irregular Training Race Lookahead"
+                                                labelUnit=" turn(s)"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="When greater than 0, the Smart Race Solver's planned schedule is consulted this many turns ahead. If it has a race planned within that window, Irregular Training is skipped so the upcoming race isn't missed. Requires the Smart Race Solver to be enabled; 0 disables this check."
+                                            />
                                         </View>
                                     )}
 
@@ -742,6 +766,90 @@ const ScenarioOverridesSettings = () => {
                                             showValue={true}
                                             showLabels={true}
                                             description="Minimum projected fan gain on a race before the bot uses a Glow Stick on it. Applies on standard and finale days."
+                                        />
+                                    </View>
+
+                                    <View style={{ padding: SPACING.md, gap: SPACING.md }}>
+                                        <Text style={[TYPE.monoLabel, { color: colors.textMuted }]}>MEGAPHONE</Text>
+
+                                        <SettingRow
+                                            id="trackblazer-enable-megaphone-tier-overwrite"
+                                            title="Enable Megaphone Tier Overwrite"
+                                            description="When enabled, a strictly better megaphone tier (Empowering > Motivating > Coaching) can replace a weaker one already active, discarding its remaining duration in favor of the better tier's full duration."
+                                            right={
+                                                <Switch
+                                                    checked={scenarioOverrides.trackblazerEnableMegaphoneTierOverwrite}
+                                                    onCheckedChange={(checked) => updateOverrideSetting("trackblazerEnableMegaphoneTierOverwrite", checked)}
+                                                />
+                                            }
+                                        />
+
+                                        {scenarioOverrides.trackblazerEnableMegaphoneTierOverwrite && (
+                                            <CustomSlider
+                                                searchId="trackblazer-megaphone-tier-overwrite-min-gain"
+                                                searchCondition={scenarioOverrides.trackblazerEnableMegaphoneTierOverwrite}
+                                                parentId="trackblazer-enable-megaphone-tier-overwrite"
+                                                value={scenarioOverrides.trackblazerMegaphoneTierOverwriteMinGain}
+                                                placeholder={defaultSettings.scenarioOverrides.trackblazerMegaphoneTierOverwriteMinGain}
+                                                onValueChange={(value) => updateOverrideSetting("trackblazerMegaphoneTierOverwriteMinGain", value)}
+                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerMegaphoneTierOverwriteMinGain", value)}
+                                                min={20}
+                                                max={100}
+                                                step={5}
+                                                label="Minimum Main Stat Gain for Tier Overwrite"
+                                                labelUnit=""
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="The selected training's main stat gain must clear this floor before a better megaphone tier is allowed to overwrite a weaker active one."
+                                            />
+                                        )}
+
+                                        <SettingRow
+                                            id="trackblazer-enable-megaphone-force-race-forecast"
+                                            title="Enable Megaphone Race-Forecast Force"
+                                            description="When enabled, a megaphone is used despite the mood/gain conservation gate if the Smart Race Solver forecasts a clear window (no races, or very few) across the megaphone's buff duration. A clear window means the buff won't be cut short by an upcoming race."
+                                            right={
+                                                <Switch
+                                                    checked={scenarioOverrides.trackblazerEnableMegaphoneForceRaceForecast}
+                                                    onCheckedChange={(checked) => updateOverrideSetting("trackblazerEnableMegaphoneForceRaceForecast", checked)}
+                                                />
+                                            }
+                                        />
+
+                                        {scenarioOverrides.trackblazerEnableMegaphoneForceRaceForecast && (
+                                            <CustomSlider
+                                                searchId="trackblazer-megaphone-force-race-forecast-threshold"
+                                                searchCondition={scenarioOverrides.trackblazerEnableMegaphoneForceRaceForecast}
+                                                parentId="trackblazer-enable-megaphone-force-race-forecast"
+                                                value={scenarioOverrides.trackblazerMegaphoneForceRaceForecastThreshold}
+                                                placeholder={defaultSettings.scenarioOverrides.trackblazerMegaphoneForceRaceForecastThreshold}
+                                                onValueChange={(value) => updateOverrideSetting("trackblazerMegaphoneForceRaceForecastThreshold", value)}
+                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerMegaphoneForceRaceForecastThreshold", value)}
+                                                min={0}
+                                                max={5}
+                                                step={1}
+                                                label="Max Forecasted Races in Buff Window"
+                                                labelUnit=" race(s)"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="The Smart Race Solver's planned schedule must show at most this many races within the megaphone's buff-duration window starting this turn for the force-use override to apply. Requires the Smart Race Solver to be enabled."
+                                            />
+                                        )}
+
+                                        <CustomSlider
+                                            searchId="trackblazer-megaphone-surplus-burn-reserve"
+                                            value={scenarioOverrides.trackblazerMegaphoneSurplusBurnReserve}
+                                            placeholder={defaultSettings.scenarioOverrides.trackblazerMegaphoneSurplusBurnReserve}
+                                            onValueChange={(value) => updateOverrideSetting("trackblazerMegaphoneSurplusBurnReserve", value)}
+                                            onSlidingComplete={(value) => updateOverrideSetting("trackblazerMegaphoneSurplusBurnReserve", value)}
+                                            min={0}
+                                            max={3}
+                                            step={1}
+                                            label="Megaphone Surplus-Burn Reserve"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="When total megaphone count (across all 3 tiers) exceeds this reserve, the mood/gain conservation gate is bypassed for megaphones so the surplus gets burned down. 0 disables this override."
                                         />
                                     </View>
                                 </Section>
