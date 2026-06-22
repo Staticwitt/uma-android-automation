@@ -36,6 +36,12 @@ object OwnedSupportDeckEquipper {
 
     fun isEnabled(): Boolean = SettingsHelper.getBooleanSetting("racing", "enableAutoEquipOwnedSupportDeck")
 
+    /** Drops case-insensitive duplicate names so the same card is never assigned to two slots. */
+    private fun dedupeCardNames(names: List<String>): List<String> {
+        val seen = mutableSetOf<String>()
+        return names.filter { seen.add(it.trim().lowercase()) }
+    }
+
     /**
      * Equips configured owned supports when career-selection slots are visible.
      *
@@ -47,9 +53,11 @@ object OwnedSupportDeckEquipper {
         if (!isEnabled() || equipAttemptedThisRun) return false
 
         val ownedCards =
-            SupportCardSelection.filterTraineeFromSupportNames(
-                SupportCardSelection.readStringList(
-                    SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"),
+            dedupeCardNames(
+                SupportCardSelection.filterTraineeFromSupportNames(
+                    SupportCardSelection.readStringList(
+                        SettingsHelper.getStringSetting("racing", "supportDeckOwnedCards"),
+                    ),
                 ),
             )
         if (ownedCards.isEmpty()) return false

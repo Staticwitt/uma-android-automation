@@ -31,7 +31,23 @@ export const excludeTraineeFromSupportList = (
     return filtered
 }
 
-/** Replaces owned support slots that match the trainee with alternates from the borrow preset. */
+/** Removes case-insensitive duplicate names, keeping the first occurrence's casing. */
+const dedupeCaseInsensitive = (names: string[]): string[] => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const name of names) {
+        const key = name.trim().toLowerCase()
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        out.push(name)
+    }
+    return out
+}
+
+/**
+ * Replaces owned support slots that match the trainee with alternates from the borrow preset,
+ * and drops duplicate slots so the same card is never assigned to two slots.
+ */
 export const substituteTraineeInOwnedDeck = (
     owned: string[],
     traineeName: string,
@@ -44,7 +60,7 @@ export const substituteTraineeInOwnedDeck = (
             if (replacement) out[i] = replacement
         }
     }
-    return out.filter((name) => !namesMatchTrainee(name, traineeName))
+    return dedupeCaseInsensitive(out.filter((name) => !namesMatchTrainee(name, traineeName)))
 }
 
 export const parseSupportBorrowOverrides = (json: string | undefined): ParentFarmingSupportBorrowOverrides => {

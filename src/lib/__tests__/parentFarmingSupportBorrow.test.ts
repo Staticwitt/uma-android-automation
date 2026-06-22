@@ -39,6 +39,15 @@ describe("parentFarmingSupportBorrow", () => {
         expect(owned.length).toBe(4)
     })
 
+    it("substituteTraineeInOwnedDeck drops duplicate slots so the same card is never assigned twice", () => {
+        const owned = substituteTraineeInOwnedDeck(
+            ["Kitasan Black", "Gold Ship", "kitasan black", "Power"],
+            "Grass Wonder",
+            ["Silence Suzuka"],
+        )
+        expect(owned).toEqual(["Kitasan Black", "Gold Ship", "Power"])
+    })
+
     it("prefers user override over bundle defaults", () => {
         const overrides = { [mejiroBundle.key]: ["Kitasan Black", "Gold Ship"] }
         const cards = resolveSupportBorrowCardsForBundle(mejiroBundle, overrides)
