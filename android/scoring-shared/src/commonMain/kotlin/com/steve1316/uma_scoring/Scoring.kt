@@ -137,8 +137,18 @@ fun calculateStatEfficiencyScore(config: TrainingConfig, training: TrainingOptio
 }
 
 /**
+ * Whether a bar is already fully maxed (orange at ~100% fill) and so has no further bonding benefit. This is the same signal `isRainbow` reads off of, but additionally
+ * requires full fill so a bar that's merely high-orange-but-still-climbing isn't mistaken for one that's done growing.
+ */
+private fun isBarFullyMaxed(bar: BarFillResult): Boolean = bar.dominantColor == "orange" && bar.fillPercent >= 99.9
+
+/**
  * Relationship-building score with diminishing returns. Normalized to roughly [0, 100] by dividing accumulated value by the per-bar theoretical max so the downstream weight
  * can treat it the same as the misc score.
+ *
+ * When `config.enableBondEfficiencyCapping` is true, bars that are already fully maxed are excluded from the accumulation: they have no further bonding benefit, so a training
+ * shouldn't gain relationship-driven priority just because a maxed card happens to be present. The rainbow multiplier in `calculateRawTrainingScore` still rewards an active
+ * rainbow training on its own; this only stops over-investing further bonding turns into a card that can't gain more.
  *
  * @param config The shared scoring config.
  * @param training The shared training option.
@@ -152,6 +162,8 @@ fun calculateRelationshipScore(config: TrainingConfig, training: TrainingOption)
     var maxScore = 0.0
 
     for (bar in training.relationshipBars) {
+        if (config.enableBondEfficiencyCapping && isBarFullyMaxed(bar)) continue
+
         val baseValue =
             when (bar.dominantColor) {
                 "orange" -> config.scoring.relationshipOrangeValue

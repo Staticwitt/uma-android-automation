@@ -147,11 +147,13 @@ export function buildSettingsBanner(settings: Settings): string {
 📏 Preferred Distance Override: ${settings.training.preferredDistanceOverride === "Default" ? "Default" : settings.training.preferredDistanceOverride}
 🌈 Enable Rainbow Training Bonus: ${settings.training.enableRainbowTrainingBonus ? "✅" : "❌"}
 💞 Prioritize Near-Max Friendship: ${settings.training.enablePrioritizeNearMaxFriendship ? "✅" : "❌"}
+🤝 Bond Efficiency Capping: ${settings.training.enableBondEfficiencyCapping ? "✅" : "❌"}
 💡 Prioritize Skill Hints: ${settings.training.enablePrioritizeSkillHints ? "✅" : "❌"}
 📈 Weight Score by Training Level: ${settings.training.enableTrainingLevelWeighting ? "✅" : "❌"}
 ☀️ Must Rest Before Summer: ${settings.training.mustRestBeforeSummer ? "✅" : "❌"}
 🔋 Energy Banking: ${settings.training.enableEnergyBanking ? `✅ (threshold ${settings.training.energyBankingThreshold}%, lookahead ${settings.training.energyBankingLookaheadTurns} turns)` : "❌"}
 🎯 Train Wit During Finale: ${settings.training.trainWitDuringFinale ? "✅" : "❌"}
+😊 Minimum Mood for Training: ${settings.training.minimumMoodForTraining}
 🔍 Training Analysis Validation: ${settings.training.enableTrainingAnalysisValidation ? "✅" : "❌"}
 🤖 Enable YOLO Stat Detection: ${settings.training.enableYoloStatDetection ? "✅" : "❌"}
 
@@ -249,6 +251,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🛍️ Trackblazer Shop Check Grades: ${settings.scenarioOverrides?.trackblazerShopCheckGrades?.join(", ")}
 🛍️ Trackblazer Shop Check Frequency: ${settings.scenarioOverrides?.trackblazerShopCheckFrequency}
 🛍️ Trackblazer Excluded Items: ${settings.scenarioOverrides?.trackblazerExcludedItems?.length === 0 ? "None" : settings.scenarioOverrides?.trackblazerExcludedItems?.join(", ")}
+🛍️ Trackblazer Value-Aware Shop Purchasing: ${settings.scenarioOverrides?.trackblazerValueAwareShopping ? "✅" : "❌"}
 ✨ Trackblazer Skip Risky Charm Training Below Stat Gain: ${settings.scenarioOverrides?.trackblazerSkipRiskyCharmTrainingBelowGain}
 ✨ Trackblazer Skip Items During Bad Mood Below Stat Gain: ${settings.scenarioOverrides?.trackblazerSkipBadMoodItemsBelowGain}
 🔄 Trackblazer Max Retries per Race: ${settings.scenarioOverrides?.trackblazerMaxRetriesPerRace}

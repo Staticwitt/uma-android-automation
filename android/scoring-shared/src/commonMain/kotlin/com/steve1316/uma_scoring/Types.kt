@@ -114,6 +114,8 @@ data class TrainingOption(
  * @property enablePrioritizeSkillHints When true and any hints are present, the misc score floors to `skillHintOverrideScore` so hint trainings dominate.
  * @property enableTrainingLevelWeighting When true, level boosts amplify priority-stat scoring.
  * @property enablePrioritizeNearMaxFriendship When true (Year 2+), trainings with multiple near-max friendship bars receive the anticipatory rainbow multiplier.
+ * @property enableBondEfficiencyCapping When true, bars that are already fully maxed (orange at 100% fill) contribute nothing to `calculateRelationshipScore`, so a training's
+ * relationship-driven priority reflects only bars that still benefit from more bonding. The rainbow multiplier (the reward for an active rainbow training) is unaffected.
  * @property statsTrainedOverBuffer Set of stats that already used their single rainbow allowance over the buffer.
  * @property scoring The numeric tuning constants. Default reproduces current hardcoded behavior.
  */
@@ -132,6 +134,7 @@ data class TrainingConfig(
     val enablePrioritizeSkillHints: Boolean = false,
     val enableTrainingLevelWeighting: Boolean = false,
     val enablePrioritizeNearMaxFriendship: Boolean = true,
+    val enableBondEfficiencyCapping: Boolean = false,
     val statsTrainedOverBuffer: Set<StatName> = emptySet(),
     val scoring: TrainingScoringConstants = TrainingScoringConstants(),
 )

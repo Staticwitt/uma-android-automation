@@ -211,6 +211,13 @@ const searchConfig: SearchOption[] = [
         page: "TrainingSettings",
     },
     {
+        id: "minimum-mood-for-training",
+        title: "Minimum Mood for Training",
+        description:
+            "The bot will train through any mood at or above this threshold without forcing a mood-recovery outing. Below this threshold, mood recovery is forced as usual.",
+        page: "TrainingSettings",
+    },
+    {
         id: "enable-rainbow-training-bonus",
         title: "Enable Rainbow Training Bonus",
         description:
@@ -222,6 +229,13 @@ const searchConfig: SearchOption[] = [
         title: "Prioritize Near-Max Friendship Bars",
         description:
             "When enabled (Year 2+), trainings with multiple green/blue friendship bars close to maxing receive an anticipatory rainbow multiplier, helping the bot favor them so the bars cross into orange and unlock rainbow training on later turns. Does not stack with the actual rainbow bonus.",
+        page: "TrainingSettings",
+    },
+    {
+        id: "enable-bond-efficiency-capping",
+        title: "Enable Bond Efficiency Capping",
+        description:
+            "When enabled, friendship bars that are already fully maxed (orange at 100% fill) are excluded from a training's relationship score, so bonding effort is redirected toward cards that still benefit from more bonding. Does not affect the rainbow bonus for an active rainbow training.",
         page: "TrainingSettings",
     },
     {
@@ -1096,6 +1110,13 @@ const searchConfig: SearchOption[] = [
         id: "trackblazer-shop-check-frequency",
         title: "Trackblazer Shop Check Frequency",
         description: "Sets the frequency of shop checks after races in the Trackblazer scenario. 1 = every race, 2 = 1 day after, 3 = 2 days after, etc.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-value-aware-shopping",
+        title: "Enable Trackblazer Value-Aware Shop Purchasing",
+        description:
+            "When enabled, stat-item purchases (Scrolls and Manuals) are ordered by your Stat Prioritization list, spending coins on your top-priority stat's best value-per-coin item before moving to the next stat. When disabled, every stat's Scroll is bought before any stat's Manual, regardless of priority.",
         page: "ScenarioOverridesSettings",
     },
     {

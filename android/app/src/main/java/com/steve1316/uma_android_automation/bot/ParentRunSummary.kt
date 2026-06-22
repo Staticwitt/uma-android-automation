@@ -216,6 +216,9 @@ object ParentRunSummary {
             lines.add("Harvest verdict: ${input.harvestVerdict}")
         }
         lines.add("Races: ${input.raceStats.wins} wins, ${input.raceStats.losses} losses")
+        if (trainee.careerRank.isNotEmpty()) {
+            lines.add("Career Rank: ${trainee.careerRank} (${trainee.careerRating})")
+        }
         lines.add("Fans: ${trainee.fans} (${formatFanClass(trainee.fanCountClass.name)})")
         lines.add("Skill points: ${trainee.skillPoints}")
         lines.add("Stats: ${trainee.stats}")
@@ -285,6 +288,9 @@ object ParentRunSummary {
 
         val runStats = mutableListOf<String>()
         runStats.add(DiscordMessageFormatter.bullet("Races", "${input.raceStats.wins} wins, ${input.raceStats.losses} losses"))
+        if (trainee.careerRank.isNotEmpty()) {
+            runStats.add(DiscordMessageFormatter.bullet("Career Rank", "${trainee.careerRank} (${trainee.careerRating})"))
+        }
         runStats.add(
             DiscordMessageFormatter.bullet(
                 "Fans",
@@ -363,6 +369,9 @@ object ParentRunSummary {
                 inline = true,
             ),
         )
+        if (trainee.careerRank.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Career Rank", "${trainee.careerRank} (${trainee.careerRating})", inline = true))
+        }
         fields.add(
             DiscordEmbedField(
                 "Fans",
@@ -470,6 +479,9 @@ object ParentRunSummary {
             fields.add(DiscordEmbedField("Runtime", MessageLog.formatElapsedTime(0, elapsedMs), inline = true))
         }
         fields.add(DiscordEmbedField("Races", "${raceStats.wins} wins · ${raceStats.losses} losses", inline = true))
+        if (trainee.careerRank.isNotEmpty()) {
+            fields.add(DiscordEmbedField("Career Rank", "${trainee.careerRank} (${trainee.careerRating})", inline = true))
+        }
         fields.add(
             DiscordEmbedField(
                 "Fans",

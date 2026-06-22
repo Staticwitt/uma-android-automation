@@ -19,6 +19,7 @@ function makeConfig(overrides: Partial<TrainingConfig> = {}): TrainingConfig {
         enableTrainingLevelWeighting: false,
         disableStatTargets: false,
         enablePrioritizeNearMaxFriendship: true,
+        enableBondEfficiencyCapping: false,
         statsTrainedOverBuffer: new Set(),
         scoring: DEFAULT_TRAINING_SCORING_CONSTANTS,
         ...overrides,

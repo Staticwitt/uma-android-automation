@@ -52,6 +52,7 @@ import com.steve1316.uma_android_automation.components.IconRecreationDate
 import com.steve1316.uma_android_automation.components.IconRecreationDateOpen
 import com.steve1316.uma_android_automation.components.IconTazuna
 import com.steve1316.uma_android_automation.components.IconTrainingEventHorseshoe
+import com.steve1316.uma_android_automation.components.LabelCareerRankTitle
 import com.steve1316.uma_android_automation.components.LabelEnergy
 import com.steve1316.uma_android_automation.components.LabelEventProgress
 import com.steve1316.uma_android_automation.components.LabelOrdinaryCuties
@@ -162,6 +163,9 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Number of turns before the next mandatory race within which [enableEnergyBanking] applies. */
     protected val energyBankingLookaheadTurns: Int = SettingsHelper.getIntSetting("training", "energyBankingLookaheadTurns", 2)
 
+    /** Minimum mood at or above which the bot will train through without forcing a mood-recovery outing. Below this threshold, mood recovery is forced. Defaults to [Mood.GOOD] to preserve prior hardcoded behavior. */
+    protected val minimumMoodForTraining: Mood = Mood.fromName(SettingsHelper.getStringSetting("training", "minimumMoodForTraining", "GOOD")) ?: Mood.GOOD
+
     /**
      * Resolves the [TrackDistance] of the upcoming mandatory/scheduled race for [GoalRaceStatBias],
      * or null when the feature is disabled, the race is outside its configured lookahead window, the
@@ -200,6 +204,9 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Whether a recreation date event has been completed today. */
     protected var recreationDateCompleted: Boolean = false
+
+    /** Whether the end-of-career Career Rank screen has already been captured this run, to avoid repeating the OCR check every frame. */
+    private var hasCapturedCareerRank: Boolean = false
 
     /** The turn number when the stop-at-date check first started. */
     protected var stopAtDateInitialTurnNumber: Int = -1
@@ -245,6 +252,9 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Number of consecutive [ButtonCancel] matches required to confirm a real warning popup. */
     private val WARNING_POPUP_CONFIRM_THRESHOLD: Int = 5
+
+    /** Matches valid Career Rank tiers (e.g. "S+", "SS", "UG") detected via OCR on the Career Rank screen. */
+    private val CAREER_RANK_PATTERN: Regex = Regex("^(UG|SS\\+?|S\\+?|A\\+?|B\\+?|C\\+?|D\\+?|E\\+?|F\\+?|G\\+?)$")
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -986,7 +996,7 @@ abstract class Campaign(game: Game) : Task(game) {
             }
         }
 
-        return (trainee.mood < Mood.GOOD)
+        return (trainee.mood < minimumMoodForTraining)
     }
 
     /**
@@ -1683,6 +1693,11 @@ abstract class Campaign(game: Game) : Task(game) {
 
         val sourceBitmap = game.imageUtils.getSourceBitmap()
 
+        // Best-effort, non-blocking capture of the Career Rank screen before the generic "Next" button below dismisses it.
+        if (!hasCapturedCareerRank) {
+            checkCareerRankScreen(sourceBitmap)
+        }
+
         if (ButtonNext.click(game.imageUtils, sourceBitmap = sourceBitmap)) {
             // Now confirm the completion of a Training Goal popup.
             MessageLog.i(TAG, "[MISC] Popup detected that needs to be dismissed with the \"Next\" button.")
@@ -1749,6 +1764,57 @@ abstract class Campaign(game: Game) : Task(game) {
         }
 
         return false
+    }
+
+    /**
+     * Attempts to detect and OCR the end-of-career Career Rank screen (final rank tier and rating number).
+     *
+     * The generic "Next" button check in [performMiscChecks] dismisses this screen, so this must run beforehand
+     * using the same [sourceBitmap] to have any chance of reading it. This is best-effort: it silently does nothing
+     * if the screen isn't present, or if OCR doesn't produce a recognizable rank tier.
+     */
+    private fun checkCareerRankScreen(sourceBitmap: Bitmap) {
+        val anchor = LabelCareerRankTitle.findImageWithBitmap(game.imageUtils, sourceBitmap) ?: return
+
+        val rankText =
+            game.imageUtils.performOCROnRegion(
+                sourceBitmap,
+                game.imageUtils.relX(anchor.x, -186),
+                game.imageUtils.relY(anchor.y, 167),
+                game.imageUtils.relWidth(405),
+                game.imageUtils.relHeight(296),
+                useThreshold = true,
+                useGrayscale = true,
+                scale = 2.0,
+                ocrEngine = "mlkit",
+                debugName = "career_rank_tier",
+            )
+        val cleanedRank = rankText.trim().uppercase().replace(Regex("[^A-Z+]"), "")
+
+        if (!CAREER_RANK_PATTERN.matches(cleanedRank)) {
+            MessageLog.v(TAG, "[MISC] Career Rank title detected but rank OCR did not produce a recognizable tier (raw: \"$rankText\").")
+            return
+        }
+
+        val ratingText =
+            game.imageUtils.performOCROnRegion(
+                sourceBitmap,
+                game.imageUtils.relX(anchor.x, -287),
+                game.imageUtils.relY(anchor.y, 743),
+                game.imageUtils.relWidth(557),
+                game.imageUtils.relHeight(140),
+                useThreshold = false,
+                useGrayscale = true,
+                scale = 2.0,
+                ocrEngine = "tesseract",
+                debugName = "career_rank_rating",
+            )
+        val cleanedRating = ratingText.replace(Regex("[^0-9]"), "")
+
+        trainee.careerRank = cleanedRank
+        trainee.careerRating = cleanedRating.toIntOrNull() ?: 0
+        hasCapturedCareerRank = true
+        MessageLog.i(TAG, "[MISC] Detected Career Rank screen: rank=$cleanedRank, rating=${trainee.careerRating}")
     }
 
     /**

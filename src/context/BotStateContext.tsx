@@ -225,11 +225,13 @@ export interface Settings {
         disableTrainingOnMaxedStat: boolean
         enableRainbowTrainingBonus: boolean
         enablePrioritizeNearMaxFriendship: boolean
+        enableBondEfficiencyCapping: boolean
         preferredDistanceOverride: string
         mustRestBeforeSummer: boolean
         enableEnergyBanking: boolean
         energyBankingThreshold: number
         energyBankingLookaheadTurns: number
+        minimumMoodForTraining: string
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
@@ -352,6 +354,7 @@ export interface Settings {
         trackblazerArtisanHammerMinStockForG2: number
         trackblazerGlowStickFinalReserve: number
         trackblazerGlowStickMinFans: number
+        trackblazerValueAwareShopping: boolean
     }
 }
 
@@ -572,11 +575,13 @@ export const defaultSettings: Settings = {
         disableTrainingOnMaxedStat: true,
         enableRainbowTrainingBonus: false,
         enablePrioritizeNearMaxFriendship: true,
+        enableBondEfficiencyCapping: false,
         preferredDistanceOverride: "Auto",
         mustRestBeforeSummer: false,
         enableEnergyBanking: false,
         energyBankingThreshold: 50,
         energyBankingLookaheadTurns: 2,
+        minimumMoodForTraining: "GOOD",
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,
@@ -682,6 +687,7 @@ export const defaultSettings: Settings = {
         trackblazerArtisanHammerMinStockForG2: 2,
         trackblazerGlowStickFinalReserve: 1,
         trackblazerGlowStickMinFans: 20000,
+        trackblazerValueAwareShopping: false,
     },
 }
 

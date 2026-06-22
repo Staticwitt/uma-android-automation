@@ -166,6 +166,12 @@ class Trainee {
     /** The name of the trainee detected from the UI. */
     var name: String = ""
 
+    /** The Career Rank tier (e.g. "S+", "SS", "UG") detected from the end-of-career Career Rank screen, or empty if not detected. */
+    var careerRank: String = ""
+
+    /** The Career Rank rating number detected from the end-of-career Career Rank screen, or 0 if not detected. */
+    var careerRating: Int = 0
+
     /** The screen-space location of the track surface label used as an OCR reference point. */
     var statTrackLocation: Point? = null
 

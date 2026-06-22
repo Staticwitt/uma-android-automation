@@ -126,6 +126,9 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     /** Whether to apply an anticipatory rainbow multiplier in Year 2+ when a training has multiple near-max (green/blue) friendship bars. */
     private val enablePrioritizeNearMaxFriendship: Boolean = SettingsHelper.getBooleanSetting("training", "enablePrioritizeNearMaxFriendship", true)
 
+    /** Whether to exclude already-fully-maxed friendship bars from the relationship score, so bonding effort is redirected toward cards that still benefit from it. */
+    private val enableBondEfficiencyCapping: Boolean = SettingsHelper.getBooleanSetting("training", "enableBondEfficiencyCapping", false)
+
     /** Whether to enable risky training logic. */
     private val enableRiskyTraining: Boolean = SettingsHelper.getBooleanSetting("training", "enableRiskyTraining")
 
@@ -303,6 +306,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
      * @property enableTrainingLevelWeighting Whether to amplify priority-list stat scores by their OCR-detected training level (1-5).
      * @property disableStatTargets Whether per-distance stat targets are overridden by the scenario stat cap for all stats.
      * @property enablePrioritizeNearMaxFriendship Whether to apply an anticipatory rainbow multiplier in Year 2+ when a training has multiple near-max (green/blue) friendship bars.
+     * @property enableBondEfficiencyCapping Whether to exclude already-fully-maxed friendship bars from the relationship score.
      * @property statsTrainedOverBuffer Set of stats that have already exceeded their cap buffer.
      * @property scoring All tunable numeric constants for the scoring math. Defaults to current hardcoded values.
      */
@@ -324,6 +328,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
         val enableTrainingLevelWeighting: Boolean = false,
         val disableStatTargets: Boolean = false,
         val enablePrioritizeNearMaxFriendship: Boolean = true,
+        val enableBondEfficiencyCapping: Boolean = false,
         val statsTrainedOverBuffer: Set<StatName> = emptySet(),
         val scoring: TrainingScoringConstants = TrainingScoringConstants(),
     ) {
@@ -349,6 +354,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             if (enableTrainingLevelWeighting != other.enableTrainingLevelWeighting) return false
             if (disableStatTargets != other.disableStatTargets) return false
             if (enablePrioritizeNearMaxFriendship != other.enablePrioritizeNearMaxFriendship) return false
+            if (enableBondEfficiencyCapping != other.enableBondEfficiencyCapping) return false
             if (statsTrainedOverBuffer != other.statsTrainedOverBuffer) return false
             if (scoring != other.scoring) return false
 
@@ -372,6 +378,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             result = 31 * result + enableTrainingLevelWeighting.hashCode()
             result = 31 * result + disableStatTargets.hashCode()
             result = 31 * result + enablePrioritizeNearMaxFriendship.hashCode()
+            result = 31 * result + enableBondEfficiencyCapping.hashCode()
             result = 31 * result + statsTrainedOverBuffer.hashCode()
             result = 31 * result + scoring.hashCode()
             return result
