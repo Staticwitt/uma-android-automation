@@ -185,8 +185,10 @@
     var score = 0.0;
     var maxScore = 0.0;
     var _iterator__ex2g4s = training.relationshipBars.b();
-    while (_iterator__ex2g4s.c()) {
+    $l$loop: while (_iterator__ex2g4s.c()) {
       var bar = _iterator__ex2g4s.d();
+      if (config.enableBondEfficiencyCapping && isBarFullyMaxed(bar))
+        continue $l$loop;
       var baseValue;
       switch (bar.dominantColor) {
         case 'orange':
@@ -340,6 +342,9 @@
   function scoringConstantsFromMap(settings, defaults) {
     defaults = defaults === VOID ? new TrainingScoringConstants() : defaults;
     return defaults.copy(VOID, listOf([scoringConstantsFromMap$d(settings, 'ratioMultiplier1', defaults.ratioMultipliers.f(0)), scoringConstantsFromMap$d(settings, 'ratioMultiplier2', defaults.ratioMultipliers.f(1)), scoringConstantsFromMap$d(settings, 'ratioMultiplier3', defaults.ratioMultipliers.f(2)), scoringConstantsFromMap$d(settings, 'ratioMultiplier4', defaults.ratioMultipliers.f(3)), scoringConstantsFromMap$d(settings, 'ratioMultiplier5', defaults.ratioMultipliers.f(4)), scoringConstantsFromMap$d(settings, 'ratioMultiplier6', defaults.ratioMultipliers.f(5)), scoringConstantsFromMap$d(settings, 'ratioMultiplier7', defaults.ratioMultipliers.f(6))]), scoringConstantsFromMap$d(settings, 'priorityCoefficient', defaults.priorityCoefficient), scoringConstantsFromMap$d(settings, 'levelBoostRank1Factor', defaults.levelBoostRank1Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank2Factor', defaults.levelBoostRank2Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank3Factor', defaults.levelBoostRank3Factor), mapOf([to(StatName_SPEED_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdSpeed', ensureNotNull(defaults.mainStatThresholds.s(StatName_SPEED_getInstance())))), to(StatName_STAMINA_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdStamina', ensureNotNull(defaults.mainStatThresholds.s(StatName_STAMINA_getInstance())))), to(StatName_POWER_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdPower', ensureNotNull(defaults.mainStatThresholds.s(StatName_POWER_getInstance())))), to(StatName_GUTS_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdGuts', ensureNotNull(defaults.mainStatThresholds.s(StatName_GUTS_getInstance())))), to(StatName_WIT_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdWit', ensureNotNull(defaults.mainStatThresholds.s(StatName_WIT_getInstance()))))]), scoringConstantsFromMap$d(settings, 'mainStatBonusMagnitude', defaults.mainStatBonusMagnitude), scoringConstantsFromMap$d(settings, 'relationshipOrangeValue', defaults.relationshipOrangeValue), scoringConstantsFromMap$d(settings, 'relationshipGreenValue', defaults.relationshipGreenValue), scoringConstantsFromMap$d(settings, 'relationshipBlueValue', defaults.relationshipBlueValue), scoringConstantsFromMap$d(settings, 'relationshipDiminishingFactor', defaults.relationshipDiminishingFactor), scoringConstantsFromMap$d(settings, 'relationshipEarlyGameBonus', defaults.relationshipEarlyGameBonus), scoringConstantsFromMap$d(settings, 'relationshipTrainerSupportBonus', defaults.relationshipTrainerSupportBonus), scoringConstantsFromMap$d(settings, 'skillHintPerHintScore', defaults.skillHintPerHintScore), scoringConstantsFromMap$d(settings, 'skillHintOverrideScore', defaults.skillHintOverrideScore), scoringConstantsFromMap$d(settings, 'statWeightWithBars', defaults.statWeightWithBars), scoringConstantsFromMap$d(settings, 'statWeightWithoutBars', defaults.statWeightWithoutBars), scoringConstantsFromMap$d(settings, 'relationshipWeightWithBars', defaults.relationshipWeightWithBars), scoringConstantsFromMap$d(settings, 'miscWeight', defaults.miscWeight), scoringConstantsFromMap$d(settings, 'juniorEarlyGameFlatBonus', defaults.juniorEarlyGameFlatBonus), scoringConstantsFromMap$d(settings, 'relationshipScale', defaults.relationshipScale), scoringConstantsFromMap$d(settings, 'rainbowMultiplierEnabled', defaults.rainbowMultiplierEnabled), scoringConstantsFromMap$d(settings, 'rainbowMultiplierDisabled', defaults.rainbowMultiplierDisabled), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceBase', defaults.rainbowPerInstanceBase), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceDecay', defaults.rainbowPerInstanceDecay), scoringConstantsFromMap$d(settings, 'anticipatoryMinFillPercent', defaults.anticipatoryMinFillPercent), scoringConstantsFromMap$d(settings, 'anticipatoryCoefficient', defaults.anticipatoryCoefficient), scoringConstantsFromMap$d(settings, 'anticipatoryCap', defaults.anticipatoryCap));
+  }
+  function isBarFullyMaxed(bar) {
+    return bar.dominantColor === 'orange' && bar.fillPercent >= 99.9;
   }
   function scoringConstantsFromMap$d($settings, key, fallback) {
     var tmp = $settings.s(key);
@@ -746,7 +751,7 @@
       return false;
     return true;
   };
-  function TrainingConfig(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring) {
+  function TrainingConfig(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) {
     blacklist = blacklist === VOID ? emptyList() : blacklist;
     disableTrainingOnMaxedStat = disableTrainingOnMaxedStat === VOID ? false : disableTrainingOnMaxedStat;
     var tmp;
@@ -768,6 +773,7 @@
     enablePrioritizeSkillHints = enablePrioritizeSkillHints === VOID ? false : enablePrioritizeSkillHints;
     enableTrainingLevelWeighting = enableTrainingLevelWeighting === VOID ? false : enableTrainingLevelWeighting;
     enablePrioritizeNearMaxFriendship = enablePrioritizeNearMaxFriendship === VOID ? true : enablePrioritizeNearMaxFriendship;
+    enableBondEfficiencyCapping = enableBondEfficiencyCapping === VOID ? false : enableBondEfficiencyCapping;
     statsTrainedOverBuffer = statsTrainedOverBuffer === VOID ? emptySet() : statsTrainedOverBuffer;
     scoring = scoring === VOID ? new TrainingScoringConstants() : scoring;
     this.currentStats = currentStats;
@@ -783,6 +789,7 @@
     this.enablePrioritizeSkillHints = enablePrioritizeSkillHints;
     this.enableTrainingLevelWeighting = enableTrainingLevelWeighting;
     this.enablePrioritizeNearMaxFriendship = enablePrioritizeNearMaxFriendship;
+    this.enableBondEfficiencyCapping = enableBondEfficiencyCapping;
     this.statsTrainedOverBuffer = statsTrainedOverBuffer;
     this.scoring = scoring;
   }
@@ -826,9 +833,12 @@
     return this.enablePrioritizeNearMaxFriendship;
   };
   protoOf(TrainingConfig).a9 = function () {
-    return this.statsTrainedOverBuffer;
+    return this.enableBondEfficiencyCapping;
   };
   protoOf(TrainingConfig).b9 = function () {
+    return this.statsTrainedOverBuffer;
+  };
+  protoOf(TrainingConfig).c9 = function () {
     return this.scoring;
   };
   protoOf(TrainingConfig).a7 = function () {
@@ -849,37 +859,40 @@
   protoOf(TrainingConfig).l8 = function () {
     return this.scenario;
   };
-  protoOf(TrainingConfig).c9 = function () {
+  protoOf(TrainingConfig).d9 = function () {
     return this.enableRainbowTrainingBonus;
   };
-  protoOf(TrainingConfig).d9 = function () {
+  protoOf(TrainingConfig).e9 = function () {
     return this.blacklist;
   };
-  protoOf(TrainingConfig).e9 = function () {
+  protoOf(TrainingConfig).f9 = function () {
     return this.disableTrainingOnMaxedStat;
   };
-  protoOf(TrainingConfig).f9 = function () {
+  protoOf(TrainingConfig).g9 = function () {
     return this.skillHintsPerLocation;
   };
-  protoOf(TrainingConfig).g9 = function () {
+  protoOf(TrainingConfig).h9 = function () {
     return this.enablePrioritizeSkillHints;
   };
-  protoOf(TrainingConfig).h9 = function () {
+  protoOf(TrainingConfig).i9 = function () {
     return this.enableTrainingLevelWeighting;
   };
-  protoOf(TrainingConfig).i9 = function () {
+  protoOf(TrainingConfig).j9 = function () {
     return this.enablePrioritizeNearMaxFriendship;
   };
-  protoOf(TrainingConfig).j9 = function () {
+  protoOf(TrainingConfig).k9 = function () {
+    return this.enableBondEfficiencyCapping;
+  };
+  protoOf(TrainingConfig).l9 = function () {
     return this.statsTrainedOverBuffer;
   };
-  protoOf(TrainingConfig).k9 = function () {
+  protoOf(TrainingConfig).m9 = function () {
     return this.scoring;
   };
-  protoOf(TrainingConfig).l9 = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring) {
-    return new TrainingConfig(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring);
+  protoOf(TrainingConfig).n9 = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) {
+    return new TrainingConfig(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring);
   };
-  protoOf(TrainingConfig).copy = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring, $super) {
+  protoOf(TrainingConfig).copy = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring, $super) {
     currentStats = currentStats === VOID ? this.currentStats : currentStats;
     statPrioritization = statPrioritization === VOID ? this.statPrioritization : statPrioritization;
     summerTrainingStatPriority = summerTrainingStatPriority === VOID ? this.summerTrainingStatPriority : summerTrainingStatPriority;
@@ -893,12 +906,13 @@
     enablePrioritizeSkillHints = enablePrioritizeSkillHints === VOID ? this.enablePrioritizeSkillHints : enablePrioritizeSkillHints;
     enableTrainingLevelWeighting = enableTrainingLevelWeighting === VOID ? this.enableTrainingLevelWeighting : enableTrainingLevelWeighting;
     enablePrioritizeNearMaxFriendship = enablePrioritizeNearMaxFriendship === VOID ? this.enablePrioritizeNearMaxFriendship : enablePrioritizeNearMaxFriendship;
+    enableBondEfficiencyCapping = enableBondEfficiencyCapping === VOID ? this.enableBondEfficiencyCapping : enableBondEfficiencyCapping;
     statsTrainedOverBuffer = statsTrainedOverBuffer === VOID ? this.statsTrainedOverBuffer : statsTrainedOverBuffer;
     scoring = scoring === VOID ? this.scoring : scoring;
-    return $super === VOID ? this.l9(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring) : $super.l9.call(this, currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, statsTrainedOverBuffer, scoring);
+    return $super === VOID ? this.n9(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) : $super.n9.call(this, currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring);
   };
   protoOf(TrainingConfig).toString = function () {
-    return 'TrainingConfig(currentStats=' + toString(this.currentStats) + ', statPrioritization=' + toString(this.statPrioritization) + ', summerTrainingStatPriority=' + toString(this.summerTrainingStatPriority) + ', statTargets=' + toString(this.statTargets) + ', currentDate=' + this.currentDate.toString() + ', scenario=' + this.scenario + ', enableRainbowTrainingBonus=' + this.enableRainbowTrainingBonus + ', blacklist=' + toString(this.blacklist) + ', disableTrainingOnMaxedStat=' + this.disableTrainingOnMaxedStat + ', skillHintsPerLocation=' + toString(this.skillHintsPerLocation) + ', enablePrioritizeSkillHints=' + this.enablePrioritizeSkillHints + ', enableTrainingLevelWeighting=' + this.enableTrainingLevelWeighting + ', enablePrioritizeNearMaxFriendship=' + this.enablePrioritizeNearMaxFriendship + ', statsTrainedOverBuffer=' + toString(this.statsTrainedOverBuffer) + ', scoring=' + this.scoring.toString() + ')';
+    return 'TrainingConfig(currentStats=' + toString(this.currentStats) + ', statPrioritization=' + toString(this.statPrioritization) + ', summerTrainingStatPriority=' + toString(this.summerTrainingStatPriority) + ', statTargets=' + toString(this.statTargets) + ', currentDate=' + this.currentDate.toString() + ', scenario=' + this.scenario + ', enableRainbowTrainingBonus=' + this.enableRainbowTrainingBonus + ', blacklist=' + toString(this.blacklist) + ', disableTrainingOnMaxedStat=' + this.disableTrainingOnMaxedStat + ', skillHintsPerLocation=' + toString(this.skillHintsPerLocation) + ', enablePrioritizeSkillHints=' + this.enablePrioritizeSkillHints + ', enableTrainingLevelWeighting=' + this.enableTrainingLevelWeighting + ', enablePrioritizeNearMaxFriendship=' + this.enablePrioritizeNearMaxFriendship + ', enableBondEfficiencyCapping=' + this.enableBondEfficiencyCapping + ', statsTrainedOverBuffer=' + toString(this.statsTrainedOverBuffer) + ', scoring=' + this.scoring.toString() + ')';
   };
   protoOf(TrainingConfig).hashCode = function () {
     var result = hashCode(this.currentStats);
@@ -914,6 +928,7 @@
     result = imul(result, 31) + getBooleanHashCode(this.enablePrioritizeSkillHints) | 0;
     result = imul(result, 31) + getBooleanHashCode(this.enableTrainingLevelWeighting) | 0;
     result = imul(result, 31) + getBooleanHashCode(this.enablePrioritizeNearMaxFriendship) | 0;
+    result = imul(result, 31) + getBooleanHashCode(this.enableBondEfficiencyCapping) | 0;
     result = imul(result, 31) + hashCode(this.statsTrainedOverBuffer) | 0;
     result = imul(result, 31) + this.scoring.hashCode() | 0;
     return result;
@@ -949,6 +964,8 @@
     if (!(this.enableTrainingLevelWeighting === tmp0_other_with_cast.enableTrainingLevelWeighting))
       return false;
     if (!(this.enablePrioritizeNearMaxFriendship === tmp0_other_with_cast.enablePrioritizeNearMaxFriendship))
+      return false;
+    if (!(this.enableBondEfficiencyCapping === tmp0_other_with_cast.enableBondEfficiencyCapping))
       return false;
     if (!equals(this.statsTrainedOverBuffer, tmp0_other_with_cast.statsTrainedOverBuffer))
       return false;
@@ -1021,91 +1038,91 @@
       throw IllegalArgumentException_init_$Create$(toString(message));
     }
   }
-  protoOf(TrainingScoringConstants).m9 = function () {
+  protoOf(TrainingScoringConstants).o9 = function () {
     return this.ratioBreakpoints;
   };
-  protoOf(TrainingScoringConstants).n9 = function () {
+  protoOf(TrainingScoringConstants).p9 = function () {
     return this.ratioMultipliers;
   };
-  protoOf(TrainingScoringConstants).o9 = function () {
+  protoOf(TrainingScoringConstants).q9 = function () {
     return this.priorityCoefficient;
   };
-  protoOf(TrainingScoringConstants).p9 = function () {
+  protoOf(TrainingScoringConstants).r9 = function () {
     return this.levelBoostRank1Factor;
   };
-  protoOf(TrainingScoringConstants).q9 = function () {
+  protoOf(TrainingScoringConstants).s9 = function () {
     return this.levelBoostRank2Factor;
   };
-  protoOf(TrainingScoringConstants).r9 = function () {
+  protoOf(TrainingScoringConstants).t9 = function () {
     return this.levelBoostRank3Factor;
   };
-  protoOf(TrainingScoringConstants).s9 = function () {
+  protoOf(TrainingScoringConstants).u9 = function () {
     return this.mainStatThresholds;
   };
-  protoOf(TrainingScoringConstants).t9 = function () {
+  protoOf(TrainingScoringConstants).v9 = function () {
     return this.mainStatBonusMagnitude;
   };
-  protoOf(TrainingScoringConstants).u9 = function () {
+  protoOf(TrainingScoringConstants).w9 = function () {
     return this.relationshipOrangeValue;
   };
-  protoOf(TrainingScoringConstants).v9 = function () {
+  protoOf(TrainingScoringConstants).x9 = function () {
     return this.relationshipGreenValue;
   };
-  protoOf(TrainingScoringConstants).w9 = function () {
+  protoOf(TrainingScoringConstants).y9 = function () {
     return this.relationshipBlueValue;
   };
-  protoOf(TrainingScoringConstants).x9 = function () {
+  protoOf(TrainingScoringConstants).z9 = function () {
     return this.relationshipDiminishingFactor;
   };
-  protoOf(TrainingScoringConstants).y9 = function () {
+  protoOf(TrainingScoringConstants).aa = function () {
     return this.relationshipEarlyGameBonus;
   };
-  protoOf(TrainingScoringConstants).z9 = function () {
+  protoOf(TrainingScoringConstants).ba = function () {
     return this.relationshipTrainerSupportBonus;
   };
-  protoOf(TrainingScoringConstants).aa = function () {
+  protoOf(TrainingScoringConstants).ca = function () {
     return this.skillHintPerHintScore;
   };
-  protoOf(TrainingScoringConstants).ba = function () {
+  protoOf(TrainingScoringConstants).da = function () {
     return this.skillHintOverrideScore;
   };
-  protoOf(TrainingScoringConstants).ca = function () {
+  protoOf(TrainingScoringConstants).ea = function () {
     return this.statWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).da = function () {
+  protoOf(TrainingScoringConstants).fa = function () {
     return this.statWeightWithoutBars;
   };
-  protoOf(TrainingScoringConstants).ea = function () {
+  protoOf(TrainingScoringConstants).ga = function () {
     return this.relationshipWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).fa = function () {
+  protoOf(TrainingScoringConstants).ha = function () {
     return this.miscWeight;
   };
-  protoOf(TrainingScoringConstants).ga = function () {
+  protoOf(TrainingScoringConstants).ia = function () {
     return this.juniorEarlyGameFlatBonus;
   };
-  protoOf(TrainingScoringConstants).ha = function () {
+  protoOf(TrainingScoringConstants).ja = function () {
     return this.relationshipScale;
   };
-  protoOf(TrainingScoringConstants).ia = function () {
+  protoOf(TrainingScoringConstants).ka = function () {
     return this.rainbowMultiplierEnabled;
   };
-  protoOf(TrainingScoringConstants).ja = function () {
+  protoOf(TrainingScoringConstants).la = function () {
     return this.rainbowMultiplierDisabled;
   };
-  protoOf(TrainingScoringConstants).ka = function () {
+  protoOf(TrainingScoringConstants).ma = function () {
     return this.rainbowPerInstanceBase;
   };
-  protoOf(TrainingScoringConstants).la = function () {
+  protoOf(TrainingScoringConstants).na = function () {
     return this.rainbowPerInstanceDecay;
   };
-  protoOf(TrainingScoringConstants).ma = function () {
+  protoOf(TrainingScoringConstants).oa = function () {
     return this.anticipatoryMinFillPercent;
   };
-  protoOf(TrainingScoringConstants).na = function () {
+  protoOf(TrainingScoringConstants).pa = function () {
     return this.anticipatoryCoefficient;
   };
-  protoOf(TrainingScoringConstants).oa = function () {
+  protoOf(TrainingScoringConstants).qa = function () {
     return this.anticipatoryCap;
   };
   protoOf(TrainingScoringConstants).a7 = function () {
@@ -1126,76 +1143,76 @@
   protoOf(TrainingScoringConstants).l8 = function () {
     return this.levelBoostRank3Factor;
   };
-  protoOf(TrainingScoringConstants).c9 = function () {
+  protoOf(TrainingScoringConstants).d9 = function () {
     return this.mainStatThresholds;
   };
-  protoOf(TrainingScoringConstants).d9 = function () {
+  protoOf(TrainingScoringConstants).e9 = function () {
     return this.mainStatBonusMagnitude;
   };
-  protoOf(TrainingScoringConstants).e9 = function () {
+  protoOf(TrainingScoringConstants).f9 = function () {
     return this.relationshipOrangeValue;
   };
-  protoOf(TrainingScoringConstants).f9 = function () {
+  protoOf(TrainingScoringConstants).g9 = function () {
     return this.relationshipGreenValue;
   };
-  protoOf(TrainingScoringConstants).g9 = function () {
+  protoOf(TrainingScoringConstants).h9 = function () {
     return this.relationshipBlueValue;
   };
-  protoOf(TrainingScoringConstants).h9 = function () {
+  protoOf(TrainingScoringConstants).i9 = function () {
     return this.relationshipDiminishingFactor;
   };
-  protoOf(TrainingScoringConstants).i9 = function () {
+  protoOf(TrainingScoringConstants).j9 = function () {
     return this.relationshipEarlyGameBonus;
   };
-  protoOf(TrainingScoringConstants).j9 = function () {
+  protoOf(TrainingScoringConstants).k9 = function () {
     return this.relationshipTrainerSupportBonus;
   };
-  protoOf(TrainingScoringConstants).k9 = function () {
+  protoOf(TrainingScoringConstants).l9 = function () {
     return this.skillHintPerHintScore;
   };
-  protoOf(TrainingScoringConstants).pa = function () {
+  protoOf(TrainingScoringConstants).m9 = function () {
     return this.skillHintOverrideScore;
   };
-  protoOf(TrainingScoringConstants).qa = function () {
+  protoOf(TrainingScoringConstants).ra = function () {
     return this.statWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).ra = function () {
+  protoOf(TrainingScoringConstants).sa = function () {
     return this.statWeightWithoutBars;
   };
-  protoOf(TrainingScoringConstants).sa = function () {
+  protoOf(TrainingScoringConstants).ta = function () {
     return this.relationshipWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).ta = function () {
+  protoOf(TrainingScoringConstants).ua = function () {
     return this.miscWeight;
   };
-  protoOf(TrainingScoringConstants).ua = function () {
+  protoOf(TrainingScoringConstants).va = function () {
     return this.juniorEarlyGameFlatBonus;
   };
-  protoOf(TrainingScoringConstants).va = function () {
+  protoOf(TrainingScoringConstants).wa = function () {
     return this.relationshipScale;
   };
-  protoOf(TrainingScoringConstants).wa = function () {
+  protoOf(TrainingScoringConstants).xa = function () {
     return this.rainbowMultiplierEnabled;
   };
-  protoOf(TrainingScoringConstants).xa = function () {
+  protoOf(TrainingScoringConstants).ya = function () {
     return this.rainbowMultiplierDisabled;
   };
-  protoOf(TrainingScoringConstants).ya = function () {
+  protoOf(TrainingScoringConstants).za = function () {
     return this.rainbowPerInstanceBase;
   };
-  protoOf(TrainingScoringConstants).za = function () {
+  protoOf(TrainingScoringConstants).ab = function () {
     return this.rainbowPerInstanceDecay;
   };
-  protoOf(TrainingScoringConstants).ab = function () {
+  protoOf(TrainingScoringConstants).bb = function () {
     return this.anticipatoryMinFillPercent;
   };
-  protoOf(TrainingScoringConstants).bb = function () {
+  protoOf(TrainingScoringConstants).cb = function () {
     return this.anticipatoryCoefficient;
   };
-  protoOf(TrainingScoringConstants).cb = function () {
+  protoOf(TrainingScoringConstants).db = function () {
     return this.anticipatoryCap;
   };
-  protoOf(TrainingScoringConstants).db = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) {
+  protoOf(TrainingScoringConstants).eb = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) {
     return new TrainingScoringConstants(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap);
   };
   protoOf(TrainingScoringConstants).copy = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, $super) {
@@ -1228,7 +1245,7 @@
     anticipatoryMinFillPercent = anticipatoryMinFillPercent === VOID ? this.anticipatoryMinFillPercent : anticipatoryMinFillPercent;
     anticipatoryCoefficient = anticipatoryCoefficient === VOID ? this.anticipatoryCoefficient : anticipatoryCoefficient;
     anticipatoryCap = anticipatoryCap === VOID ? this.anticipatoryCap : anticipatoryCap;
-    return $super === VOID ? this.db(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) : $super.db.call(this, ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap);
+    return $super === VOID ? this.eb(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) : $super.eb.call(this, ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap);
   };
   protoOf(TrainingScoringConstants).toString = function () {
     return 'TrainingScoringConstants(ratioBreakpoints=' + toString(this.ratioBreakpoints) + ', ratioMultipliers=' + toString(this.ratioMultipliers) + ', priorityCoefficient=' + this.priorityCoefficient + ', levelBoostRank1Factor=' + this.levelBoostRank1Factor + ', levelBoostRank2Factor=' + this.levelBoostRank2Factor + ', levelBoostRank3Factor=' + this.levelBoostRank3Factor + ', mainStatThresholds=' + toString(this.mainStatThresholds) + ', mainStatBonusMagnitude=' + this.mainStatBonusMagnitude + ', relationshipOrangeValue=' + this.relationshipOrangeValue + ', relationshipGreenValue=' + this.relationshipGreenValue + ', relationshipBlueValue=' + this.relationshipBlueValue + ', relationshipDiminishingFactor=' + this.relationshipDiminishingFactor + ', relationshipEarlyGameBonus=' + this.relationshipEarlyGameBonus + ', relationshipTrainerSupportBonus=' + this.relationshipTrainerSupportBonus + ', skillHintPerHintScore=' + this.skillHintPerHintScore + ', skillHintOverrideScore=' + this.skillHintOverrideScore + ', statWeightWithBars=' + this.statWeightWithBars + ', statWeightWithoutBars=' + this.statWeightWithoutBars + ', relationshipWeightWithBars=' + this.relationshipWeightWithBars + ', miscWeight=' + this.miscWeight + ', juniorEarlyGameFlatBonus=' + this.juniorEarlyGameFlatBonus + ', relationshipScale=' + this.relationshipScale + ', rainbowMultiplierEnabled=' + this.rainbowMultiplierEnabled + ', rainbowMultiplierDisabled=' + this.rainbowMultiplierDisabled + ', rainbowPerInstanceBase=' + this.rainbowPerInstanceBase + ', rainbowPerInstanceDecay=' + this.rainbowPerInstanceDecay + ', anticipatoryMinFillPercent=' + this.anticipatoryMinFillPercent + ', anticipatoryCoefficient=' + this.anticipatoryCoefficient + ', anticipatoryCap=' + this.anticipatoryCap + ')';

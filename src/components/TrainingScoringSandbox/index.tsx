@@ -75,6 +75,7 @@ export function TrainingScoringSandbox({ open, onClose }: TrainingScoringSandbox
             enableTrainingLevelWeighting: training.enableTrainingLevelWeighting,
             disableStatTargets: training.disableStatTargets,
             enablePrioritizeNearMaxFriendship: training.enablePrioritizeNearMaxFriendship,
+            enableBondEfficiencyCapping: training.enableBondEfficiencyCapping,
         }
         const { config, trainings } = scenarioToScoring(scenario, constants, settingsInputs)
         const scoresByTraining = {} as Record<StatName, number>

@@ -59,6 +59,8 @@ export interface SandboxSettingsInputs {
     disableStatTargets: boolean
     /** Add the anticipatory bonus for near-full non-rainbow bars. */
     enablePrioritizeNearMaxFriendship: boolean
+    /** Exclude already-fully-maxed friendship bars from the relationship score. */
+    enableBondEfficiencyCapping: boolean
 }
 
 const DEFAULT_PRIORITY: StatName[] = [StatName.SPEED, StatName.STAMINA, StatName.POWER, StatName.GUTS, StatName.WIT]
@@ -106,6 +108,7 @@ export function scenarioToScoring(
         enableTrainingLevelWeighting: settings?.enableTrainingLevelWeighting ?? true,
         disableStatTargets: settings?.disableStatTargets ?? false,
         enablePrioritizeNearMaxFriendship: settings?.enablePrioritizeNearMaxFriendship ?? true,
+        enableBondEfficiencyCapping: settings?.enableBondEfficiencyCapping ?? false,
         statsTrainedOverBuffer: new Set(),
         scoring: constants,
     }

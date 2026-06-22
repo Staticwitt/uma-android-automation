@@ -134,11 +134,13 @@ const TrainingSettings = () => {
         disableTrainingOnMaxedStat,
         enableRainbowTrainingBonus,
         enablePrioritizeNearMaxFriendship,
+        enableBondEfficiencyCapping,
         preferredDistanceOverride,
         mustRestBeforeSummer,
         enableEnergyBanking,
         energyBankingThreshold,
         energyBankingLookaheadTurns,
+        minimumMoodForTraining,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
@@ -742,6 +744,30 @@ const TrainingSettings = () => {
                                             />
                                         </View>
                                     )}
+                                    <SearchableItem
+                                        id="minimum-mood-for-training"
+                                        title="Minimum Mood for Training"
+                                        description="The bot will train through any mood at or above this threshold without forcing a mood-recovery outing. Below this threshold, mood recovery is forced as usual."
+                                    >
+                                        <Row
+                                            title="Minimum Mood for Training"
+                                            description="The bot will train through any mood at or above this threshold without forcing a mood-recovery outing. Below this threshold, mood recovery is forced as usual."
+                                            right={
+                                                <CustomSelect
+                                                    value={minimumMoodForTraining}
+                                                    onValueChange={(value) => updateTrainingSetting("minimumMoodForTraining", value)}
+                                                    options={[
+                                                        { label: "Bad", value: "BAD" },
+                                                        { label: "Normal", value: "NORMAL" },
+                                                        { label: "Good", value: "GOOD" },
+                                                        { label: "Great", value: "GREAT" },
+                                                    ]}
+                                                    placeholder="Select mood"
+                                                    width={140}
+                                                />
+                                            }
+                                        />
+                                    </SearchableItem>
                                 </Section>
                         )}
 
@@ -770,6 +796,18 @@ const TrainingSettings = () => {
                                             <Switch
                                                 checked={enablePrioritizeNearMaxFriendship}
                                                 onCheckedChange={(checked) => updateTrainingSetting("enablePrioritizeNearMaxFriendship", checked)}
+                                            />
+                                        }
+                                    />
+                                    <SettingRow
+                                        id="enable-bond-efficiency-capping"
+                                        title="Bond Efficiency Capping"
+                                        searchTitle="Enable Bond Efficiency Capping"
+                                        description="When enabled, friendship bars that are already fully maxed (orange at 100% fill) are excluded from a training's relationship score, so bonding effort is redirected toward cards that still benefit from more bonding. Does not affect the rainbow bonus for an active rainbow training."
+                                        right={
+                                            <Switch
+                                                checked={enableBondEfficiencyCapping}
+                                                onCheckedChange={(checked) => updateTrainingSetting("enableBondEfficiencyCapping", checked)}
                                             />
                                         }
                                     />

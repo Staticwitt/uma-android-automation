@@ -199,6 +199,8 @@ export interface TrainingConfig {
     disableStatTargets: boolean
     /** Whether to apply an anticipatory rainbow multiplier in Year 2+ when a training has multiple near-max friendship bars. */
     enablePrioritizeNearMaxFriendship: boolean
+    /** Whether to exclude already-fully-maxed friendship bars (orange at 100% fill) from the relationship score. */
+    enableBondEfficiencyCapping: boolean
     /** Set of stats that have already used their one-time over-buffer training allowance this run. */
     statsTrainedOverBuffer: Set<StatName>
     /** Tunable scoring constants used by the scoring functions. */

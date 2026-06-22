@@ -18,6 +18,7 @@ function makeConfig(overrides: Partial<TrainingConfig> = {}): TrainingConfig {
         enableTrainingLevelWeighting: false,
         disableStatTargets: false,
         enablePrioritizeNearMaxFriendship: true,
+        enableBondEfficiencyCapping: false,
         statsTrainedOverBuffer: new Set(),
         scoring: DEFAULT_TRAINING_SCORING_CONSTANTS,
         ...overrides,
@@ -61,5 +62,41 @@ describe("calculateRelationshipScore", () => {
         // baseValue 1.0, diminishing 1.0, earlyBonus 1.3, trainerBonus 1.0 -> 1.3
         // maxScore = 2.5 * 1.3 = 3.25 -> ratio 0.4 -> 40
         expect(calculateRelationshipScore(config, training)).toBeCloseTo(40, 6)
+    })
+
+    test("bond efficiency capping disabled: a fully-maxed orange bar still counts toward score when relationshipOrangeValue is tuned up", () => {
+        const config = makeConfig({ scoring: { ...DEFAULT_TRAINING_SCORING_CONSTANTS, relationshipOrangeValue: 2.5 } })
+        const training = { ...blankTraining, relationshipBars: [bar("orange", 100)] }
+        // baseValue 2.5, diminishing 1 - 1.0*0.5 = 0.5, earlyBonus 1.0 (Classic year), trainerBonus 1.0 -> 1.25
+        // maxScore = 2.5 * 1.3 = 3.25 (Kotlin always multiplies by relationshipEarlyGameBonus) -> ratio 0.3846... -> ~38.46
+        expect(calculateRelationshipScore(config, training)).toBeCloseTo(38.461538461, 6)
+    })
+
+    test("bond efficiency capping enabled: a fully-maxed orange bar is excluded entirely, even with relationshipOrangeValue tuned up", () => {
+        const config = makeConfig({
+            enableBondEfficiencyCapping: true,
+            scoring: { ...DEFAULT_TRAINING_SCORING_CONSTANTS, relationshipOrangeValue: 2.5 },
+        })
+        const training = { ...blankTraining, relationshipBars: [bar("orange", 100)] }
+        expect(calculateRelationshipScore(config, training)).toBe(0)
+    })
+
+    test("bond efficiency capping enabled: a near-maxed (99%) orange bar still counts, only a true 100% fill is excluded", () => {
+        const config = makeConfig({
+            enableBondEfficiencyCapping: true,
+            scoring: { ...DEFAULT_TRAINING_SCORING_CONSTANTS, relationshipOrangeValue: 2.5 },
+        })
+        const training = { ...blankTraining, relationshipBars: [bar("orange", 99)] }
+        expect(calculateRelationshipScore(config, training)).toBeGreaterThan(0)
+    })
+
+    test("bond efficiency capping enabled: excluding a maxed bar redirects relative priority toward a still-benefiting bar", () => {
+        const cappingOff = makeConfig({ scoring: { ...DEFAULT_TRAINING_SCORING_CONSTANTS, relationshipOrangeValue: 2.5 } })
+        const cappingOn = makeConfig({
+            enableBondEfficiencyCapping: true,
+            scoring: { ...DEFAULT_TRAINING_SCORING_CONSTANTS, relationshipOrangeValue: 2.5 },
+        })
+        const training = { ...blankTraining, relationshipBars: [bar("orange", 100), bar("blue", 0)] }
+        expect(calculateRelationshipScore(cappingOn, training)).toBeGreaterThan(calculateRelationshipScore(cappingOff, training))
     })
 })

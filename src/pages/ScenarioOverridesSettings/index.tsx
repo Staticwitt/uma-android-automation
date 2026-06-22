@@ -135,6 +135,7 @@ const ScenarioOverridesSettings = () => {
         updateOverrideSetting("trackblazerShopCheckFrequency", defaultSettings.scenarioOverrides.trackblazerShopCheckFrequency)
         updateOverrideSetting("trackblazerShopCheckGrades", defaultSettings.scenarioOverrides.trackblazerShopCheckGrades)
         updateOverrideSetting("trackblazerExcludedItems", defaultSettings.scenarioOverrides.trackblazerExcludedItems)
+        updateOverrideSetting("trackblazerValueAwareShopping", defaultSettings.scenarioOverrides.trackblazerValueAwareShopping)
     }, [updateOverrideSetting, defaultSettings])
 
     /** Reset Item Conservation section sliders to defaults. */
@@ -517,6 +518,18 @@ const ScenarioOverridesSettings = () => {
 
                                 {/* Shop & Items */}
                                 <Section label="Shop & Items" labelRight={makeResetLink(resetShopDefaults)}>
+                                    <SettingRow
+                                        id="trackblazer-value-aware-shopping"
+                                        title="Value-Aware Shop Purchasing"
+                                        searchTitle="Enable Trackblazer Value-Aware Shop Purchasing"
+                                        description="When enabled, stat-item purchases (Scrolls and Manuals) are ordered by your Stat Prioritization list, spending coins on your top-priority stat's best value-per-coin item before moving to the next stat. When disabled, every stat's Scroll is bought before any stat's Manual, regardless of priority."
+                                        right={
+                                            <Switch
+                                                checked={scenarioOverrides.trackblazerValueAwareShopping}
+                                                onCheckedChange={(checked) => updateOverrideSetting("trackblazerValueAwareShopping", checked)}
+                                            />
+                                        }
+                                    />
                                     <View style={{ padding: SPACING.md }}>
                                         <CustomSlider
                                             searchId="trackblazer-shop-check-frequency"

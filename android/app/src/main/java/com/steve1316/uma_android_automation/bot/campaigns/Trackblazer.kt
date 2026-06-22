@@ -101,6 +101,9 @@ class Trackblazer(game: Game) : Campaign(game) {
     /** The limit for consecutive races before the bot should stop and recover. */
     private val consecutiveRacesLimit: Int = SettingsHelper.getIntSetting("scenarioOverrides", "trackblazerConsecutiveRacesLimit", 5)
 
+    /** Whether stat-item Shop purchases should be ordered by the player's Stat Prioritization list (best value-per-coin first within each stat) instead of buying every stat's Scroll before any stat's Manual regardless of priority. */
+    private val enableValueAwareShopping: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "trackblazerValueAwareShopping", false)
+
     /** List of race grades that trigger a shop check afterward. */
     private val shopCheckGrades: List<RaceGrade> =
         try {
@@ -1791,11 +1794,31 @@ class Trackblazer(game: Game) : Campaign(game) {
         priorityList.add("Miracle Cure")
 
         // 2. Stats (Excluding Notepads).
-        val statsOrdered = listOf("Scroll", "Manual")
-        val statNamesOrdered = listOf("Speed", "Stamina", "Power", "Guts", "Wit")
-        statsOrdered.forEach { type ->
-            statNamesOrdered.forEach { name ->
-                priorityList.add("$name $type")
+        if (enableValueAwareShopping) {
+            // Order stat items by the player's Stat Prioritization list first, buying each stat's best value-per-coin
+            // item (Scroll, then Manual) before moving to the next stat. This spends coins on cost-efficient boosts for
+            // the stats that actually matter, instead of buying every stat's Scroll before any stat's Manual regardless
+            // of priority.
+            val statDisplayNames =
+                mapOf(
+                    StatName.SPEED to "Speed",
+                    StatName.STAMINA to "Stamina",
+                    StatName.POWER to "Power",
+                    StatName.GUTS to "Guts",
+                    StatName.WIT to "Wit",
+                )
+            training.statPrioritization.forEach { stat ->
+                val name = statDisplayNames[stat] ?: return@forEach
+                priorityList.add("$name Scroll")
+                priorityList.add("$name Manual")
+            }
+        } else {
+            val statsOrdered = listOf("Scroll", "Manual")
+            val statNamesOrdered = listOf("Speed", "Stamina", "Power", "Guts", "Wit")
+            statsOrdered.forEach { type ->
+                statNamesOrdered.forEach { name ->
+                    priorityList.add("$name $type")
+                }
             }
         }
 

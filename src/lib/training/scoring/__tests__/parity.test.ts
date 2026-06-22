@@ -48,6 +48,7 @@ function hydrateConfig(raw: any): TrainingConfig {
         enableTrainingLevelWeighting: raw.enableTrainingLevelWeighting ?? false,
         disableStatTargets: raw.disableStatTargets ?? false,
         enablePrioritizeNearMaxFriendship: raw.enablePrioritizeNearMaxFriendship ?? true,
+        enableBondEfficiencyCapping: raw.enableBondEfficiencyCapping ?? false,
         statsTrainedOverBuffer: new Set((raw.statsTrainedOverBuffer ?? []) as StatName[]),
         scoring: raw.scoring ?? DEFAULT_TRAINING_SCORING_CONSTANTS,
     }

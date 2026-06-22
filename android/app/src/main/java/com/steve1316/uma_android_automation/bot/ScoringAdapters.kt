@@ -45,6 +45,7 @@ fun Training.TrainingConfig.toScoring(): ScoringTrainingConfig =
         enablePrioritizeSkillHints = enablePrioritizeSkillHints,
         enableTrainingLevelWeighting = enableTrainingLevelWeighting,
         enablePrioritizeNearMaxFriendship = enablePrioritizeNearMaxFriendship,
+        enableBondEfficiencyCapping = enableBondEfficiencyCapping,
         statsTrainedOverBuffer = statsTrainedOverBuffer,
         scoring = scoring,
     )

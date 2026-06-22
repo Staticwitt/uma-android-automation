@@ -169,6 +169,7 @@ export function toKtTrainingConfig(config: TrainingConfig): InstanceType<typeof 
         config.enablePrioritizeSkillHints,
         config.enableTrainingLevelWeighting,
         config.enablePrioritizeNearMaxFriendship,
+        config.enableBondEfficiencyCapping,
         toKtStatSet(config.statsTrainedOverBuffer),
         toKtScoringConstants(config.scoring),
     )
