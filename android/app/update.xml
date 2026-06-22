@@ -1,21 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.60</latestVersion>
-    <latestVersionCode>150</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.60</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.60/v5.9.60-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.60/v5.9.60-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.61</latestVersion>
+    <latestVersionCode>151</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.61</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.61/v5.9.61-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.61/v5.9.61-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.60 - Career rank tracking, configurable mood threshold, bond-efficiency capping, Trackblazer shop value scoring
+v5.9.61 - Fix duplicate support card equip, fix legacy picker loop, add race-bonus borrow sort mode
+
+Fixes
+-----
+- Auto support card equip no longer picks the same owned card for two deck slots.
+- Owned-support/borrow steps no longer tap into the legacy parent picker that was left open from a prior step.
 
 New
 ---
-- Career rank tracking: detects the end-of-career "Career Rank" screen and OCRs the rank tier (e.g. S+, SS, UG) and rating number, surfaced in all run summary formats.
-- Configurable mood threshold: the minimum mood required before the bot forces a mood-recovery outing is now a setting (Minimum Mood for Training) instead of hardcoded.
-- Bond-efficiency capping: optionally excludes already-fully-maxed friendship bars from a training's relationship score, redirecting bonding effort toward cards that still benefit from it.
-- Trackblazer shop value scoring: optionally orders stat-item shop purchases (Scrolls/Manuals) by your Stat Prioritization list instead of buying every stat's Scroll before any stat's Manual.
-
-All toggle-gated features above default to off (or to prior hardcoded behavior), so existing behavior is unchanged unless explicitly enabled.
+- Friend borrow priority can now be sorted by "Race bonus" (each card's in-kit race bonus stat) instead of overall goal fit, via a new setting in Parent Farming.
 
     </releaseNotes>
   </update>
