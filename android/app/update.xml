@@ -1,19 +1,24 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.58</latestVersion>
-    <latestVersionCode>148</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.58</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.58/v5.9.58-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.58/v5.9.58-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.59</latestVersion>
+    <latestVersionCode>149</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.59</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.59/v5.9.59-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.59/v5.9.59-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.58 - Champions Meeting weighting, max race distance cap, 4-in-a-row race penalty, epithet progress
+v5.9.59 - Agenda-aware irregular training, megaphone tuning, CSV export, character auto-detect, delay telemetry
 
 New
 ---
-- Smart Race Solver: added an optional Champions Meeting (CM1-CM17) calendar preset that scores races higher when they match the upcoming CM's distance/surface/handedness/season profile, nudging the schedule toward useful prep races. The calendar is ported from a community Trackblazer scheduler reference and has not been independently re-verified against uma.guide/GameTora.
-- Smart Race Solver: added a Max Race Distance setting that hard-caps how far a race's distance can be, so the solver won't pick distance outliers just to chase an epithet.
-- Smart Race Solver: added a separate Four-in-a-Row Penalty that stacks on top of the existing 3+ consecutive-race penalty once a race turn is the 4th or later in an unbroken chain.
-- Smart Race Solver settings now show "(current/required)" progress counters on each target epithet chip, based on the projected schedule.
+- Irregular Training now skips itself when the Smart Race Solver has a race planned within a configurable lookahead window, so an upcoming race isn't missed.
+- Megaphone race-forecast forcing: forces a megaphone buff when few races are forecasted within the buff window.
+- Megaphone tier overwrite: lets a higher megaphone tier override a lower one once a minimum main-stat gain threshold is met.
+- Megaphone surplus-burn mode: spends surplus megaphones down to a configurable reserve instead of hoarding them.
+- Run summary CSV export: export the parent run archive as CSV.
+- Auto-detect Smart Race Solver character preset: fuzzy-matches the OCR'd trainee name against character presets and uses it as a fallback whenever no preset is manually selected.
+- Delay calibration telemetry: opt-in end-of-run summary comparing measured loading-wait time against the configured Wait Delay, plus a per-action delay-override applied to the post-tap settle delay.
+
+All toggle-gated features above default to off, so existing behavior is unchanged unless explicitly enabled.
 
     </releaseNotes>
   </update>
