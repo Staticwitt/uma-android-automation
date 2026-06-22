@@ -16,6 +16,21 @@ object CareerSelectionAutomation {
             ButtonStartCareer.check(imageUtils)
     }
 
+    /**
+     * True when the legacy parent picker is open over career selection.
+     *
+     * The picker also shows [ButtonAutoSelect], so [isOnCareerSelectionScreen] alone can't tell the picker apart
+     * from the main career-selection screen. Owned-deck equip and borrow use the main screen's fixed slot
+     * coordinates, which don't apply inside the picker, so they must skip this state instead of tapping into it.
+     */
+    fun isInsideLegacyPicker(game: Game): Boolean {
+        val imageUtils = game.imageUtils
+        return ButtonAutoSelect.check(imageUtils) &&
+            !ButtonSelectLegacy.check(imageUtils) &&
+            !ButtonBorrowSupportCard.check(imageUtils) &&
+            !ButtonStartCareer.check(imageUtils)
+    }
+
     fun shouldAutoStartCareer(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableAutoStartCareer") &&
             SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)

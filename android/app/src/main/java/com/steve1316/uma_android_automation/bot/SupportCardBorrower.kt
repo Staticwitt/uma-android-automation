@@ -59,6 +59,7 @@ object SupportCardBorrower {
         }
 
         if (!CareerSelectionAutomation.isOnCareerSelectionScreen(game)) return false
+        if (CareerSelectionAutomation.isInsideLegacyPicker(game)) return false
 
         if (isFriendSupportSatisfied(game, preferredNames)) {
             borrowCompletedThisRun = true

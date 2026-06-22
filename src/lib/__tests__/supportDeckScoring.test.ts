@@ -1,4 +1,4 @@
-import { scoreSupportCardForGoal, rankSupportsForGoal, scoreOwnedSupportDeck } from "../supportDeckScoring"
+import { scoreSupportCardForGoal, rankSupportsForGoal, scoreOwnedSupportDeck, raceBonusScore } from "../supportDeckScoring"
 
 describe("supportDeckScoring", () => {
     it("scoreSupportCardForGoal prefers wit cards on skill-hints route", () => {
@@ -45,5 +45,21 @@ describe("supportDeckScoring", () => {
         const hintScore = scoreSupportCardForGoal("Gold Ship", "skill-hints")
         const speedScore = scoreSupportCardForGoal("Maruzensky", "skill-hints")
         expect(hintScore).toBeGreaterThan(speedScore)
+    })
+
+    it("raceBonusScore reads the scraped in-kit race bonus stat", () => {
+        expect(raceBonusScore("Super Creek")).toBe(10)
+        expect(raceBonusScore("Maruzensky")).toBe(5)
+        expect(raceBonusScore("Silence Suzuka")).toBe(0)
+    })
+
+    it("rankSupportsForGoal sorts by goal fit by default, ignoring race bonus", () => {
+        const ranked = rankSupportsForGoal(["Silence Suzuka", "Maruzensky"], "mile-sprint")
+        expect(ranked[0]).toBe("Silence Suzuka")
+    })
+
+    it("rankSupportsForGoal with 'raceBonus' sort mode ranks by in-kit race bonus first", () => {
+        const ranked = rankSupportsForGoal(["Silence Suzuka", "Maruzensky"], "mile-sprint", [], [], "raceBonus")
+        expect(ranked[0]).toBe("Maruzensky")
     })
 })

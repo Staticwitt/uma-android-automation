@@ -2,7 +2,7 @@ import type { Settings } from "../context/BotStateContext"
 import type { ParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
-import { rankSupportsForGoal } from "./supportDeckScoring"
+import { DEFAULT_SUPPORT_BORROW_SORT_MODE, rankSupportsForGoal, type SupportBorrowSortMode } from "./supportDeckScoring"
 
 /** User overrides: bundle key → ordered support card names. */
 export type ParentFarmingSupportBorrowOverrides = Record<string, string[]>
@@ -31,7 +31,23 @@ export const excludeTraineeFromSupportList = (
     return filtered
 }
 
-/** Replaces owned support slots that match the trainee with alternates from the borrow preset. */
+/** Removes case-insensitive duplicate names, keeping the first occurrence's casing. */
+const dedupeCaseInsensitive = (names: string[]): string[] => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const name of names) {
+        const key = name.trim().toLowerCase()
+        if (!key || seen.has(key)) continue
+        seen.add(key)
+        out.push(name)
+    }
+    return out
+}
+
+/**
+ * Replaces owned support slots that match the trainee with alternates from the borrow preset,
+ * and drops duplicate slots so the same card is never assigned to two slots.
+ */
 export const substituteTraineeInOwnedDeck = (
     owned: string[],
     traineeName: string,
@@ -44,7 +60,7 @@ export const substituteTraineeInOwnedDeck = (
             if (replacement) out[i] = replacement
         }
     }
-    return out.filter((name) => !namesMatchTrainee(name, traineeName))
+    return dedupeCaseInsensitive(out.filter((name) => !namesMatchTrainee(name, traineeName)))
 }
 
 export const parseSupportBorrowOverrides = (json: string | undefined): ParentFarmingSupportBorrowOverrides => {
@@ -67,7 +83,8 @@ export const parseSupportBorrowOverrides = (json: string | undefined): ParentFar
 export const rankSupportBorrowCardsForBundle = (
     names: string[],
     bundle: ParentFarmingCharacterBundle,
-): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names)
+    sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
+): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names, sortMode)
 
 /**
  * Ordered borrow list for a bundle: user override → bundle default → goal preset fallback.
@@ -75,6 +92,7 @@ export const rankSupportBorrowCardsForBundle = (
 export const resolveSupportBorrowCardsForBundle = (
     bundle: ParentFarmingCharacterBundle,
     overrides?: ParentFarmingSupportBorrowOverrides,
+    sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
 ): string[] => {
     const alternates = findSupportBorrowPreset(bundle.goalPresetKey)
     const custom = overrides?.[bundle.key]
@@ -89,6 +107,7 @@ export const resolveSupportBorrowCardsForBundle = (
     return rankSupportBorrowCardsForBundle(
         excludeTraineeFromSupportList(cards, bundle.characterName, alternates),
         bundle,
+        sortMode,
     )
 }
 
@@ -96,10 +115,11 @@ export const resolveSupportBorrowCardsForBundle = (
 export const resolveActiveSupportBorrowCards = (settings: Settings): string[] => {
     const traineeName = settings.racing.smartRaceSolverCharacterPreset || ""
     const overrides = parseSupportBorrowOverrides(settings.racing.parentFarmingSupportBorrowOverrides)
+    const sortMode = (settings.racing.supportBorrowSortMode as SupportBorrowSortMode) || DEFAULT_SUPPORT_BORROW_SORT_MODE
     const bundleKey = settings.racing.parentFarmingBundleKey
     if (bundleKey) {
         const bundle = findParentFarmingCharacterBundle(bundleKey)
-        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides)
+        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides, sortMode)
     }
     const goalKey = settings.racing.parentFarmingGoalPresetKey
     if (goalKey) {
@@ -108,6 +128,7 @@ export const resolveActiveSupportBorrowCards = (settings: Settings): string[] =>
             goalKey,
             traineeName ? [traineeName] : [],
             findSupportBorrowPreset(goalKey),
+            sortMode,
         )
     }
     try {

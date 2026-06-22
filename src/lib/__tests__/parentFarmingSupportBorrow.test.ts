@@ -39,6 +39,15 @@ describe("parentFarmingSupportBorrow", () => {
         expect(owned.length).toBe(4)
     })
 
+    it("substituteTraineeInOwnedDeck drops duplicate slots so the same card is never assigned twice", () => {
+        const owned = substituteTraineeInOwnedDeck(
+            ["Kitasan Black", "Gold Ship", "kitasan black", "Power"],
+            "Grass Wonder",
+            ["Silence Suzuka"],
+        )
+        expect(owned).toEqual(["Kitasan Black", "Gold Ship", "Power"])
+    })
+
     it("prefers user override over bundle defaults", () => {
         const overrides = { [mejiroBundle.key]: ["Kitasan Black", "Gold Ship"] }
         const cards = resolveSupportBorrowCardsForBundle(mejiroBundle, overrides)
@@ -78,5 +87,24 @@ describe("parentFarmingSupportBorrow", () => {
 
     it("parseSupportBorrowOverrides ignores invalid JSON", () => {
         expect(parseSupportBorrowOverrides("not-json")).toEqual({})
+    })
+
+    it("resolveActiveSupportBorrowCards sorts by race bonus when supportBorrowSortMode is 'raceBonus'", () => {
+        const settings = {
+            racing: {
+                enableParentFarmingMode: true,
+                parentFarmingBundleKey: "",
+                parentFarmingGoalPresetKey: "mile-sprint",
+                parentFarmingSupportBorrowOverrides: "{}",
+                supportBorrowPreferredCards: "[]",
+                supportBorrowSortMode: "raceBonus",
+                parentFarmingGoalPresetLabel: "",
+                parentFarmingBundleLabel: "",
+                smartRaceSolverCharacterPreset: "",
+            },
+        } as Settings
+
+        const cards = resolveActiveSupportBorrowCards(settings)
+        expect(cards.indexOf("Maruzensky")).toBeLessThan(cards.indexOf("Silence Suzuka"))
     })
 })
