@@ -88,4 +88,23 @@ describe("parentFarmingSupportBorrow", () => {
     it("parseSupportBorrowOverrides ignores invalid JSON", () => {
         expect(parseSupportBorrowOverrides("not-json")).toEqual({})
     })
+
+    it("resolveActiveSupportBorrowCards sorts by race bonus when supportBorrowSortMode is 'raceBonus'", () => {
+        const settings = {
+            racing: {
+                enableParentFarmingMode: true,
+                parentFarmingBundleKey: "",
+                parentFarmingGoalPresetKey: "mile-sprint",
+                parentFarmingSupportBorrowOverrides: "{}",
+                supportBorrowPreferredCards: "[]",
+                supportBorrowSortMode: "raceBonus",
+                parentFarmingGoalPresetLabel: "",
+                parentFarmingBundleLabel: "",
+                smartRaceSolverCharacterPreset: "",
+            },
+        } as Settings
+
+        const cards = resolveActiveSupportBorrowCards(settings)
+        expect(cards.indexOf("Maruzensky")).toBeLessThan(cards.indexOf("Silence Suzuka"))
+    })
 })

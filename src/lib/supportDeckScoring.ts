@@ -36,6 +36,19 @@ const DEFAULT_MANUAL_WEIGHTS = {
 
 const RARITY_SCORE: Record<"SSR" | "SR" | "R", number> = { SSR: 6, SR: 2, R: 0 }
 
+/** Friend borrow sort modes: goal-fit scoring (default) vs. pure in-kit race bonus. */
+export const SUPPORT_BORROW_SORT_MODES = [
+    { value: "goal", label: "Goal fit (default)" },
+    { value: "raceBonus", label: "Race bonus" },
+] as const
+
+export type SupportBorrowSortMode = (typeof SUPPORT_BORROW_SORT_MODES)[number]["value"]
+
+export const DEFAULT_SUPPORT_BORROW_SORT_MODE: SupportBorrowSortMode = "goal"
+
+/** A support card's in-kit race bonus stat (% boost to race rewards), 0 when unknown. */
+export const raceBonusScore = (name: string): number => getSupportCardMetadata(name)?.stats?.raceBonus ?? 0
+
 /** Parent-farming goal → how much each support trait matters for deck ranking. */
 export const SUPPORT_GOAL_SCORING_PROFILES: Record<string, SupportGoalScoringProfile> = {
     "g1-fans": {
@@ -303,10 +316,15 @@ export const rankSupportsForGoal = (
     goalPresetKey: string,
     excludeNames: string[] = [],
     presetBonusNames: string[] = [],
+    sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
 ): string[] => {
     const excluded = new Set(excludeNames.map((name) => name.toLowerCase()))
     const unique = [...new Set(names)].filter((name) => !excluded.has(name.toLowerCase()))
     return unique.sort((left, right) => {
+        if (sortMode === "raceBonus") {
+            const raceBonusDiff = raceBonusScore(right) - raceBonusScore(left)
+            if (raceBonusDiff !== 0) return raceBonusDiff
+        }
         const leftScore = scoreSupportCardForGoal(left, goalPresetKey, presetBonusNames.includes(left) ? 2 : 0)
         const rightScore = scoreSupportCardForGoal(right, goalPresetKey, presetBonusNames.includes(right) ? 2 : 0)
         if (rightScore !== leftScore) return rightScore - leftScore

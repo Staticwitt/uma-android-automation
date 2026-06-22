@@ -24,6 +24,7 @@ import {
     parseSupportBorrowOverrides,
     resolveSupportBorrowCardsForBundle,
 } from "./parentFarmingSupportBorrow"
+import { DEFAULT_SUPPORT_BORROW_SORT_MODE, type SupportBorrowSortMode } from "./supportDeckScoring"
 import { autoDowngradeInfeasibleForcedEpithets } from "./parentFarmingFeasibility"
 import { applyParentFarmingFullUnattended } from "./parentFarmingFullUnattended"
 import { recommendLegacyParents } from "./legacyParentRecommendations"
@@ -136,8 +137,9 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
     }
 
     const borrowOverrides = parseSupportBorrowOverrides(settings.racing.parentFarmingSupportBorrowOverrides)
+    const borrowSortMode = (settings.racing.supportBorrowSortMode as SupportBorrowSortMode) || DEFAULT_SUPPORT_BORROW_SORT_MODE
     const supportBorrowPreferredCards = bundle
-        ? JSON.stringify(resolveSupportBorrowCardsForBundle(bundle, borrowOverrides))
+        ? JSON.stringify(resolveSupportBorrowCardsForBundle(bundle, borrowOverrides, borrowSortMode))
         : goalRacing.supportBorrowPreferredCards ?? "[]"
 
     const traineeName = bundle?.characterName ?? racingSeed.smartRaceSolverCharacterPreset

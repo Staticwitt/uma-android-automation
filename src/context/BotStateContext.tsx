@@ -170,6 +170,8 @@ export interface Settings {
         legacyParentStatAptitudeWeights: string
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
+        /** Friend borrow priority sort: "goal" (goal-fit scoring, default) or "raceBonus" (pure in-kit race bonus). */
+        supportBorrowSortMode: string
         /** JSON array of support cards the user owns (filters recommendations). */
         ownedSupportCards: string
         /** JSON array of four owned support slots from the last applied deck recommendation. */
@@ -452,6 +454,7 @@ export const defaultSettings: Settings = {
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",
         supportBorrowPreferredCards: "[]",
+        supportBorrowSortMode: "goal",
         ownedSupportCards: "[]",
         supportDeckOwnedCards: "[]",
         parentFarmingSupportBorrowOverrides: "{}",

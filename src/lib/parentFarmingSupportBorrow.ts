@@ -2,7 +2,7 @@ import type { Settings } from "../context/BotStateContext"
 import type { ParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
-import { rankSupportsForGoal } from "./supportDeckScoring"
+import { DEFAULT_SUPPORT_BORROW_SORT_MODE, rankSupportsForGoal, type SupportBorrowSortMode } from "./supportDeckScoring"
 
 /** User overrides: bundle key → ordered support card names. */
 export type ParentFarmingSupportBorrowOverrides = Record<string, string[]>
@@ -83,7 +83,8 @@ export const parseSupportBorrowOverrides = (json: string | undefined): ParentFar
 export const rankSupportBorrowCardsForBundle = (
     names: string[],
     bundle: ParentFarmingCharacterBundle,
-): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names)
+    sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
+): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names, sortMode)
 
 /**
  * Ordered borrow list for a bundle: user override → bundle default → goal preset fallback.
@@ -91,6 +92,7 @@ export const rankSupportBorrowCardsForBundle = (
 export const resolveSupportBorrowCardsForBundle = (
     bundle: ParentFarmingCharacterBundle,
     overrides?: ParentFarmingSupportBorrowOverrides,
+    sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
 ): string[] => {
     const alternates = findSupportBorrowPreset(bundle.goalPresetKey)
     const custom = overrides?.[bundle.key]
@@ -105,6 +107,7 @@ export const resolveSupportBorrowCardsForBundle = (
     return rankSupportBorrowCardsForBundle(
         excludeTraineeFromSupportList(cards, bundle.characterName, alternates),
         bundle,
+        sortMode,
     )
 }
 
@@ -112,10 +115,11 @@ export const resolveSupportBorrowCardsForBundle = (
 export const resolveActiveSupportBorrowCards = (settings: Settings): string[] => {
     const traineeName = settings.racing.smartRaceSolverCharacterPreset || ""
     const overrides = parseSupportBorrowOverrides(settings.racing.parentFarmingSupportBorrowOverrides)
+    const sortMode = (settings.racing.supportBorrowSortMode as SupportBorrowSortMode) || DEFAULT_SUPPORT_BORROW_SORT_MODE
     const bundleKey = settings.racing.parentFarmingBundleKey
     if (bundleKey) {
         const bundle = findParentFarmingCharacterBundle(bundleKey)
-        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides)
+        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides, sortMode)
     }
     const goalKey = settings.racing.parentFarmingGoalPresetKey
     if (goalKey) {
@@ -124,6 +128,7 @@ export const resolveActiveSupportBorrowCards = (settings: Settings): string[] =>
             goalKey,
             traineeName ? [traineeName] : [],
             findSupportBorrowPreset(goalKey),
+            sortMode,
         )
     }
     try {

@@ -40,6 +40,7 @@ import {
     buildFullDeckApplyRacingPatch,
 } from "../../lib/parentFarmingCareerAutomation"
 import { parseSupportBorrowOverrides } from "../../lib/parentFarmingSupportBorrow"
+import { SUPPORT_BORROW_SORT_MODES } from "../../lib/supportDeckScoring"
 import { applyParentFarmingPreset, disableParentFarmingMode, refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
 import { applyParentFarmingFullUnattended } from "../../lib/parentFarmingFullUnattended"
 import {
@@ -170,6 +171,7 @@ const ParentFarmingSettings = () => {
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
         supportBorrowPreferredCards,
+        supportBorrowSortMode,
         ownedSupportCards,
         supportDeckOwnedCards,
         enableFarmingFans,
@@ -1377,6 +1379,31 @@ const ParentFarmingSettings = () => {
                                                 <Switch
                                                     checked={enableParentFarmingBorrowRotation}
                                                     onCheckedChange={(checked) => updateRacingSetting("enableParentFarmingBorrowRotation", checked)}
+                                                />
+                                            }
+                                        />
+                                        <SettingRow
+                                            id="support-borrow-sort-mode"
+                                            title="Sort borrow priority by"
+                                            searchTitle="Support borrow sort mode"
+                                            description={
+                                                supportBorrowSortMode === "raceBonus"
+                                                    ? "Friend borrow order ranks by each card's in-kit race bonus first."
+                                                    : "Friend borrow order ranks by overall goal fit (stats, hints, friendship, etc.)."
+                                            }
+                                            right={
+                                                <CustomSelect
+                                                    searchId="support-borrow-sort-mode-select"
+                                                    searchTitle="Support borrow sort mode"
+                                                    searchDescription="How the friend borrow priority list is ordered: goal fit or pure race bonus."
+                                                    width={150}
+                                                    options={SUPPORT_BORROW_SORT_MODES.map((option) => ({
+                                                        value: option.value,
+                                                        label: option.label,
+                                                    }))}
+                                                    value={supportBorrowSortMode || "goal"}
+                                                    onValueChange={(value) => updateRacingSetting("supportBorrowSortMode", value)}
+                                                    placeholder="Goal fit (default)"
                                                 />
                                             }
                                         />
