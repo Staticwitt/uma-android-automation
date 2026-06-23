@@ -1,21 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.61</latestVersion>
-    <latestVersionCode>151</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.61</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.61/v5.9.61-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.61/v5.9.61-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.62</latestVersion>
+    <latestVersionCode>152</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.62</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.62/v5.9.62-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.62/v5.9.62-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.61 - Fix duplicate support card equip, fix legacy picker loop, add race-bonus borrow sort mode
+v5.9.62 - Fix friend-borrow recommendation duplicating an owned support card
 
 Fixes
 -----
-- Auto support card equip no longer picks the same owned card for two deck slots.
-- Owned-support/borrow steps no longer tap into the legacy parent picker that was left open from a prior step.
-
-New
----
-- Friend borrow priority can now be sorted by "Race bonus" (each card's in-kit race bonus stat) instead of overall goal fit, via a new setting in Parent Farming.
+- Support deck recommendations no longer suggest the same card as both an owned deck slot and the top friend-borrow pick.
 
     </releaseNotes>
   </update>
