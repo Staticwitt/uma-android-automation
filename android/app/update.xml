@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.62</latestVersion>
-    <latestVersionCode>152</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.62</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.62/v5.9.62-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.62/v5.9.62-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.63</latestVersion>
+    <latestVersionCode>153</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.63</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.63/v5.9.63-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.63/v5.9.63-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.62 - Fix friend-borrow recommendation duplicating an owned support card
+v5.9.63 - Fix race prep screen getting stuck when skip is locked behind a different-looking button
 
 Fixes
 -----
-- Support deck recommendations no longer suggest the same card as both an owned deck slot and the top friend-borrow pick.
+- Mandatory races no longer get stuck on the race prep screen indefinitely when the skip-to-results button is locked behind a visually different graphic instead of a darkened version of the normal button. The bot now also checks for the manual-race button directly as a fallback.
 
     </releaseNotes>
   </update>
