@@ -7,6 +7,7 @@ import {
 } from "../recommendSupportDeck"
 import { SUPPORT_CARD_CATALOG } from "../supportCardCatalog"
 import { SUPPORT_DECK_PRESETS } from "../supportDeckPresets"
+import { findSupportBorrowPreset } from "../supportBorrowPresets"
 
 describe("supportCardCatalog", () => {
     it("covers every support in supports.json", () => {
@@ -95,6 +96,27 @@ describe("recommendSupportDeckForCharacter", () => {
     it("returns null for unknown character", () => {
         expect(recommendSupportDeckForCharacter("Not A Horse")).toBeNull()
     })
+
+    it("never recommends an owned-deck card as the friend borrow pick when a distinct alternate exists", () => {
+        const rec = recommendSupportDeckForCharacter("Oguri Cap")
+        expect(rec).not.toBeNull()
+        const friend = rec!.slots.find((s) => s.role === "friend")
+        expect(friend?.cardName).toBeDefined()
+        expect(rec!.ownedCards).not.toContain(friend!.cardName)
+    })
+
+    it.each(PARENT_FARMING_CHARACTER_BUNDLES.map((b) => [b.key, b.characterName]))(
+        "bundle %s keeps the friend borrow pick distinct from owned cards when possible",
+        (_key, characterName) => {
+            const rec = recommendSupportDeckForCharacter(characterName)
+            const friend = rec!.slots.find((s) => s.role === "friend")!.cardName
+            const goalPreset = findSupportBorrowPreset(rec!.goalPresetKey)
+            const hasDistinctAlternate = goalPreset.some((name) => name !== characterName && !rec!.ownedCards.includes(name))
+            if (hasDistinctAlternate) {
+                expect(rec!.ownedCards).not.toContain(friend)
+            }
+        },
+    )
 })
 
 describe("inferGoalPresetKeyFromAptitudes", () => {
