@@ -1147,19 +1147,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                         bDidSelectRaceStrategy = selectRaceStrategy()
                     }
 
-                    when (ButtonViewResults.checkDisabled(game.imageUtils, bitmap)) {
-                        true -> {
-                            consecutiveViewResultsNotFoundCount = 0
-                            if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
-                                MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
-                                // Clicking this button triggers connection to server.
-                                game.waitForLoading()
-                            } else {
-                                MessageLog.w(TAG, "[WARN] runRaceWithRetries:: Skip is locked. Failed to click manual race button.")
-                            }
-                        }
-
-                        false -> {
+                    val viewResultsDisabled: Boolean? = ButtonViewResults.checkDisabled(game.imageUtils, bitmap)
+                    when {
+                        viewResultsDisabled == false -> {
                             consecutiveViewResultsNotFoundCount = 0
                             if (ButtonViewResults.click(game.imageUtils, sourceBitmap = bitmap)) {
                                 MessageLog.i(TAG, "[RACE] Clicked ViewResults button to skip race.")
@@ -1170,7 +1160,21 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                             }
                         }
 
-                        null -> {
+                        // Skip can be locked behind a button that looks nothing like the enabled ViewResults template (rather than
+                        // just a darkened version of it), e.g. on some mandatory races. checkDisabled() can't detect that case since
+                        // it never finds a match to compare luminance against, so check for the manual race button independently.
+                        viewResultsDisabled == true || ButtonRaceManual.check(game.imageUtils, sourceBitmap = bitmap) -> {
+                            consecutiveViewResultsNotFoundCount = 0
+                            if (ButtonRaceManual.click(game.imageUtils, sourceBitmap = bitmap)) {
+                                MessageLog.i(TAG, "[RACE] Skip is locked. Running race manually.")
+                                // Clicking this button triggers connection to server.
+                                game.waitForLoading()
+                            } else {
+                                MessageLog.w(TAG, "[WARN] runRaceWithRetries:: Skip is locked. Failed to click manual race button.")
+                            }
+                        }
+
+                        else -> {
                             consecutiveViewResultsNotFoundCount++
                             MessageLog.w(TAG, "[WARN] runRaceWithRetries:: At Race prep screen but failed to detect ViewResults button.")
 
