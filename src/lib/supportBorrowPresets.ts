@@ -4,7 +4,7 @@
  * Names must exist in `src/data/supports.json`.
  */
 export const SUPPORT_BORROW_PRESETS: Record<string, string[]> = {
-    "g1-fans": ["Kitasan Black", "Super Creek", "Symboli Rudolf", "Gold Ship", "Oguri Cap"],
+    "g1-fans": ["Kitasan Black", "Super Creek", "Symboli Rudolf", "Gold Ship", "Oguri Cap", "Special Week"],
     "classic-crown": ["Super Creek", "Mejiro McQueen", "Biwa Hayahide", "Gold Ship", "Symboli Rudolf"],
     "triple-tiara": ["King Halo", "Air Groove", "Vodka", "Daiwa Scarlet", "Grass Wonder"],
     "mile-sprint": ["Silence Suzuka", "Grass Wonder", "Maruzensky", "Seiun Sky", "King Halo"],

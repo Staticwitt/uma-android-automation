@@ -6,10 +6,10 @@ import {
 } from "./parentFarmingCharacterBundles"
 import { findParentFarmingGoalPreset } from "./parentFarmingGoalPresets"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
-import { findSupportDeckPreset, type SupportDeckPreset } from "./supportDeckPresets"
+import { findSupportDeckPreset } from "./supportDeckPresets"
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
 import { formatSupportCardMetadataSummary, getSupportCardMetadata } from "./supportCardMetadata"
-import { pickBestFriendBorrow, rankSupportsForGoal } from "./supportDeckScoring"
+import { rankSupportsForGoal } from "./supportDeckScoring"
 import { optimizeOwnedDeckFromInventory, missingOwnedCards as computeMissingOwnedCards } from "./optimizeSupportDeck"
 import { APTITUDE_RANKS, type CharacterPresetEntry } from "./solver/constants"
 
@@ -104,20 +104,20 @@ const preferInventoryOwned = (owned: string[], inventory: Set<string>, alternate
     })
 }
 
-const buildSlots = (
+/** Final owned slots: inventory-preferred, then trainee substituted out. */
+const resolveOwnedSlots = (
     traineeName: string,
-    deck: SupportDeckPreset,
-    friendBorrowOrder: string[],
+    presetOwned: string[],
+    goalPresetKey: string,
     ownedInventory?: string[],
-): SupportDeckSlot[] => {
-    const alternates = findSupportBorrowPreset(deck.goalPresetKey)
+): string[] => {
+    const alternates = findSupportBorrowPreset(goalPresetKey)
     const inventory = new Set(ownedInventory ?? [])
-    const ownedBase = preferInventoryOwned(deck.owned, inventory, alternates)
-    const owned = substituteIfTrainee(ownedBase, traineeName, alternates)
-    const friend =
-        friendBorrowOrder[0] ??
-        (deck.friend === traineeName ? alternates.find((n) => n !== traineeName) ?? deck.friend : deck.friend)
+    const preferred = preferInventoryOwned(presetOwned, inventory, alternates)
+    return substituteIfTrainee(preferred, traineeName, alternates)
+}
 
+const buildSlots = (traineeName: string, owned: string[], friend: string): SupportDeckSlot[] => {
     const slots: SupportDeckSlot[] = [
         {
             role: "trainee",
@@ -149,26 +149,31 @@ const buildSlots = (
     return slots
 }
 
+/**
+ * Ranked friend-borrow candidates against the *final* owned slots (post trainee-substitution),
+ * so the friend pick never duplicates a card the owned deck already resolved to.
+ */
 const buildFriendBorrowOrder = (
     traineeName: string,
-    deck: SupportDeckPreset,
+    owned: string[],
+    deckFriend: string,
+    goalPresetKey: string,
     bundleBorrow?: string[],
 ): string[] => {
-    const presetBorrow = bundleBorrow?.length ? bundleBorrow : findSupportBorrowPreset(deck.goalPresetKey)
-    const primary =
-        pickBestFriendBorrow(presetBorrow, deck.owned, deck.goalPresetKey, traineeName) ??
-        pickBestFriendBorrow([deck.friend], deck.owned, deck.goalPresetKey, traineeName) ??
-        presetBorrow.find((n) => n !== traineeName) ??
-        (deck.friend !== traineeName ? deck.friend : findSupportBorrowPreset(deck.goalPresetKey).find((n) => n !== traineeName))
+    const presetBorrow = dedupeNames([...(bundleBorrow ?? []), ...findSupportBorrowPreset(goalPresetKey)])
+    const ownedSet = new Set(owned.map((n) => n.toLowerCase()))
+    const isOwned = (name: string) => ownedSet.has(name.toLowerCase())
 
-    const tail = presetBorrow.filter((n) => n !== traineeName && n !== primary)
-    const ownedAlternates = deck.owned.filter((n) => n !== traineeName && n !== primary)
-    return rankSupportsForGoal(
-        dedupeNames([primary ?? deck.friend, ...tail, ...ownedAlternates].filter(Boolean)),
-        deck.goalPresetKey,
-        [traineeName],
-        presetBorrow,
-    )
+    // Borrowing a card already in the owned deck wastes the friend slot, so a genuinely
+    // distinct candidate always outranks an owned-deck duplicate when one exists.
+    const nonOwnedCandidates = presetBorrow.filter((n) => n !== traineeName && !isOwned(n))
+    const ownedAlternates = owned.filter((n) => n !== traineeName)
+
+    const rankedNonOwned = rankSupportsForGoal(nonOwnedCandidates, goalPresetKey, [traineeName], presetBorrow)
+    const rankedOwned = rankSupportsForGoal(ownedAlternates, goalPresetKey, [traineeName], presetBorrow)
+
+    if (rankedNonOwned.length > 0) return dedupeNames([...rankedNonOwned, ...rankedOwned])
+    return dedupeNames([deckFriend, ...rankedOwned].filter(Boolean))
 }
 
 /**
@@ -200,18 +205,14 @@ export const recommendSupportDeckForCharacter = (
 
     const goalPreset = findParentFarmingGoalPreset(goalPresetKey)
     const deck = findSupportDeckPreset(goalPresetKey)
-    const friendBorrowOrder = buildFriendBorrowOrder(characterName, deck, bundleBorrow)
     const inventory = options?.ownedInventory ?? []
-    const ownedBase =
+    const presetOwned =
         inventory.length >= 4
             ? optimizeOwnedDeckFromInventory(inventory, characterName, deck, deck.owned, goalPresetKey)
             : deck.owned
-    const slots = buildSlots(
-        characterName,
-        { ...deck, owned: ownedBase },
-        friendBorrowOrder,
-        inventory.length >= 4 ? undefined : options?.ownedInventory,
-    )
+    const owned = resolveOwnedSlots(characterName, presetOwned, goalPresetKey, inventory.length >= 4 ? undefined : options?.ownedInventory)
+    const friendBorrowOrder = buildFriendBorrowOrder(characterName, owned, deck.friend, goalPresetKey, bundleBorrow)
+    const slots = buildSlots(characterName, owned, friendBorrowOrder[0])
     const ownedCards = slots.filter((s) => s.role === "owned").map((s) => s.cardName)
 
     const rationale =
