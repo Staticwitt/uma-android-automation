@@ -9,7 +9,6 @@ export interface ParentAnalyticsProfileRow {
     bestGrade: string
     lastRunAtMs: number
     topCharacter: string
-    scenarioCounts: Record<string, number>
 }
 
 export interface ParentAnalyticsCharacterRow {
@@ -49,11 +48,9 @@ export const buildParentFarmingAnalytics = (runs: ParentRunArchiveEntry[]): Pare
             scoreParentRunArchiveEntry(run).score > scoreParentRunArchiveEntry(top).score ? run : top,
         )
         const characterCounts = new Map<string, number>()
-        const scenarioCounts: Record<string, number> = {}
         for (const run of profileRuns) {
             const key = characterKey(run)
             characterCounts.set(key, (characterCounts.get(key) ?? 0) + 1)
-            scenarioCounts[run.scenario] = (scenarioCounts[run.scenario] ?? 0) + 1
         }
         const topCharacter =
             Array.from(characterCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—"
@@ -65,7 +62,6 @@ export const buildParentFarmingAnalytics = (runs: ParentRunArchiveEntry[]): Pare
             bestGrade: scoreParentRunArchiveEntry(best).grade,
             lastRunAtMs: profileRuns[0]?.completedAtMs ?? 0,
             topCharacter,
-            scenarioCounts,
         }
     })
 

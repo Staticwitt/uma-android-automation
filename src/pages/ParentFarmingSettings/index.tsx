@@ -34,6 +34,7 @@ import {
     enableParentFarmingCharacterBundle,
 } from "../../lib/parentFarmingResolver"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { buildLimitBreakResolverFromSettings, parseSupportCardLimitBreaks } from "../../lib/supportCardLimitBreaks"
 import { assessParentFarmingFeasibility, formatFeasibilityIssues } from "../../lib/parentFarmingFeasibility"
 import {
     PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
@@ -172,6 +173,8 @@ const ParentFarmingSettings = () => {
         legacyParentStatAptitudeWeights,
         supportBorrowPreferredCards,
         supportBorrowSortMode,
+        supportCardLimitBreakDefault,
+        supportCardLimitBreaks,
         ownedSupportCards,
         supportDeckOwnedCards,
         enableFarmingFans,
@@ -378,13 +381,15 @@ const ParentFarmingSettings = () => {
     )
 
     const ownedInventory = useMemo(() => parseOwnedSupportCards(ownedSupportCards), [ownedSupportCards])
+    const ownedCardLimitBreaks = useMemo(() => parseSupportCardLimitBreaks(supportCardLimitBreaks), [supportCardLimitBreaks])
+    const getLimitBreak = useMemo(() => buildLimitBreakResolverFromSettings(settings.racing), [settings.racing])
 
     const activeCharacterSupportRecommendation = useMemo(
         () =>
             smartRaceSolverCharacterPreset
-                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory })
+                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory, getLimitBreak })
                 : null,
-        [smartRaceSolverCharacterPreset, ownedInventory],
+        [smartRaceSolverCharacterPreset, ownedInventory, getLimitBreak],
     )
 
     const applyFriendBorrowFromRecommendation = useCallback(
@@ -464,10 +469,10 @@ const ParentFarmingSettings = () => {
     )
 
     const saveOwnedInventory = useCallback(
-        (cards: string[]) => {
-            updateRacingSetting("ownedSupportCards", JSON.stringify(cards))
+        (cards: string[], limitBreaks: Record<string, number>) => {
+            updateRacing({ ownedSupportCards: JSON.stringify(cards), supportCardLimitBreaks: JSON.stringify(limitBreaks) })
         },
-        [updateRacingSetting],
+        [updateRacing],
     )
 
     const updateSolverWeight = useCallback(
@@ -1408,6 +1413,30 @@ const ParentFarmingSettings = () => {
                                             }
                                         />
                                         <SettingRow
+                                            id="support-card-limit-break-default"
+                                            title="Default support card limit break"
+                                            searchTitle="Support card limit break default"
+                                            description="Assumed limit break level for deck/borrow scoring when a card has no override below. Lower breaks score slightly lower since their friendship, training, and hint bonuses aren't fully unlocked."
+                                            right={
+                                                <CustomSelect
+                                                    searchId="support-card-limit-break-default-select"
+                                                    searchTitle="Support card limit break default"
+                                                    searchDescription="Assumed limit break level (0-4) used when scoring support cards without a per-card override."
+                                                    width={150}
+                                                    options={[
+                                                        { value: "0", label: "LB0 (unbroken)" },
+                                                        { value: "1", label: "LB1" },
+                                                        { value: "2", label: "LB2" },
+                                                        { value: "3", label: "LB3" },
+                                                        { value: "4", label: "LB4 (MLB)" },
+                                                    ]}
+                                                    value={String(supportCardLimitBreakDefault ?? 4)}
+                                                    onValueChange={(value) => updateRacingSetting("supportCardLimitBreakDefault", Number(value ?? 4))}
+                                                    placeholder="LB4 (MLB)"
+                                                />
+                                            }
+                                        />
+                                        <SettingRow
                                             id="enable-parent-farming-stop-on-forced-fail"
                                             title="Forced epithet fail-fast"
                                             searchTitle="Stop on forced epithet fail"
@@ -1563,6 +1592,7 @@ const ParentFarmingSettings = () => {
                     visible={supportFinderOpen}
                     initialCharacterName={smartRaceSolverCharacterPreset}
                     ownedInventory={ownedInventory}
+                    getLimitBreak={getLimitBreak}
                     onClose={() => setSupportFinderOpen(false)}
                     onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
                     onApplyFullDeck={applyFullDeckFromRecommendation}
@@ -1571,6 +1601,7 @@ const ParentFarmingSettings = () => {
                 <OwnedSupportInventorySheet
                     visible={ownedInventoryOpen}
                     ownedCards={ownedInventory}
+                    limitBreaks={ownedCardLimitBreaks}
                     onClose={() => setOwnedInventoryOpen(false)}
                     onSave={saveOwnedInventory}
                 />

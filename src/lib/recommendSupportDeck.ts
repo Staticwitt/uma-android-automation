@@ -9,7 +9,7 @@ import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { findSupportDeckPreset } from "./supportDeckPresets"
 import { supportCardType, type SupportCardType } from "./supportCardCatalog"
 import { formatSupportCardMetadataSummary, getSupportCardMetadata } from "./supportCardMetadata"
-import { rankSupportsForGoal } from "./supportDeckScoring"
+import { rankSupportsForGoal, type LimitBreakResolver } from "./supportDeckScoring"
 import { optimizeOwnedDeckFromInventory, missingOwnedCards as computeMissingOwnedCards } from "./optimizeSupportDeck"
 import { APTITUDE_RANKS, type CharacterPresetEntry } from "./solver/constants"
 
@@ -44,6 +44,8 @@ export interface SupportDeckRecommendation {
 export interface RecommendSupportDeckOptions {
     /** When set, owned slots prefer cards from this inventory and swap unknowns when possible. */
     ownedInventory?: string[]
+    /** Per-card limit break resolver; defaults to MLB when omitted. */
+    getLimitBreak?: LimitBreakResolver
 }
 
 const CHARACTER_PRESETS = characterPresetsData as Record<string, CharacterPresetEntry>
@@ -159,6 +161,7 @@ const buildFriendBorrowOrder = (
     deckFriend: string,
     goalPresetKey: string,
     bundleBorrow?: string[],
+    getLimitBreak?: LimitBreakResolver,
 ): string[] => {
     const presetBorrow = dedupeNames([...(bundleBorrow ?? []), ...findSupportBorrowPreset(goalPresetKey)])
     const ownedSet = new Set(owned.map((n) => n.toLowerCase()))
@@ -169,8 +172,8 @@ const buildFriendBorrowOrder = (
     const nonOwnedCandidates = presetBorrow.filter((n) => n !== traineeName && !isOwned(n))
     const ownedAlternates = owned.filter((n) => n !== traineeName)
 
-    const rankedNonOwned = rankSupportsForGoal(nonOwnedCandidates, goalPresetKey, [traineeName], presetBorrow)
-    const rankedOwned = rankSupportsForGoal(ownedAlternates, goalPresetKey, [traineeName], presetBorrow)
+    const rankedNonOwned = rankSupportsForGoal(nonOwnedCandidates, goalPresetKey, [traineeName], presetBorrow, undefined, getLimitBreak)
+    const rankedOwned = rankSupportsForGoal(ownedAlternates, goalPresetKey, [traineeName], presetBorrow, undefined, getLimitBreak)
 
     if (rankedNonOwned.length > 0) return dedupeNames([...rankedNonOwned, ...rankedOwned])
     return dedupeNames([deckFriend, ...rankedOwned].filter(Boolean))
@@ -206,12 +209,13 @@ export const recommendSupportDeckForCharacter = (
     const goalPreset = findParentFarmingGoalPreset(goalPresetKey)
     const deck = findSupportDeckPreset(goalPresetKey)
     const inventory = options?.ownedInventory ?? []
+    const getLimitBreak = options?.getLimitBreak
     const presetOwned =
         inventory.length >= 4
-            ? optimizeOwnedDeckFromInventory(inventory, characterName, deck, deck.owned, goalPresetKey)
+            ? optimizeOwnedDeckFromInventory(inventory, characterName, deck, deck.owned, goalPresetKey, getLimitBreak)
             : deck.owned
     const owned = resolveOwnedSlots(characterName, presetOwned, goalPresetKey, inventory.length >= 4 ? undefined : options?.ownedInventory)
-    const friendBorrowOrder = buildFriendBorrowOrder(characterName, owned, deck.friend, goalPresetKey, bundleBorrow)
+    const friendBorrowOrder = buildFriendBorrowOrder(characterName, owned, deck.friend, goalPresetKey, bundleBorrow, getLimitBreak)
     const slots = buildSlots(characterName, owned, friendBorrowOrder[0])
     const ownedCards = slots.filter((s) => s.role === "owned").map((s) => s.cardName)
 

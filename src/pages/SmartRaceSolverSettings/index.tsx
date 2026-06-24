@@ -43,6 +43,7 @@ import type { ParentFarmingCharacterBundle } from "../../lib/parentFarmingCharac
 import { aptitudesFromCharacterPreset, findCharacterPresetEntry } from "../../lib/parentFarmingCharacterBundles"
 import { recommendSupportDeckForCharacter, parseOwnedSupportCards, formatSupportDeckClipboard } from "../../lib/recommendSupportDeck"
 import { buildFullDeckApplyRacingPatch } from "../../lib/parentFarmingCareerAutomation"
+import { buildLimitBreakResolverFromSettings, parseSupportCardLimitBreaks } from "../../lib/supportCardLimitBreaks"
 import { loadSolverPreviewCache, saveSolverPreviewCache } from "../../lib/solver/previewCacheStorage"
 import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision"
 import { copyToClipboard } from "../../lib/utils"
@@ -139,9 +140,12 @@ const SmartRaceSolverSettings = () => {
         parentFarmingSupportBorrowOverrides,
         ownedSupportCards,
         supportDeckOwnedCards,
+        supportCardLimitBreaks,
     } = racingSettings
 
     const ownedInventory = useMemo(() => parseOwnedSupportCards(ownedSupportCards), [ownedSupportCards])
+    const ownedCardLimitBreaks = useMemo(() => parseSupportCardLimitBreaks(supportCardLimitBreaks), [supportCardLimitBreaks])
+    const getLimitBreak = useMemo(() => buildLimitBreakResolverFromSettings(racing), [racing])
 
     const supportBorrowOverrides = useMemo(
         () => parseSupportBorrowOverrides(parentFarmingSupportBorrowOverrides),
@@ -276,9 +280,9 @@ const SmartRaceSolverSettings = () => {
     const characterSupportRecommendation = useMemo(
         () =>
             smartRaceSolverCharacterPreset
-                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory })
+                ? recommendSupportDeckForCharacter(smartRaceSolverCharacterPreset, { ownedInventory, getLimitBreak })
                 : null,
-        [smartRaceSolverCharacterPreset, ownedInventory],
+        [smartRaceSolverCharacterPreset, ownedInventory, getLimitBreak],
     )
 
     const applyFriendBorrowFromRecommendation = useCallback(
@@ -317,8 +321,8 @@ const SmartRaceSolverSettings = () => {
     )
 
     const saveOwnedInventory = useCallback(
-        (cards: string[]) => {
-            updateRacing({ ownedSupportCards: JSON.stringify(cards) })
+        (cards: string[], limitBreaks: Record<string, number>) => {
+            updateRacing({ ownedSupportCards: JSON.stringify(cards), supportCardLimitBreaks: JSON.stringify(limitBreaks) })
         },
         [updateRacing],
     )
@@ -2558,6 +2562,7 @@ const SmartRaceSolverSettings = () => {
                 visible={supportFinderOpen}
                 initialCharacterName={smartRaceSolverCharacterPreset}
                 ownedInventory={ownedInventory}
+                getLimitBreak={getLimitBreak}
                 onClose={() => setSupportFinderOpen(false)}
                 onApplyFriendBorrow={applyFriendBorrowFromRecommendation}
                 onApplyFullDeck={applyFullDeckFromRecommendation}
@@ -2566,6 +2571,7 @@ const SmartRaceSolverSettings = () => {
             <OwnedSupportInventorySheet
                 visible={ownedInventoryOpen}
                 ownedCards={ownedInventory}
+                limitBreaks={ownedCardLimitBreaks}
                 onClose={() => setOwnedInventoryOpen(false)}
                 onSave={saveOwnedInventory}
             />

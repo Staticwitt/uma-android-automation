@@ -11,6 +11,7 @@ import {
     recommendSupportDeckForCharacter,
     type SupportDeckRecommendation,
 } from "../lib/recommendSupportDeck"
+import type { LimitBreakResolver } from "../lib/supportDeckScoring"
 import { copyToClipboard } from "../lib/utils"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
@@ -20,6 +21,7 @@ interface CharacterSupportFinderSheetProps {
     visible: boolean
     initialCharacterName?: string
     ownedInventory?: string[]
+    getLimitBreak?: LimitBreakResolver
     onClose: () => void
     onApplyFriendBorrow: (characterName: string, borrowOrder: string[]) => void
     onApplyFullDeck: (characterName: string, ownedCards: string[], borrowOrder: string[]) => void
@@ -33,6 +35,7 @@ export const CharacterSupportFinderSheet = ({
     visible,
     initialCharacterName,
     ownedInventory = [],
+    getLimitBreak,
     onClose,
     onApplyFriendBorrow,
     onApplyFullDeck,
@@ -57,8 +60,8 @@ export const CharacterSupportFinderSheet = ({
     }, [allCharacters, search])
 
     const recommendation: SupportDeckRecommendation | null = useMemo(
-        () => (selectedName ? recommendSupportDeckForCharacter(selectedName, { ownedInventory }) : null),
-        [selectedName, ownedInventory],
+        () => (selectedName ? recommendSupportDeckForCharacter(selectedName, { ownedInventory, getLimitBreak }) : null),
+        [selectedName, ownedInventory, getLimitBreak],
     )
 
     const handleApplyBorrow = useCallback(() => {

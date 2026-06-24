@@ -178,6 +178,10 @@ export interface Settings {
         supportDeckOwnedCards: string
         /** Per-bundle user overrides for support borrow order (`bundleKey` → names). */
         parentFarmingSupportBorrowOverrides: string
+        /** JSON object of card name → limit break level (0-4) for deck/borrow scoring. */
+        supportCardLimitBreaks: string
+        /** Fallback limit break level (0-4) for cards not listed in [supportCardLimitBreaks]. */
+        supportCardLimitBreakDefault: number
         /** Last applied parent goal preset / bundle keys for run summaries. */
         parentFarmingGoalPresetKey: string
         parentFarmingGoalPresetLabel: string
@@ -458,6 +462,8 @@ export const defaultSettings: Settings = {
         ownedSupportCards: "[]",
         supportDeckOwnedCards: "[]",
         parentFarmingSupportBorrowOverrides: "{}",
+        supportCardLimitBreaks: "{}",
+        supportCardLimitBreakDefault: 4,
         parentFarmingGoalPresetKey: "",
         parentFarmingGoalPresetLabel: "",
         parentFarmingBundleKey: "",

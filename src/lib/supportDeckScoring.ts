@@ -36,6 +36,25 @@ const DEFAULT_MANUAL_WEIGHTS = {
 
 const RARITY_SCORE: Record<"SSR" | "SR" | "R", number> = { SSR: 6, SR: 2, R: 0 }
 
+/** Max limit break level; scraped card stats represent this level. */
+export const MAX_LIMIT_BREAK = 4
+
+export const clampLimitBreak = (level: number): number => Math.max(0, Math.min(MAX_LIMIT_BREAK, Math.round(level)))
+
+/**
+ * Fraction of MLB-scraped stat bonuses (friendship bonus, training effectiveness, hint level,
+ * etc.) unlocked at each limit break level. These bonuses unlock in stages in-game; the scraped
+ * data only captures the MLB (level 4) value, so lower breaks scale that value down.
+ */
+const LIMIT_BREAK_SCORE_MULTIPLIER: Record<number, number> = { 0: 0.55, 1: 0.7, 2: 0.82, 3: 0.92, 4: 1.0 }
+
+export const limitBreakScoreMultiplier = (level: number): number => LIMIT_BREAK_SCORE_MULTIPLIER[clampLimitBreak(level)]
+
+/** Resolves a card's limit break level for scoring; defaults to MLB when unset. */
+export type LimitBreakResolver = (name: string) => number
+
+const DEFAULT_LIMIT_BREAK_RESOLVER: LimitBreakResolver = () => MAX_LIMIT_BREAK
+
 /** Friend borrow sort modes: goal-fit scoring (default) vs. pure in-kit race bonus. */
 export const SUPPORT_BORROW_SORT_MODES = [
     { value: "goal", label: "Goal fit (default)" },
@@ -252,7 +271,12 @@ const scoreCardStats = (meta: SupportCardMetadata, profile: SupportGoalScoringPr
 }
 
 /** Scores one support card for a parent-farming goal using event + scraped metadata. */
-export const scoreSupportCardForGoal = (name: string, goalPresetKey: string, presetBonus = 0): number => {
+export const scoreSupportCardForGoal = (
+    name: string,
+    goalPresetKey: string,
+    presetBonus = 0,
+    limitBreak: number = MAX_LIMIT_BREAK,
+): number => {
     const meta = getSupportCardMetadata(name)
     const profile = getSupportGoalScoringProfile(goalPresetKey)
     const type = supportCardType(name)
@@ -273,7 +297,7 @@ export const scoreSupportCardForGoal = (name: string, goalPresetKey: string, pre
     score += meta.totals.energy * profile.energyWeight * 0.05
     score += meta.totals.mood * profile.moodWeight * 0.5
     score += scoreHintKeywords(meta, profile)
-    score += scoreCardStats(meta, profile)
+    score += scoreCardStats(meta, profile) * limitBreakScoreMultiplier(limitBreak)
     score += Math.min(meta.eventCount, 12) * 0.5
     return score
 }
@@ -283,6 +307,7 @@ export const scoreOwnedSupportDeck = (
     cards: string[],
     goalPresetKey: string,
     presetOwned: string[] = [],
+    getLimitBreak: LimitBreakResolver = DEFAULT_LIMIT_BREAK_RESOLVER,
 ): number => {
     let score = 0
     const typeCounts: Record<SupportCardType, number> = {
@@ -295,7 +320,7 @@ export const scoreOwnedSupportDeck = (
     }
 
     for (const name of cards) {
-        score += scoreSupportCardForGoal(name, goalPresetKey, presetOwned.includes(name) ? 3 : 0)
+        score += scoreSupportCardForGoal(name, goalPresetKey, presetOwned.includes(name) ? 3 : 0, getLimitBreak(name))
         const type = supportCardType(name)
         if (type) typeCounts[type] += 1
     }
@@ -317,6 +342,7 @@ export const rankSupportsForGoal = (
     excludeNames: string[] = [],
     presetBonusNames: string[] = [],
     sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
+    getLimitBreak: LimitBreakResolver = DEFAULT_LIMIT_BREAK_RESOLVER,
 ): string[] => {
     const excluded = new Set(excludeNames.map((name) => name.toLowerCase()))
     const unique = [...new Set(names)].filter((name) => !excluded.has(name.toLowerCase()))
@@ -325,8 +351,8 @@ export const rankSupportsForGoal = (
             const raceBonusDiff = raceBonusScore(right) - raceBonusScore(left)
             if (raceBonusDiff !== 0) return raceBonusDiff
         }
-        const leftScore = scoreSupportCardForGoal(left, goalPresetKey, presetBonusNames.includes(left) ? 2 : 0)
-        const rightScore = scoreSupportCardForGoal(right, goalPresetKey, presetBonusNames.includes(right) ? 2 : 0)
+        const leftScore = scoreSupportCardForGoal(left, goalPresetKey, presetBonusNames.includes(left) ? 2 : 0, getLimitBreak(left))
+        const rightScore = scoreSupportCardForGoal(right, goalPresetKey, presetBonusNames.includes(right) ? 2 : 0, getLimitBreak(right))
         if (rightScore !== leftScore) return rightScore - leftScore
         return left.localeCompare(right)
     })
@@ -337,7 +363,8 @@ export const pickBestFriendBorrow = (
     ownedCards: string[],
     goalPresetKey: string,
     traineeName: string,
+    getLimitBreak: LimitBreakResolver = DEFAULT_LIMIT_BREAK_RESOLVER,
 ): string | null => {
-    const ranked = rankSupportsForGoal(candidates, goalPresetKey, [traineeName, ...ownedCards])
+    const ranked = rankSupportsForGoal(candidates, goalPresetKey, [traineeName, ...ownedCards], [], DEFAULT_SUPPORT_BORROW_SORT_MODE, getLimitBreak)
     return ranked[0] ?? null
 }
