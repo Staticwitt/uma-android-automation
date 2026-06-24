@@ -1,6 +1,7 @@
 import type { Settings } from "../context/BotStateContext"
 import { excludeTraineeFromSupportList, substituteTraineeInOwnedDeck } from "./parentFarmingSupportBorrow"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
+import { buildLimitBreakResolverFromSettings } from "./supportCardLimitBreaks"
 import { rankSupportsForGoal } from "./supportDeckScoring"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 
@@ -168,6 +169,8 @@ export const buildFullDeckApplyRacingPatch = (
         racing.parentFarmingGoalPresetKey || "g1-fans",
         [characterName],
         alternates,
+        undefined,
+        buildLimitBreakResolverFromSettings(racing),
     )
     return {
         ...racing,

@@ -2,7 +2,8 @@ import type { Settings } from "../context/BotStateContext"
 import type { ParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findParentFarmingCharacterBundle } from "./parentFarmingCharacterBundles"
 import { findSupportBorrowPreset } from "./supportBorrowPresets"
-import { DEFAULT_SUPPORT_BORROW_SORT_MODE, rankSupportsForGoal, type SupportBorrowSortMode } from "./supportDeckScoring"
+import { buildLimitBreakResolverFromSettings } from "./supportCardLimitBreaks"
+import { DEFAULT_SUPPORT_BORROW_SORT_MODE, rankSupportsForGoal, type LimitBreakResolver, type SupportBorrowSortMode } from "./supportDeckScoring"
 
 /** User overrides: bundle key → ordered support card names. */
 export type ParentFarmingSupportBorrowOverrides = Record<string, string[]>
@@ -84,7 +85,8 @@ export const rankSupportBorrowCardsForBundle = (
     names: string[],
     bundle: ParentFarmingCharacterBundle,
     sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
-): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names, sortMode)
+    getLimitBreak?: LimitBreakResolver,
+): string[] => rankSupportsForGoal(names, bundle.goalPresetKey, [bundle.characterName], names, sortMode, getLimitBreak)
 
 /**
  * Ordered borrow list for a bundle: user override → bundle default → goal preset fallback.
@@ -93,6 +95,7 @@ export const resolveSupportBorrowCardsForBundle = (
     bundle: ParentFarmingCharacterBundle,
     overrides?: ParentFarmingSupportBorrowOverrides,
     sortMode: SupportBorrowSortMode = DEFAULT_SUPPORT_BORROW_SORT_MODE,
+    getLimitBreak?: LimitBreakResolver,
 ): string[] => {
     const alternates = findSupportBorrowPreset(bundle.goalPresetKey)
     const custom = overrides?.[bundle.key]
@@ -108,6 +111,7 @@ export const resolveSupportBorrowCardsForBundle = (
         excludeTraineeFromSupportList(cards, bundle.characterName, alternates),
         bundle,
         sortMode,
+        getLimitBreak,
     )
 }
 
@@ -116,10 +120,11 @@ export const resolveActiveSupportBorrowCards = (settings: Settings): string[] =>
     const traineeName = settings.racing.smartRaceSolverCharacterPreset || ""
     const overrides = parseSupportBorrowOverrides(settings.racing.parentFarmingSupportBorrowOverrides)
     const sortMode = (settings.racing.supportBorrowSortMode as SupportBorrowSortMode) || DEFAULT_SUPPORT_BORROW_SORT_MODE
+    const getLimitBreak = buildLimitBreakResolverFromSettings(settings.racing)
     const bundleKey = settings.racing.parentFarmingBundleKey
     if (bundleKey) {
         const bundle = findParentFarmingCharacterBundle(bundleKey)
-        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides, sortMode)
+        if (bundle) return resolveSupportBorrowCardsForBundle(bundle, overrides, sortMode, getLimitBreak)
     }
     const goalKey = settings.racing.parentFarmingGoalPresetKey
     if (goalKey) {
@@ -129,6 +134,7 @@ export const resolveActiveSupportBorrowCards = (settings: Settings): string[] =>
             traineeName ? [traineeName] : [],
             findSupportBorrowPreset(goalKey),
             sortMode,
+            getLimitBreak,
         )
     }
     try {
