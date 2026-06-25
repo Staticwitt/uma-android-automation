@@ -138,6 +138,76 @@
                 display: flex;
             }
 
+            .analytics-view {
+                overflow-y: auto;
+                padding: 20px;
+            }
+
+            .analytics-empty {
+                color: var(--text-muted);
+                font-size: 13px;
+                text-align: center;
+                padding: 24px 0;
+            }
+
+            .analytics-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+                gap: 16px;
+            }
+
+            .analytics-card {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+                padding: 16px;
+            }
+
+            .analytics-card-wide {
+                grid-column: 1 / -1;
+            }
+
+            .analytics-card-title {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 12px;
+            }
+
+            .analytics-canvas {
+                width: 100%;
+                height: 200px;
+                display: block;
+            }
+
+            .analytics-canvas-wide {
+                height: 240px;
+            }
+
+            .analytics-legend {
+                display: flex;
+                gap: 14px;
+                margin-bottom: 8px;
+                flex-wrap: wrap;
+            }
+
+            .analytics-legend-item {
+                font-size: 11px;
+                color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .analytics-legend-swatch {
+                width: 10px;
+                height: 10px;
+                border-radius: 2px;
+                display: inline-block;
+            }
+
             .image-toolbar {
                 padding: 10px 20px;
                 background: var(--bg-tertiary);
@@ -2251,6 +2321,7 @@
             <button id="trainerTabBtn" class="tab-btn" onclick="switchTab('trainer')">Auto Trainer</button>
             <button id="imagesTabBtn" class="tab-btn" onclick="switchTab('images')">Debug Images</button>
             <button id="logFilesTabBtn" class="tab-btn" onclick="switchTab('logFiles')">Log Files</button>
+            <button id="analyticsTabBtn" class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
         </nav>
 
         <!-- Logs & Dashboard View -->
@@ -2720,6 +2791,48 @@
             </div>
         </div>
 
+        <!-- Analytics View -->
+        <div id="analyticsView" class="tab-view analytics-view">
+            <div id="analyticsEmptyState" class="analytics-empty">No run data yet. Charts will populate once the bot starts a turn.</div>
+            <div class="analytics-grid">
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Training Distribution</div>
+                    <canvas id="chartTrainingDist" class="analytics-canvas"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Race Results</div>
+                    <canvas id="chartRaceResults" class="analytics-canvas"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Mood Recovery</div>
+                    <canvas id="chartMoodRecovery" class="analytics-canvas"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Energy Recovery</div>
+                    <canvas id="chartEnergyRecovery" class="analytics-canvas"></canvas>
+                </div>
+                <div class="analytics-card analytics-card-wide">
+                    <div class="analytics-card-title">Stat Growth Over Time</div>
+                    <div class="analytics-legend">
+                        <span class="analytics-legend-item"><span class="analytics-legend-swatch" style="background: #6c8cff"></span>SPD</span>
+                        <span class="analytics-legend-item"><span class="analytics-legend-swatch" style="background: #22c55e"></span>STA</span>
+                        <span class="analytics-legend-item"><span class="analytics-legend-swatch" style="background: #ef4444"></span>PWR</span>
+                        <span class="analytics-legend-item"><span class="analytics-legend-swatch" style="background: #f59e0b"></span>GUT</span>
+                        <span class="analytics-legend-item"><span class="analytics-legend-swatch" style="background: #9b6dff"></span>WIT</span>
+                    </div>
+                    <canvas id="chartStatGrowth" class="analytics-canvas analytics-canvas-wide"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Energy Over Time</div>
+                    <canvas id="chartEnergyOverTime" class="analytics-canvas"></canvas>
+                </div>
+                <div class="analytics-card">
+                    <div class="analytics-card-title">Fans Over Time</div>
+                    <canvas id="chartFansOverTime" class="analytics-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- Log File Viewer Modal -->
         <div id="logFileModal" class="log-file-modal">
             <div class="log-file-modal-content">
@@ -2946,6 +3059,12 @@
             let raceBreakdown = { Finale: 0, G1: 0, G2: 0, G3: 0, OP: 0, "Pre-OP": 0, Maiden: 0, Mandatory: 0, Standalone: 0 }
             let moodBreakdown = { Standard: 0, Date: 0, Summer: 0 }
             let energyBreakdown = { Rest: 0, Date: 0, Summer: 0 }
+
+            // Analytics tab state: one snapshot per turn, captured the moment a new turn number is observed.
+            let analyticsTimeline = []
+            let analyticsCurrent = { energy: null, fans: null, stats: { Spd: null, Sta: null, Pow: null, Gut: null, Wit: null } }
+            let analyticsLastTurn = null
+            let analyticsTabActive = false
 
             // Synchronization state with LogStreamServer.
             let isSyncing = true
@@ -3568,6 +3687,12 @@
                 moodBreakdown = { Standard: 0, Date: 0, Summer: 0 }
                 energyBreakdown = { Rest: 0, Date: 0, Summer: 0 }
 
+                // Reset Analytics tab state for the new run.
+                analyticsTimeline = []
+                analyticsCurrent = { energy: null, fans: null, stats: { Spd: null, Sta: null, Pow: null, Gut: null, Wit: null } }
+                analyticsLastTurn = null
+                if (analyticsTabActive) renderAnalytics()
+
                 // Reset the trainee name display.
                 document.getElementById("dashboardName").textContent = "-"
                 document.getElementById("dashboardEnergy").textContent = "-"
@@ -4141,6 +4266,20 @@
                 const category = trainee.category
                 const data = trainee.data
 
+                // Mirror energy/fans/stats into analyticsCurrent regardless of stateTarget so the Analytics tab's
+                // per-turn snapshots (taken in handleDateUpdates) reflect the latest known values during both
+                // live updates and chronological history replay.
+                if (category === "Energy") {
+                    analyticsCurrent.energy = data.trim()
+                } else if (category === "Fans") {
+                    analyticsCurrent.fans = data.trim()
+                } else if (category === "Stats") {
+                    data.split(", ").forEach((s) => {
+                        const [key, val] = s.split("=")
+                        if (analyticsCurrent.stats.hasOwnProperty(key)) analyticsCurrent.stats[key] = val
+                    })
+                }
+
                 if (stateTarget) {
                     if (category === "Name") {
                         stateTarget.name = data.trim()
@@ -4188,6 +4327,19 @@
                     if (info.turn) document.getElementById("dashboardTurn").textContent = info.turn
                     if (info.date) document.getElementById("dashboardDate").textContent = idToTitleCase(info.date)
                 }
+
+                // Capture one Analytics snapshot per turn using the latest analyticsCurrent values. Runs during both
+                // live updates and chronological history replay, so analyticsTimeline ends up turn-ordered either way.
+                if (info.turn && info.turn !== analyticsLastTurn) {
+                    analyticsLastTurn = info.turn
+                    analyticsTimeline.push({
+                        turn: info.turn,
+                        energy: analyticsCurrent.energy,
+                        fans: analyticsCurrent.fans,
+                        stats: Object.assign({}, analyticsCurrent.stats),
+                    })
+                    if (analyticsTabActive) renderAnalytics()
+                }
             }
 
             /**
@@ -4196,6 +4348,8 @@
             function handleEnergyInfo(parsed, stateTarget) {
                 const info = parsed.energyInfo
                 if (!info) return
+
+                analyticsCurrent.energy = info.to + "%"
 
                 if (stateTarget) {
                     stateTarget.energy = info.to + "%"
@@ -4537,18 +4691,230 @@
              * Switches between different view tabs.
              * @param {string} tabID - The ID of the tab to switch to ('logs', 'trainer', 'images', or 'logFiles').
              */
+            // ==============================================
+            // Analytics Tab
+            // ==============================================
+
+            /**
+             * Truncates text with an ellipsis so it fits within maxWidth at the context's current font.
+             * @param {CanvasRenderingContext2D} ctx - Context whose current font is used for measurement.
+             * @param {string} text - The text to fit.
+             * @param {number} maxWidth - Maximum width in CSS pixels.
+             */
+            function truncateToWidth(ctx, text, maxWidth) {
+                if (ctx.measureText(text).width <= maxWidth) return text
+                let truncated = text
+                while (truncated.length > 1 && ctx.measureText(truncated + "…").width > maxWidth) {
+                    truncated = truncated.slice(0, -1)
+                }
+                return truncated.length < text.length ? truncated + "…" : truncated
+            }
+
+            /**
+             * Draws a simple vertical bar chart onto the given canvas. Resizes the canvas's backing store to match
+             * its current CSS size (scaled for devicePixelRatio) so the chart stays crisp at any layout width.
+             * @param {string} canvasId - The id of the target <canvas> element.
+             * @param {string[]} labels - X-axis labels, one per bar.
+             * @param {number[]} values - Bar values, matched by index to labels.
+             * @param {string} color - CSS color used to fill the bars.
+             */
+            function drawBarChart(canvasId, labels, values, color) {
+                const canvas = document.getElementById(canvasId)
+                if (!canvas) return
+                const ctx = canvas.getContext("2d")
+                const dpr = window.devicePixelRatio || 1
+                const width = canvas.clientWidth || 320
+                const height = canvas.clientHeight || 200
+                canvas.width = width * dpr
+                canvas.height = height * dpr
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+                ctx.clearRect(0, 0, width, height)
+
+                const maxVal = Math.max(1, ...values)
+                const paddingLeft = 30
+                const paddingBottom = 22
+                const paddingTop = 16
+                const paddingRight = 10
+                const chartWidth = width - paddingLeft - paddingRight
+                const chartHeight = height - paddingBottom - paddingTop
+                const barGap = 10
+                const barWidth = values.length > 0 ? (chartWidth - barGap * (values.length - 1)) / values.length : 0
+
+                ctx.strokeStyle = "#2a2a3a"
+                ctx.lineWidth = 1
+                ctx.beginPath()
+                ctx.moveTo(paddingLeft, paddingTop)
+                ctx.lineTo(paddingLeft, height - paddingBottom)
+                ctx.lineTo(width - paddingRight, height - paddingBottom)
+                ctx.stroke()
+
+                ctx.font = "11px Inter, sans-serif"
+                ctx.textAlign = "center"
+
+                const slotWidth = barWidth + barGap
+                values.forEach((v, i) => {
+                    const barHeight = (v / maxVal) * chartHeight
+                    const x = paddingLeft + i * slotWidth
+                    const y = height - paddingBottom - barHeight
+
+                    ctx.fillStyle = color
+                    ctx.fillRect(x, y, barWidth, Math.max(barHeight, v > 0 ? 1 : 0))
+
+                    ctx.fillStyle = "#e4e4ef"
+                    ctx.fillText(String(v), x + barWidth / 2, Math.max(y - 4, paddingTop + 10))
+
+                    ctx.fillStyle = "#8888a0"
+                    ctx.fillText(truncateToWidth(ctx, labels[i], slotWidth - 2), x + barWidth / 2, height - paddingBottom + 14)
+                })
+            }
+
+            /**
+             * Draws a multi-series line chart onto the given canvas, sharing one Y axis across all series.
+             * @param {string} canvasId - The id of the target <canvas> element.
+             * @param {string[]} xLabels - X-axis labels, one per data point (only first/middle/last are drawn).
+             * @param {{name: string, color: string, values: (number|null)[]}[]} series - Lines to draw. `null` values create a gap.
+             */
+            function drawLineChart(canvasId, xLabels, series) {
+                const canvas = document.getElementById(canvasId)
+                if (!canvas) return
+                const ctx = canvas.getContext("2d")
+                const dpr = window.devicePixelRatio || 1
+                const width = canvas.clientWidth || 320
+                const height = canvas.clientHeight || 200
+                canvas.width = width * dpr
+                canvas.height = height * dpr
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+                ctx.clearRect(0, 0, width, height)
+
+                const allValues = series.flatMap((s) => s.values).filter((v) => v != null && !isNaN(v))
+                const maxVal = allValues.length ? Math.max(...allValues) : 1
+                const minVal = allValues.length ? Math.min(0, ...allValues) : 0
+
+                const paddingLeft = 36
+                const paddingBottom = 22
+                const paddingTop = 14
+                const paddingRight = 10
+                const chartWidth = width - paddingLeft - paddingRight
+                const chartHeight = height - paddingBottom - paddingTop
+
+                ctx.strokeStyle = "#2a2a3a"
+                ctx.lineWidth = 1
+                ctx.beginPath()
+                ctx.moveTo(paddingLeft, paddingTop)
+                ctx.lineTo(paddingLeft, height - paddingBottom)
+                ctx.lineTo(width - paddingRight, height - paddingBottom)
+                ctx.stroke()
+
+                ctx.font = "11px Inter, sans-serif"
+                ctx.fillStyle = "#8888a0"
+                ctx.textAlign = "right"
+                ctx.fillText(String(Math.round(maxVal)), paddingLeft - 6, paddingTop + 10)
+                ctx.fillText(String(Math.round(minVal)), paddingLeft - 6, height - paddingBottom)
+
+                const n = xLabels.length
+                const xStep = n > 1 ? chartWidth / (n - 1) : 0
+                const valueRange = maxVal !== minVal ? maxVal - minVal : 1
+
+                series.forEach((s) => {
+                    ctx.strokeStyle = s.color
+                    ctx.lineWidth = 2
+                    ctx.beginPath()
+                    let started = false
+                    s.values.forEach((v, i) => {
+                        if (v == null || isNaN(v)) {
+                            started = false
+                            return
+                        }
+                        const x = paddingLeft + i * xStep
+                        const y = height - paddingBottom - ((v - minVal) / valueRange) * chartHeight
+                        if (!started) {
+                            ctx.moveTo(x, y)
+                            started = true
+                        } else {
+                            ctx.lineTo(x, y)
+                        }
+                    })
+                    ctx.stroke()
+                })
+
+                ctx.fillStyle = "#8888a0"
+                ctx.textAlign = "center"
+                if (n > 0) {
+                    ctx.fillText(xLabels[0], paddingLeft, height - paddingBottom + 14)
+                    if (n > 1) ctx.fillText(xLabels[n - 1], paddingLeft + (n - 1) * xStep, height - paddingBottom + 14)
+                    if (n > 2) {
+                        const midIdx = Math.floor((n - 1) / 2)
+                        ctx.fillText(xLabels[midIdx], paddingLeft + midIdx * xStep, height - paddingBottom + 14)
+                    }
+                }
+            }
+
+            /**
+             * Redraws every chart on the Analytics tab from the current breakdown counters and analyticsTimeline.
+             * Called when the tab is activated, on window resize, and whenever a new per-turn snapshot is captured
+             * while the tab is visible.
+             */
+            function renderAnalytics() {
+                document.getElementById("analyticsEmptyState").style.display = analyticsTimeline.length === 0 ? "block" : "none"
+
+                const trainingStats = ["Speed", "Stamina", "Power", "Guts", "Wit"]
+                drawBarChart(
+                    "chartTrainingDist",
+                    ["SPD", "STA", "PWR", "GUT", "WIT"],
+                    trainingStats.map((s) => trainingBreakdown[s] || 0),
+                    "#6c8cff"
+                )
+
+                const raceLabels = Object.keys(raceBreakdown)
+                drawBarChart("chartRaceResults", raceLabels, raceLabels.map((g) => raceBreakdown[g] || 0), "#9b6dff")
+
+                const moodLabels = Object.keys(moodBreakdown)
+                drawBarChart("chartMoodRecovery", moodLabels, moodLabels.map((t) => moodBreakdown[t] || 0), "#22c55e")
+
+                const energyLabels = Object.keys(energyBreakdown)
+                drawBarChart("chartEnergyRecovery", energyLabels, energyLabels.map((t) => energyBreakdown[t] || 0), "#f59e0b")
+
+                const xLabels = analyticsTimeline.map((t) => "T" + t.turn)
+
+                const statColors = { Spd: "#6c8cff", Sta: "#22c55e", Pow: "#ef4444", Gut: "#f59e0b", Wit: "#9b6dff" }
+                const statSeries = Object.keys(statColors).map((key) => ({
+                    name: key,
+                    color: statColors[key],
+                    values: analyticsTimeline.map((t) => (t.stats[key] != null ? parseInt(t.stats[key], 10) : null)),
+                }))
+                drawLineChart("chartStatGrowth", xLabels, statSeries)
+
+                drawLineChart("chartEnergyOverTime", xLabels, [
+                    {
+                        name: "Energy",
+                        color: "#38bdf8",
+                        values: analyticsTimeline.map((t) => (t.energy != null ? parseInt(String(t.energy).replace("%", ""), 10) : null)),
+                    },
+                ])
+
+                drawLineChart("chartFansOverTime", xLabels, [
+                    {
+                        name: "Fans",
+                        color: "#f59e0b",
+                        values: analyticsTimeline.map((t) => (t.fans != null ? parseInt(String(t.fans).replace(/,/g, ""), 10) : null)),
+                    },
+                ])
+            }
+
             function switchTab(tabID) {
                 // Update buttons.
                 document.getElementById("logsTabBtn").classList.toggle("active", tabID === "logs")
                 document.getElementById("trainerTabBtn").classList.toggle("active", tabID === "trainer")
                 document.getElementById("imagesTabBtn").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesTabBtn").classList.toggle("active", tabID === "logFiles")
+                document.getElementById("analyticsTabBtn").classList.toggle("active", tabID === "analytics")
 
                 // Update views.
                 document.getElementById("logsView").classList.toggle("active", tabID === "logs")
                 document.getElementById("trainerView").classList.toggle("active", tabID === "trainer")
                 document.getElementById("imagesView").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesView").classList.toggle("active", tabID === "logFiles")
+                document.getElementById("analyticsView").classList.toggle("active", tabID === "analytics")
 
                 if (tabID === "logs" && autoScroll) {
                     scrollToBottom()
@@ -4562,7 +4928,14 @@
                 if (tabID === "trainer") {
                     trainerLoadStatus()
                 }
+
+                analyticsTabActive = tabID === "analytics"
+                if (analyticsTabActive) renderAnalytics()
             }
+
+            window.addEventListener("resize", function () {
+                if (analyticsTabActive) renderAnalytics()
+            })
 
             let receivedImagesCount = 0
             let lastRefreshTimestamp = null

@@ -320,9 +320,7 @@ object ParentFarmingRunLoop {
             borrowRotationOffset++
         }
 
-        SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()
-        OwnedSupportDeckEquipper.resetForNewRun()
         SmartRaceSolverIntegration.reset()
         ParentDiscordNotifier.reset()
         ParentFarmingLiveStatus.reset()

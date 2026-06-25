@@ -7,8 +7,7 @@ import com.steve1316.uma_android_automation.types.StatName
  * Always-on soft multiplicative bias on [Training]'s per-distance/per-phase stat targets, based on the
  * trainee's own aptitude-determined preferred [RunningStyle] (`Trainee.runningStyle`).
  *
- * Unlike [CareerPlanner] (a speculative, opt-in bias derived from deck composition), this reflects how the
- * stats actually matter in-race for each running style: Front Runners lean on Power to break away early,
+ * This reflects how the stats actually matter in-race for each running style: Front Runners lean on Power to break away early,
  * Late Surgers/End Closers lean on Guts for their late spurt and Stamina to sustain it, and Pace Chaser leans
  * slightly on Wit for positioning. The bias is read directly from the trainee's own OCR'd aptitudes rather
  * than a user preference, so it is always applied (when stat targets aren't already disabled).

@@ -384,12 +384,6 @@ When `disableStatTargets` is enabled, the per-distance stat targets that normall
 </details>
 
 <details>
-<summary><strong>Career Planner (opt-in, off by default)</strong></summary>
-
-When `enableCareerPlanner` is enabled, the bot infers a target stat build from the **equipped support deck's stat-type composition** (Speed/Stamina/Power/Guts/Wit, read from the `supportDeckOwnedCards` setting) and uses it to nudge the per-distance stat targets that feed the Stat Efficiency component — e.g. a deck with three Speed-type supports raises the Speed target relative to the others. This is a **soft bias only**: it multiplies each stat's existing target by a factor derived from that stat's share of the deck (floor 0.7x for stats absent from the deck, scaling up for deck-favored stats), it does not reorder stat priorities, touch the training blacklist, or override rainbow/skill-hint/failure-chance logic. An evenly-balanced 5-stat deck is a no-op (multiplier 1.0x for every stat). If the equipped deck has no recognizable stat types (unset, all-Friend cards, or unrecognized names), the bias is skipped and targets are left untouched. Mutually exclusive in practice with `disableStatTargets` — when that setting is on, every target is already the scenario cap, so the bias is not applied.
-</details>
-
-<details>
 <summary><strong>Goal Race Stat Reallocation (opt-in, off by default)</strong></summary>
 
 When `enableGoalRaceStatBias` is enabled, the bot looks ahead at the next mandatory/scheduled race using the same OCR-based "turns remaining" check that powers Energy Banking. If that race falls within the configurable `goalRaceStatBiasLookaheadTurns` window (default 3 turns), the bot looks up the race's distance in the race database (keyed by absolute turn number) and, if a single unambiguous distance match is found, **substitutes that distance** for the trainee's preferred distance when resolving per-distance stat targets — e.g. if a Mile race is coming up but the trainee's preferred distance is Long, stat targets temporarily shift to the Mile profile so training leads into the goal race appropriately. This is a substitution, not an additive bias: it changes which distance's target table is used, then Career Planner and Running-Style Stat Bias still apply on top as usual. If the lookahead check fails (OCR failure, outside the window, race day already here) or the race's distance can't be uniquely determined (no database match, or multiple races at that turn with conflicting distances), the trainee's normal preferred distance is used unchanged.
@@ -433,7 +427,6 @@ This lets the user, for example, push Speed during the year but lean into Stamin
 | Risky Training | false | Accept higher failure for larger gains |
 | Training Level Weighting | true | Amplify top-3 priority stats by OCR-detected facility level (1-5) |
 | Disable Per-Distance Stat Targets | false | Treat every stat's target as the scenario stat cap |
-| Career Planner | false | Bias stat targets toward the equipped support deck's stat-type composition |
 | Goal Race Stat Reallocation | false | Substitute the upcoming mandatory race's distance for stat targets when it falls within the lookahead window |
 | Running-Style Stat Bias | always on | Bias stat targets toward the trainee's aptitude-determined preferred running style |
 | Energy Banking | false | Rest instead of training when energy is low and a mandatory race is coming up soon (see [Section 5](#5-decision-engine)) |

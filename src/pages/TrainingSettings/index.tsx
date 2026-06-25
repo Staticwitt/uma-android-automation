@@ -148,7 +148,6 @@ const TrainingSettings = () => {
         enablePrioritizeSkillHints,
         enableTrainingLevelWeighting,
         disableStatTargets,
-        enableCareerPlanner,
         enableGoalRaceStatBias,
         goalRaceStatBiasLookaheadTurns,
         enableTrainingAnalysisValidation,
@@ -874,12 +873,6 @@ const TrainingSettings = () => {
                                         title="Disable Stat Targets"
                                         description="When enabled, all per-distance stat targets below are ignored. Every stat is treated as having a target equal to the in-game stat cap (1200), so the bot will keep pushing your top priority stats even after they would normally be considered 'done.' Useful when you want strict adherence to your Stat Prioritization list."
                                         right={<Switch checked={disableStatTargets} onCheckedChange={(checked) => updateTrainingSetting("disableStatTargets", checked)} />}
-                                    />
-                                    <SettingRow
-                                        id="enable-career-planner"
-                                        title="Career Planner"
-                                        description="Infers a target stat build from your equipped support deck's stat-type composition (e.g. a Speed-heavy deck raises the Speed target) and nudges the stat targets above toward it. A soft bias only — rainbow training, skill hints, and failure chance still take priority. Off by default."
-                                        right={<Switch checked={enableCareerPlanner} onCheckedChange={(checked) => updateTrainingSetting("enableCareerPlanner", checked)} />}
                                     />
                                     <SettingRow
                                         id="enable-goal-race-stat-bias"

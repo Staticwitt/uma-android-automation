@@ -592,25 +592,6 @@ abstract class Campaign(game: Game) : Task(game) {
                 result.dialog.close(game.imageUtils)
             }
 
-            "borrow_card" -> {
-                if (SupportCardBorrower.isEnabled()) {
-                    val sourceBitmap = game.imageUtils.getSourceBitmap()
-                    if (!SupportCardBorrower.selectPreferredCard(game, sourceBitmap)) {
-                        result.dialog.close(game.imageUtils)
-                    }
-                } else {
-                    result.dialog.close(game.imageUtils)
-                }
-            }
-
-            "borrow_card_confirmation" -> {
-                if (SupportCardBorrower.isEnabled()) {
-                    SupportCardBorrower.confirmBorrow(game)
-                } else {
-                    result.dialog.close(game.imageUtils)
-                }
-            }
-
             "auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
                     LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
@@ -2291,14 +2272,6 @@ abstract class Campaign(game: Game) : Task(game) {
             ParentFarmingGenerationFarm.tryGate(game, this)
 
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
-                return null
-            }
-
-            if (OwnedSupportDeckEquipper.tryEquipOwnedDeck(game)) {
-                return null
-            }
-
-            if (SupportCardBorrower.tryOpenBorrowDialog(game)) {
                 return null
             }
 

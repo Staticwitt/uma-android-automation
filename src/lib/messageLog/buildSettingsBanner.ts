@@ -159,7 +159,6 @@ export function buildSettingsBanner(settings: Settings): string {
 
 ---------- Training Stat Targets by Distance ----------
 🛑 Disable Stat Targets: ${settings.training.disableStatTargets ? "✅ (all stats treated as cap=1200)" : "❌"}
-🧭 Career Planner (deck-inferred stat bias): ${settings.training.enableCareerPlanner ? "✅" : "❌"}
 🏁 Goal Race Stat Reallocation: ${settings.training.enableGoalRaceStatBias ? `✅ (lookahead ${settings.training.goalRaceStatBiasLookaheadTurns} turns)` : "❌"}
 🎯 Classic Year Milestone: ${settings.training.classicMilestonePercent}%
 🎯 Senior Year Milestone: ${settings.training.seniorMilestonePercent}%
