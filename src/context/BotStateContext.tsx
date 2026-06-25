@@ -94,10 +94,6 @@ export interface Settings {
         smartRaceSolverWeights: string
         /** Inheritance spark picker: Default, StatAndAptitude, SkillHints, or Balanced. */
         sparkSelectionStrategy: string
-        /** Auto-borrow a friend support card at career selection before training. */
-        enableAutoBorrowSupportCard: boolean
-        /** Auto-equip four owned support slots at career selection from saved deck. */
-        enableAutoEquipOwnedSupportDeck: boolean
         /** Tap Start Career on final confirmation when parent farming mode is on. */
         enableAutoStartCareer: boolean
         /** Run multiple parent-farming careers in one bot session. */
@@ -419,8 +415,6 @@ export const defaultSettings: Settings = {
         smartRaceSolverEpithetTiers: "",
         smartRaceSolverManualLocks: "{}",
         sparkSelectionStrategy: "Default",
-        enableAutoBorrowSupportCard: false,
-        enableAutoEquipOwnedSupportDeck: false,
         enableAutoStartCareer: false,
         enableParentFarmingMultiRun: false,
         parentFarmingMultiRunCount: 3,

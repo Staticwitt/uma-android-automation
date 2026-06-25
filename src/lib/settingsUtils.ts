@@ -250,10 +250,6 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.legacyParentPreferredPair = "[]"
             anyMigrated = true
         }
-        if (typeof racing.enableAutoEquipOwnedSupportDeck !== "boolean") {
-            racing.enableAutoEquipOwnedSupportDeck = false
-            anyMigrated = true
-        }
         if (typeof racing.enableAutoStartCareer !== "boolean") {
             racing.enableAutoStartCareer = false
             anyMigrated = true
