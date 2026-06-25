@@ -1796,12 +1796,10 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                         StatName.entries.associateWith { getScenarioStatCap(game.scenario, it) }
                     } else {
                         val goalRaceDistance = campaign.resolveGoalRaceDistance()
-                        val phaseTargets =
-                            RunningStyleStatBias.applyRunningStyleBias(
-                                campaign.trainee.getPhaseStatTargets(campaign.date.year, distance = goalRaceDistance),
-                                campaign.trainee.runningStyle,
-                            )
-                        if (CareerPlanner.isEnabled()) CareerPlanner.applyDeckBias(phaseTargets) else phaseTargets
+                        RunningStyleStatBias.applyRunningStyleBias(
+                            campaign.trainee.getPhaseStatTargets(campaign.date.year, distance = goalRaceDistance),
+                            campaign.trainee.runningStyle,
+                        )
                     },
                 currentDate = campaign.date,
                 scenario = game.scenario,

@@ -141,7 +141,6 @@
         "enablePrioritizeSkillHints": true,
         "enableTrainingLevelWeighting": true,
         "disableStatTargets": true,
-        "enableCareerPlanner": false,
         "enableGoalRaceStatBias": false,
         "goalRaceStatBiasLookaheadTurns": 3,
         "enableTrainingAnalysisValidation": false,

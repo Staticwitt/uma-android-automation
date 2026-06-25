@@ -256,9 +256,7 @@ class Game(val myContext: Context) {
         ParentFarmingRunLoop.resetSession(myContext)
         ParentFarmingGenerationFarm.resetSession()
         ParentFarmingRecoveryCoach.reset()
-        SupportCardBorrower.resetForNewRun()
         LegacyParentSelector.resetForNewRun()
-        OwnedSupportDeckEquipper.resetForNewRun()
         DelayCalibration.reset()
 
         // Print current app settings at the start of the run.

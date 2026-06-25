@@ -317,8 +317,6 @@ object DialogObjects {
             DialogAutoSelect,
             DialogAllRewardsEarned,
             DialogBonusUmamusumeDetails,
-            DialogBorrowCard,
-            DialogBorrowCardConfirmation,
             DialogCareer,
             DialogCareerComplete,
             DialogCareerEventDetails,
@@ -508,31 +506,6 @@ object DialogBonusUmamusumeDetails : DialogInterface {
     override val buttons: List<BaseComponentInterface> =
         listOf(
             ButtonClose,
-        )
-}
-
-/** Career Selection */
-object DialogBorrowCard : DialogInterface {
-    override val name: String = "borrow_card"
-    override val title: String = "Borrow Card"
-    override val closeButton = null
-    override val okButton = null
-    override val buttons: List<BaseComponentInterface> =
-        listOf(
-            ButtonClose,
-        )
-}
-
-/** Career Selection */
-object DialogBorrowCardConfirmation : DialogInterface {
-    override val name: String = "borrow_card_confirmation"
-    override val title: String = "Confirmation"
-    override val closeButton = null
-    override val okButton: BaseComponentInterface = ButtonOk
-    override val buttons: List<BaseComponentInterface> =
-        listOf(
-            ButtonClose,
-            ButtonOk,
         )
 }
 

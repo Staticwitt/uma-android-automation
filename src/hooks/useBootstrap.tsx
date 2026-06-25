@@ -168,12 +168,12 @@ export const useBootstrap = () => {
 
     /**
      * Populate the Smart Race Solver's bundled JSON datasets into SQLite under the `racing` namespace.
-     * Kotlin's `SmartRaceSolverIntegration.loadEpithets` / `loadAllRaces` / `loadCharacterPresets` and
-     * `SupportCardTypeRegistry` read these rows directly. Re-running on every app start keeps the persisted blob in sync with the
+     * Kotlin's `SmartRaceSolverIntegration.loadEpithets` / `loadAllRaces` / `loadCharacterPresets`
+     * read these rows directly. Re-running on every app start keeps the persisted blob in sync with the
      * bundled assets so a re-scrape (or a schema change like the `displayLabel` fields) propagates to
      * the bot side without requiring a settings reset.
      *
-     * @returns A promise that resolves when all three rows have been written.
+     * @returns A promise that resolves when all rows have been written.
      */
     const populateSolverData = async (): Promise<void> => {
         try {
@@ -201,12 +201,6 @@ export const useBootstrap = () => {
             await yieldToFrame()
             await databaseManager.saveSetting("racing", "characterObjectivesData", characterObjectivesData, true)
             logWithTimestamp(`[Bootstrap] Successfully saved character objectives data (${Object.keys(characterObjectivesData).length} characters) to SQLite`)
-            await yieldToFrame()
-
-            const supportCardTypesData = require("../data/supportCardTypes.json")
-            await yieldToFrame()
-            await databaseManager.saveSetting("racing", "supportCardTypesData", supportCardTypesData, true)
-            logWithTimestamp(`[Bootstrap] Successfully saved support card types data (${Object.keys(supportCardTypesData).length} cards) to SQLite`)
 
             logWithTimestamp("[Bootstrap] Solver data population complete")
         } catch (error) {
