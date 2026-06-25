@@ -1,22 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.67</latestVersion>
-    <latestVersionCode>157</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.67</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.67/v5.9.67-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.67/v5.9.67-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.68</latestVersion>
+    <latestVersionCode>158</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.68</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.68/v5.9.68-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.68/v5.9.68-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.67 - Analytics tab, debug API endpoints, support card automation removal
-
-New
----
-- Added an Analytics tab to the remote log viewer: bar charts for Training Distribution, Race Results, Mood Recovery, and Energy Recovery, plus line charts for Stat Growth, Energy, and Fans over time.
-- Added /debug-images and /debug-images/{filename} endpoints to the remote log viewer's API for listing and downloading the bot's debug screenshots.
-- Added a /decisions endpoint that extracts per-turn Decision Report blocks from the message log as structured JSON.
+v5.9.68 - Remove dead support card automation settings
 
 Removed
 -------
-- Removed the on-device support-card borrow/equip automation (auto-borrow support card, auto-equip owned support deck, and the opt-in Career Planner deck-bias feature). Parent Farming's deck scoring and recommendation logic is unchanged, but borrowing/equipping support cards during a run now requires manual action.
+- Removed the auto-borrow support card and auto-equip owned support deck settings: these toggles were left over from the on-device automation removed in v5.9.67 and no longer did anything. Their checklist steps and drift warnings in Career Automation are gone too.
 
     </releaseNotes>
   </update>
