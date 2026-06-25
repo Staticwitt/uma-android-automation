@@ -5,13 +5,11 @@ import { buildLimitBreakResolverFromSettings } from "./supportCardLimitBreaks"
 import { rankSupportsForGoal } from "./supportDeckScoring"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
 
-/** Racing flags for hands-off career selection (parents → equip → borrow → start). */
+/** Racing flags for hands-off career selection (parents → start). */
 export const PARENT_FARMING_CAREER_AUTOMATION_FLAGS: Pick<
     Settings["racing"],
-    "enableAutoEquipOwnedSupportDeck" | "enableAutoBorrowSupportCard" | "enableAutoSelectLegacyParents" | "enableAutoStartCareer"
+    "enableAutoSelectLegacyParents" | "enableAutoStartCareer"
 > = {
-    enableAutoEquipOwnedSupportDeck: true,
-    enableAutoBorrowSupportCard: true,
     enableAutoSelectLegacyParents: true,
     enableAutoStartCareer: true,
 }
@@ -36,19 +34,13 @@ const parseStringList = (json: string | undefined): string[] => {
 
 export const isFullCareerAutomationEnabled = (settings: Settings): boolean => {
     const { racing } = settings
-    return (
-        racing.enableAutoEquipOwnedSupportDeck &&
-        racing.enableAutoBorrowSupportCard &&
-        racing.enableAutoSelectLegacyParents &&
-        racing.enableAutoStartCareer
-    )
+    return racing.enableAutoSelectLegacyParents && racing.enableAutoStartCareer
 }
 
 /** Ordered checklist for career-selection automation UX. */
 export const getCareerAutomationSteps = (settings: Settings): CareerAutomationStep[] => {
     const { racing } = settings
     const ownedDeck = parseOwnedSupportCards(racing.supportDeckOwnedCards)
-    const borrowList = parseStringList(racing.supportBorrowPreferredCards)
     const hasSetup = Boolean(racing.parentFarmingBundleKey || racing.parentFarmingGoalPresetKey)
 
     const steps: CareerAutomationStep[] = [
@@ -66,28 +58,8 @@ export const getCareerAutomationSteps = (settings: Settings): CareerAutomationSt
                 ownedDeck.length >= 4
                     ? ownedDeck.slice(0, 4).join(" · ")
                     : ownedDeck.length > 0
-                      ? `${ownedDeck.length}/4 slots saved — apply full deck from recommendations`
-                      : "Apply full deck or add owned inventory for auto-equip",
-        },
-        {
-            id: "auto-equip",
-            label: "Auto-equip owned deck",
-            status: !racing.enableAutoEquipOwnedSupportDeck ? "off" : ownedDeck.length === 0 ? "warning" : "ready",
-            detail: racing.enableAutoEquipOwnedSupportDeck
-                ? ownedDeck.length === 0
-                    ? "On, but no owned slots saved yet"
-                    : "Equips saved slots at career selection"
-                : "Off — equip owned supports manually",
-        },
-        {
-            id: "auto-borrow",
-            label: "Auto-borrow friend support",
-            status: !racing.enableAutoBorrowSupportCard ? "off" : borrowList.length === 0 ? "warning" : "ready",
-            detail: racing.enableAutoBorrowSupportCard
-                ? borrowList.length > 0
-                    ? `Priority: ${borrowList.slice(0, 3).join(" → ")}${borrowList.length > 3 ? " …" : ""}`
-                    : "On, but borrow list is empty"
-                : "Off",
+                      ? `${ownedDeck.length}/4 slots saved — equip manually at career selection`
+                      : "Apply full deck or add owned inventory for manual equip reference",
         },
         {
             id: "legacy-parents",
@@ -132,10 +104,7 @@ export const isCareerSelectionReady = (settings: Settings): boolean => {
     const steps = getCareerAutomationSteps(settings)
     const setup = steps.find((step) => step.id === "setup")
     if (setup?.status === "warning") return false
-    const hasBorrowOrOwned =
-        parseOwnedSupportCards(settings.racing.supportDeckOwnedCards).length > 0 ||
-        parseStringList(settings.racing.supportBorrowPreferredCards).length > 0
-    return hasBorrowOrOwned && isFullCareerAutomationEnabled(settings)
+    return isFullCareerAutomationEnabled(settings)
 }
 
 /** One-line summary for chips and navigation subtitles. */
@@ -144,14 +113,9 @@ export const formatCareerAutomationSummary = (settings: Settings): string => {
     if (isCareerSelectionReady(settings)) {
         return settings.racing.enableParentFarmingMultiRun ? "Full automation · multi-run" : "Full automation · ready"
     }
-    const enabledCount = [
-        settings.racing.enableAutoEquipOwnedSupportDeck,
-        settings.racing.enableAutoBorrowSupportCard,
-        settings.racing.enableAutoSelectLegacyParents,
-        settings.racing.enableAutoStartCareer,
-    ].filter(Boolean).length
+    const enabledCount = [settings.racing.enableAutoSelectLegacyParents, settings.racing.enableAutoStartCareer].filter(Boolean).length
     if (enabledCount === 0) return "On — enable career automation"
-    return `On · ${enabledCount}/4 automation steps`
+    return `On · ${enabledCount}/2 automation steps`
 }
 
 /** Applies saved deck fields plus full career automation toggles (Apply full deck). */
