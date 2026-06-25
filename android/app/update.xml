@@ -1,17 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.66</latestVersion>
-    <latestVersionCode>156</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.66</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.67</latestVersion>
+    <latestVersionCode>157</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.67</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.67/v5.9.67-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.67/v5.9.67-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.66 - Custom release signing key
+v5.9.67 - Analytics tab, debug API endpoints, support card automation removal
 
-Misc
-----
-- Releases are now signed with a dedicated release key instead of the shared debug key.
-- IMPORTANT: because the signature changed, Android will refuse to install this update over an existing install. Uninstall the old APK first, then install this one.
+New
+---
+- Added an Analytics tab to the remote log viewer: bar charts for Training Distribution, Race Results, Mood Recovery, and Energy Recovery, plus line charts for Stat Growth, Energy, and Fans over time.
+- Added /debug-images and /debug-images/{filename} endpoints to the remote log viewer's API for listing and downloading the bot's debug screenshots.
+- Added a /decisions endpoint that extracts per-turn Decision Report blocks from the message log as structured JSON.
+
+Removed
+-------
+- Removed the on-device support-card borrow/equip automation (auto-borrow support card, auto-equip owned support deck, and the opt-in Career Planner deck-bias feature). Parent Farming's deck scoring and recommendation logic is unchanged, but borrowing/equipping support cards during a run now requires manual action.
 
     </releaseNotes>
   </update>
