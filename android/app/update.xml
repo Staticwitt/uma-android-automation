@@ -1,16 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.65</latestVersion>
-    <latestVersionCode>155</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.65</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.65/v5.9.65-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.65/v5.9.65-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.66</latestVersion>
+    <latestVersionCode>156</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.66</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.65 - Custom app icon
+v5.9.66 - Custom release signing key
 
 Misc
 ----
-- Replaced the default placeholder app icon with custom artwork.
+- Releases are now signed with a dedicated release key instead of the shared debug key.
+- IMPORTANT: because the signature changed, Android will refuse to install this update over an existing install. Uninstall the old APK first, then install this one.
 
     </releaseNotes>
   </update>
