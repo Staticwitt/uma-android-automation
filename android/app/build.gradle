@@ -109,12 +109,26 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    def releaseKeystorePath = System.getenv('RELEASE_KEYSTORE_PATH')
+    def releaseKeystorePassword = System.getenv('RELEASE_KEYSTORE_PASSWORD')
+    def releaseKeyAlias = System.getenv('RELEASE_KEY_ALIAS')
+    def releaseKeyPassword = System.getenv('RELEASE_KEY_PASSWORD')
+    def hasReleaseSigning = releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
+        }
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
         }
     }
     buildTypes {
@@ -124,9 +138,9 @@ android {
             // Usually no minification or resource shrinking.
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Falls back to the debug keystore for local builds where the RELEASE_KEYSTORE_* env vars
+            // aren't set. CI supplies them from repo secrets so published releases use the real key.
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
             minifyEnabled enableMinifyInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
