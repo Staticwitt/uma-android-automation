@@ -25,6 +25,7 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
+import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -957,6 +958,64 @@ object LogStreamServer {
         }
     }
 
+    /** Maps a debug image's file extension to its HTTP content type. */
+    private fun contentTypeForImage(filename: String): ContentType {
+        return when (filename.substringAfterLast('.', "").lowercase()) {
+            "png" -> ContentType.Image.PNG
+            "jpg", "jpeg" -> ContentType.Image.JPEG
+            "webp" -> ContentType.parse("image/webp")
+            else -> ContentType.Application.OctetStream
+        }
+    }
+
+    /**
+     * Extracts every "[DECISION]"-tagged Decision Report block from the full message log text, using the same
+     * "==== Turn N (...) Decision Report ====" / "====...====" delimiters that `decisionReportParser.ts` parses
+     * client-side from saved log files, so this stays compatible with that existing format.
+     *
+     * @param fullLogText The full log text to scan (same source as `/logs/download`).
+     * @param turnFilter When non-null, only the report for this turn number is returned.
+     * @return JSON array of `{"turn": Int, "date": String, "report": String}` objects, oldest first.
+     */
+    private fun extractDecisionReports(fullLogText: String, turnFilter: Int?): JSONArray {
+        val headerPattern = Pattern.compile("^=+\\s*Turn\\s+(\\d+)\\s*\\(([^)]*)\\)\\s*Decision Report\\s*=+$")
+        val footerPattern = Pattern.compile("^=+$")
+        val lines = fullLogText.split("\n")
+        val result = JSONArray()
+
+        var i = 0
+        while (i < lines.size) {
+            val headerMatcher = headerPattern.matcher(lines[i].trim())
+            if (headerMatcher.matches()) {
+                val turn = headerMatcher.group(1)?.toIntOrNull()
+                val dateText = headerMatcher.group(2)?.trim() ?: ""
+                val blockLines = mutableListOf(lines[i])
+                i++
+                while (i < lines.size && !footerPattern.matcher(lines[i].trim()).matches()) {
+                    if (headerPattern.matcher(lines[i].trim()).matches()) break
+                    blockLines.add(lines[i])
+                    i++
+                }
+                if (i < lines.size && footerPattern.matcher(lines[i].trim()).matches()) {
+                    blockLines.add(lines[i])
+                    i++
+                }
+                if (turn != null && (turnFilter == null || turn == turnFilter)) {
+                    result.put(
+                        JSONObject().apply {
+                            put("turn", turn)
+                            put("date", dateText)
+                            put("report", blockLines.joinToString("\n"))
+                        },
+                    )
+                }
+                continue
+            }
+            i++
+        }
+        return result
+    }
+
     /** Builds the JSON payload used by the browser Auto Trainer status panel. */
     private fun buildTrainerStatus(context: Context): JSONObject {
         return JSONObject().apply {
@@ -1317,6 +1376,132 @@ object LogStreamServer {
                                 call.respondText(
                                     "Failed to serve log file.",
                                     ContentType.Text.Plain,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // List every debug image currently sitting in the temp directory, sorted most-recent-first.
+                        get("/debug-images") {
+                            try {
+                                val tempDir = File(context.getExternalFilesDir(null), "temp")
+                                val filesArray = JSONArray()
+                                var totalSize = 0L
+
+                                if (tempDir.exists() && tempDir.isDirectory) {
+                                    val imageFiles =
+                                        tempDir.listFiles { _, name ->
+                                            name.lowercase().endsWith(".png") ||
+                                                name.lowercase().endsWith(".jpg") ||
+                                                name.lowercase().endsWith(".jpeg") ||
+                                                name.lowercase().endsWith(".webp")
+                                        } ?: emptyArray()
+                                    for (file in imageFiles.sortedByDescending { it.lastModified() }) {
+                                        val size = file.length()
+                                        totalSize += size
+                                        filesArray.put(
+                                            JSONObject().apply {
+                                                put("name", file.name)
+                                                put("size", size)
+                                                put("modified", file.lastModified())
+                                            },
+                                        )
+                                    }
+                                }
+
+                                val response =
+                                    JSONObject().apply {
+                                        put("files", filesArray)
+                                        put("count", filesArray.length())
+                                        put("totalSize", totalSize)
+                                    }
+                                call.respondText(response.toString(), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /debug-images:: Failed to list debug images: ${e.message}")
+                                call.respondText(
+                                    """{"files":[],"count":0,"totalSize":0,"error":"Failed to list debug images."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Serve a single debug image by name. Inline by default, or as a download attachment when ?download=1.
+                        get("/debug-images/{filename}") {
+                            try {
+                                val raw = call.parameters["filename"]
+                                if (raw.isNullOrEmpty()) {
+                                    call.respondText("Missing filename.", ContentType.Text.Plain, HttpStatusCode.BadRequest)
+                                    return@get
+                                }
+                                // Reject path-traversal characters and any name without a recognized image extension.
+                                if (raw.contains('/') ||
+                                    raw.contains('\\') ||
+                                    raw.contains("..") ||
+                                    raw.contains('\u0000') ||
+                                    !(
+                                        raw.lowercase().endsWith(".png") ||
+                                            raw.lowercase().endsWith(".jpg") ||
+                                            raw.lowercase().endsWith(".jpeg") ||
+                                            raw.lowercase().endsWith(".webp")
+                                    )
+                                ) {
+                                    call.respondText("Invalid filename.", ContentType.Text.Plain, HttpStatusCode.BadRequest)
+                                    return@get
+                                }
+
+                                val tempDir = File(context.getExternalFilesDir(null), "temp")
+                                if (!tempDir.exists() || !tempDir.isDirectory) {
+                                    call.respondText("File not found.", ContentType.Text.Plain, HttpStatusCode.NotFound)
+                                    return@get
+                                }
+
+                                // Whitelist against the actual directory listing - the canonical guarantee against any encoded payload.
+                                val available = tempDir.listFiles()?.map { it.name }?.toSet() ?: emptySet()
+                                if (raw !in available) {
+                                    call.respondText("File not found.", ContentType.Text.Plain, HttpStatusCode.NotFound)
+                                    return@get
+                                }
+
+                                val target = File(tempDir, raw)
+                                // Belt-and-suspenders containment check.
+                                if (!target.canonicalPath.startsWith(tempDir.canonicalPath + File.separator)) {
+                                    call.respondText("Invalid filename.", ContentType.Text.Plain, HttpStatusCode.BadRequest)
+                                    return@get
+                                }
+
+                                val isDownload = call.request.queryParameters["download"] == "1"
+                                if (isDownload) {
+                                    call.response.header(HttpHeaders.ContentDisposition, "attachment; filename=\"$raw\"")
+                                }
+                                call.respondBytes(target.readBytes(), contentTypeForImage(raw))
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /debug-images/{filename}:: Failed to serve debug image: ${e.message}")
+                                call.respondText(
+                                    "Failed to serve debug image.",
+                                    ContentType.Text.Plain,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Extract structured Decision Report blocks from the full log. Optional ?turn=N filters to one turn.
+                        get("/decisions") {
+                            try {
+                                val turnFilter = call.request.queryParameters["turn"]?.toIntOrNull()
+                                val fullLogText = MessageLog.getMessageLogCopy().joinToString("\n")
+                                val reports = extractDecisionReports(fullLogText, turnFilter)
+                                val response =
+                                    JSONObject().apply {
+                                        put("reports", reports)
+                                        put("count", reports.length())
+                                    }
+                                call.respondText(response.toString(), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /decisions:: Failed to extract decision reports: ${e.message}")
+                                call.respondText(
+                                    """{"reports":[],"count":0,"error":"Failed to extract decision reports."}""",
+                                    ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
                             }
