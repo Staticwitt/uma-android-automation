@@ -12,6 +12,7 @@ import {
 import { applyCharacterBundleToSettings } from "../../components/ParentFarmingBundleGrid"
 import { ParentFarmingBundleSupportSheet, saveBundleSupportBorrowOverride } from "../../components/ParentFarmingBundleSupportSheet"
 import { CharacterSupportFinderSheet } from "../../components/CharacterSupportFinderSheet"
+import { LegacyParentFinderSheet } from "../../components/LegacyParentFinderSheet"
 import { OwnedSupportInventorySheet } from "../../components/OwnedSupportInventorySheet"
 import { CharacterSupportRecommendationView } from "../../components/CharacterSupportRecommendationView"
 import { ParentFarmingGoalPresetGrid } from "../../components/ParentFarmingGoalPresetGrid"
@@ -118,6 +119,7 @@ const ParentFarmingSettings = () => {
     const [ownedInventoryOpen, setOwnedInventoryOpen] = useState(false)
     const [archiveOpen, setArchiveOpen] = useState(false)
     const [analyticsOpen, setAnalyticsOpen] = useState(false)
+    const [legacyParentFinderOpen, setLegacyParentFinderOpen] = useState(false)
     const [previewRunning, setPreviewRunning] = useState(false)
     const [activeSection, setActiveSection] = useState<ParentFarmingSectionTab>("all")
     const showSection = useCallback((key: ParentFarmingSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
@@ -990,6 +992,32 @@ const ParentFarmingSettings = () => {
                                     >
                                         <ParentFarmingRecommendationsCard settings={settings} />
                                     </SearchableItem>
+                                    <SearchableItem
+                                        id="legacy-parent-finder"
+                                        title="Best legacy parent for your Uma"
+                                        description="Rank every saved legacy parent — with its real sparks — by fit for the trainee you're currently training."
+                                        parentId="parent-run-archive"
+                                    >
+                                        <View style={{ paddingHorizontal: SPACING.md, paddingBottom: SPACING.md }}>
+                                            <Pressable
+                                                onPress={() => setLegacyParentFinderOpen(true)}
+                                                style={{
+                                                    padding: SPACING.md,
+                                                    borderRadius: RADII.md,
+                                                    borderWidth: 1,
+                                                    borderColor: colors.borderHair,
+                                                    backgroundColor: colors.surface,
+                                                }}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                            >
+                                                <Text style={{ ...TYPE.body, color: colors.brand, fontWeight: "600" }}>View legacy parents and sparks</Text>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                                    Compares saved parent runs against {smartRaceSolverCharacterPreset || "your current Uma"}'s aptitudes.
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                    </SearchableItem>
                                 </Section>
 
                                 <Section label="Generation farm">
@@ -1562,6 +1590,11 @@ const ParentFarmingSettings = () => {
                 />
                 <ParentRunArchiveSheet visible={archiveOpen} onClose={() => setArchiveOpen(false)} />
                 <ParentFarmingAnalyticsSheet visible={analyticsOpen} onClose={() => setAnalyticsOpen(false)} />
+                <LegacyParentFinderSheet
+                    visible={legacyParentFinderOpen}
+                    initialCharacterName={smartRaceSolverCharacterPreset}
+                    onClose={() => setLegacyParentFinderOpen(false)}
+                />
                 <ParentFarmingBundleSupportSheet
                     visible={bundleSupportSheetOpen}
                     bundle={bundleSupportEditing}

@@ -11,6 +11,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.StartModule
+import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -1442,6 +1443,20 @@ object LogStreamServer {
                                 Log.e(TAG, "[ERROR] /decisions:: Failed to extract decision reports: ${e.message}")
                                 call.respondText(
                                     """{"reports":[],"count":0,"error":"Failed to extract decision reports."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Serve the saved legacy parent run archive as raw JSON, same source as the StartModule native bridge.
+                        get("/parent-run-archive") {
+                            try {
+                                call.respondText(ParentRunArchive.readJson(context), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /parent-run-archive:: Failed to read parent run archive: ${e.message}")
+                                call.respondText(
+                                    """{"error":"Failed to read parent run archive."}""",
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
