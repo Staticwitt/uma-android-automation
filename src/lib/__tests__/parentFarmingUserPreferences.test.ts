@@ -13,10 +13,10 @@ const createSettings = (): Settings =>
             parentFarmingResolverRevision: 0,
             smartRaceSolverCharacterPreset: "Special Week",
             enableParentFarmingBreedingPlan: true,
-            enableAutoBorrowSupportCard: false,
+            enableAutoStartCareer: false,
             enableParentFarmingMultiRun: true,
             parentFarmingMultiRunCount: 5,
-            enableAutoEquipOwnedSupportDeck: false,
+            enableAutoSelectLegacyParents: false,
         },
         skills: { enableSkillPointCheck: true },
         training: {
@@ -34,35 +34,35 @@ describe("parentFarmingUserPreferences", () => {
         const resolved = {
             ...seed,
             enableParentFarmingBreedingPlan: false,
-            enableAutoBorrowSupportCard: true,
+            enableAutoStartCareer: true,
             enableParentFarmingMultiRun: false,
             parentFarmingMultiRunCount: 1,
-            enableAutoEquipOwnedSupportDeck: true,
+            enableAutoSelectLegacyParents: true,
         }
 
         const merged = preserveParentFarmingUserRacing(seed, resolved)
         expect(merged.enableParentFarmingBreedingPlan).toBe(true)
-        expect(merged.enableAutoBorrowSupportCard).toBe(false)
+        expect(merged.enableAutoStartCareer).toBe(false)
         expect(merged.enableParentFarmingMultiRun).toBe(true)
         expect(merged.parentFarmingMultiRunCount).toBe(5)
-        expect(merged.enableAutoEquipOwnedSupportDeck).toBe(false)
+        expect(merged.enableAutoSelectLegacyParents).toBe(false)
     })
 
     it("resolveParentFarmingSettings preserves user toggles by default on refresh", () => {
         const settings = createSettings()
         const result = resolveParentFarmingSettings(settings)
         expect(result.racing.enableParentFarmingBreedingPlan).toBe(true)
-        expect(result.racing.enableAutoBorrowSupportCard).toBe(false)
+        expect(result.racing.enableAutoStartCareer).toBe(false)
         expect(result.racing.enableParentFarmingMultiRun).toBe(true)
         expect(result.racing.parentFarmingMultiRunCount).toBe(5)
-        expect(result.racing.enableAutoEquipOwnedSupportDeck).toBe(false)
+        expect(result.racing.enableAutoSelectLegacyParents).toBe(false)
     })
 
     it("resolveParentFarmingSettings can reset preset-owned toggles when preserveUserPreferences is false", () => {
         const settings = createSettings()
         const result = resolveParentFarmingSettings(settings, { preserveUserPreferences: false })
-        expect(result.racing.enableAutoBorrowSupportCard).toBe(true)
-        expect(result.racing.enableAutoEquipOwnedSupportDeck).toBe(true)
+        expect(result.racing.enableAutoStartCareer).toBe(true)
+        expect(result.racing.enableAutoSelectLegacyParents).toBe(true)
         expect(result.racing.enableParentFarmingMultiRun).toBe(true)
     })
 })

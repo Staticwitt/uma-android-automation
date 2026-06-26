@@ -295,7 +295,6 @@ const SmartRaceSolverSettings = () => {
                         ...prev.racing,
                         supportBorrowPreferredCards: JSON.stringify(borrowOrder),
                         smartRaceSolverCharacterPreset: characterName,
-                        enableAutoBorrowSupportCard: true,
                         ...(preset
                             ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
                             : {}),

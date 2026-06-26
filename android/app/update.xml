@@ -1,17 +1,20 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.66</latestVersion>
-    <latestVersionCode>156</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.66</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.66/v5.9.66-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.69</latestVersion>
+    <latestVersionCode>159</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.69</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.69/v5.9.69-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.69/v5.9.69-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.66 - Custom release signing key
+v5.9.69 - Wire up Decision Report and Debug Images viewer UI
 
-Misc
-----
-- Releases are now signed with a dedicated release key instead of the shared debug key.
-- IMPORTANT: because the signature changed, Android will refuse to install this update over an existing install. Uninstall the old APK first, then install this one.
+Added
+-----
+- Calendar cells in the Remote Log Viewer are now clickable for any turn with a decision (race, train, or rest), opening a modal with the full Decision Report text.
+
+Changed
+-------
+- The Debug Images tab now loads images via the lightweight /debug-images REST API instead of streaming them over the WebSocket connection, with real download links for each image.
 
     </releaseNotes>
   </update>

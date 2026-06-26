@@ -15,8 +15,6 @@ const baseRacing = (): Settings["racing"] =>
         parentFarmingGoalPresetKey: "classic-crown",
         supportDeckOwnedCards: "[]",
         supportBorrowPreferredCards: "[]",
-        enableAutoEquipOwnedSupportDeck: false,
-        enableAutoBorrowSupportCard: false,
         enableAutoSelectLegacyParents: false,
         enableAutoStartCareer: false,
         enableParentFarmingMultiRun: false,
@@ -26,8 +24,6 @@ const baseRacing = (): Settings["racing"] =>
 describe("parentFarmingCareerAutomation", () => {
     it("buildFullDeckApplyRacingPatch enables all automation flags", () => {
         const next = buildFullDeckApplyRacingPatch(baseRacing(), ["A", "B", "C", "D"], ["Friend"], "Special Week")
-        expect(next.enableAutoEquipOwnedSupportDeck).toBe(true)
-        expect(next.enableAutoBorrowSupportCard).toBe(true)
         expect(next.enableAutoSelectLegacyParents).toBe(true)
         expect(next.enableAutoStartCareer).toBe(true)
         expect(JSON.parse(next.supportDeckOwnedCards)).toEqual(["A", "B", "C", "D"])
@@ -47,23 +43,24 @@ describe("parentFarmingCareerAutomation", () => {
         expect(borrow[0]).toBe("Silence Suzuka")
     })
 
-    it("isCareerSelectionReady requires setup, deck/borrow, and full automation", () => {
-        const partial: Settings = {
+    it("isCareerSelectionReady requires setup and full automation", () => {
+        const ready: Settings = {
             racing: {
                 ...baseRacing(),
                 ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
-                supportBorrowPreferredCards: '["Kitasan Black"]',
             },
         } as Settings
-        expect(isCareerSelectionReady(partial)).toBe(true)
+        expect(isCareerSelectionReady(ready)).toBe(true)
 
-        const noBorrow: Settings = {
+        const noSetup: Settings = {
             racing: {
                 ...baseRacing(),
                 ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
+                parentFarmingBundleKey: "",
+                parentFarmingGoalPresetKey: "",
             },
         } as Settings
-        expect(isCareerSelectionReady(noBorrow)).toBe(false)
+        expect(isCareerSelectionReady(noSetup)).toBe(false)
     })
 
     it("formatCareerAutomationSummary reflects readiness", () => {
@@ -71,7 +68,6 @@ describe("parentFarmingCareerAutomation", () => {
             racing: {
                 ...baseRacing(),
                 ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS,
-                supportBorrowPreferredCards: '["Gold Ship"]',
             },
         } as Settings
         expect(formatCareerAutomationSummary(ready)).toContain("Full automation")
@@ -79,24 +75,19 @@ describe("parentFarmingCareerAutomation", () => {
         const partial: Settings = {
             racing: {
                 ...baseRacing(),
-                enableAutoBorrowSupportCard: true,
+                enableAutoSelectLegacyParents: true,
             },
         } as Settings
-        expect(formatCareerAutomationSummary(partial)).toContain("1/4")
+        expect(formatCareerAutomationSummary(partial)).toContain("1/2")
     })
 
-    it("getCareerAutomationSteps warns when auto-equip has no saved deck", () => {
-        const settings: Settings = {
-            racing: {
-                ...baseRacing(),
-                enableAutoEquipOwnedSupportDeck: true,
-            },
-        } as Settings
-        const equipStep = getCareerAutomationSteps(settings).find((step) => step.id === "auto-equip")
-        expect(equipStep?.status).toBe("warning")
+    it("getCareerAutomationSteps warns when owned deck has no saved slots", () => {
+        const settings: Settings = { racing: baseRacing() } as Settings
+        const ownedDeckStep = getCareerAutomationSteps(settings).find((step) => step.id === "owned-deck")
+        expect(ownedDeckStep?.status).toBe("warning")
     })
 
-    it("isFullCareerAutomationEnabled checks all four toggles", () => {
+    it("isFullCareerAutomationEnabled checks both toggles", () => {
         expect(isFullCareerAutomationEnabled({ racing: { ...baseRacing(), ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS } } as Settings)).toBe(true)
         expect(isFullCareerAutomationEnabled({ racing: baseRacing() } as Settings)).toBe(false)
     })

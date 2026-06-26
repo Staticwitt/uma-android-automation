@@ -39,8 +39,6 @@ export const PARENT_FARMING_GOAL_RACING_BASE: Partial<Settings["racing"]> = {
     enableParentRunArchive: true,
     enableParentFarmingStopOnForcedEpithetFail: true,
     sparkSelectionStrategy: PARENT_FARMING_SPARK_SELECTION_STRATEGY,
-    enableAutoBorrowSupportCard: true,
-    enableAutoEquipOwnedSupportDeck: true,
     enableAutoStartCareer: true,
     enableAutoSelectLegacyParents: true,
     legacyParentSelectionStrategy: PARENT_FARMING_LEGACY_PARENT_SELECTION_STRATEGY,

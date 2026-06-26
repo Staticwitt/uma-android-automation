@@ -136,8 +136,6 @@ const ParentFarmingSettings = () => {
         enableParentRunSummary,
         enableParentRunArchive,
         sparkSelectionStrategy,
-        enableAutoBorrowSupportCard,
-        enableAutoEquipOwnedSupportDeck,
         enableAutoStartCareer,
         enableParentFarmingMultiRun,
         parentFarmingMultiRunCount,
@@ -171,7 +169,6 @@ const ParentFarmingSettings = () => {
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
-        supportBorrowPreferredCards,
         supportBorrowSortMode,
         supportCardLimitBreakDefault,
         supportCardLimitBreaks,
@@ -196,15 +193,6 @@ const ParentFarmingSettings = () => {
     }, [smartRaceSolverWeights])
 
     const minimumFanTarget = typeof solverWeights.minimumFanTarget === "number" ? solverWeights.minimumFanTarget : 0
-
-    const supportBorrowNames = useMemo(() => {
-        try {
-            const parsed = JSON.parse(supportBorrowPreferredCards || "[]")
-            return Array.isArray(parsed) ? parsed.filter((name): name is string => typeof name === "string") : []
-        } catch {
-            return []
-        }
-    }, [supportBorrowPreferredCards])
 
     const legacyParentNames = useMemo(() => {
         try {
@@ -402,7 +390,6 @@ const ParentFarmingSettings = () => {
                         ...prev.racing,
                         supportBorrowPreferredCards: JSON.stringify(borrowOrder),
                         smartRaceSolverCharacterPreset: characterName,
-                        enableAutoBorrowSupportCard: true,
                         ...(preset
                             ? { smartRaceSolverAptitudes: JSON.stringify(aptitudesFromCharacterPreset(preset)) }
                             : {}),
@@ -1042,38 +1029,6 @@ const ParentFarmingSettings = () => {
 
                         {enableParentFarmingMode && showSection("automation") && (
                             <Section label="Career selection">
-                                <SettingRow
-                                    id="enable-auto-equip-owned-support-deck"
-                                    title="Auto-equip owned supports"
-                                    searchTitle="Auto-equip owned support deck"
-                                    description={
-                                        parseOwnedSupportCards(supportDeckOwnedCards).length > 0
-                                            ? `Slots: ${parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}`
-                                            : "Equip up to five saved owned slots at career selection before borrowing a friend card."
-                                    }
-                                    right={
-                                        <Switch
-                                            checked={enableAutoEquipOwnedSupportDeck}
-                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoEquipOwnedSupportDeck", checked)}
-                                        />
-                                    }
-                                />
-                                <SettingRow
-                                    id="enable-auto-borrow-support-card"
-                                    title="Auto-borrow support"
-                                    searchTitle="Auto-Borrow Support Card"
-                                    description={
-                                        supportBorrowNames.length > 0
-                                            ? `Priority: ${supportBorrowNames.slice(0, 3).join(" → ")}${supportBorrowNames.length > 3 ? " …" : ""}`
-                                            : "Borrow a friend support at career selection before training."
-                                    }
-                                    right={
-                                        <Switch
-                                            checked={enableAutoBorrowSupportCard}
-                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoBorrowSupportCard", checked)}
-                                        />
-                                    }
-                                />
                                 <SettingRow
                                     id="enable-auto-select-legacy-parents"
                                     title="Auto-select parent pair"

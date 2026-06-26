@@ -3,10 +3,7 @@ package com.steve1316.uma_android_automation.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.wifi.WifiManager
-import android.util.Base64
 import android.util.Log
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.events.JSEvent
@@ -34,7 +31,6 @@ import io.ktor.server.websocket.DefaultWebSocketServerSession
 import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.Frame
-import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,7 +42,6 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.net.NetworkInterface
@@ -381,14 +376,11 @@ object LogStreamServer {
         actionChannel?.send(LogAction.NewClient(session))
 
         try {
-            // Keep the session alive until the client disconnects.
-            for (frame in session.incoming) {
-                if (frame is Frame.Text) {
-                    val text = frame.readText()
-                    if (text == "CMD:REFRESH_IMAGES") {
-                        sendDebugImages(session)
-                    }
-                }
+            // Keep the session alive until the client disconnects. No incoming commands are
+            // currently handled; debug images and other on-demand data are served over plain
+            // HTTP routes instead.
+            for (_unused in session.incoming) {
+                // No-op: just drain frames so disconnects are detected.
             }
         } catch (e: Exception) {
             Log.w(TAG, "[WARN] handleWebSocketSession:: WebSocket session exception: ${e.message}")
@@ -449,57 +441,6 @@ object LogStreamServer {
         } catch (e: Exception) {
             Log.e(TAG, "[ERROR] handleNewClientAction:: Failed to sync history for new client: ${e.message}")
         }
-    }
-
-    /**
-     * Scans the temp directory, compresses found images, and sends them to the client.
-     *
-     * @param session The active WebSocket server session.
-     */
-    private suspend fun sendDebugImages(session: DefaultWebSocketServerSession) {
-        val context = applicationContext ?: return
-        val tempDir = File(context.getExternalFilesDir(null), "temp")
-        if (!tempDir.exists() || !tempDir.isDirectory) {
-            Log.w(TAG, "[WARN] sendDebugImages:: Temp directory does not exist or is not a directory: ${tempDir.absolutePath}")
-            return
-        }
-
-        val imageFiles =
-            tempDir.listFiles { _, name ->
-                name.lowercase().endsWith(".png") ||
-                    name.lowercase().endsWith(".jpg") ||
-                    name.lowercase().endsWith(".jpeg") ||
-                    name.lowercase().endsWith(".webp")
-            } ?: return
-
-        Log.d(TAG, "[DEBUG] sendDebugImages:: Found ${imageFiles.size} image files in temp directory.")
-
-        for (file in imageFiles) {
-            try {
-                val bitmap = BitmapFactory.decodeFile(file.absolutePath)
-                if (bitmap != null) {
-                    val outputStream = ByteArrayOutputStream()
-                    // Compress to 50% quality JPEG.
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
-                    val byteArray = outputStream.toByteArray()
-                    val base64Image = Base64.encodeToString(byteArray, Base64.DEFAULT)
-
-                    val json =
-                        JSONObject().apply {
-                            put("type", "image")
-                            put("name", file.name)
-                            put("data", base64Image)
-                        }
-                    session.send(Frame.Text(json.toString()))
-                    bitmap.recycle()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "[ERROR] sendDebugImages:: Failed to send image ${file.name}: ${e.message}")
-            }
-        }
-
-        // Signal completion of image batch transmission.
-        session.send(Frame.Text(JSONObject().apply { put("type", "image_batch_done") }.toString()))
     }
 
     /**

@@ -5,8 +5,6 @@ import type { Settings } from "../context/BotStateContext"
  * preset re-resolve on load, bot start, and migration — not only explicit preset apply.
  */
 export const PARENT_FARMING_USER_PREFERENCE_RACING_KEYS: ReadonlyArray<keyof Settings["racing"]> = [
-    "enableAutoBorrowSupportCard",
-    "enableAutoEquipOwnedSupportDeck",
     "enableAutoStartCareer",
     "enableAutoSelectLegacyParents",
     "legacyParentSelectionStrategy",
