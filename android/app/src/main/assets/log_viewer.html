@@ -2322,6 +2322,84 @@
                     padding: 12px;
                 }
             }
+
+            /* ////////////////////////////////////////////////////////////////////////////////////////////////// */
+            /* ////////////////////////////////////////////////////////////////////////////////////////////////// */
+            /* Legacy Parents Tab */
+
+            .legacy-parents-list-container {
+                flex: 1;
+                overflow-y: auto;
+                background: var(--bg-primary);
+                padding: 16px 20px;
+            }
+
+            .legacy-parents-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .legacy-parents-empty {
+                color: var(--text-muted);
+                font-style: italic;
+                padding: 24px 0;
+                text-align: center;
+            }
+
+            .legacy-parent-card {
+                padding: 12px 16px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius);
+            }
+
+            .legacy-parent-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .legacy-parent-name {
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 14px;
+            }
+
+            .legacy-parent-meta {
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-top: 4px;
+            }
+
+            .legacy-parent-sparks {
+                font-size: 12px;
+                color: var(--text-primary);
+                margin-top: 8px;
+                line-height: 1.5;
+            }
+
+            .legacy-parent-sparks .label,
+            .legacy-parent-epithets .label {
+                color: var(--text-muted);
+                font-weight: 600;
+                margin-right: 4px;
+            }
+
+            .legacy-parent-epithets {
+                font-size: 12px;
+                margin-top: 4px;
+                line-height: 1.5;
+            }
+
+            .legacy-parent-epithets .completed {
+                color: var(--accent-green, #4ade80);
+            }
+
+            .legacy-parent-epithets .incomplete {
+                color: var(--text-muted);
+            }
         </style>
     </head>
     <body>
@@ -2347,6 +2425,7 @@
             <button id="imagesTabBtn" class="tab-btn" onclick="switchTab('images')">Debug Images</button>
             <button id="logFilesTabBtn" class="tab-btn" onclick="switchTab('logFiles')">Log Files</button>
             <button id="analyticsTabBtn" class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+            <button id="legacyParentsTabBtn" class="tab-btn" onclick="switchTab('legacyParents')">Legacy Parents</button>
         </nav>
 
         <!-- Logs & Dashboard View -->
@@ -2813,6 +2892,27 @@
                     <!-- File rows will be injected here. -->
                 </div>
                 <div id="logFilesEmpty" class="log-files-empty" style="display: none;">No log files yet. Completed sessions will show up here.</div>
+            </div>
+        </div>
+
+        <!-- Legacy Parents View -->
+        <div id="legacyParentsView" class="tab-view">
+            <div class="debug-notice">
+                <span>ℹ️</span> <strong>Note:</strong> Sorted by quality score. For fit-ranking against the trainee you're
+                currently running, use "Best legacy parent for your Uma" in the app's Parent Farming settings instead.
+            </div>
+            <div class="image-toolbar">
+                <button class="refresh-btn" onclick="refreshLegacyParents()">
+                    <span>🔄</span> Refresh
+                </button>
+                <div id="legacyParentsStatus" class="image-status"></div>
+                <div class="message-count" style="margin-left: auto; margin-right: 0px">Runs: <span id="legacyParentsCount">0</span></div>
+            </div>
+            <div id="legacyParentsListContainer" class="legacy-parents-list-container">
+                <div id="legacyParentsList" class="legacy-parents-list">
+                    <!-- Legacy parent cards will be injected here. -->
+                </div>
+                <div id="legacyParentsEmpty" class="legacy-parents-empty" style="display: none;">No saved legacy parent runs yet.</div>
             </div>
         </div>
 
@@ -4947,6 +5047,7 @@
                 document.getElementById("imagesTabBtn").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesTabBtn").classList.toggle("active", tabID === "logFiles")
                 document.getElementById("analyticsTabBtn").classList.toggle("active", tabID === "analytics")
+                document.getElementById("legacyParentsTabBtn").classList.toggle("active", tabID === "legacyParents")
 
                 // Update views.
                 document.getElementById("logsView").classList.toggle("active", tabID === "logs")
@@ -4954,6 +5055,7 @@
                 document.getElementById("imagesView").classList.toggle("active", tabID === "images")
                 document.getElementById("logFilesView").classList.toggle("active", tabID === "logFiles")
                 document.getElementById("analyticsView").classList.toggle("active", tabID === "analytics")
+                document.getElementById("legacyParentsView").classList.toggle("active", tabID === "legacyParents")
 
                 if (tabID === "logs" && autoScroll) {
                     scrollToBottom()
@@ -4966,6 +5068,12 @@
                 }
                 if (tabID === "trainer") {
                     trainerLoadStatus()
+                }
+
+                // Lazy-load the legacy parent archive on first activation; user can hit Refresh for re-fetches.
+                if (tabID === "legacyParents" && !window.__legacyParentsLoaded) {
+                    refreshLegacyParents()
+                    window.__legacyParentsLoaded = true
                 }
 
                 analyticsTabActive = tabID === "analytics"
@@ -5082,6 +5190,104 @@
                 card.appendChild(footer)
                 card.onclick = function () {
                     openModal(img.src)
+                }
+
+                return card
+            }
+
+            /**
+             * Fetches the saved legacy parent run archive via the /parent-run-archive API and renders it.
+             */
+            async function refreshLegacyParents() {
+                const list = document.getElementById("legacyParentsList")
+                const emptyEl = document.getElementById("legacyParentsEmpty")
+                const statusEl = document.getElementById("legacyParentsStatus")
+                const countEl = document.getElementById("legacyParentsCount")
+
+                list.innerHTML = ""
+                emptyEl.style.display = "none"
+                statusEl.textContent = "Loading legacy parents..."
+
+                try {
+                    const res = await fetch("/parent-run-archive")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const runs = await res.json()
+                    const sorted = Array.isArray(runs) ? [...runs].sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0)) : []
+
+                    countEl.textContent = String(sorted.length)
+                    statusEl.textContent = sorted.length ? `Loaded ${sorted.length} runs.` : ""
+
+                    if (sorted.length === 0) {
+                        emptyEl.style.display = "block"
+                        return
+                    }
+                    sorted.forEach((run) => list.appendChild(renderLegacyParentCard(run)))
+                } catch (err) {
+                    statusEl.textContent = "Failed to load legacy parent archive."
+                    console.error("refreshLegacyParents failed:", err)
+                }
+            }
+
+            /**
+             * Builds a single legacy parent card: name, quality grade, fans/race record, real sparks, and epithet progress.
+             * @param {Object} run - One entry from the /parent-run-archive response.
+             * @returns {HTMLElement} The card element.
+             */
+            function renderLegacyParentCard(run) {
+                const card = document.createElement("div")
+                card.className = "legacy-parent-card"
+
+                const header = document.createElement("div")
+                header.className = "legacy-parent-header"
+
+                const name = document.createElement("span")
+                name.className = "legacy-parent-name"
+                name.textContent = run.traineeName || run.characterPreset || "Unknown trainee"
+                header.appendChild(name)
+
+                if (run.qualityGrade) {
+                    const grade = document.createElement("span")
+                    grade.className = `grade-badge grade-${run.qualityGrade}`
+                    grade.textContent = run.qualityGrade
+                    header.appendChild(grade)
+                }
+                card.appendChild(header)
+
+                const fans = Number(run.fans || 0).toLocaleString()
+                const fanClass = (run.fanClass || "").replace(/_/g, " ")
+                const wins = run.raceWins || 0
+                const losses = run.raceLosses || 0
+                const completedAt = run.completedAtMs ? new Date(run.completedAtMs).toLocaleString() : "Unknown time"
+                const meta = document.createElement("div")
+                meta.className = "legacy-parent-meta"
+                meta.textContent =
+                    `${completedAt} · ${fans} fans${fanClass ? ` (${fanClass})` : ""} · ${wins}W/${losses}L` +
+                    (run.qualityScore != null ? ` · Score ${run.qualityScore}` : "")
+                card.appendChild(meta)
+
+                // Prefer real harvested factor names over raw OCR spark-pick option text.
+                const harvestFactors = Array.isArray(run.harvestFactors) ? run.harvestFactors.filter(Boolean) : []
+                const pickedSparks = Array.isArray(run.sparkPicks)
+                    ? run.sparkPicks.flatMap((pick) => (Array.isArray(pick.optionTexts) ? pick.optionTexts : []))
+                    : []
+                const sparks = harvestFactors.length > 0 ? harvestFactors : pickedSparks
+                if (sparks.length > 0) {
+                    const sparksEl = document.createElement("div")
+                    sparksEl.className = "legacy-parent-sparks"
+                    sparksEl.innerHTML = `<span class="label">Sparks:</span>${escapeHtml(sparks.join(", "))}`
+                    card.appendChild(sparksEl)
+                }
+
+                const completed = Array.isArray(run.completedTargetEpithets) ? run.completedTargetEpithets : []
+                const incomplete = Array.isArray(run.incompleteTargetEpithets) ? run.incompleteTargetEpithets : []
+                if (completed.length > 0 || incomplete.length > 0) {
+                    const epithetsEl = document.createElement("div")
+                    epithetsEl.className = "legacy-parent-epithets"
+                    let html = ""
+                    if (completed.length > 0) html += `<span class="label">Done:</span><span class="completed">${escapeHtml(completed.join(", "))}</span> `
+                    if (incomplete.length > 0) html += `<span class="label">Missed:</span><span class="incomplete">${escapeHtml(incomplete.join(", "))}</span>`
+                    epithetsEl.innerHTML = html
+                    card.appendChild(epithetsEl)
                 }
 
                 return card
