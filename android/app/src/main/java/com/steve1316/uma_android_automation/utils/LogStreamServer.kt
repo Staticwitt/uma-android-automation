@@ -11,6 +11,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.StartModule
+import com.steve1316.uma_android_automation.bot.ParentFarmingSessionState
 import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -232,6 +233,13 @@ object LogStreamServer {
          * @property enabled True when SRS is enabled for the current run.
          */
         data class BroadcastSmartRaceSolverState(val enabled: Boolean) : LogAction()
+
+        /**
+         * Notifies all connected clients that the parent farming archive or session state changed,
+         * so the viewer can refetch [ParentRunArchive]/[ParentFarmingSessionState] over REST. Carries
+         * no payload since those REST endpoints are already the source of truth the viewer reads from.
+         */
+        object BroadcastParentFarmingUpdate : LogAction()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -863,6 +871,33 @@ object LogStreamServer {
     }
 
     /**
+     * Notifies connected clients that the saved parent farming archive or session state changed. Called by
+     * `Campaign.kt` after [ParentRunArchive.append] and by `ParentFarmingRunLoop.kt` after every
+     * [ParentFarmingSessionState] save, so the Legacy Parents tab can refetch live instead of
+     * only on manual refresh or tab switch. No-op when the server isn't running.
+     */
+    fun broadcastParentFarmingUpdate() {
+        if (!isRunning) return
+        serverScope?.launch {
+            actionChannel?.send(LogAction.BroadcastParentFarmingUpdate)
+        }
+    }
+
+    /**
+     * Sends the `PF_UPDATE` framing message to all currently connected clients. Carries no
+     * payload — clients are expected to refetch `/parent-run-archive` and `/parent-farming-session`.
+     */
+    private suspend fun handleParentFarmingUpdateBroadcast() {
+        if (clients.isEmpty()) return
+        for (client in clients) {
+            try {
+                client.send(Frame.Text("PF_UPDATE"))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * Processes a broadcast action by updating the buffer and sending to all active clients.
      *
      * Called by the background worker.
@@ -1131,6 +1166,10 @@ object LogStreamServer {
 
                             is LogAction.BroadcastSmartRaceSolverState -> {
                                 handleSmartRaceSolverStateBroadcast(action.enabled)
+                            }
+
+                            is LogAction.BroadcastParentFarmingUpdate -> {
+                                handleParentFarmingUpdateBroadcast()
                             }
                         }
                     }
@@ -1457,6 +1496,22 @@ object LogStreamServer {
                                 Log.e(TAG, "[ERROR] /parent-run-archive:: Failed to read parent run archive: ${e.message}")
                                 call.respondText(
                                     """{"error":"Failed to read parent run archive."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Serve the in-progress multi-run parent farming session state, if any resume state is saved.
+                        get("/parent-farming-session") {
+                            try {
+                                val saved = ParentFarmingSessionState.load(context)
+                                val response = saved?.let { ParentFarmingSessionState.toJson(it) } ?: JSONObject()
+                                call.respondText(response.toString(), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /parent-farming-session:: Failed to read parent farming session state: ${e.message}")
+                                call.respondText(
+                                    """{"error":"Failed to read parent farming session state."}""",
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )

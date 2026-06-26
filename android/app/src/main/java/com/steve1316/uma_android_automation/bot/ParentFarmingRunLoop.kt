@@ -10,6 +10,7 @@ import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonCompleteCareer
 import com.steve1316.uma_android_automation.components.ButtonToHome
 import com.steve1316.uma_android_automation.types.GameDate
+import com.steve1316.uma_android_automation.utils.LogStreamServer
 import java.util.UUID
 
 /**
@@ -74,6 +75,7 @@ object ParentFarmingRunLoop {
                 borrowRotationOffset = borrowRotationOffset,
             ),
         )
+        LogStreamServer.broadcastParentFarmingUpdate()
     }
 
     fun sessionId(): String = sessionId

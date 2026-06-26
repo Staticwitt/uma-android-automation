@@ -2400,6 +2400,27 @@
             .legacy-parent-epithets .incomplete {
                 color: var(--text-muted);
             }
+
+            .legacy-parents-session-footer {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+                padding: 10px 20px;
+                font-size: 12px;
+                color: var(--text-muted);
+                background: var(--bg-secondary);
+                border-top: 1px solid var(--border-color);
+            }
+
+            .legacy-parents-session-footer strong {
+                color: var(--text-primary);
+            }
+
+            .legacy-parents-session-footer .grade-badge {
+                font-size: 11px;
+                padding: 1px 6px;
+            }
         </style>
     </head>
     <body>
@@ -2914,6 +2935,7 @@
                 </div>
                 <div id="legacyParentsEmpty" class="legacy-parents-empty" style="display: none;">No saved legacy parent runs yet.</div>
             </div>
+            <div id="legacyParentsSessionFooter" class="legacy-parents-session-footer" style="display: none;"></div>
         </div>
 
         <!-- Analytics View -->
@@ -3311,6 +3333,10 @@
                         // Smart Race Solver enabled flag pushed by Racing.kt at run start. Toggles
                         // the .srs-disabled class on the panel so it disappears when SRS is off.
                         setSmartRaceSolverEnabled(event.data.substring(10) === "true")
+                    } else if (event.data === "PF_UPDATE") {
+                        // Parent farming archive/session state changed. Refetch if the Legacy Parents
+                        // tab has already been opened; otherwise the next tab activation loads fresh data.
+                        if (window.__legacyParentsLoaded) refreshLegacyParents()
                     } else {
                         // Process individual log messages or unknown formats.
                         try {
@@ -5207,6 +5233,7 @@
                 list.innerHTML = ""
                 emptyEl.style.display = "none"
                 statusEl.textContent = "Loading legacy parents..."
+                refreshLegacyParentsSession()
 
                 try {
                     const res = await fetch("/parent-run-archive")
@@ -5225,6 +5252,36 @@
                 } catch (err) {
                     statusEl.textContent = "Failed to load legacy parent archive."
                     console.error("refreshLegacyParents failed:", err)
+                }
+            }
+
+            /**
+             * Fetches the in-progress multi-run parent farming session state via /parent-farming-session
+             * and renders it in the Legacy Parents tab footer. Hidden when no resume session is saved.
+             */
+            async function refreshLegacyParentsSession() {
+                const footer = document.getElementById("legacyParentsSessionFooter")
+                try {
+                    const res = await fetch("/parent-farming-session")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const session = await res.json()
+
+                    if (!session || !session.sessionId) {
+                        footer.style.display = "none"
+                        return
+                    }
+
+                    const gradeBadge = session.bestQualityGrade
+                        ? `<span class="grade-badge grade-${escapeHtml(session.bestQualityGrade)}">${escapeHtml(session.bestQualityGrade)}</span>`
+                        : ""
+                    footer.innerHTML =
+                        `<span>Active session: <strong>${session.runsCompleted || 0}</strong> runs completed</span>` +
+                        `<span>Best: ${gradeBadge} (${session.bestQualityScore != null ? session.bestQualityScore : "—"})</span>` +
+                        `<span>Borrow rotation offset: <strong>${session.borrowRotationOffset || 0}</strong></span>`
+                    footer.style.display = "flex"
+                } catch (err) {
+                    footer.style.display = "none"
+                    console.error("refreshLegacyParentsSession failed:", err)
                 }
             }
 
