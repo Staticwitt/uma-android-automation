@@ -831,6 +831,22 @@
                 font-family: var(--font-mono);
             }
 
+            .image-card-footer {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 8px 10px;
+                border-top: 1px solid var(--border-color);
+                background: var(--bg-tertiary);
+            }
+
+            .image-card-size {
+                font-size: 11px;
+                color: var(--text-muted);
+                white-space: nowrap;
+            }
+
             .debug-notice {
                 background: rgba(108, 140, 255, 0.1);
                 border-bottom: 1px solid var(--border-color);
@@ -2020,6 +2036,15 @@
                 box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.35);
             }
 
+            .calendar-cell-clickable {
+                cursor: pointer;
+            }
+
+            .calendar-cell-clickable:hover {
+                border-color: var(--accent-blue);
+                box-shadow: inset 0 0 0 1px var(--accent-blue);
+            }
+
             .calendar-badge {
                 min-width: 30px;
                 height: 18px;
@@ -2845,6 +2870,17 @@
             </div>
         </div>
 
+        <!-- Decision Report Modal -->
+        <div id="decisionModal" class="log-file-modal">
+            <div class="log-file-modal-content">
+                <div class="log-file-modal-header">
+                    <span id="decisionModalTitle" class="log-file-modal-title"></span>
+                    <button class="refresh-btn" onclick="closeDecisionModal()">Close</button>
+                </div>
+                <pre id="decisionModalBody" class="log-file-modal-body"></pre>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <span class="footer-left">Uma Android Automation - Remote Log Viewer</span>
@@ -3176,19 +3212,13 @@
                         // the .srs-disabled class on the panel so it disappears when SRS is off.
                         setSmartRaceSolverEnabled(event.data.substring(10) === "true")
                     } else {
-                        // Process individual log messages, images or unknown formats.
+                        // Process individual log messages or unknown formats.
                         try {
                             var data = JSON.parse(event.data)
-                            if (data.type === "image") {
-                                handleIncomingImage(data)
-                            } else if (data.type === "image_batch_done") {
-                                handleImageBatchDone()
+                            if (isSyncing) {
+                                syncingBuffer.push(data)
                             } else {
-                                if (isSyncing) {
-                                    syncingBuffer.push(data)
-                                } else {
-                                    appendLogMessage(data)
-                                }
+                                appendLogMessage(data)
                             }
                         } catch (e) {
                             // Fallback for non-JSON messages if any.
@@ -3948,8 +3978,17 @@
                         ' onmouseleave="hideTooltip()"'
                 }
 
+                // Any turn the solver actually decided on (race, train, or rest) has a Decision
+                // Report in the log; clicking the cell opens it. Pre-debut/summer-blocked turns
+                // and future turns with no decision yet are not clickable.
+                var clickAttrs = ""
+                if (decision) {
+                    classes.push("calendar-cell-clickable")
+                    clickAttrs = ' onclick="openDecisionModal(' + turn + ')"'
+                }
+
                 return '<div class="calendar-cell-wrapper">' +
-                    '<div class="' + classes.join(" ") + '"' + hoverAttrs + '>' + inner + '</div>' +
+                    '<div class="' + classes.join(" ") + '"' + hoverAttrs + clickAttrs + '>' + inner + '</div>' +
                     '<div class="calendar-date-label">' + dateLabel + '</div>' +
                     '</div>'
             }
@@ -4937,7 +4976,6 @@
                 if (analyticsTabActive) renderAnalytics()
             })
 
-            let receivedImagesCount = 0
             let lastRefreshTimestamp = null
             let refreshTimerInterval = null
             const trainerPageStartedAt = Date.now()
@@ -4964,66 +5002,89 @@
             }
 
             /**
-             * Sends a command to the server to refresh debug images.
+             * Fetches the current debug image listing via the /debug-images API and renders it.
              */
-            function refreshImages() {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    // Clear existing images before refresh.
-                    const grid = document.getElementById("imageGrid")
-                    grid.innerHTML = ""
-                    receivedImagesCount = 0
-                    document.getElementById("imageCount").textContent = "0"
-                    document.getElementById("imageStatus").textContent = "Requesting images..."
-                    document.getElementById("lastRefreshText").textContent = ""
+            async function refreshImages() {
+                const grid = document.getElementById("imageGrid")
+                const statusEl = document.getElementById("imageStatus")
+                const countEl = document.getElementById("imageCount")
 
-                    ws.send("CMD:REFRESH_IMAGES")
-                } else {
-                    alert("Not connected to server.")
+                grid.innerHTML = ""
+                countEl.textContent = "0"
+                statusEl.textContent = "Loading images..."
+                document.getElementById("lastRefreshText").textContent = ""
+
+                try {
+                    const res = await fetch("/debug-images")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const data = await res.json()
+                    const files = Array.isArray(data.files) ? data.files : []
+
+                    countEl.textContent = String(data.count || files.length)
+                    statusEl.textContent = files.length
+                        ? `Refresh complete. ${files.length} images found.`
+                        : "No debug images found."
+
+                    files.forEach((file) => grid.appendChild(renderImageCard(file)))
+                    // Files are sorted most-recent-first by the server, so the first entry is the latest preview.
+                    if (files.length > 0) {
+                        trainerSetPreviewImage(`/debug-images/${encodeURIComponent(files[0].name)}`)
+                    }
+
+                    lastRefreshTimestamp = Date.now()
+                    updateRefreshTimer()
+                    if (refreshTimerInterval) clearInterval(refreshTimerInterval)
+                    refreshTimerInterval = setInterval(updateRefreshTimer, 5000)
+                } catch (err) {
+                    statusEl.textContent = "Failed to load debug images."
+                    console.error("refreshImages failed:", err)
                 }
             }
 
             /**
-             * Handles an incoming image message from the server.
-             * @param {object} data - The image data object.
+             * Builds a single debug image card: filename, lazy-loaded thumbnail, size, and download link.
+             * @param {{name: string, size: number, modified: number}} file - The image metadata.
+             * @returns {HTMLElement} The card element.
              */
-            function handleIncomingImage(data) {
-                const grid = document.getElementById("imageGrid")
+            function renderImageCard(file) {
                 const card = document.createElement("div")
                 card.className = "image-card"
 
-                const img = document.createElement("img")
-                img.src = "data:image/jpeg;base64," + data.data
-                img.alt = data.name
-                trainerSetPreviewImage(img.src)
-
                 const info = document.createElement("div")
                 info.className = "image-info"
-                info.textContent = data.name
+                info.textContent = file.name
+
+                const img = document.createElement("img")
+                img.src = `/debug-images/${encodeURIComponent(file.name)}`
+                img.alt = file.name
+                img.loading = "lazy"
+
+                const footer = document.createElement("div")
+                footer.className = "image-card-footer"
+
+                const size = document.createElement("span")
+                size.className = "image-card-size"
+                size.textContent = formatFileSize(file.size)
+
+                const download = document.createElement("a")
+                download.className = "log-file-download"
+                download.href = `/debug-images/${encodeURIComponent(file.name)}?download=1`
+                download.setAttribute("download", file.name)
+                download.textContent = "Download"
+                // Prevent the card click handler (full-size preview) from firing on a download click.
+                download.addEventListener("click", (e) => e.stopPropagation())
+
+                footer.appendChild(size)
+                footer.appendChild(download)
 
                 card.appendChild(info)
                 card.appendChild(img)
-
-                card.onclick = function() {
+                card.appendChild(footer)
+                card.onclick = function () {
                     openModal(img.src)
                 }
 
-                grid.appendChild(card)
-                receivedImagesCount++
-                document.getElementById("imageCount").textContent = receivedImagesCount
-                document.getElementById("imageStatus").textContent = "Receiving images..."
-            }
-
-            /**
-             * Handles the completion of an image batch transmission.
-             */
-            function handleImageBatchDone() {
-                document.getElementById("imageStatus").textContent = "Refresh complete. " + receivedImagesCount + " images found."
-                lastRefreshTimestamp = Date.now()
-                updateRefreshTimer()
-
-                // Start or reset the interval to update the timer text.
-                if (refreshTimerInterval) clearInterval(refreshTimerInterval)
-                refreshTimerInterval = setInterval(updateRefreshTimer, 5000)
+                return card
             }
 
             /**
@@ -5050,6 +5111,7 @@
                 if (e.key === "Escape") {
                     closeModal()
                     closeLogFileModal()
+                    closeDecisionModal()
                 }
             })
 
@@ -5203,6 +5265,41 @@
                 if (!modal.classList.contains("visible")) return
                 modal.classList.remove("visible")
                 document.getElementById("logFileModalBody").textContent = ""
+            }
+
+            /**
+             * Fetches and displays the full Decision Report text for one turn via the /decisions API.
+             * @param {number} turn - The turn number to look up.
+             */
+            async function openDecisionModal(turn) {
+                const modal = document.getElementById("decisionModal")
+                const titleEl = document.getElementById("decisionModalTitle")
+                const bodyEl = document.getElementById("decisionModalBody")
+
+                titleEl.textContent = `Turn ${turn} Decision Report`
+                bodyEl.textContent = "Loading..."
+                modal.classList.add("visible")
+
+                try {
+                    const res = await fetch(`/decisions?turn=${turn}`)
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const data = await res.json()
+                    const report = Array.isArray(data.reports) ? data.reports[0] : null
+                    bodyEl.textContent = report ? report.report : `No decision report found for turn ${turn}.`
+                } catch (err) {
+                    bodyEl.textContent = `Failed to load decision report: ${err.message}`
+                    console.error("openDecisionModal failed:", err)
+                }
+            }
+
+            /**
+             * Closes the decision report modal and frees the body memory.
+             */
+            function closeDecisionModal() {
+                const modal = document.getElementById("decisionModal")
+                if (!modal.classList.contains("visible")) return
+                modal.classList.remove("visible")
+                document.getElementById("decisionModalBody").textContent = ""
             }
 
             // ==============================================
@@ -5497,6 +5594,11 @@
             // Close the log file modal when clicking the dimmed backdrop (but not the inner content).
             document.getElementById("logFileModal").addEventListener("click", function(e) {
                 if (e.target === this) closeLogFileModal()
+            })
+
+            // Close the decision report modal when clicking the dimmed backdrop (but not the inner content).
+            document.getElementById("decisionModal").addEventListener("click", function(e) {
+                if (e.target === this) closeDecisionModal()
             })
 
             // Initiate the connection and settings when the page loads.
