@@ -164,6 +164,9 @@ export const parseParentRunArchive = (json: string): ParentRunArchiveEntry[] => 
                     sessionRunTarget: typeof entry.sessionRunTarget === "number" ? entry.sessionRunTarget : undefined,
                     isSessionBest: typeof entry.isSessionBest === "boolean" ? entry.isSessionBest : undefined,
                     inheritanceSummary: typeof entry.inheritanceSummary === "string" ? entry.inheritanceSummary : undefined,
+                    harvestSummary: typeof entry.harvestSummary === "string" ? entry.harvestSummary : undefined,
+                    harvestVerdict: typeof entry.harvestVerdict === "string" ? entry.harvestVerdict : undefined,
+                    harvestFactors: entry.harvestFactors !== undefined ? parseStringArray(entry.harvestFactors) : undefined,
                 }
             })
             .filter((entry): entry is ParentRunArchiveEntry => entry !== null)
