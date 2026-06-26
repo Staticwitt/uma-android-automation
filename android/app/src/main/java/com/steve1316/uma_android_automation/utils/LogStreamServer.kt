@@ -11,6 +11,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.StartModule
+import com.steve1316.uma_android_automation.bot.ParentFarmingSessionState
 import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -1457,6 +1458,22 @@ object LogStreamServer {
                                 Log.e(TAG, "[ERROR] /parent-run-archive:: Failed to read parent run archive: ${e.message}")
                                 call.respondText(
                                     """{"error":"Failed to read parent run archive."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Serve the in-progress multi-run parent farming session state, if any resume state is saved.
+                        get("/parent-farming-session") {
+                            try {
+                                val saved = ParentFarmingSessionState.load(context)
+                                val response = saved?.let { ParentFarmingSessionState.toJson(it) } ?: JSONObject()
+                                call.respondText(response.toString(), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /parent-farming-session:: Failed to read parent farming session state: ${e.message}")
+                                call.respondText(
+                                    """{"error":"Failed to read parent farming session state."}""",
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
