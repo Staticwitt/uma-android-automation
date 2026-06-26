@@ -74,6 +74,7 @@ import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.StatName
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.Trainee
+import com.steve1316.uma_android_automation.utils.LogStreamServer
 import com.steve1316.uma_android_automation.utils.ScrollList
 import org.opencv.core.Point
 import java.util.concurrent.CountDownLatch
@@ -2376,9 +2377,11 @@ abstract class Campaign(game: Game) : Task(game) {
                     game.taskEndDiscordMessage = ParentRunSummary.buildDiscordMarkdown(summaryInput)
                     if (archiveEnabled) {
                         ParentRunArchive.append(game.myContext, summaryInput)
+                        LogStreamServer.broadcastParentFarmingUpdate()
                     }
                 } else if (summaryInput != null && SettingsHelper.getBooleanSetting("racing", "enableParentRunArchive", true)) {
                     ParentRunArchive.append(game.myContext, summaryInput)
+                    LogStreamServer.broadcastParentFarmingUpdate()
                 } else if (summaryInput == null) {
                     val raceStats = SmartRaceSolverIntegration.snapshotRaceStats()
                     game.taskEndDiscordEmbed =

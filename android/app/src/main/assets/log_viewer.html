@@ -3333,6 +3333,10 @@
                         // Smart Race Solver enabled flag pushed by Racing.kt at run start. Toggles
                         // the .srs-disabled class on the panel so it disappears when SRS is off.
                         setSmartRaceSolverEnabled(event.data.substring(10) === "true")
+                    } else if (event.data === "PF_UPDATE") {
+                        // Parent farming archive/session state changed. Refetch if the Legacy Parents
+                        // tab has already been opened; otherwise the next tab activation loads fresh data.
+                        if (window.__legacyParentsLoaded) refreshLegacyParents()
                     } else {
                         // Process individual log messages or unknown formats.
                         try {

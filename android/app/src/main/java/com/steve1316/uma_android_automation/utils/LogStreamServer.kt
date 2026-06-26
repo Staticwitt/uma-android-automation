@@ -233,6 +233,13 @@ object LogStreamServer {
          * @property enabled True when SRS is enabled for the current run.
          */
         data class BroadcastSmartRaceSolverState(val enabled: Boolean) : LogAction()
+
+        /**
+         * Notifies all connected clients that the parent farming archive or session state changed,
+         * so the viewer can refetch [ParentRunArchive]/[ParentFarmingSessionState] over REST. Carries
+         * no payload since those REST endpoints are already the source of truth the viewer reads from.
+         */
+        object BroadcastParentFarmingUpdate : LogAction()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -864,6 +871,33 @@ object LogStreamServer {
     }
 
     /**
+     * Notifies connected clients that the saved parent farming archive or session state changed. Called by
+     * `Campaign.kt` after [ParentRunArchive.append] and by `ParentFarmingRunLoop.kt` after every
+     * [ParentFarmingSessionState] save, so the Legacy Parents tab can refetch live instead of
+     * only on manual refresh or tab switch. No-op when the server isn't running.
+     */
+    fun broadcastParentFarmingUpdate() {
+        if (!isRunning) return
+        serverScope?.launch {
+            actionChannel?.send(LogAction.BroadcastParentFarmingUpdate)
+        }
+    }
+
+    /**
+     * Sends the `PF_UPDATE` framing message to all currently connected clients. Carries no
+     * payload — clients are expected to refetch `/parent-run-archive` and `/parent-farming-session`.
+     */
+    private suspend fun handleParentFarmingUpdateBroadcast() {
+        if (clients.isEmpty()) return
+        for (client in clients) {
+            try {
+                client.send(Frame.Text("PF_UPDATE"))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * Processes a broadcast action by updating the buffer and sending to all active clients.
      *
      * Called by the background worker.
@@ -1132,6 +1166,10 @@ object LogStreamServer {
 
                             is LogAction.BroadcastSmartRaceSolverState -> {
                                 handleSmartRaceSolverStateBroadcast(action.enabled)
+                            }
+
+                            is LogAction.BroadcastParentFarmingUpdate -> {
+                                handleParentFarmingUpdateBroadcast()
                             }
                         }
                     }
