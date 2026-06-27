@@ -1,17 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.72</latestVersion>
-    <latestVersionCode>162</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.72</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.72/v5.9.72-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.72/v5.9.72-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.73</latestVersion>
+    <latestVersionCode>163</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.73</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.73/v5.9.73-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.73/v5.9.73-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.72 - Career Run Archive
+v5.9.73 - Archive Analytics, Race Strategy Presets, and OCR Reliability
 
 Added
 -----
-- New Career Runs tab in the Remote Log Viewer archives completed regular (non-parent-farming) career runs: trainee name, scenario, career rank/rating, race record, fans, skill points, and final stats.
-- The Remote Log Viewer now pushes a live update over its WebSocket whenever a regular career run completes, so the Career Runs tab refreshes automatically instead of only on manual refresh or tab switch.
+- Stats trend chart, CSV export, search/filter, and an in-app changelog viewer for the Career Runs and Legacy Parents archives in the Remote Log Viewer.
+- Per-race breakdown view in the archives.
+- Race strategy presets.
+- Configurable stop conditions for career runs.
+
+Improved
+--------
+- OCR auto-retry on misread (previously limited to training event recognition) now also covers training level, race name, and skill name/point recognition.
 
     </releaseNotes>
   </update>
