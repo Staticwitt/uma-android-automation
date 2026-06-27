@@ -2927,6 +2927,19 @@
                 <button class="refresh-btn" onclick="refreshLegacyParents()">
                     <span>🔄</span> Refresh
                 </button>
+                <button class="refresh-btn" onclick="exportLegacyParentsCsv()">
+                    <span>⬇️</span> Export CSV
+                </button>
+                <div class="search-container" style="flex: 0 1 240px; min-width: 140px;">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        id="legacyParentsSearch"
+                        class="search-input"
+                        placeholder="Filter by trainee name..."
+                        oninput="filterLegacyParents()"
+                    />
+                </div>
                 <div id="legacyParentsStatus" class="image-status"></div>
                 <div class="message-count" style="margin-left: auto; margin-right: 0px">Runs: <span id="legacyParentsCount">0</span></div>
             </div>
@@ -2949,8 +2962,25 @@
                 <button class="refresh-btn" onclick="refreshCareerRuns()">
                     <span>🔄</span> Refresh
                 </button>
+                <button class="refresh-btn" onclick="exportCareerRunsCsv()">
+                    <span>⬇️</span> Export CSV
+                </button>
+                <div class="search-container" style="flex: 0 1 240px; min-width: 140px;">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        id="careerRunsSearch"
+                        class="search-input"
+                        placeholder="Filter by trainee or scenario..."
+                        oninput="filterCareerRuns()"
+                    />
+                </div>
                 <div id="careerRunsStatus" class="image-status"></div>
                 <div class="message-count" style="margin-left: auto; margin-right: 0px">Runs: <span id="careerRunsCount">0</span></div>
+            </div>
+            <div id="careerRunsTrendCard" class="analytics-card" style="display: none; margin-bottom: 16px;">
+                <div class="analytics-card-title">Career Rating Over Generations</div>
+                <canvas id="chartCareerRatingTrend" class="analytics-canvas analytics-canvas-wide"></canvas>
             </div>
             <div id="careerRunsListContainer" class="legacy-parents-list-container">
                 <div id="careerRunsList" class="legacy-parents-list">
@@ -3249,6 +3279,10 @@
             // Legacy Parents tab state: cached for resize redraws without refetching the archive.
             let legacyParentsTabActive = false
             let cachedLegacyParentsRuns = []
+
+            // Career Runs tab state: cached for resize redraws without refetching the archive.
+            let careerRunsTabActive = false
+            let cachedCareerRuns = []
 
             // Synchronization state with LogStreamServer.
             let isSyncing = true
@@ -5144,11 +5178,13 @@
                 if (analyticsTabActive) renderAnalytics()
 
                 legacyParentsTabActive = tabID === "legacyParents"
+                careerRunsTabActive = tabID === "careerRuns"
             }
 
             window.addEventListener("resize", function () {
                 if (analyticsTabActive) renderAnalytics()
                 if (legacyParentsTabActive) renderQualityTrendChart(cachedLegacyParentsRuns)
+                if (careerRunsTabActive) renderCareerRatingTrendChart(cachedCareerRuns)
             })
 
             let lastRefreshTimestamp = null
@@ -5263,13 +5299,106 @@
             }
 
             /**
+             * Converts an array of run objects into a CSV file using the given column definitions and
+             * triggers a browser download. Cells are quoted/escaped per RFC 4180 when needed.
+             * @param {string} filename - Name of the downloaded file.
+             * @param {Array<{header: string, value: (run: Object) => *}>} columns - Column definitions.
+             * @param {Array<Object>} runs - Rows to export.
+             */
+            function exportRunsToCsv(filename, columns, runs) {
+                const escapeCsvCell = (val) => {
+                    const str = val == null ? "" : String(val)
+                    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+                }
+                const headerRow = columns.map((c) => escapeCsvCell(c.header)).join(",")
+                const dataRows = runs.map((run) => columns.map((c) => escapeCsvCell(c.value(run))).join(","))
+                const csv = [headerRow, ...dataRows].join("\n")
+
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                a.href = url
+                a.download = filename
+                document.body.appendChild(a)
+                a.click()
+                document.body.removeChild(a)
+                URL.revokeObjectURL(url)
+            }
+
+            /**
+             * Exports the currently loaded legacy parent archive as a CSV file, sorted by quality score.
+             */
+            function exportLegacyParentsCsv() {
+                const sorted = [...cachedLegacyParentsRuns].sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0))
+                exportRunsToCsv(
+                    "legacy_parents.csv",
+                    [
+                        { header: "Completed At", value: (r) => (r.completedAtMs ? new Date(r.completedAtMs).toLocaleString() : "") },
+                        { header: "Trainee", value: (r) => r.traineeName || r.characterPreset || "" },
+                        { header: "Quality Grade", value: (r) => r.qualityGrade || "" },
+                        { header: "Quality Score", value: (r) => r.qualityScore ?? "" },
+                        { header: "Fans", value: (r) => r.fans ?? "" },
+                        { header: "Fan Class", value: (r) => r.fanClass || "" },
+                        { header: "Race Wins", value: (r) => r.raceWins ?? "" },
+                        { header: "Race Losses", value: (r) => r.raceLosses ?? "" },
+                        {
+                            header: "Sparks",
+                            value: (r) => {
+                                const harvestFactors = Array.isArray(r.harvestFactors) ? r.harvestFactors.filter(Boolean) : []
+                                const pickedSparks = Array.isArray(r.sparkPicks)
+                                    ? r.sparkPicks.flatMap((pick) => (Array.isArray(pick.optionTexts) ? pick.optionTexts : []))
+                                    : []
+                                return (harvestFactors.length > 0 ? harvestFactors : pickedSparks).join("; ")
+                            },
+                        },
+                        {
+                            header: "Completed Epithets",
+                            value: (r) => (Array.isArray(r.completedTargetEpithets) ? r.completedTargetEpithets.join("; ") : ""),
+                        },
+                        {
+                            header: "Missed Epithets",
+                            value: (r) => (Array.isArray(r.incompleteTargetEpithets) ? r.incompleteTargetEpithets.join("; ") : ""),
+                        },
+                    ],
+                    sorted,
+                )
+            }
+
+            /**
+             * Exports the currently loaded career run archive as a CSV file, newest run first.
+             */
+            function exportCareerRunsCsv() {
+                const sorted = [...cachedCareerRuns].sort((a, b) => (b.completedAtMs || 0) - (a.completedAtMs || 0))
+                exportRunsToCsv(
+                    "career_runs.csv",
+                    [
+                        { header: "Completed At", value: (r) => (r.completedAtMs ? new Date(r.completedAtMs).toLocaleString() : "") },
+                        { header: "Trainee", value: (r) => r.traineeName || "" },
+                        { header: "Scenario", value: (r) => r.scenario || "" },
+                        { header: "Career Rank", value: (r) => r.careerRank || "" },
+                        { header: "Career Rating", value: (r) => r.careerRating ?? "" },
+                        { header: "Race Wins", value: (r) => r.raceWins ?? "" },
+                        { header: "Race Losses", value: (r) => r.raceLosses ?? "" },
+                        { header: "Fans", value: (r) => r.fans ?? "" },
+                        { header: "Fan Class", value: (r) => r.fanClass || "" },
+                        { header: "Skill Points", value: (r) => r.skillPoints ?? "" },
+                        { header: "Speed", value: (r) => r.stats?.speed ?? "" },
+                        { header: "Stamina", value: (r) => r.stats?.stamina ?? "" },
+                        { header: "Power", value: (r) => r.stats?.power ?? "" },
+                        { header: "Guts", value: (r) => r.stats?.guts ?? "" },
+                        { header: "Wit", value: (r) => r.stats?.wit ?? "" },
+                    ],
+                    sorted,
+                )
+            }
+
+            /**
              * Fetches the saved legacy parent run archive via the /parent-run-archive API and renders it.
              */
             async function refreshLegacyParents() {
                 const list = document.getElementById("legacyParentsList")
                 const emptyEl = document.getElementById("legacyParentsEmpty")
                 const statusEl = document.getElementById("legacyParentsStatus")
-                const countEl = document.getElementById("legacyParentsCount")
 
                 list.innerHTML = ""
                 emptyEl.style.display = "none"
@@ -5280,21 +5409,41 @@
                     const res = await fetch("/parent-run-archive")
                     if (!res.ok) throw new Error(`HTTP ${res.status}`)
                     const runs = await res.json()
-                    const sorted = Array.isArray(runs) ? [...runs].sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0)) : []
+                    const archive = Array.isArray(runs) ? runs : []
 
-                    countEl.textContent = String(sorted.length)
-                    statusEl.textContent = sorted.length ? `Loaded ${sorted.length} runs.` : ""
-                    renderQualityTrendChart(Array.isArray(runs) ? runs : [])
-
-                    if (sorted.length === 0) {
-                        emptyEl.style.display = "block"
-                        return
-                    }
-                    sorted.forEach((run) => list.appendChild(renderLegacyParentCard(run)))
+                    statusEl.textContent = archive.length ? `Loaded ${archive.length} runs.` : ""
+                    renderQualityTrendChart(archive)
+                    filterLegacyParents()
                 } catch (err) {
                     statusEl.textContent = "Failed to load legacy parent archive."
                     console.error("refreshLegacyParents failed:", err)
                 }
+            }
+
+            /**
+             * Re-renders the legacy parent list from the cached archive, filtered by the trainee name
+             * typed into the search box (case-insensitive substring match). Sorted by quality score.
+             */
+            function filterLegacyParents() {
+                const query = document.getElementById("legacyParentsSearch").value.trim().toLowerCase()
+                const list = document.getElementById("legacyParentsList")
+                const emptyEl = document.getElementById("legacyParentsEmpty")
+                const countEl = document.getElementById("legacyParentsCount")
+
+                const filtered = cachedLegacyParentsRuns.filter(
+                    (r) => !query || (r.traineeName || r.characterPreset || "").toLowerCase().includes(query),
+                )
+                const sorted = [...filtered].sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0))
+
+                list.innerHTML = ""
+                countEl.textContent = String(sorted.length)
+                if (sorted.length === 0) {
+                    emptyEl.textContent = query ? "No legacy parent runs match your filter." : "No saved legacy parent runs yet."
+                    emptyEl.style.display = "block"
+                    return
+                }
+                emptyEl.style.display = "none"
+                sorted.forEach((run) => list.appendChild(renderLegacyParentCard(run)))
             }
 
             /**
@@ -5418,6 +5567,31 @@
             }
 
             /**
+             * Draws the "Career Rating Over Generations" trend chart from the archive in completion order.
+             * Hidden entirely when there are fewer than 2 runs, since a single point isn't a trend.
+             */
+            function renderCareerRatingTrendChart(runs) {
+                cachedCareerRuns = runs
+                const card = document.getElementById("careerRunsTrendCard")
+                const chronological = [...runs].sort((a, b) => (a.completedAtMs || 0) - (b.completedAtMs || 0))
+
+                if (chronological.length < 2) {
+                    card.style.display = "none"
+                    return
+                }
+                card.style.display = "block"
+
+                const xLabels = chronological.map((_, i) => "Run " + (i + 1))
+                drawLineChart("chartCareerRatingTrend", xLabels, [
+                    {
+                        name: "Career Rating",
+                        color: "#22c55e",
+                        values: chronological.map((r) => (r.careerRating != null ? r.careerRating : null)),
+                    },
+                ])
+            }
+
+            /**
              * Fetches the saved regular (non-parent-farming) career run archive via /career-run-archive
              * and renders it, newest run first.
              */
@@ -5425,7 +5599,6 @@
                 const list = document.getElementById("careerRunsList")
                 const emptyEl = document.getElementById("careerRunsEmpty")
                 const statusEl = document.getElementById("careerRunsStatus")
-                const countEl = document.getElementById("careerRunsCount")
 
                 list.innerHTML = ""
                 emptyEl.style.display = "none"
@@ -5435,20 +5608,43 @@
                     const res = await fetch("/career-run-archive")
                     if (!res.ok) throw new Error(`HTTP ${res.status}`)
                     const runs = await res.json()
-                    const sorted = Array.isArray(runs) ? [...runs].sort((a, b) => (b.completedAtMs || 0) - (a.completedAtMs || 0)) : []
+                    const archive = Array.isArray(runs) ? runs : []
 
-                    countEl.textContent = String(sorted.length)
-                    statusEl.textContent = sorted.length ? `Loaded ${sorted.length} runs.` : ""
-
-                    if (sorted.length === 0) {
-                        emptyEl.style.display = "block"
-                        return
-                    }
-                    sorted.forEach((run) => list.appendChild(renderCareerRunCard(run)))
+                    statusEl.textContent = archive.length ? `Loaded ${archive.length} runs.` : ""
+                    renderCareerRatingTrendChart(archive)
+                    filterCareerRuns()
                 } catch (err) {
                     statusEl.textContent = "Failed to load career run archive."
                     console.error("refreshCareerRuns failed:", err)
                 }
+            }
+
+            /**
+             * Filters the cached career run archive by trainee name or scenario and re-renders the list.
+             */
+            function filterCareerRuns() {
+                const query = document.getElementById("careerRunsSearch").value.trim().toLowerCase()
+                const list = document.getElementById("careerRunsList")
+                const emptyEl = document.getElementById("careerRunsEmpty")
+                const countEl = document.getElementById("careerRunsCount")
+
+                const filtered = cachedCareerRuns.filter(
+                    (r) =>
+                        !query ||
+                        (r.traineeName || "").toLowerCase().includes(query) ||
+                        (r.scenario || "").toLowerCase().includes(query),
+                )
+                const sorted = [...filtered].sort((a, b) => (b.completedAtMs || 0) - (a.completedAtMs || 0))
+
+                list.innerHTML = ""
+                countEl.textContent = String(sorted.length)
+                if (sorted.length === 0) {
+                    emptyEl.textContent = query ? "No career runs match your filter." : "No saved career runs yet."
+                    emptyEl.style.display = "block"
+                    return
+                }
+                emptyEl.style.display = "none"
+                sorted.forEach((run) => list.appendChild(renderCareerRunCard(run)))
             }
 
             /**
