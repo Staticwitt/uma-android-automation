@@ -2309,6 +2309,14 @@
                 word-break: break-word;
             }
 
+            .changelog-code {
+                font-family: "JetBrains Mono", monospace;
+                background: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                padding: 1px 5px;
+            }
+
             @media (max-width: 768px) {
                 .log-file-row {
                     grid-template-columns: 1fr;
@@ -2448,6 +2456,7 @@
             <button id="analyticsTabBtn" class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
             <button id="legacyParentsTabBtn" class="tab-btn" onclick="switchTab('legacyParents')">Legacy Parents</button>
             <button id="careerRunsTabBtn" class="tab-btn" onclick="switchTab('careerRuns')">Career Runs</button>
+            <button id="changelogTabBtn" class="tab-btn" onclick="switchTab('changelog')">Changelog</button>
         </nav>
 
         <!-- Logs & Dashboard View -->
@@ -2987,6 +2996,20 @@
                     <!-- Career run cards will be injected here. -->
                 </div>
                 <div id="careerRunsEmpty" class="legacy-parents-empty" style="display: none;">No saved career runs yet.</div>
+            </div>
+        </div>
+
+        <!-- Changelog View -->
+        <div id="changelogView" class="tab-view">
+            <div class="image-toolbar">
+                <button class="refresh-btn" onclick="refreshChangelog()">
+                    <span>🔄</span> Refresh
+                </button>
+                <div id="changelogStatus" class="image-status"></div>
+            </div>
+            <div class="analytics-card">
+                <div id="changelogTitle" class="analytics-card-title">Changelog</div>
+                <div id="changelogContent" class="log-file-modal-body" style="border-radius: 6px;"></div>
             </div>
         </div>
 
@@ -5139,6 +5162,7 @@
                 document.getElementById("analyticsTabBtn").classList.toggle("active", tabID === "analytics")
                 document.getElementById("legacyParentsTabBtn").classList.toggle("active", tabID === "legacyParents")
                 document.getElementById("careerRunsTabBtn").classList.toggle("active", tabID === "careerRuns")
+                document.getElementById("changelogTabBtn").classList.toggle("active", tabID === "changelog")
 
                 // Update views.
                 document.getElementById("logsView").classList.toggle("active", tabID === "logs")
@@ -5148,6 +5172,7 @@
                 document.getElementById("analyticsView").classList.toggle("active", tabID === "analytics")
                 document.getElementById("legacyParentsView").classList.toggle("active", tabID === "legacyParents")
                 document.getElementById("careerRunsView").classList.toggle("active", tabID === "careerRuns")
+                document.getElementById("changelogView").classList.toggle("active", tabID === "changelog")
 
                 if (tabID === "logs" && autoScroll) {
                     scrollToBottom()
@@ -5172,6 +5197,12 @@
                 if (tabID === "careerRuns" && !window.__careerRunsLoaded) {
                     refreshCareerRuns()
                     window.__careerRunsLoaded = true
+                }
+
+                // Lazy-load the changelog on first activation; user can hit Refresh for re-fetches.
+                if (tabID === "changelog" && !window.__changelogLoaded) {
+                    refreshChangelog()
+                    window.__changelogLoaded = true
                 }
 
                 analyticsTabActive = tabID === "analytics"
@@ -5645,6 +5676,37 @@
                 }
                 emptyEl.style.display = "none"
                 sorted.forEach((run) => list.appendChild(renderCareerRunCard(run)))
+            }
+
+            /**
+             * Fetches the latest release's notes from update.xml (via the /changelog server route) and renders them.
+             */
+            async function refreshChangelog() {
+                const statusEl = document.getElementById("changelogStatus")
+                const titleEl = document.getElementById("changelogTitle")
+                const contentEl = document.getElementById("changelogContent")
+                statusEl.textContent = "Loading changelog..."
+
+                try {
+                    const res = await fetch("/changelog")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const data = await res.json()
+                    if (data.error) throw new Error(data.error)
+
+                    titleEl.textContent = `Latest Release: v${data.latestVersion}`
+                    contentEl.innerHTML = formatReleaseNotes(data.releaseNotes || "")
+                    statusEl.textContent = ""
+                } catch (err) {
+                    statusEl.textContent = "Failed to load changelog."
+                    console.error("refreshChangelog failed:", err)
+                }
+            }
+
+            /** Escapes HTML, converts "- " bullets to "• ", and renders `code` spans for release notes text. */
+            function formatReleaseNotes(text) {
+                const escapeHtml = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                const withBullets = escapeHtml(text).replace(/^- /gm, "• ")
+                return withBullets.replace(/`([^`]+)`/g, '<span class="changelog-code">$1</span>')
             }
 
             /**

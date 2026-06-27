@@ -40,6 +40,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -48,6 +49,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.net.NetworkInterface
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Collections
 import java.util.Date
@@ -1564,6 +1566,34 @@ object LogStreamServer {
                                 Log.e(TAG, "[ERROR] /career-run-archive:: Failed to read career run archive: ${e.message}")
                                 call.respondText(
                                     """{"error":"Failed to read career run archive."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Fetches and parses the same update.xml used by AppUpdateChecker, exposing the latest release notes.
+                        get("/changelog") {
+                            try {
+                                val updateInfo =
+                                    withContext(Dispatchers.IO) {
+                                        URL(AppUpdateChecker.UPDATE_XML_URL).openStream().use { AppUpdateChecker.parseUpdateXml(it) }
+                                    }
+                                val response =
+                                    if (updateInfo != null) {
+                                        JSONObject()
+                                            .put("latestVersion", updateInfo.latestVersion)
+                                            .put("latestVersionCode", updateInfo.latestVersionCode)
+                                            .put("url", updateInfo.url)
+                                            .put("releaseNotes", updateInfo.releaseNotes)
+                                    } else {
+                                        JSONObject().put("error", "Failed to parse update.xml.")
+                                    }
+                                call.respondText(response.toString(), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /changelog:: Failed to fetch changelog: ${e.message}")
+                                call.respondText(
+                                    """{"error":"Failed to fetch changelog."}""",
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
