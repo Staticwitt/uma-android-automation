@@ -2929,6 +2929,10 @@
                 <div id="legacyParentsStatus" class="image-status"></div>
                 <div class="message-count" style="margin-left: auto; margin-right: 0px">Runs: <span id="legacyParentsCount">0</span></div>
             </div>
+            <div id="legacyParentsTrendCard" class="analytics-card" style="display: none; margin-bottom: 16px;">
+                <div class="analytics-card-title">Quality Score Over Generations</div>
+                <canvas id="chartQualityTrend" class="analytics-canvas analytics-canvas-wide"></canvas>
+            </div>
             <div id="legacyParentsListContainer" class="legacy-parents-list-container">
                 <div id="legacyParentsList" class="legacy-parents-list">
                     <!-- Legacy parent cards will be injected here. -->
@@ -3223,6 +3227,10 @@
             let analyticsCurrent = { energy: null, fans: null, stats: { Spd: null, Sta: null, Pow: null, Gut: null, Wit: null } }
             let analyticsLastTurn = null
             let analyticsTabActive = false
+
+            // Legacy Parents tab state: cached for resize redraws without refetching the archive.
+            let legacyParentsTabActive = false
+            let cachedLegacyParentsRuns = []
 
             // Synchronization state with LogStreamServer.
             let isSyncing = true
@@ -5104,10 +5112,13 @@
 
                 analyticsTabActive = tabID === "analytics"
                 if (analyticsTabActive) renderAnalytics()
+
+                legacyParentsTabActive = tabID === "legacyParents"
             }
 
             window.addEventListener("resize", function () {
                 if (analyticsTabActive) renderAnalytics()
+                if (legacyParentsTabActive) renderQualityTrendChart(cachedLegacyParentsRuns)
             })
 
             let lastRefreshTimestamp = null
@@ -5243,6 +5254,7 @@
 
                     countEl.textContent = String(sorted.length)
                     statusEl.textContent = sorted.length ? `Loaded ${sorted.length} runs.` : ""
+                    renderQualityTrendChart(Array.isArray(runs) ? runs : [])
 
                     if (sorted.length === 0) {
                         emptyEl.style.display = "block"
@@ -5253,6 +5265,31 @@
                     statusEl.textContent = "Failed to load legacy parent archive."
                     console.error("refreshLegacyParents failed:", err)
                 }
+            }
+
+            /**
+             * Draws the "Quality Score Over Generations" trend chart from the archive in completion order.
+             * Hidden entirely when there are fewer than 2 runs, since a single point isn't a trend.
+             */
+            function renderQualityTrendChart(runs) {
+                cachedLegacyParentsRuns = runs
+                const card = document.getElementById("legacyParentsTrendCard")
+                const chronological = [...runs].sort((a, b) => (a.completedAtMs || 0) - (b.completedAtMs || 0))
+
+                if (chronological.length < 2) {
+                    card.style.display = "none"
+                    return
+                }
+                card.style.display = "block"
+
+                const xLabels = chronological.map((_, i) => "Run " + (i + 1))
+                drawLineChart("chartQualityTrend", xLabels, [
+                    {
+                        name: "Quality Score",
+                        color: "#22c55e",
+                        values: chronological.map((r) => (r.qualityScore != null ? r.qualityScore : null)),
+                    },
+                ])
             }
 
             /**
