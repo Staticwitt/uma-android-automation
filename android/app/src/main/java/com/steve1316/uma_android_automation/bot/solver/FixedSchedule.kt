@@ -14,18 +14,6 @@ import com.steve1316.automation_library.utils.SettingsHelper
 object FixedSchedule {
     private const val THRONE_X_SIRIUS_KEY = "throne-x-sirius"
 
-    private val PRESETS: Map<String, Map<TurnNumber, Decision>> = mapOf(
-        THRONE_X_SIRIUS_KEY to THRONE_X_SIRIUS,
-    )
-
-    /** @return The active fixed [Schedule] selected by the `racing.fixedSchedule` setting, or null when disabled/unrecognized so the real solver runs as normal. */
-    fun activeSchedule(): Schedule? {
-        val key = SettingsHelper.getStringSetting("racing", "fixedSchedule")
-        if (key.isBlank()) return null
-        val decisions = PRESETS[key] ?: return null
-        return Schedule(decisions = decisions, projectedEpithets = emptySet(), totalScore = 0.0)
-    }
-
     /**
      * "Throne x Sirius" - a 3-year career plan alternating G1/G2/G3 races with dedicated recreation and
      * training turns. Race turns reference the exact `races.json` keys for each race's calendar slot.
@@ -96,5 +84,17 @@ object FixedSchedule {
         put(70, Decision.RaceDecision("Japan Cup (Senior Class November, Second Half)")) // Late November
         put(71, Decision.Train) // Early December
         put(72, Decision.RaceDecision("Arima Kinen (Senior Class December, Second Half)")) // Late December
+    }
+
+    private val PRESETS: Map<String, Map<TurnNumber, Decision>> = mapOf(
+        THRONE_X_SIRIUS_KEY to THRONE_X_SIRIUS,
+    )
+
+    /** @return The active fixed [Schedule] selected by the `racing.fixedSchedule` setting, or null when disabled/unrecognized so the real solver runs as normal. */
+    fun activeSchedule(): Schedule? {
+        val key = SettingsHelper.getStringSetting("racing", "fixedSchedule")
+        if (key.isBlank()) return null
+        val decisions = PRESETS[key] ?: return null
+        return Schedule(decisions = decisions, projectedEpithets = emptySet(), totalScore = 0.0)
     }
 }
