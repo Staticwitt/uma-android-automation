@@ -2447,6 +2447,7 @@
             <button id="logFilesTabBtn" class="tab-btn" onclick="switchTab('logFiles')">Log Files</button>
             <button id="analyticsTabBtn" class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
             <button id="legacyParentsTabBtn" class="tab-btn" onclick="switchTab('legacyParents')">Legacy Parents</button>
+            <button id="careerRunsTabBtn" class="tab-btn" onclick="switchTab('careerRuns')">Career Runs</button>
         </nav>
 
         <!-- Logs & Dashboard View -->
@@ -2942,6 +2943,23 @@
             <div id="legacyParentsSessionFooter" class="legacy-parents-session-footer" style="display: none;"></div>
         </div>
 
+        <!-- Career Runs View -->
+        <div id="careerRunsView" class="tab-view">
+            <div class="image-toolbar">
+                <button class="refresh-btn" onclick="refreshCareerRuns()">
+                    <span>🔄</span> Refresh
+                </button>
+                <div id="careerRunsStatus" class="image-status"></div>
+                <div class="message-count" style="margin-left: auto; margin-right: 0px">Runs: <span id="careerRunsCount">0</span></div>
+            </div>
+            <div id="careerRunsListContainer" class="legacy-parents-list-container">
+                <div id="careerRunsList" class="legacy-parents-list">
+                    <!-- Career run cards will be injected here. -->
+                </div>
+                <div id="careerRunsEmpty" class="legacy-parents-empty" style="display: none;">No saved career runs yet.</div>
+            </div>
+        </div>
+
         <!-- Analytics View -->
         <div id="analyticsView" class="tab-view analytics-view">
             <div id="analyticsEmptyState" class="analytics-empty">No run data yet. Charts will populate once the bot starts a turn.</div>
@@ -3345,6 +3363,10 @@
                         // Parent farming archive/session state changed. Refetch if the Legacy Parents
                         // tab has already been opened; otherwise the next tab activation loads fresh data.
                         if (window.__legacyParentsLoaded) refreshLegacyParents()
+                    } else if (event.data === "CAREER_UPDATE") {
+                        // Career run archive changed. Refetch if the Career Runs tab has already been
+                        // opened; otherwise the next tab activation loads fresh data.
+                        if (window.__careerRunsLoaded) refreshCareerRuns()
                     } else {
                         // Process individual log messages or unknown formats.
                         try {
@@ -5082,6 +5104,7 @@
                 document.getElementById("logFilesTabBtn").classList.toggle("active", tabID === "logFiles")
                 document.getElementById("analyticsTabBtn").classList.toggle("active", tabID === "analytics")
                 document.getElementById("legacyParentsTabBtn").classList.toggle("active", tabID === "legacyParents")
+                document.getElementById("careerRunsTabBtn").classList.toggle("active", tabID === "careerRuns")
 
                 // Update views.
                 document.getElementById("logsView").classList.toggle("active", tabID === "logs")
@@ -5090,6 +5113,7 @@
                 document.getElementById("logFilesView").classList.toggle("active", tabID === "logFiles")
                 document.getElementById("analyticsView").classList.toggle("active", tabID === "analytics")
                 document.getElementById("legacyParentsView").classList.toggle("active", tabID === "legacyParents")
+                document.getElementById("careerRunsView").classList.toggle("active", tabID === "careerRuns")
 
                 if (tabID === "logs" && autoScroll) {
                     scrollToBottom()
@@ -5108,6 +5132,12 @@
                 if (tabID === "legacyParents" && !window.__legacyParentsLoaded) {
                     refreshLegacyParents()
                     window.__legacyParentsLoaded = true
+                }
+
+                // Lazy-load the career run archive on first activation; user can hit Refresh for re-fetches.
+                if (tabID === "careerRuns" && !window.__careerRunsLoaded) {
+                    refreshCareerRuns()
+                    window.__careerRunsLoaded = true
                 }
 
                 analyticsTabActive = tabID === "analytics"
@@ -5383,6 +5413,87 @@
                     epithetsEl.innerHTML = html
                     card.appendChild(epithetsEl)
                 }
+
+                return card
+            }
+
+            /**
+             * Fetches the saved regular (non-parent-farming) career run archive via /career-run-archive
+             * and renders it, newest run first.
+             */
+            async function refreshCareerRuns() {
+                const list = document.getElementById("careerRunsList")
+                const emptyEl = document.getElementById("careerRunsEmpty")
+                const statusEl = document.getElementById("careerRunsStatus")
+                const countEl = document.getElementById("careerRunsCount")
+
+                list.innerHTML = ""
+                emptyEl.style.display = "none"
+                statusEl.textContent = "Loading career runs..."
+
+                try {
+                    const res = await fetch("/career-run-archive")
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    const runs = await res.json()
+                    const sorted = Array.isArray(runs) ? [...runs].sort((a, b) => (b.completedAtMs || 0) - (a.completedAtMs || 0)) : []
+
+                    countEl.textContent = String(sorted.length)
+                    statusEl.textContent = sorted.length ? `Loaded ${sorted.length} runs.` : ""
+
+                    if (sorted.length === 0) {
+                        emptyEl.style.display = "block"
+                        return
+                    }
+                    sorted.forEach((run) => list.appendChild(renderCareerRunCard(run)))
+                } catch (err) {
+                    statusEl.textContent = "Failed to load career run archive."
+                    console.error("refreshCareerRuns failed:", err)
+                }
+            }
+
+            /**
+             * Builds a single career run card: trainee name, career rank, scenario, fans/race record, and final stats.
+             * @param {Object} run - One entry from the /career-run-archive response.
+             * @returns {HTMLElement} The card element.
+             */
+            function renderCareerRunCard(run) {
+                const card = document.createElement("div")
+                card.className = "legacy-parent-card"
+
+                const header = document.createElement("div")
+                header.className = "legacy-parent-header"
+
+                const name = document.createElement("span")
+                name.className = "legacy-parent-name"
+                name.textContent = run.traineeName || "Unknown trainee"
+                header.appendChild(name)
+
+                if (run.careerRank) {
+                    const rank = document.createElement("span")
+                    rank.className = `grade-badge grade-${run.careerRank}`
+                    rank.textContent = run.careerRank
+                    header.appendChild(rank)
+                }
+                card.appendChild(header)
+
+                const fans = Number(run.fans || 0).toLocaleString()
+                const fanClass = (run.fanClass || "").replace(/_/g, " ")
+                const wins = run.raceWins || 0
+                const losses = run.raceLosses || 0
+                const completedAt = run.completedAtMs ? new Date(run.completedAtMs).toLocaleString() : "Unknown time"
+                const meta = document.createElement("div")
+                meta.className = "legacy-parent-meta"
+                meta.textContent =
+                    `${completedAt} · ${run.scenario || "Unknown scenario"} · ${fans} fans${fanClass ? ` (${fanClass})` : ""} · ${wins}W/${losses}L` +
+                    (run.careerRating != null ? ` · Rating ${run.careerRating}` : "")
+                card.appendChild(meta)
+
+                const stats = run.stats || {}
+                const statsEl = document.createElement("div")
+                statsEl.className = "legacy-parent-sparks"
+                statsEl.innerHTML =
+                    `<span class="label">Stats:</span>Spd ${stats.speed ?? "-"} / Sta ${stats.stamina ?? "-"} / Pow ${stats.power ?? "-"} / Guts ${stats.guts ?? "-"} / Wit ${stats.wit ?? "-"}`
+                card.appendChild(statsEl)
 
                 return card
             }
