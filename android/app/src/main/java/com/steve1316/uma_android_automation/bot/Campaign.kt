@@ -2386,6 +2386,8 @@ abstract class Campaign(game: Game) : Task(game) {
                     val raceStats = SmartRaceSolverIntegration.snapshotRaceStats()
                     game.taskEndDiscordEmbed =
                         ParentRunSummary.buildSimpleDiscordEmbed(trainee, game.scenario, elapsedMs, raceStats, harvestResult)
+                    CareerRunArchive.append(game.myContext, trainee, game.scenario, elapsedMs, raceStats)
+                    LogStreamServer.broadcastCareerRunUpdate()
                 }
 
                 if (ParentFarmingRunLoop.tryContinueAfterCareerEnd(this, game, summaryInput)) {

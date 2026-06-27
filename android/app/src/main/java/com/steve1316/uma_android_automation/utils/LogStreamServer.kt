@@ -11,6 +11,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.StartModule
+import com.steve1316.uma_android_automation.bot.CareerRunArchive
 import com.steve1316.uma_android_automation.bot.ParentFarmingSessionState
 import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import io.ktor.http.ContentType
@@ -240,6 +241,13 @@ object LogStreamServer {
          * no payload since those REST endpoints are already the source of truth the viewer reads from.
          */
         object BroadcastParentFarmingUpdate : LogAction()
+
+        /**
+         * Notifies all connected clients that the career run archive changed, so the viewer can
+         * refetch [CareerRunArchive] over REST. Carries no payload for the same reason as
+         * [BroadcastParentFarmingUpdate].
+         */
+        object BroadcastCareerRunUpdate : LogAction()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -898,6 +906,32 @@ object LogStreamServer {
     }
 
     /**
+     * Notifies connected clients that the saved career run archive changed. Called by `Campaign.kt`
+     * after [CareerRunArchive.append] for regular (non-parent-farming) runs, so the Career Runs tab
+     * can refetch live instead of only on manual refresh or tab switch. No-op when the server isn't running.
+     */
+    fun broadcastCareerRunUpdate() {
+        if (!isRunning) return
+        serverScope?.launch {
+            actionChannel?.send(LogAction.BroadcastCareerRunUpdate)
+        }
+    }
+
+    /**
+     * Sends the `CAREER_UPDATE` framing message to all currently connected clients. Carries no
+     * payload — clients are expected to refetch `/career-run-archive`.
+     */
+    private suspend fun handleCareerRunUpdateBroadcast() {
+        if (clients.isEmpty()) return
+        for (client in clients) {
+            try {
+                client.send(Frame.Text("CAREER_UPDATE"))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
      * Processes a broadcast action by updating the buffer and sending to all active clients.
      *
      * Called by the background worker.
@@ -1170,6 +1204,10 @@ object LogStreamServer {
 
                             is LogAction.BroadcastParentFarmingUpdate -> {
                                 handleParentFarmingUpdateBroadcast()
+                            }
+
+                            is LogAction.BroadcastCareerRunUpdate -> {
+                                handleCareerRunUpdateBroadcast()
                             }
                         }
                     }
@@ -1512,6 +1550,20 @@ object LogStreamServer {
                                 Log.e(TAG, "[ERROR] /parent-farming-session:: Failed to read parent farming session state: ${e.message}")
                                 call.respondText(
                                     """{"error":"Failed to read parent farming session state."}""",
+                                    ContentType.Application.Json,
+                                    HttpStatusCode.InternalServerError,
+                                )
+                            }
+                        }
+
+                        // Serve the saved regular (non-parent-farming) career run archive as raw JSON.
+                        get("/career-run-archive") {
+                            try {
+                                call.respondText(CareerRunArchive.readJson(context), ContentType.Application.Json)
+                            } catch (e: Exception) {
+                                Log.e(TAG, "[ERROR] /career-run-archive:: Failed to read career run archive: ${e.message}")
+                                call.respondText(
+                                    """{"error":"Failed to read career run archive."}""",
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
