@@ -1,18 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.71</latestVersion>
-    <latestVersionCode>161</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.71</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.71/v5.9.71-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.71/v5.9.71-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.72</latestVersion>
+    <latestVersionCode>162</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.72</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.72/v5.9.72-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.72/v5.9.72-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.71 - Live parent farming session updates
+v5.9.72 - Career Run Archive
 
 Added
 -----
-- New /parent-farming-session API exposes the in-progress multi-run session (runs completed, best quality grade/score, borrow rotation offset).
-- The Legacy Parents tab in the Remote Log Viewer now shows a live session footer with multi-run progress.
-- The Remote Log Viewer now pushes live updates over its WebSocket whenever a parent run completes or the session state changes, so the Legacy Parents tab refreshes automatically instead of only on manual refresh or tab switch.
+- New Career Runs tab in the Remote Log Viewer archives completed regular (non-parent-farming) career runs: trainee name, scenario, career rank/rating, race record, fans, skill points, and final stats.
+- The Remote Log Viewer now pushes a live update over its WebSocket whenever a regular career run completes, so the Career Runs tab refreshes automatically instead of only on manual refresh or tab switch.
 
     </releaseNotes>
   </update>
