@@ -3,6 +3,8 @@ package com.steve1316.uma_android_automation.bot
 import android.content.Context
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.solver.RaceOutcome
+import com.steve1316.uma_android_automation.bot.solver.RaceRecord
 import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
@@ -27,11 +29,18 @@ object CareerRunArchive {
     fun archiveFile(context: Context): File = File(context.filesDir, FILE_NAME)
 
     /** Appends a run record. Newest entries are stored first. */
-    fun append(context: Context, trainee: Trainee, scenario: String, elapsedMs: Long?, raceStats: RunRaceStats) {
+    fun append(
+        context: Context,
+        trainee: Trainee,
+        scenario: String,
+        elapsedMs: Long?,
+        raceStats: RunRaceStats,
+        raceRecords: List<RaceRecord> = emptyList(),
+    ) {
         try {
             val file = archiveFile(context)
             val records = readArray(file)
-            val entry = recordFromTrainee(trainee, scenario, elapsedMs, raceStats)
+            val entry = recordFromTrainee(trainee, scenario, elapsedMs, raceStats, raceRecords)
             val updated = JSONArray()
             updated.put(entry)
             for (i in 0 until records.length()) {
@@ -57,7 +66,13 @@ object CareerRunArchive {
         }.onFailure { MessageLog.w(TAG, "Failed to clear career run archive: ${it.message}") }
     }
 
-    private fun recordFromTrainee(trainee: Trainee, scenario: String, elapsedMs: Long?, raceStats: RunRaceStats): JSONObject =
+    private fun recordFromTrainee(
+        trainee: Trainee,
+        scenario: String,
+        elapsedMs: Long?,
+        raceStats: RunRaceStats,
+        raceRecords: List<RaceRecord> = emptyList(),
+    ): JSONObject =
         JSONObject()
             .put("id", UUID.randomUUID().toString())
             .put("completedAtMs", System.currentTimeMillis())
@@ -67,6 +82,7 @@ object CareerRunArchive {
             .put("careerRating", trainee.careerRating)
             .put("raceWins", raceStats.wins)
             .put("raceLosses", raceStats.losses)
+            .put("raceRecords", raceRecordsJson(raceRecords))
             .put("elapsedMs", elapsedMs ?: -1)
             .put("fans", trainee.fans)
             .put("fanClass", trainee.fanCountClass.name)
@@ -83,6 +99,20 @@ object CareerRunArchive {
             .put("surfaceAptitudes", aptitudesJson(TrackSurface.entries) { trainee.trackSurfaceAptitudes[it]?.name ?: "" })
             .put("distanceAptitudes", aptitudesJson(TrackDistance.entries) { trainee.trackDistanceAptitudes[it]?.name ?: "" })
             .put("styleAptitudes", aptitudesJson(RunningStyle.entries) { trainee.runningStyleAptitudes[it]?.name ?: "" })
+
+    private fun raceRecordsJson(records: List<RaceRecord>): JSONArray {
+        val arr = JSONArray()
+        for (record in records) {
+            arr.put(
+                JSONObject()
+                    .put("name", record.name)
+                    .put("classYear", record.classYear)
+                    .put("turnNumber", record.turnNumber)
+                    .put("won", record.outcome == RaceOutcome.WIN),
+            )
+        }
+        return arr
+    }
 
     private fun <T : Enum<T>> aptitudesJson(entries: List<T>, value: (T) -> String): JSONObject {
         val obj = JSONObject()

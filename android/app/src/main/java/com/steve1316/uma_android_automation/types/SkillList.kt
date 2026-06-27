@@ -247,21 +247,24 @@ class SkillList(private val game: Game, private val campaign: Campaign) {
      */
     private fun extractText(bitmap: Bitmap): String {
         try {
-            // Perform OCR using the ML Kit engine.
-            val detectedText =
+            // Perform OCR using the ML Kit engine. Thresholding is skipped on the first attempt since it performs
+            // best on these entries untouched, but a retry (if enabled) opts into thresholding with an increasing
+            // value as a fallback when the untouched image yields a misread.
+            return game.imageUtils.retryOcrOnMisread(isAcceptable = { it.isNotBlank() }) { thresholdIncrement ->
                 game.imageUtils.performOCROnRegion(
                     bitmap,
                     0,
                     0,
                     bitmap.width,
                     bitmap.height,
-                    useThreshold = false,
+                    useThreshold = thresholdIncrement > 0.0,
                     useGrayscale = true,
                     scale = 2.0,
                     ocrEngine = "mlKit",
                     debugName = "analyzeSkillListEntry::extractText",
+                    thresholdIncrement = thresholdIncrement,
                 )
-            return detectedText
+            }
         } catch (e: Exception) {
             MessageLog.e(TAG, "[ERROR] extractText:: Exception during text extraction: ${e.message}")
             return ""

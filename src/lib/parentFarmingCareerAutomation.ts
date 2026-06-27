@@ -4,6 +4,7 @@ import { findSupportBorrowPreset } from "./supportBorrowPresets"
 import { buildLimitBreakResolverFromSettings } from "./supportCardLimitBreaks"
 import { rankSupportsForGoal } from "./supportDeckScoring"
 import { parseOwnedSupportCards } from "./recommendSupportDeck"
+import { gradeFromScore } from "./parentQuality"
 
 /** Racing flags for hands-off career selection (parents → start). */
 export const PARENT_FARMING_CAREER_AUTOMATION_FLAGS: Pick<
@@ -85,7 +86,7 @@ export const getCareerAutomationSteps = (settings: Settings): CareerAutomationSt
         const count = racing.parentFarmingMultiRunCount
         let detail = count <= 0 ? "Runs until you stop the bot" : `${count} career${count === 1 ? "" : "s"} per bot session`
         if (racing.enableParentFarmingStopOnQualityTarget) {
-            detail += ` · stop at quality ≥ ${racing.parentFarmingQualityTargetScore}`
+            detail += ` · stop at grade ≥ ${gradeFromScore(racing.parentFarmingQualityTargetScore)}`
         }
         steps.push({
             id: "multi-run",

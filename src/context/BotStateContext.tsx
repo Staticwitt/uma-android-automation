@@ -73,6 +73,8 @@ export interface Settings {
         enablePerDistanceStrategy: boolean
         juniorYearPerDistanceStrategies: Record<string, string>
         originalPerDistanceStrategies: Record<string, string>
+        /** JSON array of named `RaceStrategyPreset` bundles the user saved for quick manual reuse. */
+        raceStrategyPresets: string
         // Smart Race Solver — beam-search-based race scheduler driven by epithet completions.
         // The static bundled assets (`racesData`, `epithetsData`, `characterPresetsData`) are
         // intentionally NOT in this interface: they're written once at bootstrap by
@@ -398,6 +400,7 @@ export const defaultSettings: Settings = {
         enablePerDistanceStrategy: false,
         juniorYearPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
         originalPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
+        raceStrategyPresets: "[]",
         enableSmartRaceSolver: false,
         enableAutoDetectCharacterPreset: false,
         autoDetectCharacterPresetConfidence: 85,

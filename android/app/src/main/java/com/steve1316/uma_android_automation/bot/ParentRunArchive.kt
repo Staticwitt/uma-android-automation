@@ -3,6 +3,8 @@ package com.steve1316.uma_android_automation.bot
 import android.content.Context
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.solver.RaceOutcome
+import com.steve1316.uma_android_automation.bot.solver.RaceRecord
 import com.steve1316.uma_android_automation.types.RunningStyle
 import com.steve1316.uma_android_automation.types.TrackDistance
 import com.steve1316.uma_android_automation.types.TrackSurface
@@ -154,6 +156,7 @@ object ParentRunArchive {
             .put("targetEpithetMultiplier", input.targetEpithetMultiplier)
             .put("raceWins", input.raceStats.wins)
             .put("raceLosses", input.raceStats.losses)
+            .put("raceRecords", raceRecordsJson(input.raceRecords))
             .put("elapsedMs", input.elapsedMs ?: -1)
             .put("trainingBias", input.trainingBias)
             .put("fans", trainee.fans)
@@ -182,6 +185,20 @@ object ParentRunArchive {
             .put("harvestSummary", input.harvestSummary)
             .put("harvestVerdict", input.harvestVerdict)
             .put("harvestFactors", JSONArray(input.harvestFactors))
+    }
+
+    private fun raceRecordsJson(records: List<RaceRecord>): JSONArray {
+        val arr = JSONArray()
+        for (record in records) {
+            arr.put(
+                JSONObject()
+                    .put("name", record.name)
+                    .put("classYear", record.classYear)
+                    .put("turnNumber", record.turnNumber)
+                    .put("won", record.outcome == RaceOutcome.WIN),
+            )
+        }
+        return arr
     }
 
     private fun <T : Enum<T>> aptitudesJson(entries: List<T>, value: (T) -> String): JSONObject {

@@ -206,6 +206,24 @@ data class RaceLossRecord(
 )
 
 /**
+ * Combined win/loss entry for a single race, used to archive a per-race breakdown of a completed
+ * run (see [com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration.snapshotRaceRecords]).
+ *
+ * @property raceKey Race key (matches [RaceCandidate.key]).
+ * @property name Display name of the race (matches [RaceCandidate.name]).
+ * @property classYear Class-year prefix at the time of the race.
+ * @property turnNumber Turn the race occurred on.
+ * @property outcome Whether the trainee won or lost this race.
+ */
+data class RaceRecord(
+    val raceKey: String,
+    val name: String,
+    val classYear: String,
+    val turnNumber: TurnNumber,
+    val outcome: RaceOutcome,
+)
+
+/**
  * Immutable snapshot of everything the solver needs to compute a [Schedule].
  *
  * Re-solves are triggered by constructing a new [SolverState] (e.g. with a freshly-dead

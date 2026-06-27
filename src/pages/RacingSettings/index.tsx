@@ -8,9 +8,11 @@ import { BotMetaContext, RacingContext, defaultSettings, Settings, useSettingsSn
 import { getParentFarmingActiveLabels } from "../../lib/parentFarmingDrift"
 import { formatCareerAutomationSummary } from "../../lib/parentFarmingCareerAutomation"
 import { refreshParentFarmingSettings } from "../../lib/parentFarmingPreset"
+import { parseRaceStrategyPresets, applyRaceStrategyPreset, saveRaceStrategyPreset, deleteRaceStrategyPreset, type RaceStrategyPreset } from "../../lib/raceStrategyPresets"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
+import { RaceStrategyPresetManager } from "../../components/RaceStrategyPresetManager"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { SettingRow } from "../../components/ui/setting-row"
 import { Callout } from "../../components/ui/callout"
@@ -50,7 +52,7 @@ const RacingSettings = () => {
     const [juniorPickerOpen, setJuniorPickerOpen] = useState(false)
     const [originalPickerOpen, setOriginalPickerOpen] = useState(false)
 
-    const racingSettings = { ...defaultSettings.racing, ...racing }
+    const racingSettings = useMemo(() => ({ ...defaultSettings.racing, ...racing }), [racing])
     const {
         enableParentFarmingMode,
         enableFarmingFans,
@@ -69,11 +71,14 @@ const RacingSettings = () => {
         enablePerDistanceStrategy,
         juniorYearPerDistanceStrategies,
         originalPerDistanceStrategies,
+        raceStrategyPresets,
         enableUserInGameRaceAgenda,
         limitRacesToInGameAgenda,
         skipSummerTrainingForAgenda,
         customAgendaTitle,
     } = racingSettings
+
+    const savedRaceStrategyPresets = useMemo(() => parseRaceStrategyPresets(raceStrategyPresets), [raceStrategyPresets])
 
     const parentFarmingSummary = useMemo(() => {
         if (!enableParentFarmingMode) return "Off — tap to configure parent runs"
@@ -114,6 +119,21 @@ const RacingSettings = () => {
             }
         },
         [updateRacing, setSettings, settings.racing.enableParentFarmingLockPreset, settings.racing.enableParentFarmingMode],
+    )
+
+    const handleApplyRaceStrategyPreset = useCallback(
+        (preset: RaceStrategyPreset) => updateRacing(applyRaceStrategyPreset(preset)),
+        [updateRacing],
+    )
+
+    const handleSaveRaceStrategyPreset = useCallback(
+        (label: string) => updateRacingSetting("raceStrategyPresets", saveRaceStrategyPreset(raceStrategyPresets, racingSettings, label)),
+        [updateRacingSetting, raceStrategyPresets, racingSettings],
+    )
+
+    const handleDeleteRaceStrategyPreset = useCallback(
+        (key: string) => updateRacingSetting("raceStrategyPresets", deleteRaceStrategyPreset(raceStrategyPresets, key)),
+        [updateRacingSetting, raceStrategyPresets],
     )
 
     const styles = useMemo(
@@ -362,6 +382,16 @@ const RacingSettings = () => {
                                     </View>
                                 </>
                             )}
+
+                            <View style={{ padding: SPACING.md, paddingTop: SPACING.lg, borderTopWidth: 1, borderTopColor: colors.borderHair, marginTop: SPACING.sm }}>
+                                <Text style={[TYPE.monoLabel, { color: colors.textMuted, marginBottom: SPACING.sm }]}>SAVED PRESETS</Text>
+                                <RaceStrategyPresetManager
+                                    presets={savedRaceStrategyPresets}
+                                    onApply={handleApplyRaceStrategyPreset}
+                                    onSave={handleSaveRaceStrategyPreset}
+                                    onDelete={handleDeleteRaceStrategyPreset}
+                                />
+                            </View>
                         </Section>
 
                         <Section label="In-Game Race Agenda">
