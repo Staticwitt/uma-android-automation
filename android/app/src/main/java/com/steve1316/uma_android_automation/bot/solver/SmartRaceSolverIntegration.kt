@@ -923,7 +923,7 @@ object SmartRaceSolverIntegration {
             if (liveRunActive && cachedSchedule != null) {
                 cachedSchedule!!
             } else {
-                SmartRaceSolver.solve(state)
+                solve(state)
             }
         val payload = JSONObject(serializeSchedule(schedule, state.racesByTurn))
         if (liveRunActive) {
@@ -1095,12 +1095,15 @@ object SmartRaceSolverIntegration {
         if (reuseCached) {
             cachedSchedule?.let { return it }
         }
-        return SmartRaceSolver.solve(newSolverState(currentTurn, scenario, epithets, racesByTurn)).also {
+        return solve(newSolverState(currentTurn, scenario, epithets, racesByTurn)).also {
             cachedSchedule = it
             cachedScheduleTurn = currentTurn
             cachedContributions = null
         }
     }
+
+    /** Runs [FixedSchedule.activeSchedule] when a fixed schedule preset is selected, otherwise falls through to [SmartRaceSolver.solve]. */
+    private fun solve(state: SolverState): Schedule = FixedSchedule.activeSchedule() ?: SmartRaceSolver.solve(state)
 
     /**
      * After a confirmed loss, marks epithets that can no longer be completed and adds them to [runtimeDeadEpithets].
@@ -1185,7 +1188,7 @@ object SmartRaceSolverIntegration {
                 racesByTurn = racesByTurn,
                 raceHistorySnapshot = emptyList(),
             )
-        val schedule = SmartRaceSolver.solve(state)
+        val schedule = solve(state)
         cachedSchedule = schedule
         cachedScheduleTurn = currentTurn
         cachedContributions = null
