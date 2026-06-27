@@ -3,6 +3,7 @@ package com.steve1316.uma_android_automation.bot
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.MainActivity
+import com.steve1316.uma_android_automation.bot.solver.RaceRecord
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.bot.solver.TurnNumber
 import com.steve1316.uma_android_automation.types.RunningStyle
@@ -35,6 +36,7 @@ data class ParentRunSummaryInput(
     val minimumRaceGapTurns: Int,
     val targetEpithetMultiplier: Double,
     val raceStats: RunRaceStats,
+    val raceRecords: List<RaceRecord> = emptyList(),
     val elapsedMs: Long?,
     val trainingBias: String = "",
     val sessionId: String = "",
@@ -107,6 +109,7 @@ object ParentRunSummary {
             minimumRaceGapTurns = weights.minimumRaceGapTurns,
             targetEpithetMultiplier = weights.targetEpithetMultiplier,
             raceStats = SmartRaceSolverIntegration.snapshotRaceStats(),
+            raceRecords = SmartRaceSolverIntegration.snapshotRaceRecords(),
             elapsedMs = elapsedMs,
             trainingBias = formatTrainingBiasFromSettings(),
             sessionId = ParentFarmingRunLoop.sessionId(),

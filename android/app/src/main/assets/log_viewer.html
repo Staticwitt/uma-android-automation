@@ -2409,6 +2409,32 @@
                 color: var(--text-muted);
             }
 
+            .legacy-parent-races {
+                margin-top: 8px;
+                font-size: 12px;
+            }
+
+            .legacy-parent-races summary {
+                cursor: pointer;
+                color: var(--text-muted);
+                font-weight: 600;
+            }
+
+            .legacy-parent-races ul {
+                list-style: none;
+                margin: 6px 0 0;
+                padding: 0;
+                line-height: 1.6;
+            }
+
+            .legacy-parent-races .win {
+                color: var(--accent-green, #4ade80);
+            }
+
+            .legacy-parent-races .loss {
+                color: var(--accent-red, #f87171);
+            }
+
             .legacy-parents-session-footer {
                 display: flex;
                 align-items: center;
@@ -5533,6 +5559,37 @@
             }
 
             /**
+             * Builds a collapsible race-by-race breakdown (turn, race name, win/loss) shared by the
+             * Legacy Parents and Career Runs cards. Returns null when the run has no per-race data
+             * (e.g. archived before this feature was added).
+             * @param {Array} raceRecords - Entries from the archive's `raceRecords` field: {name, classYear, turnNumber, won}.
+             * @returns {HTMLElement|null}
+             */
+            function renderRaceRecordsSection(raceRecords) {
+                if (!Array.isArray(raceRecords) || raceRecords.length === 0) return null
+                const sorted = [...raceRecords].sort((a, b) => (a.turnNumber || 0) - (b.turnNumber || 0))
+
+                const details = document.createElement("details")
+                details.className = "legacy-parent-races"
+
+                const summary = document.createElement("summary")
+                summary.textContent = `Race-by-race (${sorted.length})`
+                details.appendChild(summary)
+
+                const list = document.createElement("ul")
+                list.innerHTML = sorted
+                    .map((r) => {
+                        const outcomeClass = r.won ? "win" : "loss"
+                        const outcomeLabel = r.won ? "WIN" : "LOSE"
+                        return `<li>Turn ${r.turnNumber ?? "?"}: ${escapeHtml(r.name || "Unknown race")} <span class="${outcomeClass}">${outcomeLabel}</span></li>`
+                    })
+                    .join("")
+                details.appendChild(list)
+
+                return details
+            }
+
+            /**
              * Builds a single legacy parent card: name, quality grade, fans/race record, real sparks, and epithet progress.
              * @param {Object} run - One entry from the /parent-run-archive response.
              * @returns {HTMLElement} The card element.
@@ -5593,6 +5650,9 @@
                     epithetsEl.innerHTML = html
                     card.appendChild(epithetsEl)
                 }
+
+                const racesSection = renderRaceRecordsSection(run.raceRecords)
+                if (racesSection) card.appendChild(racesSection)
 
                 return card
             }
@@ -5752,6 +5812,9 @@
                 statsEl.innerHTML =
                     `<span class="label">Stats:</span>Spd ${stats.speed ?? "-"} / Sta ${stats.stamina ?? "-"} / Pow ${stats.power ?? "-"} / Guts ${stats.guts ?? "-"} / Wit ${stats.wit ?? "-"}`
                 card.appendChild(statsEl)
+
+                const racesSection = renderRaceRecordsSection(run.raceRecords)
+                if (racesSection) card.appendChild(racesSection)
 
                 return card
             }

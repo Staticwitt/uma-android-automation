@@ -236,6 +236,16 @@ object SmartRaceSolverIntegration {
             losses = synchronized(raceLosses) { raceLosses.size },
         )
 
+    /** Snapshot of every confirmed race this run, wins and losses combined and ordered by turn, for archiving a per-race breakdown. */
+    fun snapshotRaceRecords(): List<RaceRecord> {
+        val wins = synchronized(raceHistory) { raceHistory.toList() }
+        val losses = synchronized(raceLosses) { raceLosses.toList() }
+        val records =
+            wins.map { RaceRecord(it.raceKey, it.name, it.classYear, it.turnNumber, RaceOutcome.WIN) } +
+                losses.map { RaceRecord(it.raceKey, it.name, it.classYear, it.turnNumber, RaceOutcome.LOSE) }
+        return records.sortedBy { it.turnNumber }
+    }
+
     /** Clears in-memory race history and pending state. Call at the start of a fresh bot run. */
     fun reset() {
         synchronized(raceHistory) { raceHistory.clear() }
