@@ -35,6 +35,7 @@ import {
     enableParentFarmingCharacterBundle,
 } from "../../lib/parentFarmingResolver"
 import { detectParentFarmingDrift } from "../../lib/parentFarmingDrift"
+import { gradeFromScore } from "../../lib/parentQuality"
 import { buildLimitBreakResolverFromSettings, parseSupportCardLimitBreaks } from "../../lib/supportCardLimitBreaks"
 import { assessParentFarmingFeasibility, formatFeasibilityIssues } from "../../lib/parentFarmingFeasibility"
 import {
@@ -61,6 +62,7 @@ import { DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS, type LegacyParentStatAptit
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
+import SelectButton from "../../components/SelectButton"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { Callout } from "../../components/ui/callout"
 import { SettingRow } from "../../components/ui/setting-row"
@@ -96,6 +98,14 @@ const PARENT_FARMING_SECTION_TABS: TabStripItem[] = [
     { key: "setup", label: "Setup" },
     { key: "automation", label: "Automation" },
     { key: "tune", label: "Tune" },
+]
+
+/** Quality-target stop thresholds, expressed as grade letters mapped to their canonical minimum score. */
+const QUALITY_TARGET_GRADE_OPTIONS = [
+    { value: "60", label: "C (60+)" },
+    { value: "70", label: "B (70+)" },
+    { value: "80", label: "A (80+)" },
+    { value: "90", label: "S (90+)" },
 ]
 
 /**
@@ -1317,8 +1327,8 @@ const ParentFarmingSettings = () => {
                                             title="Stop on quality target"
                                             description={
                                                 enableParentFarmingStopOnQualityTarget
-                                                    ? `Stops when parent quality ≥ ${parentFarmingQualityTargetScore} (A grade by default).`
-                                                    : "End the multi-run session early when a run reaches the quality score target."
+                                                    ? `Stops when a run's quality grade reaches ${gradeFromScore(parentFarmingQualityTargetScore)} or better.`
+                                                    : "End the multi-run session early when a run reaches the quality grade target."
                                             }
                                             right={
                                                 <Switch
@@ -1330,20 +1340,26 @@ const ParentFarmingSettings = () => {
                                             }
                                         />
                                         {enableParentFarmingStopOnQualityTarget && (
-                                            <CustomSlider
-                                                searchId="parent-farming-quality-target-score"
-                                                searchTitle="Quality target score"
-                                                searchDescription="Minimum parent quality score (0–100) to stop multi-run early."
-                                                label="Quality target (0–100)"
-                                                min={60}
-                                                max={95}
-                                                step={5}
-                                                value={parentFarmingQualityTargetScore}
-                                                placeholder={defaultSettings.racing.parentFarmingQualityTargetScore}
-                                                onValueChange={(value) => updateRacingSetting("parentFarmingQualityTargetScore", value)}
-                                                showValue
-                                                showLabels
-                                                description="S = 90+, A = 80+, B = 70+. Compare scores in run archive."
+                                            <SettingRow
+                                                id="parent-farming-quality-target-grade"
+                                                title="Quality target grade"
+                                                searchTitle="Quality target grade"
+                                                searchDescription="Minimum parent quality grade to stop multi-run early."
+                                                description="Lowest grade (S/A/B/C) that ends the session as soon as a run hits it."
+                                                right={
+                                                    <SelectButton
+                                                        options={QUALITY_TARGET_GRADE_OPTIONS}
+                                                        value={String(
+                                                            QUALITY_TARGET_GRADE_OPTIONS.find(
+                                                                (option) => option.label[0] === gradeFromScore(parentFarmingQualityTargetScore),
+                                                            )?.value ?? defaultSettings.racing.parentFarmingQualityTargetScore,
+                                                        )}
+                                                        onValueChange={(value) =>
+                                                            updateRacingSetting("parentFarmingQualityTargetScore", Number(value))
+                                                        }
+                                                        placeholder="Select grade"
+                                                    />
+                                                }
                                             />
                                         )}
                                         <SettingRow

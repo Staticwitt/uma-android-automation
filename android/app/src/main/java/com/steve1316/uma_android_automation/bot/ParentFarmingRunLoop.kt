@@ -135,7 +135,7 @@ object ParentFarmingRunLoop {
                 "Parent run $sessionRunsCompleted quality: ${quality.grade} (${quality.score}/100).${sessionBestQualitySummary().let { if (it.isNotEmpty()) " Session best: $it." else "" }}",
             )
             if (qualityTargetEnabled() && quality.score >= qualityTargetScore()) {
-                MessageLog.i(TAG, "Quality target ${qualityTargetScore()} reached; stopping multi-run.")
+                MessageLog.i(TAG, "Quality target grade ${ParentRunQuality.gradeFromScore(qualityTargetScore())} reached; stopping multi-run.")
                 ParentDiscordNotifier.sendQualityTargetReached(quality.score, quality.grade, sessionRunsCompleted)
                 finalizeSession(game)
                 return false

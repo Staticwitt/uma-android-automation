@@ -5,6 +5,7 @@ import type { Settings } from "../context/BotStateContext"
 import { formatSparkStrategyLabel } from "../lib/sparkSelection"
 import { buildEpithetTiersFromRacing, formatEpithetTierSummary } from "../lib/epithetTiers"
 import { formatLegacyParentStrategyLabel } from "../lib/legacyParentSelection"
+import { gradeFromScore } from "../lib/parentQuality"
 import { ParentFarmingSolverPreview } from "./ParentFarmingSolverPreview"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
@@ -118,7 +119,7 @@ export const ParentFarmingGoalProgressCard = ({
             </Text>
             <Text style={styles.row}>Epithet tiers: {epithetTierSummary}</Text>
             {racing.enableParentFarmingStopOnQualityTarget ? (
-                <Text style={styles.row}>Multi-run quality target: ≥ {racing.parentFarmingQualityTargetScore} (stop early)</Text>
+                <Text style={styles.row}>Multi-run quality target: grade ≥ {gradeFromScore(racing.parentFarmingQualityTargetScore)} (stop early)</Text>
             ) : null}
             <Text style={styles.row}>
                 Training: {training.preferredDistanceOverride === "Default" ? "Auto" : training.preferredDistanceOverride || "Auto"} · stat targets{" "}
