@@ -82,6 +82,8 @@ export interface Settings {
         // through React state inflated re-renders by ~160 KB and made every toggle re-write the
         // blobs to SQLite via the auto-save effect.
         enableSmartRaceSolver: boolean
+        /** Selects a hand-authored turn-by-turn career plan that bypasses the solver entirely. Empty string = disabled (normal solver behavior). */
+        fixedSchedule: string
         /** Auto-select a character preset by fuzzy-matching the OCR'd trainee name, when no preset is manually set. */
         enableAutoDetectCharacterPreset: boolean
         /** Minimum Jaro-Winkler match confidence (0-100) required for [enableAutoDetectCharacterPreset] to apply a match. */
@@ -402,6 +404,7 @@ export const defaultSettings: Settings = {
         originalPerDistanceStrategies: { Short: "Default", Mile: "Default", Medium: "Default", Long: "Default" },
         raceStrategyPresets: "[]",
         enableSmartRaceSolver: false,
+        fixedSchedule: "",
         enableAutoDetectCharacterPreset: false,
         autoDetectCharacterPresetConfidence: 85,
         smartRaceSolverCharacterPreset: "Special Week",

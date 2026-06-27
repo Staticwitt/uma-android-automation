@@ -49,6 +49,7 @@ import { SOLVER_DATA_BUNDLE_REVISION } from "../../lib/solver/dataBundleRevision
 import { copyToClipboard } from "../../lib/utils"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomButton from "../../components/CustomButton"
+import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
 import { Callout } from "../../components/ui/callout"
 import { Input } from "../../components/ui/input"
@@ -99,6 +100,12 @@ const SOLVER_SECTION_TABS: TabStripItem[] = [
     { key: "preview", label: "Preview" },
 ]
 
+// Keys must match the preset keys registered in `FixedSchedule.kt`'s PRESETS map.
+const FIXED_SCHEDULE_OPTIONS = [
+    { value: "", label: "None (use solver)" },
+    { value: "throne-x-sirius", label: "Throne x Sirius" },
+]
+
 /**
  * Smart Race Solver settings page. Lets the user configure aptitudes, target/forced epithets,
  * scoring weights, and a calendar preview with manual locks for the beam-search race scheduler.
@@ -127,6 +134,7 @@ const SmartRaceSolverSettings = () => {
     const racingSettings = { ...defaultSettings.racing, ...racing }
     const {
         enableSmartRaceSolver,
+        fixedSchedule,
         enableParentFarmingMode,
         enableParentFarmingLockPreset,
         enableAutoDetectCharacterPreset,
@@ -1447,6 +1455,32 @@ const SmartRaceSolverSettings = () => {
                                 description="Plans every turn of the career to maximize score by targeting epithet rewards. The bot only races when the solver picks a race; other turns become training or rest."
                                 right={<Switch checked={enableSmartRaceSolver} onCheckedChange={(checked) => updateRacingSetting("enableSmartRaceSolver", checked)} />}
                             />
+
+                            <SearchableItem
+                                id="fixed-schedule"
+                                condition={enableSmartRaceSolver}
+                                parentId="enable-smart-race-solver"
+                                title="Fixed Schedule"
+                                description="Replaces the solver's turn-by-turn decisions with a hand-authored career plan. Recreation turns still react to whatever recovery option the game offers; partner targeting isn't supported."
+                            >
+                                <SettingRow
+                                    id="fixed-schedule-row"
+                                    title="Fixed Schedule"
+                                    description="Replaces the solver's turn-by-turn decisions with a hand-authored career plan. Recreation turns still react to whatever recovery option the game offers; partner targeting isn't supported."
+                                    right={
+                                        <CustomSelect
+                                            searchId="fixed-schedule-select"
+                                            searchTitle="Fixed Schedule"
+                                            searchDescription="Selects a hand-authored turn-by-turn career plan that bypasses the solver entirely."
+                                            width={180}
+                                            options={FIXED_SCHEDULE_OPTIONS}
+                                            value={fixedSchedule || ""}
+                                            onValueChange={(value) => updateRacingSetting("fixedSchedule", value ?? "")}
+                                            placeholder="None (use solver)"
+                                        />
+                                    }
+                                />
+                            </SearchableItem>
 
                             <SearchableItem
                                 id="apply-general-solver-preset"
