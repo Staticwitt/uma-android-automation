@@ -1,23 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.73</latestVersion>
-    <latestVersionCode>163</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.73</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.73/v5.9.73-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.73/v5.9.73-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.74</latestVersion>
+    <latestVersionCode>164</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.74</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.74/v5.9.74-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.74/v5.9.74-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.73 - Archive Analytics, Race Strategy Presets, and OCR Reliability
+v5.9.74 - Fixed Schedule Presets
 
 Added
 -----
-- Stats trend chart, CSV export, search/filter, and an in-app changelog viewer for the Career Runs and Legacy Parents archives in the Remote Log Viewer.
-- Per-race breakdown view in the archives.
-- Race strategy presets.
-- Configurable stop conditions for career runs.
-
-Improved
---------
-- OCR auto-retry on misread (previously limited to training event recognition) now also covers training level, race name, and skill name/point recognition.
+- Fixed Schedule mode for the Smart Race Solver: follow a hand-authored turn-by-turn career plan instead of the solver's dynamic decisions. Ships with a "Throne x Sirius" preset.
 
     </releaseNotes>
   </update>
