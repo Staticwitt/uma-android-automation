@@ -1358,8 +1358,18 @@ class Trackblazer(game: Game) : Campaign(game) {
         // Energy floor for always train priorities to avoid wasting items.
         val canSafelyTrain = trainee.energy > forceTrainEnergyFloor
 
-        // Summer Training: Train during July and August in Classic/Senior.
-        if (canSafelyTrain && date.isSummer() && !(racing.skipSummerTrainingForAgenda && racing.enableUserInGameRaceAgenda)) {
+        // Peeked once up front so the Summer Training override below can defer to a race the solver/Fixed Schedule already
+        // committed to (e.g. via allowSummerRacing or a hand-authored plan) instead of silently training over it.
+        val solverDecision =
+            if (racing.enableSmartRaceSolver && !racing.enableForceRacing) {
+                SmartRaceSolverIntegration.peekDecisionForTurn(currentTurn = date.day, scenario = game.scenario)
+            } else {
+                null
+            }
+        val solverPlannedRaceThisTurn = solverDecision is com.steve1316.uma_android_automation.bot.solver.Decision.RaceDecision
+
+        // Summer Training: Train during July and August in Classic/Senior, unless the solver/Fixed Schedule explicitly planned a race this turn.
+        if (canSafelyTrain && date.isSummer() && !solverPlannedRaceThisTurn && !(racing.skipSummerTrainingForAgenda && racing.enableUserInGameRaceAgenda)) {
             MessageLog.i(TAG, "[TRACKBLAZER] It is Summer. Prioritizing training.")
             decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Trackblazer: Summer prioritizes training")
             return MainScreenAction.TRAIN
@@ -1440,7 +1450,7 @@ class Trackblazer(game: Game) : Campaign(game) {
 
         // Smart Race Solver pre-check: race when planned; honor explicit Rest; otherwise fall through to training/rest.
         if (racing.enableSmartRaceSolver && !racing.enableForceRacing) {
-            when (val solverDecision = SmartRaceSolverIntegration.peekDecisionForTurn(currentTurn = date.day, scenario = game.scenario)) {
+            when (solverDecision) {
                 is com.steve1316.uma_android_automation.bot.solver.Decision.RaceDecision -> {
                     MessageLog.i(TAG, "[TRACKBLAZER] Smart Race Solver has \"${solverDecision.raceKey}\" planned for turn ${date.day}; deferring to racing flow.")
                     decisionTracer.recordActionChoice(MainScreenAction.RACE, "Smart Race Solver planned race \"${solverDecision.raceKey}\" for this turn")
