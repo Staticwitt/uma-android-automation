@@ -34,12 +34,15 @@ object LegacyParentSelector {
 
     @Volatile private var autoSelectAttemptedThisRun = false
     @Volatile private var autoSelectAttempts = 0
+    @Volatile private var confirmDialogAttempts = 0
 
     private const val MAX_AUTO_SELECT_ATTEMPTS = 3
+    private const val MAX_CONFIRM_DIALOG_ATTEMPTS = 5
 
     fun resetForNewRun() {
         autoSelectAttemptedThisRun = false
         autoSelectAttempts = 0
+        confirmDialogAttempts = 0
     }
 
     fun isEnabled(): Boolean = SettingsHelper.getBooleanSetting("racing", "enableAutoSelectLegacyParents")
@@ -93,13 +96,22 @@ object LegacyParentSelector {
     fun confirmAutoSelectDialog(game: Game, dialog: DialogInterface): Boolean {
         Checkbox.click(game.imageUtils)
         if (dialog.ok(game.imageUtils)) {
+            confirmDialogAttempts = 0
             MessageLog.i(TAG, "Confirmed legacy parent auto-select dialog.")
             game.wait(0.8)
             return true
         }
-        MessageLog.w(TAG, "Failed to confirm legacy parent auto-select dialog.")
+        confirmDialogAttempts++
+        if (confirmDialogAttempts >= MAX_CONFIRM_DIALOG_ATTEMPTS) {
+            MessageLog.w(TAG, "Giving up on confirming legacy parent auto-select dialog after $MAX_CONFIRM_DIALOG_ATTEMPTS attempts.")
+        } else {
+            MessageLog.w(TAG, "Failed to confirm legacy parent auto-select dialog.")
+        }
         return false
     }
+
+    /** True once [confirmAutoSelectDialog] has failed [MAX_CONFIRM_DIALOG_ATTEMPTS] times in a row for the current dialog. */
+    fun hasExceededConfirmDialogAttempts(): Boolean = confirmDialogAttempts >= MAX_CONFIRM_DIALOG_ATTEMPTS
 
     private fun triggerGameAutoSelect(game: Game): Boolean {
         if (ButtonAutoSelect.check(game.imageUtils)) {
