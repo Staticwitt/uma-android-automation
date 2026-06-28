@@ -162,7 +162,7 @@ object LegacyParentSelector {
             game,
             fallbackComponent = LabelEventProgress,
             entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
-            keyExtractor = { entry -> ocrParentEntry(game.imageUtils, entry) },
+            keyExtractor = { entry -> SupportCardSelection.entryDedupeKey(entry) },
             onEntry = { _, entry ->
                 val text = ocrParentEntry(game.imageUtils, entry)
                 if (ocrLooksLikeTrainee(text)) return@processWithFallback false
@@ -229,7 +229,7 @@ object LegacyParentSelector {
             game,
             fallbackComponent = LabelEventProgress,
             entryDetectionConfig = ScrollListEntryDetectionConfig(bUseGeneric = true),
-            keyExtractor = { entry -> ocrParentEntry(game.imageUtils, entry) },
+            keyExtractor = { entry -> SupportCardSelection.entryDedupeKey(entry) },
             onEntry = { _, entry ->
                 val text = ocrParentEntry(game.imageUtils, entry)
                 val score = SupportCardSelection.matchScore(text, targetText)
