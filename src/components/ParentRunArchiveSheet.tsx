@@ -6,6 +6,8 @@ import { useTheme } from "../context/ThemeContext"
 import { SheetModal } from "./ui/sheet-modal"
 import { ModalFooterChip } from "./ui/modal-list"
 import { Input } from "./ui/input"
+import { AptitudeHeatmap } from "./AptitudeHeatmap"
+import { RunComparisonView } from "./RunComparisonView"
 import { logErrorWithTimestamp } from "../lib/logger"
 import {
     buildQualityTrendForCharacter,
@@ -77,6 +79,10 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
     const [search, setSearch] = useState("")
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [lineageSessionId, setLineageSessionId] = useState<string | null>(null)
+    const [showHeatmap, setShowHeatmap] = useState(false)
+    const [compareMode, setCompareMode] = useState(false)
+    const [compareIds, setCompareIds] = useState<Set<string>>(new Set())
+    const [showCompare, setShowCompare] = useState(false)
 
     const refresh = useCallback(async () => {
         setLoading(true)
@@ -93,6 +99,10 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
             setSearch("")
             setExpandedId(null)
             setLineageSessionId(null)
+            setShowHeatmap(false)
+            setCompareMode(false)
+            setCompareIds(new Set())
+            setShowCompare(false)
             refresh()
         }
     }, [visible, refresh])
@@ -103,6 +113,17 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
     const handleViewLineage = useCallback(() => {
         setLineageSessionId(latestSessionId(runs))
     }, [runs])
+
+    const toggleCompareId = useCallback((id: string) => {
+        setCompareIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }, [])
+
+    const compareRuns = useMemo(() => runs.filter((run) => compareIds.has(run.id)), [runs, compareIds])
 
     const filteredRuns = useMemo(() => {
         const q = search.trim().toLowerCase()
@@ -221,6 +242,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                 sessionChipActive: { borderColor: colors.brand, backgroundColor: colors.brandSubtle },
                 lineageArrow: { ...TYPE.caption, color: colors.textMuted, textAlign: "center", marginVertical: SPACING.xs },
                 lineageInheritance: { ...TYPE.caption, color: colors.brand, marginTop: SPACING.xs },
+                rowSelected: { borderColor: colors.brand, backgroundColor: colors.brandSubtle },
             }),
         [colors],
     )
@@ -237,10 +259,36 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
 
     const footer = (
         <View style={{ flexDirection: "row", gap: SPACING.sm, justifyContent: "flex-end", flexWrap: "wrap" }}>
-            {lineageSessionId ? (
+            {showCompare ? (
+                <ModalFooterChip
+                    label="Back to list"
+                    onPress={() => {
+                        setShowCompare(false)
+                        setCompareMode(false)
+                        setCompareIds(new Set())
+                    }}
+                    tone="neutral"
+                />
+            ) : compareMode ? (
+                <>
+                    <ModalFooterChip label="Cancel" onPress={() => setCompareMode(false)} tone="neutral" />
+                    <ModalFooterChip
+                        label={`Compare selected (${compareIds.size})`}
+                        onPress={() => setShowCompare(true)}
+                        tone="primary"
+                        disabled={compareIds.size === 0}
+                    />
+                </>
+            ) : showHeatmap ? (
+                <ModalFooterChip label="Back to list" onPress={() => setShowHeatmap(false)} tone="neutral" />
+            ) : lineageSessionId ? (
                 <ModalFooterChip label="Back to list" onPress={() => setLineageSessionId(null)} tone="neutral" />
             ) : (
-                <ModalFooterChip label="View lineage" onPress={handleViewLineage} tone="neutral" />
+                <>
+                    <ModalFooterChip label="View lineage" onPress={handleViewLineage} tone="neutral" />
+                    <ModalFooterChip label="Aptitude heatmap" onPress={() => setShowHeatmap(true)} tone="neutral" />
+                    <ModalFooterChip label="Compare runs" onPress={() => setCompareMode(true)} tone="neutral" />
+                </>
             )}
             <ModalFooterChip label="Copy session summary" onPress={handleCopySessionSummary} tone="neutral" />
             <ModalFooterChip label="Export JSON" onPress={handleExport} tone="neutral" />
@@ -254,6 +302,12 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
         <SheetModal visible={visible} onRequestClose={onClose} header={header} footer={footer} maxWidth={640} heightFraction={0.8}>
             {loading ? (
                 <ActivityIndicator color={colors.brand} style={{ marginTop: SPACING.lg }} />
+            ) : showCompare ? (
+                <ScrollView keyboardShouldPersistTaps="handled">
+                    <RunComparisonView runs={compareRuns} />
+                </ScrollView>
+            ) : showHeatmap ? (
+                <AptitudeHeatmap runs={filteredRuns} />
             ) : lineageSessionId ? (
                 <ScrollView keyboardShouldPersistTaps="handled">
                     {sessionIds.length > 1 && (
@@ -317,14 +371,17 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                             const epithetDelta = previous ? formatEpithetDelta(run, previous) : null
                             const trendRuns = characterKey ? buildQualityTrendForCharacter(runs, characterKey) : []
                             const trendLine = formatQualityTrendLine(trendRuns)
+                            const selected = compareIds.has(run.id)
                             return (
                                 <Pressable
                                     key={run.id}
-                                    onPress={() => setExpandedId(expanded ? null : run.id)}
-                                    style={styles.row}
-                                    accessibilityRole="button"
+                                    onPress={() => (compareMode ? toggleCompareId(run.id) : setExpandedId(expanded ? null : run.id))}
+                                    style={[styles.row, compareMode && selected && styles.rowSelected]}
+                                    accessibilityRole={compareMode ? "checkbox" : "button"}
+                                    accessibilityState={compareMode ? { checked: selected } : undefined}
                                 >
                                     <Text style={styles.title}>
+                                        {compareMode ? (selected ? "☑ " : "☐ ") : ""}
                                         {run.traineeName || run.characterPreset || "Unknown Uma"}
                                         {run.fans > 0 ? ` · ${run.fans.toLocaleString()} fans` : ""}
                                         {` · ${formatQualityLabel(quality)}`}
@@ -348,7 +405,7 @@ export const ParentRunArchiveSheet = ({ visible, onClose }: ParentRunArchiveShee
                                     {bestForCharacter?.id === run.id && runs.filter((r) => (r.characterPreset || r.traineeName) === characterKey).length > 1 ? (
                                         <Text style={styles.best}>Best quality for {characterKey}</Text>
                                     ) : null}
-                                    {expanded && (
+                                    {expanded && !compareMode && (
                                         <View style={styles.detail}>
                                             <Text>Quality: {formatQualityLabel(quality)}</Text>
                                             {renderQualityBreakdown(quality.breakdown, colors)}

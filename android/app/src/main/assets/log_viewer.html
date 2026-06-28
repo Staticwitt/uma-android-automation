@@ -2667,6 +2667,7 @@
                     <!-- Log action buttons. -->
                     <button id="autoScrollBtn" class="toolbar-btn active" onclick="toggleAutoScroll()">⬇ Auto-scroll</button>
                     <button id="compactBtn" class="toolbar-btn active" onclick="toggleCondensing()" title="Toggle Log Condensation (timestamps may appear out of order when enabled)">➞ Compact</button>
+                    <button id="notifyBtn" class="toolbar-btn" onclick="toggleRunCompleteNotify()" title="Show a browser notification when the current run finishes">🔔 Notify</button>
 
                     <div class="toolbar-separator"></div>
 
@@ -3294,6 +3295,7 @@
             // ==============================================
             let ws = null
             let autoScroll = true
+            let notifyOnComplete = localStorage.getItem("uaa_notify_on_complete") === "true"
             let messageCount = 0
             let visibleMessageCount = 0
             let allMessages = []
@@ -3897,6 +3899,63 @@
             }
 
             /**
+             * Restores the "Notify" toolbar button's active state from localStorage on page load.
+             * Does not request Notification permission here — that only happens from a user gesture
+             * (the button click in toggleRunCompleteNotify), per browser permission-prompt requirements.
+             */
+            function initRunCompleteNotify() {
+                document.getElementById("notifyBtn").classList.toggle("active", notifyOnComplete)
+            }
+
+            /**
+             * Toggles whether finishing a run shows a browser notification. Requests Notification
+             * permission on enable (must happen from this click handler, since browsers require a
+             * user gesture); silently re-disables the feature if permission is denied.
+             */
+            function toggleRunCompleteNotify() {
+                if (typeof Notification === "undefined") {
+                    alert("This browser does not support notifications.")
+                    return
+                }
+
+                if (!notifyOnComplete) {
+                    Notification.requestPermission().then(function (permission) {
+                        if (permission === "granted") {
+                            notifyOnComplete = true
+                            localStorage.setItem("uaa_notify_on_complete", "true")
+                            document.getElementById("notifyBtn").classList.add("active")
+                        }
+                    })
+                } else {
+                    notifyOnComplete = false
+                    localStorage.setItem("uaa_notify_on_complete", "false")
+                    document.getElementById("notifyBtn").classList.remove("active")
+                }
+            }
+
+            /** Mirrors the server's own end-of-run mute trigger (LogStreamServer.kt) to detect run completion client-side. */
+            const RUN_COMPLETE_PATTERN = /Campaign main loop exiting|Total runtime of|Multi-run complete/
+
+            /**
+             * Fires a browser notification when a live log message reports the run/session finishing,
+             * if the user has enabled and granted the "Notify" toggle. No-op for historical/batch replay.
+             * @param {object} parsed - The pre-parsed log object for a single live message.
+             */
+            function handleRunCompletionNotification(parsed) {
+                if (!notifyOnComplete || !parsed || !parsed.message) return
+                if (Notification.permission !== "granted") return
+                if (!RUN_COMPLETE_PATTERN.test(parsed.message)) return
+                try {
+                    new Notification("Uma Android Automation", {
+                        body: parsed.message,
+                        tag: "uaa-run-complete",
+                    })
+                } catch (e) {
+                    console.warn("Failed to show run-complete notification:", e)
+                }
+            }
+
+            /**
              * Copies the content of all currently stored log messages to the clipboard.
              */
             function copyAllLogs() {
@@ -4456,6 +4515,8 @@
                 handleDateUpdates(parsed, stateTarget)
                 handleEnergyInfo(parsed, stateTarget)
                 handleTrainingLevel(parsed, stateTarget)
+                // Only for genuinely live messages, never historical/batch replay (stateTarget is non-null there).
+                if (!stateTarget) handleRunCompletionNotification(parsed)
             }
 
             /**
@@ -6336,6 +6397,7 @@
             // Initiate the connection and settings when the page loads.
             initFontSize()
             initToolbar()
+            initRunCompleteNotify()
             // Paint an empty Race History grid so the panel takes its full layout immediately,
             // before any CAL: snapshot arrives.
             renderCalendar(null)
