@@ -323,6 +323,7 @@ object ParentFarmingRunLoop {
         }
 
         LegacyParentSelector.resetForNewRun()
+        CareerSelectionAutomation.resetForNewRun()
         SmartRaceSolverIntegration.reset()
         ParentDiscordNotifier.reset()
         ParentFarmingLiveStatus.reset()

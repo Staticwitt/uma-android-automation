@@ -87,6 +87,7 @@ const SECTIONS: DrawerSection[] = [
         items: [
             { label: "Event Log", icon: "eye-outline", route: "EventLogVisualizer" },
             { label: "Decision Reports", icon: "git-branch-outline", route: "DecisionReportViewer" },
+            { label: "Error Reports", icon: "warning-outline", route: "ErrorReports" },
             { label: "Debug", icon: "bug-outline", route: "DebugSettings" },
         ],
     },
@@ -119,6 +120,7 @@ const SETTINGS_STACK_ROUTES = new Set<string>([
     "Skills",
     "EventLogVisualizer",
     "DecisionReportViewer",
+    "ErrorReports",
     "ImportSettingsPreview",
     "ScenarioOverridesSettings",
     "DebugSettings",

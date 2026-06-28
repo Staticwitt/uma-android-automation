@@ -595,7 +595,10 @@ abstract class Campaign(game: Game) : Task(game) {
 
             "auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
-                    LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                    val confirmed = LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                    if (!confirmed && LegacyParentSelector.hasExceededConfirmDialogAttempts()) {
+                        result.dialog.close(game.imageUtils)
+                    }
                 } else {
                     result.dialog.close(game.imageUtils)
                 }
@@ -603,15 +606,22 @@ abstract class Campaign(game: Game) : Task(game) {
 
             "confirm_auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
-                    LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                    val confirmed = LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
+                    if (!confirmed && LegacyParentSelector.hasExceededConfirmDialogAttempts()) {
+                        result.dialog.close(game.imageUtils)
+                    }
                 } else {
                     result.dialog.close(game.imageUtils)
                 }
             }
 
             "final_confirmation" -> {
-                if (CareerSelectionAutomation.shouldAutoStartCareer()) {
-                    CareerSelectionAutomation.tryStartCareer(game)
+                val autoStartEnabled = CareerSelectionAutomation.shouldAutoStartCareer()
+                if (autoStartEnabled) {
+                    val started = CareerSelectionAutomation.tryStartCareer(game, autoStartEnabled)
+                    if (!started && CareerSelectionAutomation.hasExceededStartCareerAttempts()) {
+                        result.dialog.close(game.imageUtils)
+                    }
                 } else {
                     result.dialog.close(game.imageUtils)
                 }
@@ -2271,6 +2281,10 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             ParentFarmingGenerationFarm.tryGate(game, this)
+
+            if (CareerSelectionAutomation.tryTriggerAutoBorrow(game)) {
+                return null
+            }
 
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null

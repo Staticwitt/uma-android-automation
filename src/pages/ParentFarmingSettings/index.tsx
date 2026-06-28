@@ -178,6 +178,7 @@ const ParentFarmingSettings = () => {
         parentFarmingBreedingPlan,
         parentFarmingTargetFactorSkills,
         enableAutoSelectLegacyParents,
+        enableAutoBorrowSupportCard,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
@@ -1067,6 +1068,18 @@ const ParentFarmingSettings = () => {
 
                         {enableParentFarmingMode && showSection("automation") && (
                             <Section label="Career selection">
+                                <SettingRow
+                                    id="enable-auto-borrow-support-card"
+                                    title="Auto-borrow support card"
+                                    searchTitle="Auto-borrow friend support card"
+                                    description="Open the friend borrow picker and tap the first OCR match from your preferred support cards."
+                                    right={
+                                        <Switch
+                                            checked={enableAutoBorrowSupportCard}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoBorrowSupportCard", checked)}
+                                        />
+                                    }
+                                />
                                 <SettingRow
                                     id="enable-auto-select-legacy-parents"
                                     title="Auto-select parent pair"

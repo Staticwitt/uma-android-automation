@@ -36,7 +36,11 @@ object LegacyParentScorer {
             "wisdom" to "Wit",
         )
 
-    private val APTITUDE_GRADE_PATTERN = Regex("(?i)\\b([sabcdefg])\\b")
+    /** Distinct stat names backing [STAT_KEYWORDS], used to score each stat's keyword match once even though it may have multiple keyword aliases. */
+    private val STAT_NAMES = STAT_KEYWORDS.values.distinct()
+
+    /** Anchored to a distance/surface keyword so a bare letter (e.g. the article "a") in unrelated OCR text isn't mistaken for an aptitude grade. */
+    private val APTITUDE_GRADE_PATTERN = Regex("(?i)(sprint|mile|medium|long|turf|dirt)\\D{0,8}\\b([sabcdefg])\\b")
     private val STAT_VALUE_PATTERN = Regex("(?i)(speed|stamina|power|guts|wit|wisdom|spd|sta|pow)\\D{0,8}(\\d{2,4})")
 
     /**
@@ -152,8 +156,10 @@ object LegacyParentScorer {
             }
         }
 
-        for ((keyword, statName) in STAT_KEYWORDS) {
-            if (lower.contains(keyword)) {
+        for (statName in STAT_NAMES) {
+            // Score each stat once even if it has multiple keyword aliases (e.g. "power" and "pow" both appear in matching OCR text).
+            val keywordMatched = STAT_KEYWORDS.any { (keyword, name) -> name == statName && lower.contains(keyword) }
+            if (keywordMatched) {
                 val priorityIndex = context.statPriorities.indexOf(statName)
                 if (priorityIndex >= 0) {
                     total += 40.0 - priorityIndex * 5.0
@@ -191,7 +197,7 @@ object LegacyParentScorer {
         val gradeValues = mapOf("s" to 7, "a" to 6, "b" to 5, "c" to 4, "d" to 3, "e" to 2, "f" to 1, "g" to 0)
         var bonus = 0.0
         for (match in APTITUDE_GRADE_PATTERN.findAll(lower)) {
-            val grade = match.groupValues[1].lowercase()
+            val grade = match.groupValues[2].lowercase()
             val value = gradeValues[grade] ?: continue
             bonus +=
                 when (context.strategy) {

@@ -15,6 +15,7 @@ export const SEARCH_PAGE_LABELS: Record<string, string> = {
     DebugSettings: "Debug",
     EventLogVisualizer: "Event Log Visualizer",
     DecisionReportViewer: "Decision Report Viewer",
+    ErrorReports: "Error Reports",
     ImportSettingsPreview: "Import Settings Preview",
     Chat: "Ask the Docs",
     Home: "Home",
@@ -37,6 +38,7 @@ export const SETTINGS_STACK_PAGES = new Set([
     "DebugSettings",
     "EventLogVisualizer",
     "DecisionReportViewer",
+    "ErrorReports",
     "ImportSettingsPreview",
 ])
 
