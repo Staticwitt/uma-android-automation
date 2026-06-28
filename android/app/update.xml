@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.74</latestVersion>
-    <latestVersionCode>164</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.74</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.74/v5.9.74-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.74/v5.9.74-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.75</latestVersion>
+    <latestVersionCode>165</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.75</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.75/v5.9.75-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.75/v5.9.75-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.74 - Fixed Schedule Presets
+v5.9.75 - Fixed Schedule Summer Training Fix
 
-Added
+Fixed
 -----
-- Fixed Schedule mode for the Smart Race Solver: follow a hand-authored turn-by-turn career plan instead of the solver's dynamic decisions. Ships with a "Throne x Sirius" preset.
+- Fixed Schedule (and the dynamic Smart Race Solver) races planned during Classic/Senior Summer (July-August) were silently overridden by training. The "Throne x Sirius" preset's turn 37/38 races now run as planned.
 
     </releaseNotes>
   </update>
