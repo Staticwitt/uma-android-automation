@@ -1,13 +1,22 @@
 package com.steve1316.uma_android_automation.bot
 
+import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.ButtonAutoSelect
 import com.steve1316.uma_android_automation.components.ButtonBorrowSupportCard
 import com.steve1316.uma_android_automation.components.ButtonSelectLegacy
 import com.steve1316.uma_android_automation.components.ButtonStartCareer
 
-/** Detects career-selection screens and optional auto-start on final confirmation. */
+/** Detects career-selection screens, optional auto-borrow, and auto-start on final confirmation. */
 object CareerSelectionAutomation {
+    private const val TAG = "[CAREER_BORROW]"
+
+    @Volatile private var autoBorrowAttemptedThisRun = false
+
+    fun resetForNewRun() {
+        autoBorrowAttemptedThisRun = false
+    }
+
     fun isOnCareerSelectionScreen(game: Game): Boolean {
         val imageUtils = game.imageUtils
         return ButtonBorrowSupportCard.check(imageUtils) ||
@@ -48,5 +57,51 @@ object CareerSelectionAutomation {
             return true
         }
         return false
+    }
+
+    private fun isAutoBorrowEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableAutoBorrowSupportCard", false)
+
+    /**
+     * Opens the friend borrow picker and taps the first configured [supportBorrowPreferredCards] match,
+     * rotating priority order by [ParentFarmingRunLoop.borrowRotationOffset] across multi-run sessions.
+     *
+     * @return True when a borrow attempt was made this iteration (matched or not).
+     */
+    fun tryTriggerAutoBorrow(game: Game): Boolean {
+        if (!isAutoBorrowEnabled() || autoBorrowAttemptedThisRun) return false
+        if (!ButtonBorrowSupportCard.check(game.imageUtils)) return false
+
+        val preferredCards = readPreferredBorrowCards()
+        if (preferredCards.isEmpty()) {
+            autoBorrowAttemptedThisRun = true
+            return false
+        }
+
+        if (!ButtonBorrowSupportCard.click(game.imageUtils)) return false
+        game.wait(1.0)
+
+        autoBorrowAttemptedThisRun = true
+        val matched = SupportCardSelection.findAndTapPreferredCardInList(game, rotatedPreferredCards(preferredCards), TAG)
+        if (matched != null) {
+            MessageLog.i(TAG, "Auto-borrowed support card \"$matched\".")
+            return true
+        }
+        MessageLog.w(TAG, "Auto-borrow: no preferred card matched the friend list; closed without borrowing.")
+        return false
+    }
+
+    private fun readPreferredBorrowCards(): List<String> =
+        SupportCardSelection.filterTraineeFromSupportNames(
+            SupportCardSelection.readStringList(
+                ParentFarmingGoalQueue.racingString("supportBorrowPreferredCards", "[]"),
+            ),
+        )
+
+    private fun rotatedPreferredCards(cards: List<String>): List<String> {
+        val offset = ParentFarmingRunLoop.borrowRotationOffset()
+        if (offset <= 0 || cards.size <= 1) return cards
+        val shift = offset % cards.size
+        return cards.subList(shift, cards.size) + cards.subList(0, shift)
     }
 }

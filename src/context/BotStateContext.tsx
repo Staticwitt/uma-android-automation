@@ -162,6 +162,8 @@ export interface Settings {
         parentFarmingSettingsSnapshot: string
         /** Auto-select the legacy parent pair at career selection (in-game Auto-Select or preferred pair OCR). */
         enableAutoSelectLegacyParents: boolean
+        /** Open the friend borrow picker at career selection and tap the first OCR match from [supportBorrowPreferredCards]. */
+        enableAutoBorrowSupportCard: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
         legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
@@ -453,6 +455,7 @@ export const defaultSettings: Settings = {
         parentFarmingTargetFactorSkills: "[]",
         parentFarmingSettingsSnapshot: "",
         enableAutoSelectLegacyParents: false,
+        enableAutoBorrowSupportCard: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",

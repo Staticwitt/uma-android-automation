@@ -2272,6 +2272,10 @@ abstract class Campaign(game: Game) : Task(game) {
 
             ParentFarmingGenerationFarm.tryGate(game, this)
 
+            if (CareerSelectionAutomation.tryTriggerAutoBorrow(game)) {
+                return null
+            }
+
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
                 return null
             }

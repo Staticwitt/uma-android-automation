@@ -7,6 +7,7 @@ import type { Settings } from "../context/BotStateContext"
 export const PARENT_FARMING_USER_PREFERENCE_RACING_KEYS: ReadonlyArray<keyof Settings["racing"]> = [
     "enableAutoStartCareer",
     "enableAutoSelectLegacyParents",
+    "enableAutoBorrowSupportCard",
     "legacyParentSelectionStrategy",
     "legacyParentPreferredPair",
     "supportBorrowPreferredCards",
