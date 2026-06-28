@@ -10,6 +10,7 @@ import { useFonts, Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_7
 import { GeistMono_400Regular, GeistMono_500Medium } from "@expo-google-fonts/geist-mono"
 import { BotStateProvider } from "./context/BotStateContext"
 import { MessageLogProvider } from "./context/MessageLogContext"
+import { ErrorReportProvider } from "./context/ErrorReportContext"
 import { SettingsProvider } from "./context/SettingsContext"
 import { ThemeProvider, useTheme } from "./context/ThemeContext"
 import { ToastProvider } from "./context/ToastContext"
@@ -20,6 +21,7 @@ import { lazyGetComponent } from "./navigation/lazyScreens"
 import Home from "./pages/Home"
 import Settings from "./pages/Settings"
 import DrawerContent from "./components/DrawerContent"
+import { ErrorBoundary } from "./components/ErrorBoundary"
 import { NAV_THEME } from "./lib/navTheme"
 
 export const Tag = "UAA"
@@ -55,6 +57,7 @@ function SettingsStack() {
             <Stack.Screen name="DebugSettings" getComponent={lazyGetComponent(() => require("./pages/DebugSettings").default)} />
             <Stack.Screen name="DiscordSettings" getComponent={lazyGetComponent(() => require("./pages/DiscordSettings").default)} />
             <Stack.Screen name="LLMSettings" getComponent={lazyGetComponent(() => require("./pages/LLMSettings").default)} />
+            <Stack.Screen name="ErrorReports" getComponent={lazyGetComponent(() => require("./pages/ErrorReports").default)} />
         </Stack.Navigator>
     )
 }
@@ -111,11 +114,13 @@ function AppContent() {
             <BotStateProvider>
                 <ProfileProvider>
                     <MessageLogProvider>
-                        <SettingsProvider>
-                            <ToastProvider>
-                                <AppWithBootstrap theme={theme} colors={colors} />
-                            </ToastProvider>
-                        </SettingsProvider>
+                        <ErrorReportProvider>
+                            <SettingsProvider>
+                                <ToastProvider>
+                                    <AppWithBootstrap theme={theme} colors={colors} />
+                                </ToastProvider>
+                            </SettingsProvider>
+                        </ErrorReportProvider>
                     </MessageLogProvider>
                 </ProfileProvider>
             </BotStateProvider>
@@ -138,9 +143,11 @@ function App() {
 
     return (
         <SafeAreaProvider>
-            <ThemeProvider>
-                <AppContent />
-            </ThemeProvider>
+            <ErrorBoundary>
+                <ThemeProvider>
+                    <AppContent />
+                </ThemeProvider>
+            </ErrorBoundary>
         </SafeAreaProvider>
     )
 }
