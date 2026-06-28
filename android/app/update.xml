@@ -1,16 +1,25 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.75</latestVersion>
-    <latestVersionCode>165</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.75</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.75/v5.9.75-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.75/v5.9.75-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.76</latestVersion>
+    <latestVersionCode>166</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.76</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.76/v5.9.76-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.76/v5.9.76-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.75 - Fixed Schedule Summer Training Fix
+v5.9.76 - Crash Reporting, Aptitude Heatmap, and Run Comparison
+
+Added
+-----
+- In-app crash/error reporting tab to review uncaught render errors without pulling device logs.
+- Aptitude heatmap across archived Career Runs showing distance/surface/running-style grades.
+- Run comparison view to select archived runs and compare stats, aptitude, quality/fans, and epithet outcomes side by side.
+- Browser notification toggle on the live log viewer page that fires when a run/session completes.
+- Auto-borrow support card wiring for the friend-list borrow picker.
 
 Fixed
 -----
-- Fixed Schedule (and the dynamic Smart Race Solver) races planned during Classic/Senior Summer (July-August) were silently overridden by training. The "Throne x Sirius" preset's turn 37/38 races now run as planned.
+- Legacy parent factor-based selection scoring bugs.
+- Auto-select/confirm dialogs and final-confirmation Start Career could retry indefinitely on repeated detection failures; now bounded with a fixed retry cap before giving up.
 
     </releaseNotes>
   </update>
