@@ -35,6 +35,35 @@ const searchConfig: SearchOption[] = [
         page: "SettingsMain",
     },
     {
+        id: "settings-dating-schedule",
+        title: "Support Card Dating Schedule",
+        description:
+            "On a pinned turn the bot does a support-card recreation outing over every other action, including scheduled races (in-game racing agenda or Smart Race Solver). Only mandatory career-goal races take priority.",
+        page: "SettingsMain",
+    },
+    {
+        id: "settings-dating-preset",
+        title: "Schedule Preset",
+        description: "Pick an optimized preset (Pure Passion timed for a summer camp) or Custom to hand-pick turns on the recreation calendar.",
+        page: "SettingsMain",
+        parentId: "settings-dating-schedule",
+    },
+    {
+        id: "settings-recreation-calendar",
+        title: "Recreation Calendar",
+        description: "Tap a turn to mark it as a Recreation date or the single Pure Passion date (editing switches the preset to Custom). Pre-Debut and Summer turns are unavailable.",
+        page: "SettingsMain",
+        parentId: "settings-dating-schedule",
+    },
+    {
+        id: "settings-recreation-total-outings",
+        title: "Total Recreation Outings",
+        description:
+            "Number of outings in your support card's recreation chain. Team Sirius = 7, Heirs to the Throne = 4. Read from the game automatically when possible; this is the fallback. Used to hold the final outing for the Pure Passion turn.",
+        page: "SettingsMain",
+        parentId: "settings-dating-schedule",
+    },
+    {
         id: "settings-enable-swipe-based-scrolling",
         title: "Enable Swipe-Based Scrolling",
         description: "Scroll lists by swiping instead of detecting the in-game scrollbar. Enable this if the bot cannot scroll lists normally. This may or may not work depending on the device.",

@@ -2,6 +2,8 @@ import { Settings } from "../../context/BotStateContext"
 import { PARENT_FARMING_MODE_LABEL } from "../parentFarmingPreset"
 import { formatParentFarmingTrainingBias, formatParentFarmingReliabilitySummary, getParentFarmingActiveLabels } from "../parentFarmingDrift"
 import { SCORING_CONSTANTS_CATALOG } from "../training/scoringConstantsCatalog"
+import { formatCareerTurn } from "../solver/constants"
+import { DATING_SCHEDULE_PRESETS } from "../datingSchedule"
 
 /**
  * Length of `json` parsed as either a JSON array or object. Returns 0 on parse failure or empty input.
@@ -288,6 +290,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🌀 Enable Swipe-Based Scrolling: ${settings.general.enableSwipeBasedScrolling ? "✅" : "❌"}
 🛑 Stop Before Finals: ${settings.general.enableStopBeforeFinals ? "✅" : "❌"}
 🛑 Stop At Date: ${settings.general.enableStopAtDate ? `✅ (${settings.general.stopAtDates.join(", ")})` : "❌"}
+📅 Dating Schedule: ${settings.general.enableDatingSchedule ? `✅ (${DATING_SCHEDULE_PRESETS[settings.general.datingSchedulePreset]?.label ?? "Custom"} | Recreation: ${settings.general.recreationTurns.map(formatCareerTurn).join(", ") || "none"} | Pure Passion: ${settings.general.purePassionTurn > 0 ? formatCareerTurn(settings.general.purePassionTurn) : "none"} | Outings: ${settings.general.recreationTotalOutings})` : "❌"}
 ⏰ Wait Delay: ${settings.general.waitDelay}s
 ⏰ Dialog Wait Delay: ${settings.general.dialogWaitDelay}s
 ⏰ Enable Delay Calibration Telemetry: ${settings.general.enableDelayCalibrationTelemetry ? "✅" : "❌"}
