@@ -2292,7 +2292,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
-            if (CareerSelectionAutomation.tryStartCareer(game)) {
+            if (CareerSelectionAutomation.shouldAutoStartCareer() && CareerSelectionAutomation.tryStartCareer(game)) {
                 return null
             }
 

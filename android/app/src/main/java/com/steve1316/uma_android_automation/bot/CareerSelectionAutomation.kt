@@ -45,12 +45,16 @@ object CareerSelectionAutomation {
     }
 
     fun shouldAutoStartCareer(): Boolean =
-        SettingsHelper.getBooleanSetting("racing", "enableAutoStartCareer") &&
-            SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)
+        SettingsHelper.getBooleanSetting("racing", "enableAutoStartCareer")
 
-    /** Taps Start Career when the final confirmation button is visible. */
+    /**
+     * Taps Start Career when the final confirmation button is visible.
+     *
+     * Returns true on success. Returns false and increments the retry guard on button-click failure.
+     * Does NOT check [shouldAutoStartCareer] — callers are responsible for that gate so they can
+     * decide whether to close the dialog on the disabled path.
+     */
     fun tryStartCareer(game: Game): Boolean {
-        if (!shouldAutoStartCareer()) return false
         if (!ButtonStartCareer.check(game.imageUtils)) return false
         if (ButtonStartCareer.click(game.imageUtils)) {
             startCareerGuard.reset()
