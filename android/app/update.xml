@@ -1,29 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.77</latestVersion>
-    <latestVersionCode>167</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.77</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.77/v5.9.77-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.77/v5.9.77-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.78</latestVersion>
+    <latestVersionCode>168</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.78</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.78/v5.9.78-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.78/v5.9.78-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.77 - Retry Guard, Auto-Start Fix, and UI Optimisations
+v5.9.78 - URA Duel Handler and Spark Trait Reroll
 
 Added
 -----
-- RetryGuard class unifying retry counters across auto-select, confirm-dialog, and career-start flows.
-
-Fixed
------
-- auto_select and confirm_auto_select dialogs shared a single counter; the second dialog type was prematurely dismissed once the first hit the cap. They now use independent guards.
-- Retry counters were not reset after a cap-exceeded forced close, so the next fresh dialog was closed immediately. Each guard now resets after a forced close.
-- enableAutoStartCareer no longer requires enableParentFarmingMode; career auto-start works for any single run with the toggle on.
-- Log viewer run-completion notification fired multiple times on WebSocket reconnect; deduplicated by timestamp.
-- ErrorReportContext seenLogIds set grew unbounded; replaced with a single high-water-mark ref.
-
-Changed
--------
-- APTITUDE_DIMENSION_ROWS extracted from AptitudeHeatmap and RunComparisonView into aptitudeGrade.ts.
-- RunComparisonView quality scores and best-stat map now precomputed with useMemo instead of recalculated per render.
+- URA Duel: bot now detects Happy Meek's stat contest screen during URA Finale, picks the trainee's highest stat among Speed/Power/Wits, navigates the carousel to that option, and confirms.
+- Spark Trait Reroll: after inheritance spark selection, the bot detects the Traits reroll screen and rerolls all spark traits up to a configurable limit (sparkTraitMaxRerolls), stopping early when the star count meets the threshold (sparkTraitMinStars), then clicks Decide. Active for all scenarios.
 
     </releaseNotes>
   </update>
