@@ -87,7 +87,7 @@ function installGlobalErrorHandler(): void {
 export const ErrorReportProvider = ({ children }: { children: React.ReactNode }): React.ReactElement => {
     const [errors, setErrors] = useState<ErrorReportEntry[]>([])
     const mlc = useContext(MessageLogDataContext)
-    const seenLogIds = useRef<Set<number>>(new Set())
+    const lastSeenLogId = useRef(-1)
     const hydrated = useRef(false)
 
     // Hydrate persisted errors once on mount.
@@ -138,15 +138,17 @@ export const ErrorReportProvider = ({ children }: { children: React.ReactNode })
     // Mirror native [ERROR]/[WARNING] log lines from the bot service into the same report list.
     useEffect(() => {
         const newEntries: ErrorReportEntry[] = []
+        let maxId = lastSeenLogId.current
         for (const entry of mlc.messageLog) {
-            if (seenLogIds.current.has(entry.id)) continue
-            seenLogIds.current.add(entry.id)
+            if (entry.id <= lastSeenLogId.current) continue
+            if (entry.id > maxId) maxId = entry.id
             if (entry.message.includes("[ERROR]")) {
                 newEntries.push({ id: `native-${entry.id}`, timestamp: Date.now(), source: "native-error", message: entry.message })
             } else if (entry.message.includes("[WARNING]") || entry.message.includes("[WARN]")) {
                 newEntries.push({ id: `native-${entry.id}`, timestamp: Date.now(), source: "native-warning", message: entry.message })
             }
         }
+        lastSeenLogId.current = maxId
         if (newEntries.length > 0) {
             setErrors((prev) => [...prev, ...newEntries].slice(-MAX_STORED_ERRORS))
         }

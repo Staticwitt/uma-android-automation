@@ -3296,6 +3296,8 @@
             let ws = null
             let autoScroll = true
             let notifyOnComplete = localStorage.getItem("uaa_notify_on_complete") === "true"
+            let notifyBtnEl = null
+            const notifiedRunCompleteTimestamps = new Set()
             let messageCount = 0
             let visibleMessageCount = 0
             let allMessages = []
@@ -3904,7 +3906,8 @@
              * (the button click in toggleRunCompleteNotify), per browser permission-prompt requirements.
              */
             function initRunCompleteNotify() {
-                document.getElementById("notifyBtn").classList.toggle("active", notifyOnComplete)
+                notifyBtnEl = document.getElementById("notifyBtn")
+                notifyBtnEl.classList.toggle("active", notifyOnComplete)
             }
 
             /**
@@ -3923,13 +3926,13 @@
                         if (permission === "granted") {
                             notifyOnComplete = true
                             localStorage.setItem("uaa_notify_on_complete", "true")
-                            document.getElementById("notifyBtn").classList.add("active")
+                            notifyBtnEl.classList.add("active")
                         }
                     })
                 } else {
                     notifyOnComplete = false
                     localStorage.setItem("uaa_notify_on_complete", "false")
-                    document.getElementById("notifyBtn").classList.remove("active")
+                    notifyBtnEl.classList.remove("active")
                 }
             }
 
@@ -3945,6 +3948,9 @@
                 if (!notifyOnComplete || !parsed || !parsed.message) return
                 if (Notification.permission !== "granted") return
                 if (!RUN_COMPLETE_PATTERN.test(parsed.message)) return
+                const dedupeKey = parsed.timestamp || parsed.message
+                if (notifiedRunCompleteTimestamps.has(dedupeKey)) return
+                notifiedRunCompleteTimestamps.add(dedupeKey)
                 try {
                     new Notification("Uma Android Automation", {
                         body: parsed.message,

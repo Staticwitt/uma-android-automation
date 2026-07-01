@@ -596,8 +596,9 @@ abstract class Campaign(game: Game) : Task(game) {
             "auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
                     val confirmed = LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
-                    if (!confirmed && LegacyParentSelector.hasExceededConfirmDialogAttempts()) {
+                    if (!confirmed && LegacyParentSelector.hasExceededAutoSelectDialogAttempts()) {
                         result.dialog.close(game.imageUtils)
+                        LegacyParentSelector.resetAutoSelectDialogAttempts()
                     }
                 } else {
                     result.dialog.close(game.imageUtils)
@@ -606,9 +607,10 @@ abstract class Campaign(game: Game) : Task(game) {
 
             "confirm_auto_select" -> {
                 if (LegacyParentSelector.isEnabled()) {
-                    val confirmed = LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
-                    if (!confirmed && LegacyParentSelector.hasExceededConfirmDialogAttempts()) {
+                    val confirmed = LegacyParentSelector.confirmConfirmAutoSelectDialog(game, result.dialog)
+                    if (!confirmed && LegacyParentSelector.hasExceededConfirmAutoSelectDialogAttempts()) {
                         result.dialog.close(game.imageUtils)
+                        LegacyParentSelector.resetConfirmAutoSelectDialogAttempts()
                     }
                 } else {
                     result.dialog.close(game.imageUtils)
@@ -616,11 +618,11 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             "final_confirmation" -> {
-                val autoStartEnabled = CareerSelectionAutomation.shouldAutoStartCareer()
-                if (autoStartEnabled) {
-                    val started = CareerSelectionAutomation.tryStartCareer(game, autoStartEnabled)
+                if (CareerSelectionAutomation.shouldAutoStartCareer()) {
+                    val started = CareerSelectionAutomation.tryStartCareer(game)
                     if (!started && CareerSelectionAutomation.hasExceededStartCareerAttempts()) {
                         result.dialog.close(game.imageUtils)
+                        CareerSelectionAutomation.resetStartCareerAttempts()
                     }
                 } else {
                     result.dialog.close(game.imageUtils)
@@ -2290,7 +2292,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
-            if (CareerSelectionAutomation.tryStartCareer(game)) {
+            if (CareerSelectionAutomation.shouldAutoStartCareer() && CareerSelectionAutomation.tryStartCareer(game)) {
                 return null
             }
 

@@ -30,3 +30,19 @@ export const getAptitudeGradeColor = (grade: string | undefined): { bg: string; 
     const normalized = grade.toUpperCase() as AptitudeGrade
     return GRADE_COLORS[normalized] ?? UNKNOWN_GRADE_COLOR
 }
+
+export type AptitudeDimensionGroup = "distanceAptitudes" | "surfaceAptitudes" | "styleAptitudes"
+
+/** Aptitude dimensions in display order, shared between AptitudeHeatmap and RunComparisonView. */
+export const APTITUDE_DIMENSION_ROWS: { label: string; group: AptitudeDimensionGroup; key: string }[] = [
+    { label: "Sprint", group: "distanceAptitudes", key: "SPRINT" },
+    { label: "Mile", group: "distanceAptitudes", key: "MILE" },
+    { label: "Medium", group: "distanceAptitudes", key: "MEDIUM" },
+    { label: "Long", group: "distanceAptitudes", key: "LONG" },
+    { label: "Turf", group: "surfaceAptitudes", key: "TURF" },
+    { label: "Dirt", group: "surfaceAptitudes", key: "DIRT" },
+    { label: "Front Runner", group: "styleAptitudes", key: "FRONT_RUNNER" },
+    { label: "Pace Chaser", group: "styleAptitudes", key: "PACE_CHASER" },
+    { label: "Late Surger", group: "styleAptitudes", key: "LATE_SURGER" },
+    { label: "End Closer", group: "styleAptitudes", key: "END_CLOSER" },
+]
