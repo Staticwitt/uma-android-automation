@@ -49,16 +49,16 @@ describe("calculateRawTrainingScore", () => {
     })
 
     test("returns 0 when current stat is already at or above the absolute cap", () => {
-        // statCap=1200; currentStat=1200 -> returns 0 before any scoring.
-        const config = makeConfig({ currentStats: { [StatName.WIT]: 1200 } })
+        // statCap=1200 (Unknown scenario); currentStat=1200 -> returns 0 before any scoring.
+        const config = makeConfig({ scenario: "Unknown", currentStats: { [StatName.WIT]: 1200 } })
         expect(calculateRawTrainingScore(config, makeTraining({ statGains: { [StatName.WIT]: 10 } }))).toBe(0)
     })
 
     test("returns 0 when potentialStat would exceed effectiveStatCap and no rainbow allowance", () => {
-        // statCap=1200, finaleBonus(day=1)=45, effectiveStatCap = 1200 - 100 - 45 = 1055.
+        // statCap=1200 (Unknown scenario), finaleBonus(day=1)=45, effectiveStatCap = 1200 - 100 - 45 = 1055.
         // currentStat=1050 (< 1055 so passes first buffer check when disableTrainingOnMaxedStat=false),
         // potentialStat = 1050 + 10 = 1060 >= 1055 -> blocked (no rainbow).
-        const config = makeConfig({ currentStats: { [StatName.WIT]: 1050 } })
+        const config = makeConfig({ scenario: "Unknown", currentStats: { [StatName.WIT]: 1050 } })
         expect(calculateRawTrainingScore(config, makeTraining({ statGains: { [StatName.WIT]: 10 } }))).toBe(0)
     })
 
