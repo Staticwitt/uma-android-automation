@@ -2,6 +2,7 @@ package com.steve1316.uma_android_automation.bot
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.ImageUtils.ScaleConfidenceResult
@@ -1678,6 +1679,76 @@ abstract class Campaign(game: Game) : Task(game) {
     }
 
     /**
+     * Detects the Spark Traits reroll screen and rerolls all spark traits up to the configured
+     * maximum number of times, clicking Decide once the star threshold is met or rerolls are
+     * exhausted. Applies to all scenarios.
+     *
+     * @return True if the traits screen was detected and handled, false otherwise.
+     */
+    private fun handleSparkTraitReroll(): Boolean {
+        val sourceBitmap = game.imageUtils.getSourceBitmap()
+
+        val headerX = 0
+        val headerY = 0
+        val headerW = SharedData.displayWidth
+        val headerH = (SharedData.displayHeight * 0.07).toInt()
+        val headerText = game.imageUtils.performOCROnRegion(
+            sourceBitmap, headerX, headerY, headerW, headerH,
+            useThreshold = false, useGrayscale = true, scale = 1.5,
+            ocrEngine = "mlkit", debugName = "traits_screen_header",
+        )
+        if (!headerText.lowercase().contains("traits")) return false
+
+        val bottomX = 0
+        val bottomY = (SharedData.displayHeight * 0.85).toInt()
+        val bottomW = SharedData.displayWidth
+        val bottomH = (SharedData.displayHeight * 0.15).toInt()
+        val bottomText = game.imageUtils.performOCROnRegion(
+            sourceBitmap, bottomX, bottomY, bottomW, bottomH,
+            useThreshold = false, useGrayscale = true, scale = 1.5,
+            ocrEngine = "mlkit", debugName = "traits_screen_bottom",
+        ).lowercase()
+        if (!bottomText.contains("reroll") && !bottomText.contains("tp uses")) return false
+
+        MessageLog.i(TAG, "\n[TRAITS] Detected Traits reroll screen.")
+
+        val maxRerolls = SettingsHelper.getIntSetting("training", "sparkTraitMaxRerolls", 0)
+        val minStars = SettingsHelper.getIntSetting("training", "sparkTraitMinStars", 0)
+
+        val rerollX = SharedData.displayWidth * 0.25
+        val rerollY = SharedData.displayHeight * 0.925
+        val decideX = SharedData.displayWidth * 0.75
+        val decideY = SharedData.displayHeight * 0.925
+
+        var rerollCount = 0
+        while (rerollCount < maxRerolls) {
+            val currentBitmap = game.imageUtils.getSourceBitmap()
+            val starText = game.imageUtils.performOCROnRegion(
+                currentBitmap,
+                (SharedData.displayWidth * 0.70).toInt(),
+                (SharedData.displayHeight * 0.03).toInt(),
+                (SharedData.displayWidth * 0.25).toInt(),
+                (SharedData.displayHeight * 0.70).toInt(),
+                useThreshold = false, useGrayscale = true, scale = 1.5,
+                ocrEngine = "mlkit", debugName = "trait_stars",
+            )
+            val starCount = starText.count { it == '★' }
+            MessageLog.i(TAG, "[TRAITS] Star count: $starCount (threshold: $minStars, reroll $rerollCount/$maxRerolls)")
+            if (starCount >= minStars) break
+            game.gestureUtils.tap(rerollX, rerollY, "spark_trait_reroll")
+            game.wait(1.5)
+            rerollCount++
+            MessageLog.i(TAG, "[TRAITS] Rerolled all spark traits (attempt $rerollCount/$maxRerolls).")
+        }
+
+        game.gestureUtils.tap(decideX, decideY, "spark_trait_decide")
+        game.wait(1.0)
+        MessageLog.i(TAG, "[TRAITS] Decided on current spark traits after $rerollCount reroll(s).")
+        game.waitForLoading()
+        return true
+    }
+
+    /**
      * Performs miscellaneous checks to resolve instances where the bot might be stuck.
      *
      * @return True if a misc check handled the current screen, false otherwise.
@@ -2279,6 +2350,11 @@ abstract class Campaign(game: Game) : Task(game) {
         try {
             // We always check for dialogs first.
             if (tryHandleAllDialogs()) {
+                return null
+            }
+
+            // Check for the Spark Traits reroll screen (applies to all scenarios).
+            if (handleSparkTraitReroll()) {
                 return null
             }
 
