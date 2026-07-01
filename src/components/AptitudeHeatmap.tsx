@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTheme } from "../context/ThemeContext"
-import { getAptitudeGradeColor, APTITUDE_DIMENSION_APTITUDE_DIMENSION_ROWS } from "../lib/aptitudeGrade"
+import { getAptitudeGradeColor, APTITUDE_DIMENSION_ROWS } from "../lib/aptitudeGrade"
 import type { ParentRunArchiveEntry } from "../lib/parentRunArchive"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
