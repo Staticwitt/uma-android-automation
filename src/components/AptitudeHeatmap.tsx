@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTheme } from "../context/ThemeContext"
-import { getAptitudeGradeColor } from "../lib/aptitudeGrade"
+import { getAptitudeGradeColor, APTITUDE_DIMENSION_APTITUDE_DIMENSION_ROWS } from "../lib/aptitudeGrade"
 import type { ParentRunArchiveEntry } from "../lib/parentRunArchive"
 import { TYPE } from "../lib/type"
 import { SPACING } from "../lib/spacing"
@@ -15,19 +15,6 @@ const ROW_HEIGHT = 28
 const LABEL_WIDTH = 100
 const CELL_WIDTH = 56
 
-/** Aptitude dimensions shown as heatmap rows, in display order, with the archive field/key each reads from. */
-const ROWS: { label: string; group: "distanceAptitudes" | "surfaceAptitudes" | "styleAptitudes"; key: string }[] = [
-    { label: "Sprint", group: "distanceAptitudes", key: "SPRINT" },
-    { label: "Mile", group: "distanceAptitudes", key: "MILE" },
-    { label: "Medium", group: "distanceAptitudes", key: "MEDIUM" },
-    { label: "Long", group: "distanceAptitudes", key: "LONG" },
-    { label: "Turf", group: "surfaceAptitudes", key: "TURF" },
-    { label: "Dirt", group: "surfaceAptitudes", key: "DIRT" },
-    { label: "Front Runner", group: "styleAptitudes", key: "FRONT_RUNNER" },
-    { label: "Pace Chaser", group: "styleAptitudes", key: "PACE_CHASER" },
-    { label: "Late Surger", group: "styleAptitudes", key: "LATE_SURGER" },
-    { label: "End Closer", group: "styleAptitudes", key: "END_CLOSER" },
-]
 
 /**
  * Renders a green-to-red heatmap grid of aptitude grades (distance/surface/running style) across
@@ -71,7 +58,7 @@ export const AptitudeHeatmap = ({ runs }: AptitudeHeatmapProps) => {
             <View style={styles.container}>
                 <View style={styles.labelColumn}>
                     <View style={styles.headerSpacer} />
-                    {ROWS.map((row) => (
+                    {APTITUDE_DIMENSION_ROWS.map((row) => (
                         <View key={row.label} style={styles.labelCell}>
                             <Text style={styles.labelText}>{row.label}</Text>
                         </View>
@@ -86,7 +73,7 @@ export const AptitudeHeatmap = ({ runs }: AptitudeHeatmapProps) => {
                                     {columnLabel}
                                 </Text>
                             </View>
-                            {ROWS.map((row) => {
+                            {APTITUDE_DIMENSION_ROWS.map((row) => {
                                 const grade = run[row.group]?.[row.key as never]
                                 const { bg, text } = getAptitudeGradeColor(grade)
                                 return (

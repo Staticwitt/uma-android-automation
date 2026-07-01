@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { ScrollView, StyleSheet, Text, View } from "react-native"
 import { useTheme } from "../context/ThemeContext"
-import { getAptitudeGradeColor } from "../lib/aptitudeGrade"
+import { getAptitudeGradeColor, APTITUDE_DIMENSION_ROWS } from "../lib/aptitudeGrade"
 import { formatParentRunTimestamp, formatFanClassLabel, type ParentRunArchiveEntry } from "../lib/parentRunArchive"
 import { formatQualityLabel, scoreParentRunArchiveEntry } from "../lib/parentQuality"
 import { TYPE } from "../lib/type"
@@ -24,18 +24,6 @@ const STAT_ROWS: { label: string; key: StatKey }[] = [
     { label: "Wit", key: "wit" },
 ]
 
-const APTITUDE_ROWS: { label: string; group: "distanceAptitudes" | "surfaceAptitudes" | "styleAptitudes"; key: string }[] = [
-    { label: "Sprint", group: "distanceAptitudes", key: "SPRINT" },
-    { label: "Mile", group: "distanceAptitudes", key: "MILE" },
-    { label: "Medium", group: "distanceAptitudes", key: "MEDIUM" },
-    { label: "Long", group: "distanceAptitudes", key: "LONG" },
-    { label: "Turf", group: "surfaceAptitudes", key: "TURF" },
-    { label: "Dirt", group: "surfaceAptitudes", key: "DIRT" },
-    { label: "Front Runner", group: "styleAptitudes", key: "FRONT_RUNNER" },
-    { label: "Pace Chaser", group: "styleAptitudes", key: "PACE_CHASER" },
-    { label: "Late Surger", group: "styleAptitudes", key: "LATE_SURGER" },
-    { label: "End Closer", group: "styleAptitudes", key: "END_CLOSER" },
-]
 
 /**
  * Renders archived parent runs side by side: identity/quality/fans, stat lines (best value bolded
@@ -75,6 +63,16 @@ export const RunComparisonView = ({ runs }: RunComparisonViewProps) => {
         [colors],
     )
 
+    const qualities = useMemo(() => runs.map(scoreParentRunArchiveEntry), [runs])
+    const bestStats = useMemo(
+        () =>
+            Object.fromEntries(STAT_ROWS.map(({ key }) => [key, Math.max(...runs.map((r) => r.stats[key]))])) as Record<
+                StatKey,
+                number
+            >,
+        [runs],
+    )
+
     if (runs.length === 0) {
         return <Text style={styles.empty}>Select at least one run to compare.</Text>
     }
@@ -100,7 +98,7 @@ export const RunComparisonView = ({ runs }: RunComparisonViewProps) => {
                         </View>
                     ))}
                     <Text style={styles.sectionLabel}>Aptitudes</Text>
-                    {APTITUDE_ROWS.map((row) => (
+                    {APTITUDE_DIMENSION_ROWS.map((row) => (
                         <View key={row.label} style={styles.labelCell}>
                             <Text style={styles.labelText}>{row.label}</Text>
                         </View>
@@ -113,9 +111,8 @@ export const RunComparisonView = ({ runs }: RunComparisonViewProps) => {
                         <Text style={styles.labelText}>Missed</Text>
                     </View>
                 </View>
-                {runs.map((run) => {
-                    const quality = scoreParentRunArchiveEntry(run)
-                    const isStatBest = (key: StatKey) => runs.every((other) => other.id === run.id || run.stats[key] >= other.stats[key])
+                {runs.map((run, runIdx) => {
+                    const quality = qualities[runIdx]
                     return (
                         <View key={run.id} style={styles.column}>
                             <View style={styles.headerCell}>
@@ -141,7 +138,7 @@ export const RunComparisonView = ({ runs }: RunComparisonViewProps) => {
                             </View>
                             <Text style={styles.sectionLabel}> </Text>
                             {STAT_ROWS.map((row) => {
-                                const best = runs.length > 1 && isStatBest(row.key)
+                                const best = runs.length > 1 && run.stats[row.key] >= bestStats[row.key]
                                 return (
                                     <View key={row.key} style={styles.valueCell}>
                                         <Text style={[styles.valueText, best && styles.valueBest]}>{run.stats[row.key]}</Text>
@@ -149,7 +146,7 @@ export const RunComparisonView = ({ runs }: RunComparisonViewProps) => {
                                 )
                             })}
                             <Text style={styles.sectionLabel}> </Text>
-                            {APTITUDE_ROWS.map((row) => {
+                            {APTITUDE_DIMENSION_ROWS.map((row) => {
                                 const grade = run[row.group]?.[row.key as never]
                                 const { bg, text } = getAptitudeGradeColor(grade)
                                 return (

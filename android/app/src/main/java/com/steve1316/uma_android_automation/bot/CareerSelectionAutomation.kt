@@ -12,13 +12,13 @@ object CareerSelectionAutomation {
     private const val TAG = "[CAREER_BORROW]"
 
     @Volatile private var autoBorrowAttemptedThisRun = false
-    @Volatile private var startCareerAttempts = 0
 
     private const val MAX_START_CAREER_ATTEMPTS = 5
+    private val startCareerGuard = RetryGuard(MAX_START_CAREER_ATTEMPTS)
 
     fun resetForNewRun() {
         autoBorrowAttemptedThisRun = false
-        startCareerAttempts = 0
+        startCareerGuard.reset()
     }
 
     fun isOnCareerSelectionScreen(game: Game): Boolean {
@@ -48,30 +48,26 @@ object CareerSelectionAutomation {
         SettingsHelper.getBooleanSetting("racing", "enableAutoStartCareer") &&
             SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)
 
-    /**
-     * Taps Start Career when the final confirmation button is visible.
-     *
-     * @param autoStartEnabled Pre-checked enabled state, to avoid re-querying [shouldAutoStartCareer] when the
-     * caller already checked it (e.g. to decide whether to close the dialog on the disabled path).
-     */
-    fun tryStartCareer(game: Game, autoStartEnabled: Boolean = shouldAutoStartCareer()): Boolean {
-        if (!autoStartEnabled) return false
+    /** Taps Start Career when the final confirmation button is visible. */
+    fun tryStartCareer(game: Game): Boolean {
+        if (!shouldAutoStartCareer()) return false
         if (!ButtonStartCareer.check(game.imageUtils)) return false
         if (ButtonStartCareer.click(game.imageUtils)) {
-            startCareerAttempts = 0
+            startCareerGuard.reset()
             MessageLog.i("[CAREER_START]", "Tapped Start Career on final confirmation.")
             game.waitForLoading()
             return true
         }
-        startCareerAttempts++
-        if (startCareerAttempts >= MAX_START_CAREER_ATTEMPTS) {
+        if (startCareerGuard.attempt()) {
             MessageLog.w(TAG, "Giving up on auto-starting career after $MAX_START_CAREER_ATTEMPTS failed attempts.")
         }
         return false
     }
 
     /** True once [tryStartCareer] has failed [MAX_START_CAREER_ATTEMPTS] times in a row for the current final-confirmation dialog. */
-    fun hasExceededStartCareerAttempts(): Boolean = startCareerAttempts >= MAX_START_CAREER_ATTEMPTS
+    fun hasExceededStartCareerAttempts(): Boolean = startCareerGuard.exceeded
+
+    fun resetStartCareerAttempts() { startCareerGuard.reset() }
 
     private fun isAutoBorrowEnabled(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableAutoBorrowSupportCard", false)
