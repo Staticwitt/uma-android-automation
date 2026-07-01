@@ -612,6 +612,7 @@ const TrainingSettings = () => {
                         )}
 
                         {showHeavySections && showSection("behavior") && (
+                            <>
                                 <Section label="Behavior">
                                     <View style={styles.sliderShell}>
                                         <CustomSlider
@@ -780,6 +781,7 @@ const TrainingSettings = () => {
                                         />
                                     </SearchableItem>
                                 </Section>
+                            </>
                         )}
 
                         {showHeavySections && showSection("scoring") && (
