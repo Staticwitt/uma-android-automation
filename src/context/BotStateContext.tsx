@@ -40,6 +40,7 @@ export interface Settings {
         enableStopAtDate: boolean
         stopAtDates: string[]
         enableDatingSchedule: boolean
+        enableRecreationCatchUp: boolean
         datingSchedulePreset: string
         recreationTurns: number[]
         purePassionTurn: number
@@ -402,6 +403,7 @@ export const defaultSettings: Settings = {
         enableStopAtDate: false,
         stopAtDates: ["Senior January Early"],
         enableDatingSchedule: false,
+        enableRecreationCatchUp: true,
         datingSchedulePreset: "siriusSenior",
         recreationTurns: [...DATING_SCHEDULE_PRESETS.siriusSenior.recreationTurns],
         purePassionTurn: DATING_SCHEDULE_PRESETS.siriusSenior.purePassionTurn,
