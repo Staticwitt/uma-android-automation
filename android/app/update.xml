@@ -1,16 +1,18 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.79</latestVersion>
-    <latestVersionCode>169</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.79</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.79/v5.9.79-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.79/v5.9.79-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.80</latestVersion>
+    <latestVersionCode>170</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.80</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.80/v5.9.80-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.80/v5.9.80-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.79 - Per-Scenario Stat Caps
+v5.9.80 - Unity Cup Train-Only Mode, URA Duel Handler, Spark Trait Reroll
 
 Added
 -----
-- Per-scenario stat caps in the training scorer: URA Finale 1400 across all stats; Unity Cup 1300 across Speed/Stamina/Power/Guts with 1800 Wit; Trackblazer 1900 Stamina and 1500 Wit with 1200 elsewhere. Previously all scenarios used a flat 1200 cap.
+- Unity Cup train-only mode: new toggle in Training Settings → Behavior → Unity Cup. When enabled, the bot always trains instead of running optional races. Mandatory race days, scheduled races, fan/trophy requirements, maiden race, injury/mood recovery, and energy banking are still respected.
+- URA Duel handler: detects the "Contest of" stat duel screen during URA Finale, picks the trainee's highest stat (Speed/Power/Wits), navigates the carousel to that option, and confirms.
+- Spark Trait Reroll: on the Traits reroll screen, automatically rerolls all spark traits up to a configurable limit and stops early once the configured star threshold is met.
 
     </releaseNotes>
   </update>
