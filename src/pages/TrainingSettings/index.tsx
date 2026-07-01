@@ -152,6 +152,7 @@ const TrainingSettings = () => {
         goalRaceStatBiasLookaheadTurns,
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
+        enableUnityCupTrainOnlyMode,
     } = trainingSettings
 
     // Update global settings when local state changes, but skip the initial mount check.
@@ -765,6 +766,17 @@ const TrainingSettings = () => {
                                                     width={140}
                                                 />
                                             }
+                                        />
+                                    </SearchableItem>
+                                </Section>
+
+                                <Section label="Unity Cup">
+                                    <SearchableItem id="enable-unity-cup-train-only-mode" terms={["unity cup", "train only", "training only", "no race", "skip race"]}>
+                                        <SettingRow
+                                            id="enable-unity-cup-train-only-mode"
+                                            title="Train-Only Mode"
+                                            description="When enabled, the bot will always choose to train instead of racing optional races during Unity Cup. Mandatory race days, scheduled races, fan/trophy requirements, and Unity Cup race events are still run normally."
+                                            right={<Switch checked={enableUnityCupTrainOnlyMode} onCheckedChange={(checked) => updateTrainingSetting("enableUnityCupTrainOnlyMode", checked)} />}
                                         />
                                     </SearchableItem>
                                 </Section>
