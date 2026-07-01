@@ -772,7 +772,7 @@ const TrainingSettings = () => {
                                 </Section>
 
                                 <Section label="Unity Cup">
-                                    <SearchableItem id="enable-unity-cup-train-only-mode" terms={["unity cup", "train only", "training only", "no race", "skip race"]}>
+                                    <SearchableItem id="enable-unity-cup-train-only-mode">
                                         <SettingRow
                                             id="enable-unity-cup-train-only-mode"
                                             title="Train-Only Mode"
