@@ -2,6 +2,7 @@ package com.steve1316.uma_android_automation.bot.campaigns
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
@@ -116,7 +117,44 @@ class UnityCup(game: Game) : Campaign(game) {
     }
 
     override fun checkCampaignSpecificConditions(): Boolean {
+        if (handleUnityFeatureTutorial()) return true
         return handleRaceEventsUnityCup()
+    }
+
+    /**
+     * Detects and dismisses the multi-page Unity Cup feature tutorial popups:
+     * - Page 1 "Extreme Spirit Burst" → taps center-bottom to click Next
+     * - Page 2 "Unity Waves Surge In!" → taps center-bottom to click Close
+     *
+     * Both action buttons sit at the same proportional position, so a single
+     * center-bottom tap handles either page without needing to distinguish them.
+     * This prevents [performMiscChecks] from clicking the "Back" button on page 2
+     * and looping the bot between the two pages.
+     *
+     * @return True if a tutorial popup was detected and dismissed, false otherwise.
+     */
+    private fun handleUnityFeatureTutorial(): Boolean {
+        val bitmap = game.imageUtils.getSourceBitmap()
+        val text = game.imageUtils.performOCROnRegion(
+            bitmap,
+            (SharedData.displayWidth * 0.05).toInt(),
+            (SharedData.displayHeight * 0.15).toInt(),
+            (SharedData.displayWidth * 0.90).toInt(),
+            (SharedData.displayHeight * 0.55).toInt(),
+            useThreshold = false, useGrayscale = true, scale = 1.5,
+            ocrEngine = "mlkit", debugName = "unity_feature_tutorial",
+        ).lowercase()
+
+        val label = when {
+            text.contains("extreme spirit burst") -> "Extreme Spirit Burst"
+            text.contains("unity waves") -> "Unity Waves Surge In"
+            else -> return false
+        }
+
+        MessageLog.i(TAG, "\n[UNITY] Detected \"$label\" tutorial popup — dismissing via center-bottom tap.")
+        game.gestureUtils.tap(SharedData.displayWidth * 0.5, SharedData.displayHeight * 0.895, "unity_tutorial_dismiss")
+        game.wait(0.5)
+        return true
     }
 
     /**
