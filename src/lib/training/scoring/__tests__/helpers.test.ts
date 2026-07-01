@@ -57,16 +57,45 @@ describe("getFinaleStatBonus", () => {
 })
 
 describe("getCurrentStatCap", () => {
-    test("returns 1200 for SPEED in URA scenario", () => {
-        expect(getCurrentStatCap(StatName.SPEED, makeConfig({ scenario: "URA" }))).toBe(1200)
+    test("URA Finale: all stats cap at 1400", () => {
+        const config = makeConfig({ scenario: "URA Finale" })
+        for (const stat of [StatName.SPEED, StatName.STAMINA, StatName.POWER, StatName.GUTS, StatName.WIT]) {
+            expect(getCurrentStatCap(stat, config)).toBe(1400)
+        }
     })
 
-    test("returns 1200 for WIT regardless of scenario name", () => {
-        expect(getCurrentStatCap(StatName.WIT, makeConfig({ scenario: "Unity Cup" }))).toBe(1200)
+    test("URA prefix match: scenario 'URA' also returns 1400", () => {
+        expect(getCurrentStatCap(StatName.SPEED, makeConfig({ scenario: "URA" }))).toBe(1400)
     })
 
-    test("returns 1200 for every stat", () => {
-        const config = makeConfig()
+    test("Unity Cup: non-Wit stats cap at 1300", () => {
+        const config = makeConfig({ scenario: "Unity Cup" })
+        for (const stat of [StatName.SPEED, StatName.STAMINA, StatName.POWER, StatName.GUTS]) {
+            expect(getCurrentStatCap(stat, config)).toBe(1300)
+        }
+    })
+
+    test("Unity Cup: Wit caps at 1800", () => {
+        expect(getCurrentStatCap(StatName.WIT, makeConfig({ scenario: "Unity Cup" }))).toBe(1800)
+    })
+
+    test("Trackblazer: Stamina caps at 1900", () => {
+        expect(getCurrentStatCap(StatName.STAMINA, makeConfig({ scenario: "Trackblazer" }))).toBe(1900)
+    })
+
+    test("Trackblazer: Wit caps at 1500", () => {
+        expect(getCurrentStatCap(StatName.WIT, makeConfig({ scenario: "Trackblazer" }))).toBe(1500)
+    })
+
+    test("Trackblazer: Speed, Power, Guts cap at 1200", () => {
+        const config = makeConfig({ scenario: "Trackblazer" })
+        for (const stat of [StatName.SPEED, StatName.POWER, StatName.GUTS]) {
+            expect(getCurrentStatCap(stat, config)).toBe(1200)
+        }
+    })
+
+    test("unknown scenario falls back to 1200 for all stats", () => {
+        const config = makeConfig({ scenario: "Unknown" })
         for (const stat of [StatName.SPEED, StatName.STAMINA, StatName.POWER, StatName.GUTS, StatName.WIT]) {
             expect(getCurrentStatCap(stat, config)).toBe(1200)
         }

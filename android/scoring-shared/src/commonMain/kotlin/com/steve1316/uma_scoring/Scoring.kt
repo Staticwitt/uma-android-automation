@@ -11,16 +11,31 @@ import kotlin.math.pow
 /** Stats gained per finale race win, per stat. Slightly above the actual +10 to account for misc event/card gains. */
 private const val FINALE_RACE_STAT_BONUS = 15
 
+private const val BASE_STAT_CAP = 1200
+
 /**
- * Retrieve the scenario-specific cap for a given stat. Currently a stub returning a flat 1200 for every scenario - kept as a function so callers thread through the scenario
- * name and we have a hook to differentiate per-scenario caps later without a signature change.
+ * Retrieve the scenario-specific cap for a given stat.
  *
- * @param scenario The campaign name.
+ * Caps by scenario (all are additions to the 1200 base):
+ *  - URA Finale:   +200 all stats
+ *  - Unity Cup:    +100 all stats, +600 Wit
+ *  - Trackblazer:  +700 Stamina, +300 Wit
+ *
+ * @param scenario The campaign name (e.g. "URA Finale", "Unity Cup", "Trackblazer").
  * @param statName The stat being capped.
  * @return The maximum value for the specified stat in the given scenario.
  */
 @JsExport
-fun getScenarioStatCap(scenario: String, statName: StatName): Int = 1200
+fun getScenarioStatCap(scenario: String, statName: StatName): Int = when {
+    scenario.startsWith("URA") -> BASE_STAT_CAP + 200
+    scenario == "Unity Cup" -> if (statName == StatName.WIT) BASE_STAT_CAP + 600 else BASE_STAT_CAP + 100
+    scenario == "Trackblazer" -> when (statName) {
+        StatName.STAMINA -> BASE_STAT_CAP + 700
+        StatName.WIT -> BASE_STAT_CAP + 300
+        else -> BASE_STAT_CAP
+    }
+    else -> BASE_STAT_CAP
+}
 
 /**
  * Retrieve the current stat cap given a scoring config.
