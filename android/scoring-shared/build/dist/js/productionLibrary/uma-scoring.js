@@ -62,7 +62,21 @@
   initMetadataForClass(TrainingScoringConstants, 'TrainingScoringConstants', TrainingScoringConstants);
   //endregion
   function getScenarioStatCap(scenario, statName) {
-    return 1200;
+    if (scenario.startsWith('URA')) {
+      return 1400;
+    } else if (scenario === 'Unity Cup') {
+      return equals(statName, StatName_WIT_getInstance()) ? 1800 : 1300;
+    } else if (scenario === 'Trackblazer') {
+      if (equals(statName, StatName_STAMINA_getInstance())) {
+        return 1900;
+      } else if (equals(statName, StatName_WIT_getInstance())) {
+        return 1500;
+      } else {
+        return 1200;
+      }
+    } else {
+      return 1200;
+    }
   }
   function getCurrentStatCap(statName, config) {
     return getScenarioStatCap(config.scenario, statName);
