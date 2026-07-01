@@ -3,9 +3,13 @@ package com.steve1316.uma_android_automation.bot.campaigns
 import android.graphics.Bitmap
 import android.util.Log
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.MainScreenAction
+import com.steve1316.uma_android_automation.components.IconRaceDayRibbon
+import com.steve1316.uma_android_automation.components.LabelScheduledRace
 import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonNextRaceEnd
 import com.steve1316.uma_android_automation.components.ButtonSelectOpponent
@@ -44,6 +48,69 @@ class UnityCup(game: Game) : Campaign(game) {
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    override fun decideNextAction(): MainScreenAction {
+        if (!SettingsHelper.getBooleanSetting("training", "enableUnityCupTrainOnlyMode", false)) {
+            return super.decideNextAction()
+        }
+
+        val sourceBitmap = game.imageUtils.getSourceBitmap()
+
+        // Mandatory and scheduled race days always race.
+        val bIsScheduledRaceDay = LabelScheduledRace.check(game.imageUtils, sourceBitmap = sourceBitmap)
+        val bIsMandatoryRaceDay = IconRaceDayRibbon.check(game.imageUtils, sourceBitmap = sourceBitmap)
+        if (bIsMandatoryRaceDay || bIsScheduledRaceDay) {
+            val reason = if (bIsMandatoryRaceDay) "Mandatory race day" else "Scheduled race day"
+            decisionTracer.recordActionChoice(MainScreenAction.RACE, "[UNITY_CUP_TRAIN_ONLY] $reason")
+            return MainScreenAction.RACE
+        }
+
+        // A race popup already on screen must be resolved.
+        if (racing.encounteredRacingPopup) {
+            decisionTracer.recordActionChoice(MainScreenAction.RACE, "[UNITY_CUP_TRAIN_ONLY] Racing popup already on screen from prior turn")
+            return MainScreenAction.RACE
+        }
+
+        // Maiden race is a required one-time event.
+        if (!bHasCheckedForMaidenRaceToday && !date.bIsPreDebut && !trainee.bHasCompletedMaidenRace) {
+            decisionTracer.recordActionChoice(MainScreenAction.RACE, "[UNITY_CUP_TRAIN_ONLY] Maiden race not yet completed")
+            return MainScreenAction.RACE
+        }
+
+        // Fan/trophy requirements must be met.
+        if (racing.hasFanRequirement || racing.hasTrophyRequirement) {
+            decisionTracer.recordActionChoice(MainScreenAction.RACE, "[UNITY_CUP_TRAIN_ONLY] Racing requirement (fans or trophy) active")
+            return MainScreenAction.RACE
+        }
+
+        // Injury and mood recovery still apply.
+        val isFinals = checkFinals()
+        val hasInjury = if (isFinals) false else checkInjury(sourceBitmap)
+        if (hasInjury) {
+            decisionTracer.recordActionChoice(MainScreenAction.NONE, "[UNITY_CUP_TRAIN_ONLY] Injury detected; turn aborted")
+            return MainScreenAction.NONE
+        }
+        if (shouldRecoverMood(sourceBitmap)) {
+            decisionTracer.recordActionChoice(MainScreenAction.RECOVER_MOOD, "[UNITY_CUP_TRAIN_ONLY] shouldRecoverMood returned true (mood ${trainee.mood})")
+            return MainScreenAction.RECOVER_MOOD
+        }
+
+        // SmartRaceSolver and extra-race eligibility are intentionally skipped.
+
+        // Energy banking before mandatory race still applies.
+        if (enableEnergyBanking && !isFinals && trainee.energy < energyBankingThreshold) {
+            val turnsRemaining = game.imageUtils.determineTurnsRemainingBeforeNextGoal()
+            if (turnsRemaining in 1..energyBankingLookaheadTurns) {
+                MessageLog.i(TAG, "[UNITY_CUP_TRAIN_ONLY] Energy banking: $turnsRemaining turn(s) remain and energy is ${trainee.energy}% (< $energyBankingThreshold%). Resting.")
+                decisionTracer.recordActionChoice(MainScreenAction.REST, "[UNITY_CUP_TRAIN_ONLY] Energy banking ($turnsRemaining turns; energy ${trainee.energy}% < $energyBankingThreshold%)")
+                return MainScreenAction.REST
+            }
+        }
+
+        MessageLog.i(TAG, "[UNITY_CUP_TRAIN_ONLY] Train-only mode active — defaulting to training.")
+        decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "[UNITY_CUP_TRAIN_ONLY] Train-only mode: defaulting to training")
+        return MainScreenAction.TRAIN
+    }
 
     override fun handleDialogs(dialog: DialogInterface?, args: Map<String, Any>): DialogHandlerResult {
         val result: DialogHandlerResult = super.handleDialogs(dialog, args)

@@ -253,6 +253,7 @@ export interface Settings {
         enableYoloStatDetection: boolean
         classicMilestonePercent: number
         seniorMilestonePercent: number
+        enableUnityCupTrainOnlyMode: boolean
     }
 
     // Training Stat Target settings
@@ -606,6 +607,7 @@ export const defaultSettings: Settings = {
         enableYoloStatDetection: false,
         classicMilestonePercent: 33,
         seniorMilestonePercent: 66,
+        enableUnityCupTrainOnlyMode: false,
     },
     trainingStatTarget: {
         trainingSprintStatTarget_speedStatTarget: 1200,
