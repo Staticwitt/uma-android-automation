@@ -1105,7 +1105,8 @@ class TrainingScoringTest {
     @DisplayName("Stat near cap blocked by finale bonus adjustment (turn 60, 3 races remaining)")
     fun testFinaleAdjustmentBlocksTrainingNearCap() {
         // With 3 finale races remaining, effective cap = 1200 - 100 - 45 = 1055.
-        // A stat at 1060 should be blocked.
+        // A stat at 1060 should be blocked. Uses Unknown scenario (cap=1200) to isolate
+        // the finale-adjustment logic from per-scenario cap differences.
         val currentStats =
             mapOf(
                 StatName.SPEED to 1060,
@@ -1127,6 +1128,7 @@ class TrainingScoringTest {
                 currentStats = currentStats,
                 disableTrainingOnMaxedStat = true,
                 currentDate = GameDate(day = 60),
+                scenario = "Unknown",
             )
 
         val score = calculateRawTrainingScore(config, training)
