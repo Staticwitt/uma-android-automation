@@ -1,17 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.78</latestVersion>
-    <latestVersionCode>168</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.78</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.78/v5.9.78-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.78/v5.9.78-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.9.79</latestVersion>
+    <latestVersionCode>169</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.79</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.79/v5.9.79-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.79/v5.9.79-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.78 - URA Duel Handler and Spark Trait Reroll
+v5.9.79 - Per-Scenario Stat Caps
 
 Added
 -----
-- URA Duel: bot now detects Happy Meek's stat contest screen during URA Finale, picks the trainee's highest stat among Speed/Power/Wits, navigates the carousel to that option, and confirms.
-- Spark Trait Reroll: after inheritance spark selection, the bot detects the Traits reroll screen and rerolls all spark traits up to a configurable limit (sparkTraitMaxRerolls), stopping early when the star count meets the threshold (sparkTraitMinStars), then clicks Decide. Active for all scenarios.
+- Per-scenario stat caps in the training scorer: URA Finale 1400 across all stats; Unity Cup 1300 across Speed/Stamina/Power/Guts with 1800 Wit; Trackblazer 1900 Stamina and 1500 Wit with 1200 elsewhere. Previously all scenarios used a flat 1200 cap.
 
     </releaseNotes>
   </update>
