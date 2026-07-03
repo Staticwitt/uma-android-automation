@@ -216,6 +216,25 @@ abstract class Campaign(game: Game) : Task(game) {
     /** The turn number when the pre-finals stop check first started. */
     protected var stopBeforeFinalsInitialTurnNumber: Int = -1
 
+    /** Fan thresholds that trigger a Discord notification when crossed for the first time this run. Parsed once; empty list = disabled. */
+    private val fanMilestoneList: List<Int> =
+        run {
+            val raw = SettingsHelper.getStringSetting("discord", "fanMilestones", "")
+            raw.split(",").mapNotNull { it.trim().toIntOrNull() }.filter { it > 0 }.sorted()
+        }
+
+    /** Set of fan milestones already notified this run (prevents re-firing on re-read). */
+    private val notifiedFanMilestones: MutableSet<Int> = mutableSetOf()
+
+    /** Whether the race momentum Discord notification is enabled. */
+    private val enableRaceMomentumNotifications: Boolean = SettingsHelper.getBooleanSetting("discord", "enableRaceMomentumNotifications", false)
+
+    /** Running count of consecutive race wins for the momentum tracker. */
+    private var momentumWinStreak: Int = 0
+
+    /** Running count of consecutive race losses for the momentum tracker. */
+    private var momentumLossStreak: Int = 0
+
     /** Flag indicating if the bot needs to check its fan count. */
     protected var bNeedToCheckFans: Boolean = true
 
@@ -257,6 +276,58 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Matches valid Career Rank tiers (e.g. "S+", "SS", "UG") detected via OCR on the Career Rank screen. */
     private val CAREER_RANK_PATTERN: Regex = Regex("^(UG|SS\\+?|S\\+?|A\\+?|B\\+?|C\\+?|D\\+?|E\\+?|F\\+?|G\\+?)$")
+
+    /**
+     * Fires a Discord notification for any configured fan milestone that was just crossed.
+     * Only fires once per milestone per run and only when Discord notifications are enabled.
+     *
+     * @param newFans The newly-read fan count.
+     */
+    private fun checkFanMilestones(newFans: Int) {
+        if (fanMilestoneList.isEmpty()) return
+        for (milestone in fanMilestoneList) {
+            if (newFans >= milestone && notifiedFanMilestones.add(milestone)) {
+                val formatted = "%,d".format(milestone)
+                MessageLog.i(TAG, "[FAN_MILESTONE] Reached $formatted fans — sending Discord notification.")
+                AppDiscordNotifications.sendInfo(
+                    title = "Fan milestone reached: $formatted",
+                    description = "The trainee now has ${"%,d".format(newFans)} fans.",
+                )
+            }
+        }
+    }
+
+    /**
+     * Called by [Racing] after each race result is committed.
+     * Sends a Discord momentum notification if enabled and tracks win/loss streaks.
+     *
+     * @param won True if the trainee placed 1st, false otherwise.
+     */
+    open fun onRaceResult(won: Boolean) {
+        if (won) {
+            momentumWinStreak++
+            momentumLossStreak = 0
+        } else {
+            momentumLossStreak++
+            momentumWinStreak = 0
+        }
+
+        if (!enableRaceMomentumNotifications || !DiscordUtils.enableDiscordNotifications) return
+
+        if (won) {
+            val streakStr = if (momentumWinStreak > 1) " ($momentumWinStreak in a row)" else ""
+            AppDiscordNotifications.sendInfo(
+                title = "Race won$streakStr",
+                description = "The trainee placed 1st.",
+            )
+        } else {
+            val streakStr = if (momentumLossStreak > 1) " ($momentumLossStreak in a row)" else ""
+            AppDiscordNotifications.sendInfo(
+                title = "Race lost$streakStr",
+                description = "The trainee did not place 1st.",
+            )
+        }
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -585,6 +656,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 if (fans != null) {
                     trainee.fans = fans
                     SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
+                    checkFanMilestones(trainee.fans)
                     bNeedToCheckFans = false
                     MessageLog.i(TAG, "[INFO] Updated fan count: ${trainee.fans}")
                 } else {
@@ -1720,6 +1792,16 @@ abstract class Campaign(game: Game) : Task(game) {
         val decideX = SharedData.displayWidth * 0.75
         val decideY = SharedData.displayHeight * 0.925
 
+        // If the reroll currency is explicitly 0, skip rerolls to avoid wasted taps.
+        val tpCount = Regex("""(\d+)\s*(?:uses?|tp|reroll)""", RegexOption.IGNORE_CASE).find(bottomText)?.groupValues?.get(1)?.toIntOrNull()
+        if (tpCount != null && tpCount == 0) {
+            MessageLog.i(TAG, "[TRAITS] Reroll currency is 0. Deciding on current traits without rerolling.")
+            game.gestureUtils.tap(decideX, decideY, "spark_trait_decide")
+            game.wait(1.0)
+            game.waitForLoading()
+            return true
+        }
+
         var rerollCount = 0
         while (rerollCount < maxRerolls) {
             val currentBitmap = game.imageUtils.getSourceBitmap()
@@ -2423,6 +2505,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     if (cleanedFans.isNotEmpty()) {
                         trainee.fans = cleanedFans.toInt()
                         SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
+                        checkFanMilestones(trainee.fans)
                     } else {
                         MessageLog.w(TAG, "[WARN] process:: Could not detect final fan count for the end of the Career from OCR: $fansText")
                     }

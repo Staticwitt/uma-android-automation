@@ -2,8 +2,10 @@ package com.steve1316.uma_android_automation.bot.campaigns
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
 import com.steve1316.uma_android_automation.bot.Game
@@ -39,6 +41,12 @@ class UnityCup(game: Game) : Campaign(game) {
 
     /** Flag indicating if the bot is currently in the finals. */
     private var bIsFinals: Boolean = false
+
+    /** Counts Unity Cup rounds completed this career (incremented at each race-end exit). */
+    private var unityCupRoundNumber: Int = 0
+
+    /** Whether to send a Discord notification after each Unity Cup round completes. */
+    private val enableScenarioProgressPings: Boolean = SettingsHelper.getBooleanSetting("discord", "enableScenarioProgressPings", false)
 
     /** The index of the currently selected opponent. */
     private var selectedOpponentIndex: Int = 0
@@ -290,7 +298,15 @@ class UnityCup(game: Game) : Campaign(game) {
 
                 // This is our only natural exit point from this function.
                 IconUnityCupRaceEndLogo.check(game.imageUtils, sourceBitmap = sourceBitmap) && ButtonNext.click(game.imageUtils, sourceBitmap = sourceBitmap) -> {
-                    MessageLog.i(TAG, "[INFO] Race event completed.")
+                    unityCupRoundNumber++
+                    MessageLog.i(TAG, "[INFO] Race event completed (round $unityCupRoundNumber).")
+                    if (enableScenarioProgressPings && DiscordUtils.enableDiscordNotifications) {
+                        val label = if (bIsFinals) "Finals" else "Round $unityCupRoundNumber"
+                        AppDiscordNotifications.sendInfo(
+                            title = "Unity Cup $label Complete",
+                            description = if (bIsFinals) "The final race against Team Zenith has been resolved." else "Unity Cup Round $unityCupRoundNumber is done.",
+                        )
+                    }
                     return true
                 }
 

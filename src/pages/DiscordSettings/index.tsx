@@ -36,7 +36,7 @@ const DiscordSettings = () => {
 
     // Merge current Discord settings with defaults to handle missing properties.
     const discordSettings = { ...defaultSettings.discord, ...discord }
-    const { enableDiscordNotifications, discordToken, enableDiscordEmbeds, enableDiscordLiveStatus, enableDiscordRaceAlerts, enableDiscordWinRateGuardAlerts, discordLiveStatusTurnInterval } = discordSettings
+    const { enableDiscordNotifications, discordToken, enableDiscordEmbeds, enableDiscordLiveStatus, enableDiscordRaceAlerts, enableDiscordWinRateGuardAlerts, discordLiveStatusTurnInterval, fanMilestones, enableRaceMomentumNotifications, enableScenarioProgressPings } = discordSettings
     // Coerce to string since SQLite may store numeric IDs as numbers.
     const discordUserID = String(discordSettings.discordUserID || "")
 
@@ -280,6 +280,52 @@ const DiscordSettings = () => {
                                     />
                                 </View>
                             )}
+                            <SearchableItem
+                                id="discord-fan-milestones"
+                                title="Fan Milestones"
+                                description="Send a Discord notification each time the trainee crosses one of these fan counts during a run."
+                            >
+                                <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                    <TextInput
+                                        style={[styles.textInput, !enableDiscordNotifications && styles.textInputDisabled]}
+                                        value={fanMilestones ?? ""}
+                                        onChangeText={(text) => updateDiscordSetting("fanMilestones", text)}
+                                        placeholder="e.g. 10000,50000,100000"
+                                        placeholderTextColor={colors.textSubtle}
+                                        editable={enableDiscordNotifications}
+                                        keyboardType="numbers-and-punctuation"
+                                        autoCapitalize="none"
+                                        autoCorrect={false}
+                                    />
+                                </Pressable>
+                                <Text style={{ ...TYPE.caption, color: colors.textMuted, marginTop: SPACING.xs }}>
+                                    Comma-separated fan counts. Each threshold fires once per career.
+                                </Text>
+                            </SearchableItem>
+                            <SettingRow
+                                id="enableRaceMomentumNotifications"
+                                title="Race Momentum Notifications"
+                                description="Send a DM after each race with the result (win/loss) and your current winning or losing streak"
+                                right={
+                                    <Switch
+                                        checked={enableRaceMomentumNotifications}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableRaceMomentumNotifications", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
+                            <SettingRow
+                                id="enableScenarioProgressPings"
+                                title="Scenario Progress Pings"
+                                description="Send a DM at key milestones: Unity Cup round completions and URA Finale duel results"
+                                right={
+                                    <Switch
+                                        checked={enableScenarioProgressPings}
+                                        onCheckedChange={(checked) => updateDiscordSetting("enableScenarioProgressPings", checked)}
+                                        disabled={!enableDiscordNotifications}
+                                    />
+                                }
+                            />
                         </Section>
 
                         <Section label="Setup">

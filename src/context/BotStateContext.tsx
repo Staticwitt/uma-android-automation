@@ -55,6 +55,8 @@ export interface Settings {
         enableFarmingFans: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
+        /** Minimum energy % required to start optional (extra) races. 0 = disabled; hard requirements always bypass. */
+        minimumEnergyForOptionalRacing: number
         daysToRunExtraRaces: number
         disableRaceRetries: boolean
         enableFreeRaceRetry: boolean
@@ -256,6 +258,12 @@ export interface Settings {
         enableUnityCupTrainOnlyMode: boolean
         sparkTraitMaxRerolls: number
         sparkTraitMinStars: number
+        /** Per-scenario blacklist for URA Finale (overrides global blacklist when non-empty). */
+        "trainingBlacklist_URA Finale": string[]
+        /** Per-scenario blacklist for Unity Cup (overrides global blacklist when non-empty). */
+        "trainingBlacklist_Unity Cup": string[]
+        /** Per-scenario blacklist for Trackblazer (overrides global blacklist when non-empty). */
+        "trainingBlacklist_Trackblazer": string[]
     }
 
     // Training Stat Target settings
@@ -327,6 +335,12 @@ export interface Settings {
         discordLiveStatusTurnInterval: number
         discordToken: string
         discordUserID: string
+        /** Fan counts that trigger a Discord DM when crossed during a run (comma-separated, e.g. "10000,50000,100000"). */
+        fanMilestones: string
+        /** Send a Discord DM after each race with the result (win/loss) and current streak. */
+        enableRaceMomentumNotifications: boolean
+        /** Send a Discord DM at key scenario milestones (Unity Cup rounds, URA Finale duels). */
+        enableScenarioProgressPings: boolean
     }
 
     // On-device docs chatbot settings
@@ -389,6 +403,7 @@ export const defaultSettings: Settings = {
         enableFarmingFans: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,
+        minimumEnergyForOptionalRacing: 0,
         daysToRunExtraRaces: 5,
         disableRaceRetries: false,
         enableFreeRaceRetry: false,
@@ -612,6 +627,9 @@ export const defaultSettings: Settings = {
         enableUnityCupTrainOnlyMode: false,
         sparkTraitMaxRerolls: 0,
         sparkTraitMinStars: 0,
+        "trainingBlacklist_URA Finale": [],
+        "trainingBlacklist_Unity Cup": [],
+        "trainingBlacklist_Trackblazer": [],
     },
     trainingStatTarget: {
         trainingSprintStatTarget_speedStatTarget: 1200,
@@ -670,6 +688,9 @@ export const defaultSettings: Settings = {
         discordLiveStatusTurnInterval: 6,
         discordToken: "",
         discordUserID: "",
+        fanMilestones: "",
+        enableRaceMomentumNotifications: false,
+        enableScenarioProgressPings: false,
     },
     chat: {
         enableAskTheDocs: false,

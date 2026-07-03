@@ -76,6 +76,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     /** Whether to bypass the low-energy racing block in Trackblazer. */
     val ignoreLowEnergyRacingBlock = SettingsHelper.getBooleanSetting("racing", "ignoreLowEnergyRacingBlock")
 
+    /** Minimum energy percentage required to start optional (extra) races. 0 = no gate. Hard requirements bypass this. */
+    private val minimumEnergyForOptionalRacing: Int = SettingsHelper.getIntSetting("racing", "minimumEnergyForOptionalRacing", 0)
+
     /** The number of days to wait between running extra races. */
     private val daysToRunExtraRaces: Int = SettingsHelper.getIntSetting("racing", "daysToRunExtraRaces")
 
@@ -759,6 +762,13 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             return true
         }
 
+        // Low-energy gate: skip optional races when energy is below the configured threshold.
+        if (minimumEnergyForOptionalRacing > 0 && campaign.trainee.energy < minimumEnergyForOptionalRacing) {
+            MessageLog.i(TAG, "[RACE] Energy (${campaign.trainee.energy}%) is below minimum for optional racing ($minimumEnergyForOptionalRacing%). Skipping extra race.")
+            campaign.decisionTracer.recordRaceEligibility(eligible = false, reason = "Energy ${campaign.trainee.energy}% < minimumEnergyForOptionalRacing $minimumEnergyForOptionalRacing%")
+            return false
+        }
+
         // When the Smart Race Solver is enabled, its schedule is authoritative for extra races. If the solver did not plan a race for
         // this turn, suppress every extra-race fallback (including the scenario fan-farm bypass and the racing-interval cadence) so the
         // bot trains or rests instead of racing as filler. Hard requirements above still short-circuit to true before this guard.
@@ -1360,6 +1370,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             val firstPlace = detectFirstPlaceFinish()
             MessageLog.i(TAG, "[RACE] Race result (no Next button) — 1st place: $firstPlace.")
             SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
+            campaign.onRaceResult(won = firstPlace)
             return false
         }
 
@@ -1369,6 +1380,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         val firstPlace = detectFirstPlaceFinish()
         MessageLog.i(TAG, "[RACE] Race result detected — 1st place: $firstPlace.")
         SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
+        campaign.onRaceResult(won = firstPlace)
 
         // Max time limit for the while loop to attempt to finalize race results.
         // It really shouldn't ever take this long.

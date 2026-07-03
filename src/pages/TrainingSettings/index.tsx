@@ -64,6 +64,9 @@ const TrainingSettings = () => {
     const { saveSettingsImmediate } = useSettings()
     const { currentProfileName } = useProfileManager()
     const [blacklistModalVisible, setBlacklistModalVisible] = useState(false)
+    const [blacklistUraFinaleModalVisible, setBlacklistUraFinaleModalVisible] = useState(false)
+    const [blacklistUnityCupModalVisible, setBlacklistUnityCupModalVisible] = useState(false)
+    const [blacklistTrackblazerModalVisible, setBlacklistTrackblazerModalVisible] = useState(false)
     const [prioritizationModalVisible, setPrioritizationModalVisible] = useState(false)
     const [eventChoicePrioritizationModalVisible, setEventChoicePrioritizationModalVisible] = useState(false)
     const [summerTrainingPrioritizationModalVisible, setSummerTrainingPrioritizationModalVisible] = useState(false)
@@ -77,6 +80,21 @@ const TrainingSettings = () => {
         LayoutAnimation.configureNext(LayoutAnimation.create(MOTION.duration.base, "easeInEaseOut", "opacity"))
         setDistanceOpen((prev) => ({ ...prev, [key]: !prev[key] }))
     }, [])
+    const applyDistancePreset = useCallback(
+        (distance: "Sprint" | "Mile" | "Medium" | "Long", preset: "defaults" | "allmax") => {
+            const p = `training${distance}StatTarget` as const
+            const d = defaultSettings.trainingStatTarget
+            const val = (key: keyof typeof d) => (preset === "defaults" ? (d[key] as number) : 1200)
+            updateStatTargetSlice({
+                [`${p}_speedStatTarget`]: val(`${p}_speedStatTarget` as keyof typeof d),
+                [`${p}_staminaStatTarget`]: val(`${p}_staminaStatTarget` as keyof typeof d),
+                [`${p}_powerStatTarget`]: val(`${p}_powerStatTarget` as keyof typeof d),
+                [`${p}_gutsStatTarget`]: val(`${p}_gutsStatTarget` as keyof typeof d),
+                [`${p}_witStatTarget`]: val(`${p}_witStatTarget` as keyof typeof d),
+            } as any)
+        },
+        [updateStatTargetSlice]
+    )
     const { showToast, showError } = useToast()
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
@@ -156,6 +174,10 @@ const TrainingSettings = () => {
         sparkTraitMaxRerolls,
         sparkTraitMinStars,
     } = trainingSettings
+
+    const blacklistUraFinaleItems = trainingSettings["trainingBlacklist_URA Finale"] ?? defaultSettings.training["trainingBlacklist_URA Finale"]
+    const blacklistUnityCupItems = trainingSettings["trainingBlacklist_Unity Cup"] ?? defaultSettings.training["trainingBlacklist_Unity Cup"]
+    const blacklistTrackblazerItems = trainingSettings["trainingBlacklist_Trackblazer"] ?? defaultSettings.training["trainingBlacklist_Trackblazer"]
 
     // Update global settings when local state changes, but skip the initial mount check.
     // We also verify that the values are actually different before triggering an update.
@@ -773,6 +795,19 @@ const TrainingSettings = () => {
                                     </SearchableItem>
                                 </Section>
 
+                                <Section label="URA Finale">
+                                    {renderStatSelector(
+                                        "Blacklist (URA Finale only)",
+                                        blacklistUraFinaleItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_URA Finale", value),
+                                        blacklistUraFinaleModalVisible,
+                                        setBlacklistUraFinaleModalVisible,
+                                        "Stats to skip only when playing URA Finale. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-ura-finale"
+                                    )}
+                                </Section>
+
                                 <Section label="Unity Cup">
                                     <SearchableItem id="enable-unity-cup-train-only-mode">
                                         <SettingRow
@@ -782,6 +817,29 @@ const TrainingSettings = () => {
                                             right={<Switch checked={enableUnityCupTrainOnlyMode} onCheckedChange={(checked) => updateTrainingSetting("enableUnityCupTrainOnlyMode", checked)} />}
                                         />
                                     </SearchableItem>
+                                    {renderStatSelector(
+                                        "Blacklist (Unity Cup only)",
+                                        blacklistUnityCupItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_Unity Cup", value),
+                                        blacklistUnityCupModalVisible,
+                                        setBlacklistUnityCupModalVisible,
+                                        "Stats to skip only when playing Unity Cup. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-unity-cup"
+                                    )}
+                                </Section>
+
+                                <Section label="Trackblazer">
+                                    {renderStatSelector(
+                                        "Blacklist (Trackblazer only)",
+                                        blacklistTrackblazerItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_Trackblazer", value),
+                                        blacklistTrackblazerModalVisible,
+                                        setBlacklistTrackblazerModalVisible,
+                                        "Stats to skip only when playing Trackblazer. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-trackblazer"
+                                    )}
                                 </Section>
 
                                 <Section label="Spark Traits">
@@ -975,6 +1033,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.sprint && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Sprint", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         value={trainingStatTargetSettings.trainingSprintStatTarget_speedStatTarget}
                                                         placeholder={defaultSettings.trainingStatTarget.trainingSprintStatTarget_speedStatTarget}
@@ -1052,6 +1122,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.mile && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Mile", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingMileStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingMileStatTarget_speedStatTarget}
@@ -1129,6 +1211,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.medium && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Medium", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingMediumStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingMediumStatTarget_speedStatTarget}
@@ -1206,6 +1300,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.long && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Long", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingLongStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingLongStatTarget_speedStatTarget}

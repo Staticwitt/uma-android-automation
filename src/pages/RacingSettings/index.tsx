@@ -58,6 +58,7 @@ const RacingSettings = () => {
         enableFarmingFans,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
+        minimumEnergyForOptionalRacing,
         daysToRunExtraRaces,
         disableRaceRetries,
         enableFreeRaceRetry,
@@ -220,6 +221,22 @@ const RacingSettings = () => {
                                     showValue
                                     showLabels
                                     description="Extra races on days where turn % interval matches (e.g. 5 → days 5, 10, 15). Ignored when Smart Race Solver is on."
+                                />
+                            </View>
+                            <View style={{ padding: SPACING.md }}>
+                                <CustomSlider
+                                    searchId="minimum-energy-for-optional-racing"
+                                    value={minimumEnergyForOptionalRacing ?? 0}
+                                    placeholder={0}
+                                    onValueChange={(value) => updateRacingSetting("minimumEnergyForOptionalRacing", value)}
+                                    min={0}
+                                    max={100}
+                                    step={5}
+                                    label="Minimum Energy for Optional Racing"
+                                    labelUnit="%"
+                                    showValue
+                                    showLabels
+                                    description="Skip optional (extra) races when energy is below this threshold. Set to 0 to disable. Hard requirements like fan/trophy goals always bypass this gate."
                                 />
                             </View>
                             <SettingRow

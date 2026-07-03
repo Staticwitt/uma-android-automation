@@ -1590,6 +1590,28 @@ class Trackblazer(game: Game) : Campaign(game) {
         }
     }
 
+    /**
+     * Handles the shop button appearing when the main-screen template check didn't detect it
+     * (e.g., after a race when the screen hasn't fully settled). If the shop flag is set or the
+     * initial shop visit hasn't happened yet and the shop button is visible, opens the shop.
+     */
+    override fun checkCampaignSpecificConditions(): Boolean {
+        if (!bShouldCheckShop && bInitialShopCheckPerformed) return false
+        if (!ButtonShopTrackblazer.check(game.imageUtils)) return false
+
+        MessageLog.i(TAG, "[TRACKBLAZER] checkCampaignSpecificConditions: Shop button visible. Opening shop now.")
+        bShouldCheckShop = false
+        shopCheckCounter = 0
+        bInitialShopCheckPerformed = true
+        return if (openShop()) {
+            buyItems()
+            true
+        } else {
+            MessageLog.e(TAG, "[TRACKBLAZER] checkCampaignSpecificConditions: Failed to open shop.")
+            false
+        }
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
