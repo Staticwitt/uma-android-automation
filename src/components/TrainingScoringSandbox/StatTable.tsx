@@ -116,7 +116,7 @@ export function StatTable({ scenario, dispatch }: StatTableProps): React.ReactEl
                 </View>
                 {ALL_STAT_NAMES.map((stat) => (
                     <View key={stat} style={styles.statCell}>
-                        <NumberField value={scenario.traineeTotals[stat] ?? 0} onChange={(v) => dispatch({ type: "set-trainee-total", stat, value: v })} min={0} max={1200} width={numberFieldWidth} />
+                        <NumberField value={scenario.traineeTotals[stat] ?? 0} onChange={(v) => dispatch({ type: "set-trainee-total", stat, value: v })} min={0} max={1600} width={numberFieldWidth} />
                     </View>
                 ))}
             </View>

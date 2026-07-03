@@ -49,24 +49,28 @@ class UraFinale(game: Game) : Campaign(game) {
 
         val statsAvail = mapOf(
             StatName.SPEED to trainee.stats.speed,
+            StatName.STAMINA to trainee.stats.stamina,
             StatName.POWER to trainee.stats.power,
+            StatName.GUTS to trainee.stats.guts,
             StatName.WIT to trainee.stats.wit,
         ).filter { it.value > 0 }
 
         val targetStat = statsAvail.maxByOrNull { it.value }?.key ?: StatName.SPEED
         val targetKeyword = when (targetStat) {
             StatName.SPEED -> "speed"
+            StatName.STAMINA -> "stamina"
             StatName.POWER -> "power"
+            StatName.GUTS -> "guts"
             StatName.WIT -> "wits"
             else -> "speed"
         }
 
-        MessageLog.i(TAG, "[URA_DUEL] Best duel stat: $targetStat (spd=${trainee.stats.speed}, pow=${trainee.stats.power}, wit=${trainee.stats.wit}). Seeking \"$targetKeyword\".")
+        MessageLog.i(TAG, "[URA_DUEL] Best duel stat: $targetStat (spd=${trainee.stats.speed}, sta=${trainee.stats.stamina}, pow=${trainee.stats.power}, guts=${trainee.stats.guts}, wit=${trainee.stats.wit}). Seeking \"$targetKeyword\".")
 
         val rightArrowX = SharedData.displayWidth * 0.88
         val rightArrowY = SharedData.displayHeight * 0.48
 
-        for (attempt in 0 until 3) {
+        for (attempt in 0 until 6) {
             val currentBitmap = game.imageUtils.getSourceBitmap()
             val current = game.imageUtils.performOCROnRegion(
                 currentBitmap, detectX, detectY, detectW, detectH,

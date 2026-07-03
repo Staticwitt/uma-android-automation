@@ -216,11 +216,11 @@ class Trainee {
 
     /**
      * The highest stat value the consecutive-mismatch "trust the new value" recovery (see [updateStats]) will ever
-     * accept, matching the project's standard assumption of 1200 as the practical stat cap (see [CustomImageUtils]'s
-     * `manualStatCap` fallback). Without this, two consecutive OCR misreads landing on the same wildly wrong digits
-     * (e.g. an extra leading digit) would be "confirmed" and trusted just as readily as a legitimate stat jump.
+     * accept. Raised to 1800 to accommodate the July 2026 extended stat caps where stats can legitimately exceed 1200
+     * with halved diminishing returns (see [CustomImageUtils]'s `manualStatCap` fallback). Without this, two
+     * consecutive OCR misreads landing on the same wildly wrong digits would be confirmed as legitimate.
      */
-    private val maxPlausibleStatValue = 1200
+    private val maxPlausibleStatValue = 1800
 
     /** True once aptitudes, stats, and skill points have all been updated at least once. */
     val bIsInitialized: Boolean

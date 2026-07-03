@@ -878,7 +878,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                 val parsed = cleanedText.toInt()
                 if (manualStatCap > 0) parsed.coerceIn(0, manualStatCap) else parsed.coerceAtLeast(0)
             } catch (_: NumberFormatException) {
-                if (manualStatCap > 0) manualStatCap else 1200
+                if (manualStatCap > 0) manualStatCap else 1800
             }
         } else {
             try {
@@ -970,12 +970,12 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
                 if (text.lowercase().contains("max") || text.lowercase().contains("ax")) {
                     Log.d(TAG, "[DEBUG] determineStatValues:: $statName seems to be maxed out. Setting it to $manualStatCap.")
-                    result[statName] = if (manualStatCap > 0) manualStatCap else 1200
+                    result[statName] = if (manualStatCap > 0) manualStatCap else 1800
                 } else {
                     try {
                         // Extract all numbers from the text
                         val numbers = Regex("\\d+").findAll(text).map { it.value.toInt() }.toList()
-                        val cap = if (manualStatCap > 0) manualStatCap else 1200
+                        val cap = if (manualStatCap > 0) manualStatCap else 1800
 
                         if (numbers.isEmpty()) {
                             MessageLog.w(TAG, "[WARN] determineStatValues:: No numbers found in '$text' for $statName")
