@@ -80,6 +80,21 @@ const TrainingSettings = () => {
         LayoutAnimation.configureNext(LayoutAnimation.create(MOTION.duration.base, "easeInEaseOut", "opacity"))
         setDistanceOpen((prev) => ({ ...prev, [key]: !prev[key] }))
     }, [])
+    const applyDistancePreset = useCallback(
+        (distance: "Sprint" | "Mile" | "Medium" | "Long", preset: "defaults" | "allmax") => {
+            const p = `training${distance}StatTarget` as const
+            const d = defaultSettings.trainingStatTarget
+            const val = (key: keyof typeof d) => (preset === "defaults" ? (d[key] as number) : 1200)
+            updateStatTargetSlice({
+                [`${p}_speedStatTarget`]: val(`${p}_speedStatTarget` as keyof typeof d),
+                [`${p}_staminaStatTarget`]: val(`${p}_staminaStatTarget` as keyof typeof d),
+                [`${p}_powerStatTarget`]: val(`${p}_powerStatTarget` as keyof typeof d),
+                [`${p}_gutsStatTarget`]: val(`${p}_gutsStatTarget` as keyof typeof d),
+                [`${p}_witStatTarget`]: val(`${p}_witStatTarget` as keyof typeof d),
+            } as any)
+        },
+        [updateStatTargetSlice]
+    )
     const { showToast, showError } = useToast()
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
@@ -1018,6 +1033,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.sprint && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Sprint", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         value={trainingStatTargetSettings.trainingSprintStatTarget_speedStatTarget}
                                                         placeholder={defaultSettings.trainingStatTarget.trainingSprintStatTarget_speedStatTarget}
@@ -1095,6 +1122,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.mile && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Mile", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingMileStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingMileStatTarget_speedStatTarget}
@@ -1172,6 +1211,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.medium && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Medium", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingMediumStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingMediumStatTarget_speedStatTarget}
@@ -1249,6 +1300,18 @@ const TrainingSettings = () => {
                                             </Pressable>
                                             {distanceOpen.long && (
                                                 <View style={styles.distanceBody}>
+                                                    <View style={{ flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" }}>
+                                                        {(["Reset Defaults", "All Max"] as const).map((label) => (
+                                                            <Pressable
+                                                                key={label}
+                                                                onPress={() => applyDistancePreset("Long", label === "All Max" ? "allmax" : "defaults")}
+                                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                                style={{ paddingHorizontal: SPACING.sm, paddingVertical: 4, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+                                                            >
+                                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>{label}</Text>
+                                                            </Pressable>
+                                                        ))}
+                                                    </View>
                                                     <CustomSlider
                                                         placeholder={defaultSettings.trainingStatTarget.trainingLongStatTarget_speedStatTarget}
                                                         value={trainingStatTargetSettings.trainingLongStatTarget_speedStatTarget}

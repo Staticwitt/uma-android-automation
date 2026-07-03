@@ -226,6 +226,15 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Set of fan milestones already notified this run (prevents re-firing on re-read). */
     private val notifiedFanMilestones: MutableSet<Int> = mutableSetOf()
 
+    /** Whether the race momentum Discord notification is enabled. */
+    private val enableRaceMomentumNotifications: Boolean = SettingsHelper.getBooleanSetting("discord", "enableRaceMomentumNotifications", false)
+
+    /** Running count of consecutive race wins for the momentum tracker. */
+    private var momentumWinStreak: Int = 0
+
+    /** Running count of consecutive race losses for the momentum tracker. */
+    private var momentumLossStreak: Int = 0
+
     /** Flag indicating if the bot needs to check its fan count. */
     protected var bNeedToCheckFans: Boolean = true
 
@@ -285,6 +294,38 @@ abstract class Campaign(game: Game) : Task(game) {
                     description = "The trainee now has ${"%,d".format(newFans)} fans.",
                 )
             }
+        }
+    }
+
+    /**
+     * Called by [Racing] after each race result is committed.
+     * Sends a Discord momentum notification if enabled and tracks win/loss streaks.
+     *
+     * @param won True if the trainee placed 1st, false otherwise.
+     */
+    open fun onRaceResult(won: Boolean) {
+        if (won) {
+            momentumWinStreak++
+            momentumLossStreak = 0
+        } else {
+            momentumLossStreak++
+            momentumWinStreak = 0
+        }
+
+        if (!enableRaceMomentumNotifications || !DiscordUtils.enableDiscordNotifications) return
+
+        if (won) {
+            val streakStr = if (momentumWinStreak > 1) " ($momentumWinStreak in a row)" else ""
+            AppDiscordNotifications.sendInfo(
+                title = "Race won$streakStr",
+                description = "The trainee placed 1st.",
+            )
+        } else {
+            val streakStr = if (momentumLossStreak > 1) " ($momentumLossStreak in a row)" else ""
+            AppDiscordNotifications.sendError(
+                title = "Race lost$streakStr",
+                description = "The trainee did not place 1st.",
+            )
         }
     }
 
@@ -1750,6 +1791,16 @@ abstract class Campaign(game: Game) : Task(game) {
         val rerollY = SharedData.displayHeight * 0.925
         val decideX = SharedData.displayWidth * 0.75
         val decideY = SharedData.displayHeight * 0.925
+
+        // If the reroll currency is explicitly 0, skip rerolls to avoid wasted taps.
+        val tpCount = Regex("""(\d+)\s*(?:uses?|tp|reroll)""", RegexOption.IGNORE_CASE).find(bottomText)?.groupValues?.get(1)?.toIntOrNull()
+        if (tpCount != null && tpCount == 0) {
+            MessageLog.i(TAG, "[TRAITS] Reroll currency is 0. Deciding on current traits without rerolling.")
+            game.gestureUtils.tap(decideX, decideY, "spark_trait_decide")
+            game.wait(1.0)
+            game.waitForLoading()
+            return true
+        }
 
         var rerollCount = 0
         while (rerollCount < maxRerolls) {

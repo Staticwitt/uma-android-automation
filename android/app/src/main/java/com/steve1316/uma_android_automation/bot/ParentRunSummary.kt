@@ -383,7 +383,11 @@ object ParentRunSummary {
             ),
         )
         fields.add(DiscordEmbedField("Skill points", trainee.skillPoints.toString(), inline = true))
-        fields.add(DiscordEmbedField("Stats", trainee.stats.toString(), inline = false))
+        fields.add(DiscordEmbedField("Speed", trainee.stats.speed.toString(), inline = true))
+        fields.add(DiscordEmbedField("Stamina", trainee.stats.stamina.toString(), inline = true))
+        fields.add(DiscordEmbedField("Power", trainee.stats.power.toString(), inline = true))
+        fields.add(DiscordEmbedField("Guts", trainee.stats.guts.toString(), inline = true))
+        fields.add(DiscordEmbedField("Wit", trainee.stats.wit.toString(), inline = true))
         fields.add(DiscordEmbedField("Target epithets", formatTargetEpithets(input.targetEpithets).removePrefix("Target epithets: "), inline = false))
         if (input.completedTargetEpithets.isNotEmpty()) {
             fields.add(
@@ -493,7 +497,11 @@ object ParentRunSummary {
             ),
         )
         fields.add(DiscordEmbedField("Skill points", trainee.skillPoints.toString(), inline = true))
-        fields.add(DiscordEmbedField("Stats", trainee.stats.toString(), inline = false))
+        fields.add(DiscordEmbedField("Speed", trainee.stats.speed.toString(), inline = true))
+        fields.add(DiscordEmbedField("Stamina", trainee.stats.stamina.toString(), inline = true))
+        fields.add(DiscordEmbedField("Power", trainee.stats.power.toString(), inline = true))
+        fields.add(DiscordEmbedField("Guts", trainee.stats.guts.toString(), inline = true))
+        fields.add(DiscordEmbedField("Wit", trainee.stats.wit.toString(), inline = true))
         fields.add(DiscordEmbedField("Surface", formatSurfaceAptitudes(trainee).removePrefix("Surface: "), inline = true))
         fields.add(DiscordEmbedField("Distance", formatDistanceAptitudes(trainee).removePrefix("Distance: "), inline = true))
         fields.add(DiscordEmbedField("Style", formatStyleAptitudes(trainee).removePrefix("Style: "), inline = true))

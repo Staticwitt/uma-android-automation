@@ -1,7 +1,10 @@
 package com.steve1316.uma_android_automation.bot.campaigns
 
 import com.steve1316.automation_library.data.SharedData
+import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.MessageLog
+import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.components.ButtonHomeFansInfo
@@ -84,6 +87,15 @@ class UraFinale(game: Game) : Campaign(game) {
 
         game.wait(1.0)
         game.waitForLoading()
+
+        if (SettingsHelper.getBooleanSetting("discord", "enableScenarioProgressPings", false) && DiscordUtils.enableDiscordNotifications) {
+            val yearLabel = date.year.name.lowercase().replaceFirstChar { it.uppercase() }
+            AppDiscordNotifications.sendInfo(
+                title = "URA Finale Duel Complete ($yearLabel Year)",
+                description = "The $yearLabel Year URA Duel was resolved. Trainee chose ${targetStat.name.lowercase()} as their contest stat.",
+            )
+        }
+
         return true
     }
 

@@ -337,6 +337,10 @@ export interface Settings {
         discordUserID: string
         /** Fan counts that trigger a Discord DM when crossed during a run (comma-separated, e.g. "10000,50000,100000"). */
         fanMilestones: string
+        /** Send a Discord DM after each race with the result (win/loss) and current streak. */
+        enableRaceMomentumNotifications: boolean
+        /** Send a Discord DM at key scenario milestones (Unity Cup rounds, URA Finale duels). */
+        enableScenarioProgressPings: boolean
     }
 
     // On-device docs chatbot settings
@@ -685,6 +689,8 @@ export const defaultSettings: Settings = {
         discordToken: "",
         discordUserID: "",
         fanMilestones: "",
+        enableRaceMomentumNotifications: false,
+        enableScenarioProgressPings: false,
     },
     chat: {
         enableAskTheDocs: false,

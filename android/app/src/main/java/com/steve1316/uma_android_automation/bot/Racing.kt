@@ -1370,6 +1370,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             val firstPlace = detectFirstPlaceFinish()
             MessageLog.i(TAG, "[RACE] Race result (no Next button) — 1st place: $firstPlace.")
             SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
+            campaign.onRaceResult(won = firstPlace)
             return false
         }
 
@@ -1379,6 +1380,7 @@ class Racing(private val game: Game, private val campaign: Campaign) {
         val firstPlace = detectFirstPlaceFinish()
         MessageLog.i(TAG, "[RACE] Race result detected — 1st place: $firstPlace.")
         SmartRaceSolverIntegration.commitPendingRace(won = firstPlace)
+        campaign.onRaceResult(won = firstPlace)
 
         // Max time limit for the while loop to attempt to finalize race results.
         // It really shouldn't ever take this long.
