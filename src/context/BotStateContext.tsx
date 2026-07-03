@@ -258,6 +258,8 @@ export interface Settings {
         enableUnityCupTrainOnlyMode: boolean
         sparkTraitMaxRerolls: number
         sparkTraitMinStars: number
+        /** OCR stat-value validation cap. 0 = auto (1800). Values above this are rejected as misreads. */
+        manualStatCap: number
         /** Per-scenario blacklist for URA Finale (overrides global blacklist when non-empty). */
         "trainingBlacklist_URA Finale": string[]
         /** Per-scenario blacklist for Unity Cup (overrides global blacklist when non-empty). */
@@ -627,6 +629,7 @@ export const defaultSettings: Settings = {
         enableUnityCupTrainOnlyMode: false,
         sparkTraitMaxRerolls: 0,
         sparkTraitMinStars: 0,
+        manualStatCap: 0,
         "trainingBlacklist_URA Finale": [],
         "trainingBlacklist_Unity Cup": [],
         "trainingBlacklist_Trackblazer": [],
