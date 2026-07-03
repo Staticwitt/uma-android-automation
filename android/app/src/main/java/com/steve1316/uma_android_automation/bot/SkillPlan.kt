@@ -424,7 +424,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                 continue
             }
 
-            if (entry.screenPrice <= remainingSkillPoints) {
+            if (entry.bIsAvailable && entry.screenPrice <= remainingSkillPoints) {
                 result[name] = entry.screenPrice
                 remainingSkillPoints -= entry.screenPrice
                 entry.buy()
@@ -715,7 +715,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                     continue
                 }
 
-                if (entry.screenPrice > remainingSkillPoints) {
+                if (!entry.bIsAvailable || entry.screenPrice > remainingSkillPoints) {
                     continue
                 }
 
