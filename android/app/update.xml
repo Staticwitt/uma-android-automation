@@ -1,21 +1,28 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.9.82</latestVersion>
+    <latestVersion>5.10.0</latestVersion>
     <latestVersionCode>172</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.9.82</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.82/v5.9.82-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.9.82/v5.9.82-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.0</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.0/v5.10.0-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.0/v5.10.0-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.9.82 - Race Momentum Notifications, Scenario Progress Pings, Smart Reroll TP Skip, Stat Target Presets, Trackblazer Shop Recovery, Per-Stat Discord Embed
+v5.10.0 - Race Momentum Notifications, Scenario Progress Pings, Smart Reroll TP Skip, Stat Target Presets, Trackblazer Shop Recovery, Per-Stat Discord Embed + v5.9.81 features
 
-Added
------
+Added (v5.10.0)
+---------------
 - Race Momentum Notifications: Discord Settings → Notifications → "Race Momentum Notifications" toggle. When enabled, sends a Discord DM after every race with the win/loss result and the current winning or losing streak.
-- Scenario Progress Pings: Discord Settings → Notifications → "Scenario Progress Pings" toggle. Sends a Discord DM when a Unity Cup round completes (including Finals) and when a URA Finale duel is resolved, including which year and stat was chosen.
+- Scenario Progress Pings: Discord Settings → Notifications → "Scenario Progress Pings" toggle. Sends a Discord DM when a Unity Cup round completes (including Finals) and when a URA Finale duel is resolved, naming the year and the chosen contest stat.
 - Smart Reroll TP Skip: The Spark Trait Reroll screen now checks the reroll currency count before attempting rerolls. If the count is 0, the bot skips directly to deciding on the current traits rather than tapping the reroll button with no effect.
-- Stat Target Presets: Training Settings → Distance → each distance block now has "Reset Defaults" and "All Max" buttons. "Reset Defaults" restores all five stat targets for that distance to the built-in defaults in one tap; "All Max" sets all five to 1200.
-- Trackblazer Shop Recovery via checkCampaignSpecificConditions: Trackblazer now overrides the campaign-specific condition check to catch the shop button appearing outside the normal decideNextAction flow (e.g. after a race when the main-screen template fails to match). When the flag is set and the button is visible, the shop is opened and items are purchased.
-- Per-stat Discord embed: The run-end Discord embed now shows Speed, Stamina, Power, Guts, and Wit as individual inline fields instead of a single "Stats" line. This applies to both regular career embeds and parent-farming run embeds.
+- Stat Target Presets: Training Settings → Distance → each distance block (Sprint, Mile, Medium, Long) now has "Reset Defaults" and "All Max" buttons. One tap sets all five stat targets for that distance.
+- Trackblazer Shop Recovery: Trackblazer now overrides checkCampaignSpecificConditions() to catch the shop button appearing outside the normal flow (e.g. after a race when the main-screen template fails to match). When the flag is set and the button is visible, the shop is opened and items are purchased.
+- Per-stat Discord embed: The run-end Discord embed now shows Speed, Stamina, Power, Guts, and Wit as individual inline fields instead of a single combined Stats line. Applies to both regular career and parent-farming run embeds.
+
+Added (v5.9.81)
+---------------
+- Spark Trait Reroll sliders: Training Settings → Behavior → Spark Traits now exposes "Max Rerolls per Spark" (0–20) and "Stop at Star Count" (0–10) sliders.
+- Low-energy gate for optional races: Racing Settings → Race Behavior → "Minimum Energy for Optional Racing" slider (0–100%, default 0 = off). Skips optional extra races when energy is below the threshold. Hard requirements always bypass this gate.
+- Discord fan milestone notifications: Discord Settings → Notifications → "Fan Milestones" text field. Enter comma-separated fan counts (e.g. 10000,50000,100000). Each milestone fires a Discord DM once per career when crossed.
+- Per-scenario training blacklist: Training Settings → Behavior now has separate blacklist selectors for URA Finale, Unity Cup, and Trackblazer. When a scenario-specific blacklist is non-empty it overrides the global blacklist for that scenario only; leave empty to fall back to the global blacklist.
 
     </releaseNotes>
   </update>
