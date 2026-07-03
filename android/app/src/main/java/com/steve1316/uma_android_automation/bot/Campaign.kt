@@ -322,7 +322,7 @@ abstract class Campaign(game: Game) : Task(game) {
             )
         } else {
             val streakStr = if (momentumLossStreak > 1) " ($momentumLossStreak in a row)" else ""
-            AppDiscordNotifications.sendError(
+            AppDiscordNotifications.sendInfo(
                 title = "Race lost$streakStr",
                 description = "The trainee did not place 1st.",
             )
