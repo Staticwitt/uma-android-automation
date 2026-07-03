@@ -153,6 +153,8 @@ const TrainingSettings = () => {
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
         enableUnityCupTrainOnlyMode,
+        sparkTraitMaxRerolls,
+        sparkTraitMinStars,
     } = trainingSettings
 
     // Update global settings when local state changes, but skip the initial mount check.
@@ -780,6 +782,41 @@ const TrainingSettings = () => {
                                             right={<Switch checked={enableUnityCupTrainOnlyMode} onCheckedChange={(checked) => updateTrainingSetting("enableUnityCupTrainOnlyMode", checked)} />}
                                         />
                                     </SearchableItem>
+                                </Section>
+
+                                <Section label="Spark Traits">
+                                    <View style={styles.sliderShell}>
+                                        <CustomSlider
+                                            value={sparkTraitMaxRerolls}
+                                            placeholder={defaultSettings.training.sparkTraitMaxRerolls}
+                                            onValueChange={(value) => updateTrainingSetting("sparkTraitMaxRerolls", value)}
+                                            min={0}
+                                            max={20}
+                                            step={1}
+                                            label="Max Rerolls per Spark"
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Maximum number of times to reroll all spark traits on the Traits screen. Set to 0 to disable auto-reroll."
+                                            searchId="spark-trait-max-rerolls"
+                                        />
+                                    </View>
+                                    {sparkTraitMaxRerolls > 0 && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={sparkTraitMinStars}
+                                                placeholder={defaultSettings.training.sparkTraitMinStars}
+                                                onValueChange={(value) => updateTrainingSetting("sparkTraitMinStars", value)}
+                                                min={0}
+                                                max={10}
+                                                step={1}
+                                                label="Stop at Star Count"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="Stop rerolling early once the total ★ count on the traits screen reaches this threshold. Set to 0 to always use the maximum rerolls."
+                                                searchId="spark-trait-min-stars"
+                                            />
+                                        </View>
+                                    )}
                                 </Section>
                             </>
                         )}
