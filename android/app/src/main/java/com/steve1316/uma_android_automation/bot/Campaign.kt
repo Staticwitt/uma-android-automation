@@ -216,6 +216,16 @@ abstract class Campaign(game: Game) : Task(game) {
     /** The turn number when the pre-finals stop check first started. */
     protected var stopBeforeFinalsInitialTurnNumber: Int = -1
 
+    /** Fan thresholds that trigger a Discord notification when crossed for the first time this run. Parsed once; empty list = disabled. */
+    private val fanMilestoneList: List<Int> =
+        run {
+            val raw = SettingsHelper.getStringSetting("discord", "fanMilestones", "")
+            raw.split(",").mapNotNull { it.trim().toIntOrNull() }.filter { it > 0 }.sorted()
+        }
+
+    /** Set of fan milestones already notified this run (prevents re-firing on re-read). */
+    private val notifiedFanMilestones: MutableSet<Int> = mutableSetOf()
+
     /** Flag indicating if the bot needs to check its fan count. */
     protected var bNeedToCheckFans: Boolean = true
 
@@ -257,6 +267,26 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Matches valid Career Rank tiers (e.g. "S+", "SS", "UG") detected via OCR on the Career Rank screen. */
     private val CAREER_RANK_PATTERN: Regex = Regex("^(UG|SS\\+?|S\\+?|A\\+?|B\\+?|C\\+?|D\\+?|E\\+?|F\\+?|G\\+?)$")
+
+    /**
+     * Fires a Discord notification for any configured fan milestone that was just crossed.
+     * Only fires once per milestone per run and only when Discord notifications are enabled.
+     *
+     * @param newFans The newly-read fan count.
+     */
+    private fun checkFanMilestones(newFans: Int) {
+        if (fanMilestoneList.isEmpty()) return
+        for (milestone in fanMilestoneList) {
+            if (newFans >= milestone && notifiedFanMilestones.add(milestone)) {
+                val formatted = "%,d".format(milestone)
+                MessageLog.i(TAG, "[FAN_MILESTONE] Reached $formatted fans — sending Discord notification.")
+                AppDiscordNotifications.sendInfo(
+                    title = "Fan milestone reached: $formatted",
+                    description = "The trainee now has ${"%,d".format(newFans)} fans.",
+                )
+            }
+        }
+    }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -585,6 +615,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 if (fans != null) {
                     trainee.fans = fans
                     SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
+                    checkFanMilestones(trainee.fans)
                     bNeedToCheckFans = false
                     MessageLog.i(TAG, "[INFO] Updated fan count: ${trainee.fans}")
                 } else {
@@ -2423,6 +2454,7 @@ abstract class Campaign(game: Game) : Task(game) {
                     if (cleanedFans.isNotEmpty()) {
                         trainee.fans = cleanedFans.toInt()
                         SmartRaceSolverIntegration.updateCurrentFans(trainee.fans)
+                        checkFanMilestones(trainee.fans)
                     } else {
                         MessageLog.w(TAG, "[WARN] process:: Could not detect final fan count for the end of the Career from OCR: $fansText")
                     }

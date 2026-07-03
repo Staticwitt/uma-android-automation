@@ -171,8 +171,14 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     /** Set of stats that have already exceeded their cap buffer. */
     private val statsTrainedOverBuffer: MutableSet<StatName> = mutableSetOf()
 
-    /** List of stat trainings to ignore. */
-    internal val blacklist: List<StatName?> = SettingsHelper.getStringArraySetting("training", "trainingBlacklist").map { StatName.fromName(it) }
+    /** List of stat trainings to ignore. Per-scenario key (e.g. "trainingBlacklist_Unity Cup") takes precedence; falls back to the global "trainingBlacklist". */
+    internal val blacklist: List<StatName?> =
+        run {
+            val scenarioKey = "trainingBlacklist_$scenario"
+            val perScenario = SettingsHelper.getStringArraySetting("training", scenarioKey)
+            val source = perScenario.ifEmpty { SettingsHelper.getStringArraySetting("training", "trainingBlacklist") }
+            source.map { StatName.fromName(it) }
+        }
 
     /** Whether the last analysis was skipped due to energy being too low (failure chance too high). */
     var needsEnergyRecovery: Boolean = false

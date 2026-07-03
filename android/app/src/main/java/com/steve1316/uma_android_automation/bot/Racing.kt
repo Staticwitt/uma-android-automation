@@ -76,6 +76,9 @@ class Racing(private val game: Game, private val campaign: Campaign) {
     /** Whether to bypass the low-energy racing block in Trackblazer. */
     val ignoreLowEnergyRacingBlock = SettingsHelper.getBooleanSetting("racing", "ignoreLowEnergyRacingBlock")
 
+    /** Minimum energy percentage required to start optional (extra) races. 0 = no gate. Hard requirements bypass this. */
+    private val minimumEnergyForOptionalRacing: Int = SettingsHelper.getIntSetting("racing", "minimumEnergyForOptionalRacing", 0)
+
     /** The number of days to wait between running extra races. */
     private val daysToRunExtraRaces: Int = SettingsHelper.getIntSetting("racing", "daysToRunExtraRaces")
 
@@ -757,6 +760,13 @@ class Racing(private val game: Game, private val campaign: Campaign) {
                 ).filterNotNull().joinToString(", ")
             campaign.decisionTracer.recordRaceEligibility(eligible = true, reason = "Hard requirement active: $activeReason")
             return true
+        }
+
+        // Low-energy gate: skip optional races when energy is below the configured threshold.
+        if (minimumEnergyForOptionalRacing > 0 && campaign.trainee.energy < minimumEnergyForOptionalRacing) {
+            MessageLog.i(TAG, "[RACE] Energy (${campaign.trainee.energy}%) is below minimum for optional racing ($minimumEnergyForOptionalRacing%). Skipping extra race.")
+            campaign.decisionTracer.recordRaceEligibility(eligible = false, reason = "Energy ${campaign.trainee.energy}% < minimumEnergyForOptionalRacing $minimumEnergyForOptionalRacing%")
+            return false
         }
 
         // When the Smart Race Solver is enabled, its schedule is authoritative for extra races. If the solver did not plan a race for

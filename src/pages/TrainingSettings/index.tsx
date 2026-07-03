@@ -64,6 +64,9 @@ const TrainingSettings = () => {
     const { saveSettingsImmediate } = useSettings()
     const { currentProfileName } = useProfileManager()
     const [blacklistModalVisible, setBlacklistModalVisible] = useState(false)
+    const [blacklistUraFinaleModalVisible, setBlacklistUraFinaleModalVisible] = useState(false)
+    const [blacklistUnityCupModalVisible, setBlacklistUnityCupModalVisible] = useState(false)
+    const [blacklistTrackblazerModalVisible, setBlacklistTrackblazerModalVisible] = useState(false)
     const [prioritizationModalVisible, setPrioritizationModalVisible] = useState(false)
     const [eventChoicePrioritizationModalVisible, setEventChoicePrioritizationModalVisible] = useState(false)
     const [summerTrainingPrioritizationModalVisible, setSummerTrainingPrioritizationModalVisible] = useState(false)
@@ -156,6 +159,10 @@ const TrainingSettings = () => {
         sparkTraitMaxRerolls,
         sparkTraitMinStars,
     } = trainingSettings
+
+    const blacklistUraFinaleItems = trainingSettings["trainingBlacklist_URA Finale"] ?? defaultSettings.training["trainingBlacklist_URA Finale"]
+    const blacklistUnityCupItems = trainingSettings["trainingBlacklist_Unity Cup"] ?? defaultSettings.training["trainingBlacklist_Unity Cup"]
+    const blacklistTrackblazerItems = trainingSettings["trainingBlacklist_Trackblazer"] ?? defaultSettings.training["trainingBlacklist_Trackblazer"]
 
     // Update global settings when local state changes, but skip the initial mount check.
     // We also verify that the values are actually different before triggering an update.
@@ -773,6 +780,19 @@ const TrainingSettings = () => {
                                     </SearchableItem>
                                 </Section>
 
+                                <Section label="URA Finale">
+                                    {renderStatSelector(
+                                        "Blacklist (URA Finale only)",
+                                        blacklistUraFinaleItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_URA Finale", value),
+                                        blacklistUraFinaleModalVisible,
+                                        setBlacklistUraFinaleModalVisible,
+                                        "Stats to skip only when playing URA Finale. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-ura-finale"
+                                    )}
+                                </Section>
+
                                 <Section label="Unity Cup">
                                     <SearchableItem id="enable-unity-cup-train-only-mode">
                                         <SettingRow
@@ -782,6 +802,29 @@ const TrainingSettings = () => {
                                             right={<Switch checked={enableUnityCupTrainOnlyMode} onCheckedChange={(checked) => updateTrainingSetting("enableUnityCupTrainOnlyMode", checked)} />}
                                         />
                                     </SearchableItem>
+                                    {renderStatSelector(
+                                        "Blacklist (Unity Cup only)",
+                                        blacklistUnityCupItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_Unity Cup", value),
+                                        blacklistUnityCupModalVisible,
+                                        setBlacklistUnityCupModalVisible,
+                                        "Stats to skip only when playing Unity Cup. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-unity-cup"
+                                    )}
+                                </Section>
+
+                                <Section label="Trackblazer">
+                                    {renderStatSelector(
+                                        "Blacklist (Trackblazer only)",
+                                        blacklistTrackblazerItems,
+                                        (value) => updateTrainingSetting("trainingBlacklist_Trackblazer", value),
+                                        blacklistTrackblazerModalVisible,
+                                        setBlacklistTrackblazerModalVisible,
+                                        "Stats to skip only when playing Trackblazer. Overrides the global blacklist for this scenario. Leave empty to use the global blacklist.",
+                                        "checkbox",
+                                        "training-blacklist-trackblazer"
+                                    )}
                                 </Section>
 
                                 <Section label="Spark Traits">
