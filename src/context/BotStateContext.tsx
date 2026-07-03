@@ -254,6 +254,8 @@ export interface Settings {
         classicMilestonePercent: number
         seniorMilestonePercent: number
         enableUnityCupTrainOnlyMode: boolean
+        sparkTraitMaxRerolls: number
+        sparkTraitMinStars: number
     }
 
     // Training Stat Target settings
@@ -608,6 +610,8 @@ export const defaultSettings: Settings = {
         classicMilestonePercent: 33,
         seniorMilestonePercent: 66,
         enableUnityCupTrainOnlyMode: false,
+        sparkTraitMaxRerolls: 0,
+        sparkTraitMinStars: 0,
     },
     trainingStatTarget: {
         trainingSprintStatTarget_speedStatTarget: 1200,
