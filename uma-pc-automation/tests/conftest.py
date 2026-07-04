@@ -7,6 +7,6 @@ before any capture.* module is first imported.
 import sys
 from unittest.mock import MagicMock
 
-for _mod_name in ("win32gui", "win32con", "dxcam"):
+for _mod_name in ("win32gui", "win32con", "dxcam", "cv2", "easyocr"):
     if _mod_name not in sys.modules:
         sys.modules[_mod_name] = MagicMock()
