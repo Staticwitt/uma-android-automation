@@ -8,6 +8,7 @@ Call ``build_bot(run_config)`` to get a fully-configured machine; then call
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Optional
 
 from bot.detector import TemplateDetector
 from bot.handlers import (
@@ -17,11 +18,13 @@ from bot.handlers import (
     make_skill_skip_handler,
     make_training_handler,
 )
+from bot.layout import STAT_REGIONS
 from bot.state_machine import BotStateMachine, LoopConfig, ScreenState
-from bot.types import TrainingConfig, TrainingScoringConstants
+from bot.types import StatName, TrainingConfig, TrainingScoringConstants
 from capture.screen import ScreenCapture
 from capture.window import find_game_window
 from vision.matcher import load_template
+from vision.ocr import StatOcr
 
 
 @dataclass
@@ -35,6 +38,10 @@ class RunConfig:
     loop_config: LoopConfig = field(default_factory=LoopConfig)
     capture_device_idx: int = 0
     detector_threshold: float = 0.8
+    ocr_gpu: bool = True
+    # Override stat regions if the default layout.STAT_REGIONS don't match
+    # your screen resolution or window position.
+    stat_regions: Optional[dict[StatName, tuple[int, int, int, int]]] = None
 
 
 def build_bot(run_config: RunConfig) -> BotStateMachine:
@@ -52,6 +59,7 @@ def build_bot(run_config: RunConfig) -> BotStateMachine:
         )
 
     capture = ScreenCapture(device_idx=run_config.capture_device_idx)
+    ocr = StatOcr(gpu=run_config.ocr_gpu)
     detector = TemplateDetector.load(threshold=run_config.detector_threshold)
 
     sm = BotStateMachine(
@@ -65,6 +73,7 @@ def build_bot(run_config: RunConfig) -> BotStateMachine:
     training_templates = {
         stat: load_template(name) for stat, name in TRAINING_TEMPLATE_NAMES.items()
     }
+    stat_regions = run_config.stat_regions or STAT_REGIONS
 
     sm.register(
         ScreenState.CONFIRM_DIALOG,
@@ -79,6 +88,8 @@ def build_bot(run_config: RunConfig) -> BotStateMachine:
             run_config.training_config,
             training_templates,
             threshold=run_config.detector_threshold,
+            ocr=ocr,
+            stat_regions=stat_regions,
         ),
     )
     sm.register(ScreenState.RACE_SELECT, make_race_skip_handler())

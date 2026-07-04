@@ -112,11 +112,45 @@ def test_build_bot_loads_six_templates():
 
     with patch("bot.runner.find_game_window", return_value=window), \
          patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
          patch("bot.runner.TemplateDetector.load"), \
          patch("bot.runner.load_template", return_value=fake_template) as mock_load:
         build_bot(_run_config())
 
     assert mock_load.call_count == 6
+
+
+def test_build_bot_creates_stat_ocr():
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr") as mock_ocr_cls, \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template):
+        build_bot(_run_config(ocr_gpu=False))
+
+    mock_ocr_cls.assert_called_once_with(gpu=False)
+
+
+def test_build_bot_custom_stat_regions_override_defaults():
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+    custom_regions = {s: (0, 0, 5, 5) for s in StatName}
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template), \
+         patch("bot.runner.make_training_handler") as mock_mth:
+        build_bot(_run_config(stat_regions=custom_regions))
+
+    _, kwargs = mock_mth.call_args
+    assert kwargs["stat_regions"] is custom_regions
 
 
 # ── RunConfig defaults ────────────────────────────────────────────────────────
@@ -125,5 +159,7 @@ def test_run_config_defaults():
     cfg = _run_config()
     assert cfg.capture_device_idx == 0
     assert cfg.detector_threshold == 0.8
+    assert cfg.ocr_gpu is True
+    assert cfg.stat_regions is None
     assert isinstance(cfg.scoring_constants, TrainingScoringConstants)
     assert isinstance(cfg.loop_config, LoopConfig)
