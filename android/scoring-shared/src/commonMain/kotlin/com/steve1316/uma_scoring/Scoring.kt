@@ -140,7 +140,16 @@ fun calculateStatEfficiencyScore(config: TrainingConfig, training: TrainingOptio
                     1.0
                 }
 
-            var statScore = statGain.toDouble()
+            // Gains above BASE_STAT_CAP are worth half as much in-game (July 2026 soft-cap).
+            val effectiveGain = when {
+                currentStat >= BASE_STAT_CAP -> statGain * 0.5
+                currentStat + statGain <= BASE_STAT_CAP -> statGain.toDouble()
+                else -> {
+                    val belowCap = BASE_STAT_CAP - currentStat
+                    belowCap + (statGain - belowCap) * 0.5
+                }
+            }
+            var statScore = effectiveGain
             statScore *= ratioMultiplier
             statScore *= priorityMultiplier
             statScore *= levelMultiplier
