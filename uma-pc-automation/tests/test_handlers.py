@@ -360,6 +360,86 @@ def test_completion_ranking_applies_soft_cap_to_target():
     assert ranked[0] == StatName.SPEED
 
 
+# ── tracker integration ───────────────────────────────────────────────────────
+
+def test_training_handler_calls_tracker_after_click():
+    speed_result = _result(cx=300, cy=100)
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+    tracker = MagicMock()
+
+    handler = make_training_handler(_rect(), config, templates, tracker=tracker)
+    sm = _sm()
+
+    with patch("bot.handlers.match", return_value=speed_result), \
+         patch("bot.handlers.click_center"):
+        handler(sm)
+
+    tracker.record_training.assert_called_once()
+
+
+def test_training_handler_passes_ocr_stats_to_tracker():
+    speed_result = _result(cx=300, cy=100)
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+    tracker = MagicMock()
+    ocr_stats = {s: 500 for s in StatName}
+
+    handler = make_training_handler(
+        _rect(), config, templates,
+        ocr=MagicMock(), stat_regions=_stat_regions(), tracker=tracker,
+    )
+    sm = _sm()
+
+    with patch("bot.handlers.match", return_value=speed_result), \
+         patch("bot.handlers._read_stats", return_value=ocr_stats), \
+         patch("bot.handlers.click_center"):
+        handler(sm)
+
+    tracker.record_training.assert_called_once_with(ocr_stats)
+
+
+def test_training_handler_does_not_call_tracker_when_no_buttons_visible():
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+    tracker = MagicMock()
+
+    handler = make_training_handler(_rect(), config, templates, tracker=tracker)
+    sm = _sm()
+
+    with patch("bot.handlers.match", return_value=None), \
+         patch("bot.handlers.click_center"):
+        handler(sm)
+
+    tracker.record_training.assert_not_called()
+
+
+def test_training_handler_does_not_call_tracker_when_frame_is_none():
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+    tracker = MagicMock()
+
+    handler = make_training_handler(_rect(), config, templates, tracker=tracker)
+    sm = _sm(frame=None)
+
+    handler(sm)
+
+    tracker.record_training.assert_not_called()
+
+
+def test_training_handler_no_tracker_does_not_raise():
+    speed_result = _result(cx=300, cy=100)
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+
+    handler = make_training_handler(_rect(), config, templates)  # tracker=None default
+    sm = _sm()
+
+    with patch("bot.handlers.match", return_value=speed_result), \
+         patch("bot.handlers.click_center"):
+        handler(sm)  # Should not raise AttributeError
+
+
 # ── TRAINING_TEMPLATE_NAMES coverage ─────────────────────────────────────────
 
 def test_training_template_names_covers_all_stats():

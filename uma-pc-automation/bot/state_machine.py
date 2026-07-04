@@ -38,8 +38,6 @@ class ScreenState(Enum):
 
 # ── Handler protocol ──────────────────────────────────────────────────────────
 
-# A handler receives (state_machine_instance) and returns the ScreenState the
-# bot should expect next, or None to let the loop re-detect.
 Handler = Callable[["BotStateMachine"], Optional[ScreenState]]
 
 
@@ -49,13 +47,9 @@ Handler = Callable[["BotStateMachine"], Optional[ScreenState]]
 class LoopConfig:
     """Tunable parameters for the bot main loop."""
 
-    # Seconds to wait between detection attempts when in ANIMATION or UNKNOWN.
     poll_interval: float = 1.0
-    # Maximum consecutive UNKNOWN detections before raising.
     max_unknown_streak: int = 30
-    # Seconds to wait after dispatching an action before re-detecting.
     action_settle_time: float = 0.5
-    # Whether to stop the loop when RUN_COMPLETE is detected.
     stop_on_run_complete: bool = True
 
 
@@ -72,8 +66,9 @@ class BotStateMachine:
         sm.register(ScreenState.TRAINING_SELECT, my_handler)
         sm.run()
 
-    The ``detect`` method is intentionally separate from the ``capture``
-    call so both can be unit-tested with numpy arrays alone.
+    ``on_crash`` may be set to a ``Callable[[np.ndarray], None]]`` that receives
+    the last grabbed frame before the bot raises. Use it to save a crash
+    screenshot for post-mortem diagnosis.
     """
 
     capture: object  # ScreenCapture instance (or any object with .grab_window())
@@ -84,6 +79,7 @@ class BotStateMachine:
     _handlers: dict[ScreenState, Handler] = field(default_factory=dict, init=False)
     _running: bool = field(default=False, init=False)
     _unknown_streak: int = field(default=0, init=False)
+    on_crash: Optional[Callable[[np.ndarray], None]] = field(default=None, init=False)
 
     def register(self, state: ScreenState, handler: Handler) -> None:
         """Register *handler* to be called when *state* is detected."""
@@ -94,8 +90,7 @@ class BotStateMachine:
         Classify *frame* into a ScreenState.
 
         Subclass or monkey-patch this method to plug in real template matching.
-        The default implementation always returns UNKNOWN — useful for testing
-        the loop control logic in isolation.
+        The default implementation always returns UNKNOWN.
         """
         return ScreenState.UNKNOWN
 
@@ -115,53 +110,67 @@ class BotStateMachine:
         - ``stop()`` is called from a handler,
         - ``RUN_COMPLETE`` is detected and ``config.stop_on_run_complete`` is True,
         - or ``max_unknown_streak`` consecutive UNKNOWN detections occur.
+
+        On an unknown-streak breach, ``on_crash`` is called with the last
+        successfully grabbed frame (if set) before the RuntimeError propagates.
         """
         self._running = True
         self._unknown_streak = 0
+        last_frame: Optional[np.ndarray] = None
         logger.info("Bot loop started")
 
-        while self._running:
-            frame = self.grab()
-            if frame is None:
-                logger.warning("grab() returned None — window may be minimised")
-                time.sleep(self.config.poll_interval)
-                continue
+        try:
+            while self._running:
+                frame = self.grab()
+                if frame is None:
+                    logger.warning("grab() returned None — window may be minimised")
+                    time.sleep(self.config.poll_interval)
+                    continue
 
-            state = self.detect(frame)
-            logger.debug("Detected state: %s", state.name)
+                last_frame = frame
+                state = self.detect(frame)
+                logger.debug("Detected state: %s", state.name)
 
-            if state == ScreenState.UNKNOWN:
-                self._unknown_streak += 1
-                if self._unknown_streak >= self.config.max_unknown_streak:
-                    raise RuntimeError(
-                        f"Unknown screen for {self._unknown_streak} consecutive "
-                        f"polls — bot is lost"
-                    )
-                time.sleep(self.config.poll_interval)
-                continue
+                if state == ScreenState.UNKNOWN:
+                    self._unknown_streak += 1
+                    if self._unknown_streak >= self.config.max_unknown_streak:
+                        raise RuntimeError(
+                            f"Unknown screen for {self._unknown_streak} consecutive "
+                            f"polls — bot is lost"
+                        )
+                    time.sleep(self.config.poll_interval)
+                    continue
 
-            self._unknown_streak = 0
+                self._unknown_streak = 0
 
-            if state == ScreenState.ANIMATION:
-                time.sleep(self.config.poll_interval)
-                continue
+                if state == ScreenState.ANIMATION:
+                    time.sleep(self.config.poll_interval)
+                    continue
 
-            if state == ScreenState.RUN_COMPLETE:
-                logger.info("Run complete")
+                if state == ScreenState.RUN_COMPLETE:
+                    logger.info("Run complete")
+                    handler = self._handlers.get(state)
+                    if handler:
+                        handler(self)
+                    if self.config.stop_on_run_complete:
+                        self._running = False
+                    continue
+
                 handler = self._handlers.get(state)
-                if handler:
-                    handler(self)
-                if self.config.stop_on_run_complete:
-                    self._running = False
-                continue
+                if handler is None:
+                    logger.warning("No handler registered for %s", state.name)
+                    time.sleep(self.config.poll_interval)
+                    continue
 
-            handler = self._handlers.get(state)
-            if handler is None:
-                logger.warning("No handler registered for %s", state.name)
-                time.sleep(self.config.poll_interval)
-                continue
+                handler(self)
+                time.sleep(self.config.action_settle_time)
 
-            handler(self)
-            time.sleep(self.config.action_settle_time)
+        except RuntimeError:
+            if self.on_crash is not None and last_frame is not None:
+                try:
+                    self.on_crash(last_frame)
+                except Exception:
+                    logger.exception("on_crash callback raised")
+            raise
 
         logger.info("Bot loop stopped")

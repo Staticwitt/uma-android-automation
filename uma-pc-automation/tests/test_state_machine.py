@@ -224,3 +224,69 @@ def test_loop_config_defaults():
     assert cfg.action_settle_time == 0.5
     assert cfg.max_unknown_streak == 30
     assert cfg.stop_on_run_complete is True
+
+
+# ── on_crash callback ─────────────────────────────────────────────────────────
+
+def test_on_crash_called_with_last_frame_on_unknown_streak():
+    sm = BotStateMachine(
+        capture=MagicMock(),
+        window=MagicMock(),
+        config=LoopConfig(poll_interval=0, action_settle_time=0, max_unknown_streak=2),
+    )
+    frame = _fake_frame()
+    sm.capture.grab_window.return_value = frame
+    sm.detect = lambda f: ScreenState.UNKNOWN
+
+    crash_frames = []
+    sm.on_crash = lambda f: crash_frames.append(f)
+
+    with pytest.raises(RuntimeError):
+        sm.run()
+
+    assert len(crash_frames) == 1
+    assert crash_frames[0] is frame
+
+
+def test_on_crash_not_called_on_normal_exit():
+    sm = _sm([ScreenState.RUN_COMPLETE])
+    crash_called = [False]
+    sm.on_crash = lambda f: crash_called.__setitem__(0, True)
+    sm.run()
+    assert crash_called[0] is False
+
+
+def test_on_crash_exception_does_not_suppress_runtime_error():
+    sm = BotStateMachine(
+        capture=MagicMock(),
+        window=MagicMock(),
+        config=LoopConfig(poll_interval=0, action_settle_time=0, max_unknown_streak=1),
+    )
+    sm.capture.grab_window.return_value = _fake_frame()
+    sm.detect = lambda f: ScreenState.UNKNOWN
+    sm.on_crash = lambda f: (_ for _ in ()).throw(ValueError("crash cb boom"))
+
+    with pytest.raises(RuntimeError, match="bot is lost"):
+        sm.run()
+
+
+def test_on_crash_not_called_when_grab_always_returns_none():
+    sm = BotStateMachine(
+        capture=MagicMock(),
+        window=MagicMock(),
+        config=LoopConfig(poll_interval=0, action_settle_time=0, max_unknown_streak=2),
+    )
+    # grab always returns None — last_frame stays None
+    call_count = [0]
+
+    def _grab(window):
+        call_count[0] += 1
+        if call_count[0] > 3:
+            sm.stop()
+        return None
+
+    sm.capture.grab_window.side_effect = _grab
+    crash_called = [False]
+    sm.on_crash = lambda f: crash_called.__setitem__(0, True)
+    sm.run()  # Should not raise — UNKNOWN streak never fires without frames
+    assert crash_called[0] is False

@@ -163,3 +163,99 @@ def test_run_config_defaults():
     assert cfg.stat_regions is None
     assert isinstance(cfg.scoring_constants, TrainingScoringConstants)
     assert isinstance(cfg.loop_config, LoopConfig)
+
+
+def test_run_config_log_dir_default_is_logs():
+    from pathlib import Path
+    cfg = _run_config()
+    assert cfg.log_dir == Path("logs")
+
+
+def test_run_config_log_dir_can_be_overridden():
+    from pathlib import Path
+    cfg = _run_config(log_dir=Path("/tmp/mybot"))
+    assert cfg.log_dir == Path("/tmp/mybot")
+
+
+# ── TurnTracker creation ──────────────────────────────────────────────────────
+
+def test_build_bot_creates_turn_tracker_and_passes_to_training_handler():
+    from bot.tracker import TurnTracker
+
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template), \
+         patch("bot.runner.TurnTracker") as mock_tracker_cls, \
+         patch("bot.runner.make_training_handler") as mock_mth:
+        build_bot(_run_config())
+
+    mock_tracker_cls.assert_called_once()
+    _, kwargs = mock_mth.call_args
+    assert kwargs["tracker"] is mock_tracker_cls.return_value
+
+
+# ── crash handler ─────────────────────────────────────────────────────────────
+
+def test_build_bot_sets_on_crash_callback():
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template):
+        sm = build_bot(_run_config())
+
+    assert sm.on_crash is not None
+    assert callable(sm.on_crash)
+
+
+def test_crash_handler_saves_png_when_cv2_available(tmp_path):
+    import numpy as np
+
+    # _crash_handler uses a lazy `import cv2` inside the closure.
+    # Patch the module-level cv2 that the closure will import.
+    fake_cv2 = MagicMock()
+    frame = np.zeros((100, 100, 3), dtype=np.uint8)
+
+    with patch.dict("sys.modules", {"cv2": fake_cv2}):
+        import importlib
+        import bot.runner as runner_mod
+        importlib.reload(runner_mod)
+        handler = runner_mod._crash_handler(tmp_path)
+        handler(frame)
+
+    fake_cv2.imwrite.assert_called_once()
+    saved_path = fake_cv2.imwrite.call_args[0][0]
+    assert saved_path.startswith(str(tmp_path))
+    assert saved_path.endswith(".png")
+
+
+def test_crash_handler_does_not_raise_when_cv2_unavailable(tmp_path):
+    import numpy as np
+    from bot.runner import _crash_handler
+
+    handler = _crash_handler(tmp_path)
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    # Should not raise even if cv2 write fails (cv2 may be a MagicMock here)
+    handler(frame)
+
+
+def test_crash_handler_creates_log_dir_if_missing(tmp_path):
+    import numpy as np
+    from bot.runner import _crash_handler
+
+    log_dir = tmp_path / "new_subdir" / "logs"
+    assert not log_dir.exists()
+    handler = _crash_handler(log_dir)
+    frame = np.zeros((10, 10, 3), dtype=np.uint8)
+    handler(frame)
+    assert log_dir.exists()
