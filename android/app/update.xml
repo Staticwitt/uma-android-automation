@@ -1,16 +1,18 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.2</latestVersion>
-    <latestVersionCode>174</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.2</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.2/v5.10.2-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.2/v5.10.2-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.3</latestVersion>
+    <latestVersionCode>175</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.3</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.2 - Scoring: July 2026 soft-cap diminishing returns
+v5.10.3 - Scoring: OCR ceiling and soft-cap completion-percent refinements
 
 Optimized
 ---------
-- Training scorer now accounts for the July 2026 soft-cap: stat gains that push a stat past 1200 are weighted at half value, matching the in-game halved effectiveness. Previously a +20 Speed gain was scored the same at 800 and at 1250 — the bot now correctly deprioritizes over-investing in near-capped stats and redirects effort toward undertrained ones.
+- OCR stat ceiling raised from 1800 to 1950, covering Trackblazer Stamina reads up to the hard cap of 1900 (base 1200 + scenario bonus 700). The previous ceiling caused the bot to reject legitimate high-Stamina stat reads in Trackblazer runs.
+- completionPercent in the training scorer now uses the same 0.5x discount above 1200 as effectiveGain, so a stat of 1300 targeting 1400 is correctly treated as ~96% done rather than 93%. Previously the raw ratio overstated how far away the target was, biasing the scorer toward over-investing in already-soft-capped stats.
+- 4 new unit tests covering the July 2026 soft-cap logic: below-cap linearity, spanning-boundary partial discount, above-cap halving, and effective-completionPercent bucket placement with above-1200 targets.
 
     </releaseNotes>
   </update>
