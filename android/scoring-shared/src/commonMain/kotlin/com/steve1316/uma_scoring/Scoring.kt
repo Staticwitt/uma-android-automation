@@ -108,7 +108,10 @@ fun calculateStatEfficiencyScore(config: TrainingConfig, training: TrainingOptio
 
         if (statGain > 0 && targetStat > 0) {
             val priorityIndex = activePriority.indexOf(statName)
-            val completionPercent = (currentStat.toDouble() / targetStat) * 100.0
+            // Weight progress above BASE_STAT_CAP at 0.5× to match the in-game soft-cap.
+            val effectiveCurrent = minOf(currentStat.toDouble(), BASE_STAT_CAP.toDouble()) + maxOf(0.0, currentStat.toDouble() - BASE_STAT_CAP) * 0.5
+            val effectiveTarget = minOf(targetStat.toDouble(), BASE_STAT_CAP.toDouble()) + maxOf(0.0, targetStat.toDouble() - BASE_STAT_CAP) * 0.5
+            val completionPercent = if (effectiveTarget > 0.0) (effectiveCurrent / effectiveTarget) * 100.0 else 100.0
 
             val ratioMultiplier =
                 run {
@@ -140,7 +143,16 @@ fun calculateStatEfficiencyScore(config: TrainingConfig, training: TrainingOptio
                     1.0
                 }
 
-            var statScore = statGain.toDouble()
+            // Gains above BASE_STAT_CAP are worth half as much in-game (July 2026 soft-cap).
+            val effectiveGain = when {
+                currentStat >= BASE_STAT_CAP -> statGain * 0.5
+                currentStat + statGain <= BASE_STAT_CAP -> statGain.toDouble()
+                else -> {
+                    val belowCap = BASE_STAT_CAP - currentStat
+                    belowCap + (statGain - belowCap) * 0.5
+                }
+            }
+            var statScore = effectiveGain
             statScore *= ratioMultiplier
             statScore *= priorityMultiplier
             statScore *= levelMultiplier

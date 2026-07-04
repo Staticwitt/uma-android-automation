@@ -134,13 +134,14 @@ class TrainingScoringTest {
         skillHintsPerLocation: Map<StatName, Int> = StatName.entries.associateWith { 0 },
         enablePrioritizeSkillHints: Boolean = false,
         statsTrainedOverBuffer: Set<StatName> = emptySet(),
+        statTargets: Map<StatName, Int>? = null,
     ): TrainingConfig {
         return TrainingConfig(
             currentStats = currentStats,
             statPrioritization = statPrioritization,
             eventChoiceStatPriority = statPrioritization,
             summerTrainingStatPriority = statPrioritization,
-            statTargets = getStatTargetsForDistance(preferredDistance),
+            statTargets = statTargets ?: getStatTargetsForDistance(preferredDistance),
             currentDate = currentDate,
             scenario = scenario,
             enableRainbowTrainingBonus = enableRainbowTrainingBonus,
@@ -1570,5 +1571,119 @@ class TrainingScoringTest {
         val result = scoringConstantsFromMap(mapOf("priorityCoefficient" to "oops", "miscWeight" to Double.NaN))
         assertEquals(defaults.priorityCoefficient, result.priorityCoefficient, 1e-9, "Non-numeric value should fall back")
         assertEquals(defaults.miscWeight, result.miscWeight, 1e-9, "NaN value should fall back")
+    }
+
+    // ── July 2026 soft-cap scoring ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Soft-cap: below-1200 gains score proportionally to raw gain amount")
+    fun softCapBelowCapGainsAreLinear() {
+        // Speed=900; both trainings are well below the 1200 soft-cap.
+        val config = createDefaultConfig(
+            currentStats = mapOf(
+                StatName.SPEED to 900, StatName.STAMINA to 120,
+                StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+            ),
+        )
+        val scoreDouble = calculateStatEfficiencyScore(
+            config,
+            createDefaultTrainingOption(name = StatName.SPEED, statGains = statGainsToMap(intArrayOf(20, 0, 0, 0, 0))),
+        )
+        val scoreHalf = calculateStatEfficiencyScore(
+            config,
+            createDefaultTrainingOption(name = StatName.SPEED, statGains = statGainsToMap(intArrayOf(10, 0, 0, 0, 0))),
+        )
+        assertEquals(2.0, scoreDouble / scoreHalf, 1e-9, "Below-cap gains should score exactly 2× when raw gain is 2×")
+    }
+
+    @Test
+    @DisplayName("Soft-cap: gain that spans the 1200 boundary gets a partial discount")
+    fun softCapSpanningGainIsPartiallyDiscounted() {
+        // Speed=1190: gain=20 spans the cap (effectiveGain = 10 + 10*0.5 = 15),
+        // gain=10 stays below (effectiveGain = 10). Without the soft-cap the ratio would be 2.0.
+        val config = createDefaultConfig(
+            currentStats = mapOf(
+                StatName.SPEED to 1190, StatName.STAMINA to 120,
+                StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+            ),
+        )
+        val scoreSpanning = calculateStatEfficiencyScore(
+            config,
+            createDefaultTrainingOption(name = StatName.SPEED, statGains = statGainsToMap(intArrayOf(20, 0, 0, 0, 0))),
+        )
+        val scoreBelow = calculateStatEfficiencyScore(
+            config,
+            createDefaultTrainingOption(name = StatName.SPEED, statGains = statGainsToMap(intArrayOf(10, 0, 0, 0, 0))),
+        )
+        assertEquals(1.5, scoreSpanning / scoreBelow, 1e-9, "Spanning gain (effectiveGain 15 vs 10) should produce a 1.5× ratio, not 2×")
+    }
+
+    @Test
+    @DisplayName("Soft-cap: gain entirely above 1200 is half as effective as the same gain below the cap")
+    fun softCapAboveCapGainIsHalvedRelativeToBelowCap() {
+        // Speed=900 and Speed=1300 both land in the ≥90% ratioMultiplier bucket (target=800, multiplier=0.3),
+        // so the only difference between the two scores is effectiveGain: 20 vs 10.
+        val training = createDefaultTrainingOption(
+            name = StatName.SPEED,
+            statGains = statGainsToMap(intArrayOf(20, 0, 0, 0, 0)),
+        )
+        val scoreBelowCap = calculateStatEfficiencyScore(
+            createDefaultConfig(
+                currentStats = mapOf(
+                    StatName.SPEED to 900, StatName.STAMINA to 120,
+                    StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+                ),
+            ),
+            training,
+        )
+        val scoreAboveCap = calculateStatEfficiencyScore(
+            createDefaultConfig(
+                currentStats = mapOf(
+                    StatName.SPEED to 1300, StatName.STAMINA to 120,
+                    StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+                ),
+            ),
+            training,
+        )
+        assertEquals(2.0, scoreBelowCap / scoreAboveCap, 1e-9, "Same gain above cap should score half of the same gain below cap")
+    }
+
+    @Test
+    @DisplayName("Soft-cap: above-1200 stat target is discounted in effectiveCompletionPercent")
+    fun softCapEffectiveCompletionPercentDiscountsAboveCapTarget() {
+        // target=1400: effectiveTarget = 1200 + 200*0.5 = 1300.
+        // stat=1170: effectiveCurrent=1170 → completionPercent=90.0% → last bucket (multiplier=0.3).
+        // stat=390:  effectiveCurrent=390  → completionPercent=30.0% → third bucket (multiplier=3.0).
+        // effectiveGain is 10 for both (gain=10, both below or at cap), so the only difference is ratioMultiplier.
+        // Expected score ratio = 3.0 / 0.3 = 10.0.
+        val aboveCapTargets = mapOf(
+            StatName.SPEED to 1400, StatName.STAMINA to 450,
+            StatName.POWER to 550, StatName.GUTS to 300, StatName.WIT to 300,
+        )
+        val training = createDefaultTrainingOption(
+            name = StatName.SPEED,
+            statGains = statGainsToMap(intArrayOf(10, 0, 0, 0, 0)),
+        )
+        val scoreNearComplete = calculateStatEfficiencyScore(
+            createDefaultConfig(
+                currentStats = mapOf(
+                    StatName.SPEED to 1170, StatName.STAMINA to 120,
+                    StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+                ),
+                statTargets = aboveCapTargets,
+            ),
+            training,
+        )
+        val scoreEarlyGame = calculateStatEfficiencyScore(
+            createDefaultConfig(
+                currentStats = mapOf(
+                    StatName.SPEED to 390, StatName.STAMINA to 120,
+                    StatName.POWER to 120, StatName.GUTS to 120, StatName.WIT to 120,
+                ),
+                statTargets = aboveCapTargets,
+            ),
+            training,
+        )
+        assertEquals(10.0, scoreEarlyGame / scoreNearComplete, 1e-9, "With above-1200 target, effective completionPercent should bucket stat=390 at 3.0× and stat=1170 at 0.3×")
     }
 }

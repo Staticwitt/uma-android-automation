@@ -220,7 +220,7 @@ class Trainee {
      * with halved diminishing returns (see [CustomImageUtils]'s `manualStatCap` fallback). Without this, two
      * consecutive OCR misreads landing on the same wildly wrong digits would be confirmed as legitimate.
      */
-    private val maxPlausibleStatValue = 1800
+    private val maxPlausibleStatValue = 1950
 
     /** True once aptitudes, stats, and skill points have all been updated at least once. */
     val bIsInitialized: Boolean

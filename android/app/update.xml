@@ -1,24 +1,18 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.1</latestVersion>
-    <latestVersionCode>173</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.1</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.1/v5.10.1-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.1/v5.10.1-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.3</latestVersion>
+    <latestVersionCode>175</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.3</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.1 - July 2026 Game Update Compatibility
+v5.10.3 - Scoring: OCR ceiling and soft-cap completion-percent refinements
 
-Added
------
-- OCR Stat Cap Override: Training Settings → Behavior → "OCR Stat Cap Override" slider (0–2000, step 50, default 0 = auto). Set this if the bot ever rejects a legitimate stat read above 1200 after the July 2026 extended-cap update. At 0 the bot uses the new auto ceiling of 1800.
-- Stat target sliders now go up to 1600 (was 1200) so you can target the higher values now reachable with the July 2026 soft-cap change.
-- "All Max" distance preset now applies 1600 instead of 1200, matching the new extended range.
-- Scoring sandbox stat input fields raised to max 1600.
-
-Fixed
------
-- OCR no longer rejects legitimate stat values above 1200. The internal validation ceiling is raised from 1200 to 1800 to match the July 2026 update where stats past 1200 are still reachable (with halved gains). Previously, any OCR read above 1200 was silently discarded as a misread, causing stale or missing stat data in extended-cap scenarios.
-- URA Duel handler now covers all five stat choices (Speed, Stamina, Power, Guts, Wits). Previously only Speed, Power, and Wits were selectable, so the bot could miss the optimal pick if Stamina or Guts was the trainee's highest stat. Also expanded the carousel search from 3 to 6 passes to accommodate the new 6-option layout (5 stats + energy) introduced by the July 2026 Happy Meek duel update.
+Optimized
+---------
+- OCR stat ceiling raised from 1800 to 1950, covering Trackblazer Stamina reads up to the hard cap of 1900 (base 1200 + scenario bonus 700). The previous ceiling caused the bot to reject legitimate high-Stamina stat reads in Trackblazer runs.
+- completionPercent in the training scorer now uses the same 0.5x discount above 1200 as effectiveGain, so a stat of 1300 targeting 1400 is correctly treated as ~96% done rather than 93%. Previously the raw ratio overstated how far away the target was, biasing the scorer toward over-investing in already-soft-capped stats.
+- 4 new unit tests covering the July 2026 soft-cap logic: below-cap linearity, spanning-boundary partial discount, above-cap halving, and effective-completionPercent bucket placement with above-1200 targets.
 
     </releaseNotes>
   </update>
