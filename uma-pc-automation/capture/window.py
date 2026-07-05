@@ -1,5 +1,6 @@
 """
-Locate and manage the DMM Game Player window running Uma Musume.
+Locate and manage the DMM Game Player window running Umamusme (Uma Musume
+Pretty Derby).
 
 Windows-only. Requires pywin32. On non-Windows the module imports cleanly but
 every function raises RuntimeError — this allows tests to import and mock freely.
@@ -19,11 +20,12 @@ except ImportError:
     _WIN32_AVAILABLE = False
 
 # Title substrings tried in order. The DMM client window title changes to the
-# game name once the game has loaded; search for both so the bot can find it
-# during the launch phase as well as mid-run.
+# game name once the game has loaded; search for all of them so the bot can
+# find it during the launch phase as well as mid-run.
 CANDIDATE_TITLE_FRAGMENTS: list[str] = [
     "ウマ娘",          # Japanese title — most reliable once loaded
-    "Uma Musume",      # English title shown in some locale configurations
+    "Umamusme",        # Actual DMM client window title (no space, no "Pretty Derby")
+    "Uma Musume",      # Alternate English title seen in some locale configurations
     "DMM GAME PLAYER", # Fallback: DMM launcher before the game title appears
 ]
 

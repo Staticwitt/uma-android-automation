@@ -77,6 +77,14 @@ def test_find_game_window_matches_english_title():
     assert result.hwnd == 1001
 
 
+def test_find_game_window_matches_umamusme_title():
+    # Actual DMM client window title observed in practice.
+    _setup_enum([(1001, "Umamusme", True)])
+    result = find_game_window()
+    assert result is not None
+    assert result.hwnd == 1001
+
+
 def test_find_game_window_matches_dmm_fallback():
     _setup_enum([(1001, "DMM GAME PLAYER", True)])
     result = find_game_window()
