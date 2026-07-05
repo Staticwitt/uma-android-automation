@@ -1,6 +1,8 @@
 """Tests for run.py — CLI entry point config helpers."""
 
 import argparse
+import sys
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -83,3 +85,28 @@ def test_json_stat_prioritization_overrides_cli_priority():
         {"stat_prioritization": ["WIT", "GUTS", "POWER", "STAMINA", "SPEED"]},
     )
     assert cfg.stat_prioritization[0] == StatName.WIT
+
+
+# ── main(): --no-focus wiring ─────────────────────────────────────────────────
+
+def _run_main_capturing_run_config(monkeypatch, tmp_path, argv):
+    captured = {}
+
+    def fake_build_bot(run_config):
+        captured["run_config"] = run_config
+        return MagicMock()
+
+    monkeypatch.setattr(run, "build_bot", fake_build_bot)
+    monkeypatch.setattr(sys, "argv", ["run.py", "--log-dir", str(tmp_path), *argv])
+    run.main()
+    return captured["run_config"]
+
+
+def test_main_no_focus_flag_disables_focus_window(monkeypatch, tmp_path):
+    run_config = _run_main_capturing_run_config(monkeypatch, tmp_path, ["--no-focus"])
+    assert run_config.focus_window is False
+
+
+def test_main_focus_window_defaults_true(monkeypatch, tmp_path):
+    run_config = _run_main_capturing_run_config(monkeypatch, tmp_path, [])
+    assert run_config.focus_window is True

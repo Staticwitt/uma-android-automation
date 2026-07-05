@@ -158,6 +158,10 @@ def main() -> None:
         "--unknown-streak", type=int, default=30, metavar="N",
         help="Consecutive UNKNOWN detections before giving up (default: 30)",
     )
+    parser.add_argument(
+        "--no-focus", action="store_true",
+        help="Don't bring the game window to the foreground on startup",
+    )
 
     args = parser.parse_args()
 
@@ -178,6 +182,7 @@ def main() -> None:
         ocr_gpu=not args.no_gpu,
         detector_threshold=args.threshold,
         log_dir=args.log_dir,
+        focus_window=not args.no_focus,
     )
 
     log.info(

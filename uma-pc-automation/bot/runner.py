@@ -28,7 +28,7 @@ from bot.state_machine import BotStateMachine, LoopConfig, ScreenState
 from bot.tracker import TurnTracker
 from bot.types import StatName, TrainingConfig, TrainingScoringConstants
 from capture.screen import ScreenCapture
-from capture.window import find_game_window
+from capture.window import bring_to_foreground, find_game_window
 from vision.matcher import load_template
 from vision.ocr import StatOcr
 
@@ -52,6 +52,10 @@ class RunConfig:
     stat_regions: Optional[dict[StatName, tuple[int, int, int, int]]] = None
     # Directory for crash screenshots. Created if it doesn't exist.
     log_dir: Path = field(default_factory=lambda: Path("logs"))
+    # Bring the game window to the foreground before wiring handlers, so
+    # clicks/keypresses land on it instead of whatever window currently has
+    # focus. Disable if you're managing window focus yourself.
+    focus_window: bool = True
 
 
 def _crash_handler(log_dir: Path):
@@ -90,6 +94,9 @@ def build_bot(run_config: RunConfig) -> BotStateMachine:
             "Uma Musume game window not found. "
             "Start the DMM client and launch the game before running the bot."
         )
+
+    if run_config.focus_window:
+        bring_to_foreground(window)
 
     capture = ScreenCapture(device_idx=run_config.capture_device_idx)
     ocr = StatOcr(gpu=run_config.ocr_gpu)

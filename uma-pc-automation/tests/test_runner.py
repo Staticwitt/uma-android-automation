@@ -161,6 +161,7 @@ def test_run_config_defaults():
     assert cfg.detector_threshold == 0.8
     assert cfg.ocr_gpu is True
     assert cfg.stat_regions is None
+    assert cfg.focus_window is True
     assert isinstance(cfg.scoring_constants, TrainingScoringConstants)
     assert isinstance(cfg.loop_config, LoopConfig)
 
@@ -175,6 +176,49 @@ def test_run_config_log_dir_can_be_overridden():
     from pathlib import Path
     cfg = _run_config(log_dir=Path("/tmp/mybot"))
     assert cfg.log_dir == Path("/tmp/mybot")
+
+
+# ── window focus ──────────────────────────────────────────────────────────────
+
+def test_build_bot_brings_window_to_foreground_by_default():
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.bring_to_foreground") as mock_focus, \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template):
+        build_bot(_run_config())
+
+    mock_focus.assert_called_once_with(window)
+
+
+def test_build_bot_skips_focus_when_disabled():
+    window = MagicMock()
+    window.rect = (0, 0, 1920, 1080)
+    fake_template = MagicMock()
+
+    with patch("bot.runner.find_game_window", return_value=window), \
+         patch("bot.runner.bring_to_foreground") as mock_focus, \
+         patch("bot.runner.ScreenCapture"), \
+         patch("bot.runner.StatOcr"), \
+         patch("bot.runner.TemplateDetector.load"), \
+         patch("bot.runner.load_template", return_value=fake_template):
+        build_bot(_run_config(focus_window=False))
+
+    mock_focus.assert_not_called()
+
+
+def test_build_bot_does_not_focus_when_window_not_found():
+    with patch("bot.runner.find_game_window", return_value=None), \
+         patch("bot.runner.bring_to_foreground") as mock_focus:
+        with pytest.raises(RuntimeError):
+            build_bot(_run_config())
+
+    mock_focus.assert_not_called()
 
 
 # ── TurnTracker creation ──────────────────────────────────────────────────────
