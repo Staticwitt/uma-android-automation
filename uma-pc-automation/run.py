@@ -41,6 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from bot.runner import RunConfig, build_bot
+from bot.scoring import get_scenario_stat_cap
 from bot.state_machine import LoopConfig
 from bot.types import (
     DateYear,
@@ -50,25 +51,20 @@ from bot.types import (
     TrainingScoringConstants,
 )
 
-_DEFAULT_PRIORITY = [
-    StatName.SPEED,
-    StatName.STAMINA,
-    StatName.POWER,
-    StatName.GUTS,
-    StatName.WIT,
-]
-
 _STAT_BY_NAME: dict[str, StatName] = {s.name: s for s in StatName}
 
 
 # ── Config helpers ────────────────────────────────────────────────────────────
 
-def _parse_priority(raw: str) -> list[StatName]:
-    parts = [p.strip().upper() for p in raw.split(",")]
+def _parse_stat_names(raw: list[str]) -> list[StatName]:
     try:
-        return [_STAT_BY_NAME[p] for p in parts]
+        return [_STAT_BY_NAME[s.upper()] for s in raw]
     except KeyError as e:
         sys.exit(f"Unknown stat {e}. Valid values: {', '.join(_STAT_BY_NAME)}")
+
+
+def _parse_priority(raw: str) -> list[StatName]:
+    return _parse_stat_names([p.strip() for p in raw.split(",")])
 
 
 def _load_json_config(path: Path) -> dict:
@@ -83,13 +79,13 @@ def _build_training_config(args: argparse.Namespace, json_cfg: dict) -> Training
 
     raw_priority = json_cfg.get("stat_prioritization")
     if raw_priority:
-        priority = [_STAT_BY_NAME[s.upper()] for s in raw_priority]
+        priority = _parse_stat_names(raw_priority)
     else:
         priority = _parse_priority(args.priority)
 
     raw_targets = json_cfg.get("stat_targets", {})
     stat_targets = {
-        s: raw_targets.get(s.name, 1200) for s in StatName
+        s: raw_targets.get(s.name, get_scenario_stat_cap(scenario, s)) for s in StatName
     }
 
     return TrainingConfig(

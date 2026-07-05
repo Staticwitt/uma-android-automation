@@ -270,6 +270,26 @@ def test_on_crash_exception_does_not_suppress_runtime_error():
         sm.run()
 
 
+def test_on_crash_called_for_non_runtime_error_from_handler():
+    # A handler can raise any exception (e.g. a pydirectinput/cv2 failure) —
+    # on_crash must fire for these too, not just the UNKNOWN-streak RuntimeError.
+    sm = _sm([ScreenState.TRAINING_SELECT])
+    frame = sm.capture.grab_window.return_value
+
+    def bad_handler(sm):
+        raise ValueError("click failed")
+
+    sm.register(ScreenState.TRAINING_SELECT, bad_handler)
+
+    crash_frames = []
+    sm.on_crash = lambda f: crash_frames.append(f)
+
+    with pytest.raises(ValueError, match="click failed"):
+        sm.run()
+
+    assert crash_frames == [frame]
+
+
 def test_on_crash_not_called_when_grab_always_returns_none():
     sm = BotStateMachine(
         capture=MagicMock(),

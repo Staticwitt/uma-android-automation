@@ -7,6 +7,7 @@ import pytest
 
 from bot.handlers import (
     TRAINING_TEMPLATE_NAMES,
+    _completion_fraction,
     _completion_ranking,
     _effective_value,
     make_confirm_handler,
@@ -358,6 +359,57 @@ def test_completion_ranking_applies_soft_cap_to_target():
     ranked = _completion_ranking(ocr, _target_config(targets))
     # SPEED has highest target (1400 → eff 1300) and current 1200 → lowest completion
     assert ranked[0] == StatName.SPEED
+
+
+def test_completion_ranking_treats_confirmed_zero_same_as_none():
+    # A genuine OCR read of 0 (stat truly at zero) must rank as low as a
+    # failed read (None) — both represent "most in need of training".
+    ocr_zero = {StatName.SPEED: 0, StatName.STAMINA: 1000,
+                StatName.POWER: 500, StatName.GUTS: 500, StatName.WIT: 500}
+    ocr_none = {StatName.SPEED: None, StatName.STAMINA: 1000,
+                StatName.POWER: 500, StatName.GUTS: 500, StatName.WIT: 500}
+    targets = {s: 1200 for s in StatName}
+    ranked_zero = _completion_ranking(ocr_zero, _target_config(targets))
+    ranked_none = _completion_ranking(ocr_none, _target_config(targets))
+    assert ranked_zero == ranked_none
+    assert ranked_zero[0] == StatName.SPEED
+
+
+# ── _completion_fraction ──────────────────────────────────────────────────────
+
+def test_completion_fraction_normal_case():
+    assert _completion_fraction(600, 1200) == pytest.approx(0.5)
+
+
+def test_completion_fraction_zero_target_does_not_raise():
+    # A user-supplied stat_targets of 0 must not trigger ZeroDivisionError.
+    assert _completion_fraction(500, 0) == 1.0
+
+
+def test_completion_fraction_zero_current_and_zero_target():
+    assert _completion_fraction(0, 0) == 1.0
+
+
+# ── training handler with zero stat target (no crash) ────────────────────────
+
+def test_training_handler_does_not_crash_with_zero_stat_target():
+    speed_result = _result(cx=300, cy=100)
+    templates = {StatName.SPEED: _template()}
+    config = _config(priority=[StatName.SPEED])
+    config.stat_targets = {StatName.SPEED: 0, **{
+        s: 1200 for s in StatName if s != StatName.SPEED
+    }}
+    ocr_stats = {s: 500 for s in StatName}
+
+    handler = make_training_handler(
+        _rect(), config, templates, ocr=MagicMock(), stat_regions=_stat_regions(),
+    )
+    sm = _sm()
+
+    with patch("bot.handlers.match", return_value=speed_result), \
+         patch("bot.handlers._read_stats", return_value=ocr_stats), \
+         patch("bot.handlers.click_center"):
+        handler(sm)  # Should not raise ZeroDivisionError
 
 
 # ── tracker integration ───────────────────────────────────────────────────────

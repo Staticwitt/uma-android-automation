@@ -111,8 +111,9 @@ class BotStateMachine:
         - ``RUN_COMPLETE`` is detected and ``config.stop_on_run_complete`` is True,
         - or ``max_unknown_streak`` consecutive UNKNOWN detections occur.
 
-        On an unknown-streak breach, ``on_crash`` is called with the last
-        successfully grabbed frame (if set) before the RuntimeError propagates.
+        On an unknown-streak breach or any other exception raised while the
+        loop is running, ``on_crash`` is called with the last successfully
+        grabbed frame (if set) before the exception propagates.
         """
         self._running = True
         self._unknown_streak = 0
@@ -165,7 +166,7 @@ class BotStateMachine:
                 handler(self)
                 time.sleep(self.config.action_settle_time)
 
-        except RuntimeError:
+        except Exception:
             if self.on_crash is not None and last_frame is not None:
                 try:
                     self.on_crash(last_frame)

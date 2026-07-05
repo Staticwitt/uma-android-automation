@@ -53,6 +53,12 @@ def _effective_value(raw: int) -> float:
     return min(float(raw), float(_BASE_STAT_CAP)) + max(0.0, float(raw) - _BASE_STAT_CAP) * 0.5
 
 
+def _completion_fraction(current: int, target: int) -> float:
+    """Fraction of *target* reached, in soft-capped effective-value terms."""
+    eff_target = _effective_value(target)
+    return _effective_value(current) / eff_target if eff_target > 0.0 else 1.0
+
+
 def _completion_ranking(
     ocr_stats: dict[StatName, Optional[int]],
     training_config: TrainingConfig,
@@ -64,10 +70,10 @@ def _completion_ranking(
     """
 
     def completion(stat: StatName) -> float:
-        current = ocr_stats.get(stat) or 0
+        raw = ocr_stats.get(stat)
+        current = raw if raw is not None else 0
         target = training_config.stat_targets.get(stat, _BASE_STAT_CAP)
-        eff_target = _effective_value(target)
-        return _effective_value(current) / eff_target if eff_target > 0.0 else 1.0
+        return _completion_fraction(current, target)
 
     return sorted(StatName, key=completion)
 
@@ -153,7 +159,7 @@ def make_training_handler(
             if valid:
                 priority = _completion_ranking(ocr_stats, training_config)
                 completions = {
-                    s.name: f"{_effective_value(v) / _effective_value(training_config.stat_targets.get(s, _BASE_STAT_CAP)) * 100:.1f}%"
+                    s.name: f"{_completion_fraction(v, training_config.stat_targets.get(s, _BASE_STAT_CAP)) * 100:.1f}%"
                     for s, v in valid.items()
                 }
                 logger.info("OCR stats: %s", {s.name: v for s, v in valid.items()})
