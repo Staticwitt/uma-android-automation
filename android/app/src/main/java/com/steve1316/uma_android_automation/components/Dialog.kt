@@ -367,6 +367,7 @@ object DialogObjects {
             DialogPurchaseAlarmClock,
             DialogPurchaseCarats,
             DialogPurchaseDailyRaceTicket,
+            DialogQuickModeSettings,
             DialogRaceDetails,
             DialogRacePlayback,
             DialogRaceRecommendations,
@@ -1171,6 +1172,18 @@ object DialogPurchaseDailyRaceTicket : DialogInterface {
         listOf(
             ButtonCancel,
             ButtonOk,
+        )
+}
+
+/** Career (shown the first time the Quick training-skip toggle is tapped). */
+object DialogQuickModeSettings : DialogInterface {
+    override val name: String = "quick_mode_settings"
+    override val title: String = "Quick Mode Settings"
+    override val closeButton = null
+    override val okButton: BaseComponentInterface = ButtonConfirm
+    override val buttons: List<BaseComponentInterface> =
+        listOf(
+            ButtonConfirm,
         )
 }
 
