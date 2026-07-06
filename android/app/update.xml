@@ -1,18 +1,18 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.3</latestVersion>
-    <latestVersionCode>175</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.3</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.3/v5.10.3-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.4</latestVersion>
+    <latestVersionCode>176</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.4</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.4/v5.10.4-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.4/v5.10.4-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.3 - Scoring: OCR ceiling and soft-cap completion-percent refinements
+v5.10.4 - Parent farming: fix career start getting stuck on Legacy Select
 
-Optimized
----------
-- OCR stat ceiling raised from 1800 to 1950, covering Trackblazer Stamina reads up to the hard cap of 1900 (base 1200 + scenario bonus 700). The previous ceiling caused the bot to reject legitimate high-Stamina stat reads in Trackblazer runs.
-- completionPercent in the training scorer now uses the same 0.5x discount above 1200 as effectiveGain, so a stat of 1300 targeting 1400 is correctly treated as ~96% done rather than 93%. Previously the raw ratio overstated how far away the target was, biasing the scorer toward over-investing in already-soft-capped stats.
-- 4 new unit tests covering the July 2026 soft-cap logic: below-cap linearity, spanning-boundary partial discount, above-cap halving, and effective-completionPercent bucket placement with above-1200 targets.
+Fixed
+-----
+- The Legacy Select screen and the Support Formation (deck) screen share an identical Auto-Select button graphic that the bot couldn't tell apart. It would tap Auto-Select once on whichever screen it saw first, mark legacy-parent selection as done, and then have no code path left to press Next and leave Legacy Select — the bot got stuck there forever and never started a new career.
+- Added a fix that presses Next once the Legacy Select screen is detected, so the bot reliably reaches Support Formation and Start Career again.
+- Added a new "Auto-equip support deck" setting (Parent Farming Settings > Career selection) that taps the Support Formation screen's own Auto-Select to fill owned support-card deck slots, independent from legacy-parent auto-select.
 
     </releaseNotes>
   </update>
