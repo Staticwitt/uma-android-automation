@@ -2482,7 +2482,10 @@ abstract class Campaign(game: Game) : Task(game) {
                 racing.handleStandaloneRace()
             } else if (checkEndScreen()) {
                 // Stop when the bot has reached the screen where it details the overall result of the run.
-                if (skillPlan.skillPlans["careerComplete"]?.bIsEnabled ?: false) {
+                // Also open this screen when the (unrelated) harvest report feature is enabled: it needs
+                // to be here to see ButtonSkillListFullStats, otherwise scanAtCareerEnd() below silently
+                // finds nothing and the Career Runs archive falls back to raw spark-pick OCR text.
+                if ((skillPlan.skillPlans["careerComplete"]?.bIsEnabled ?: false) || ParentHarvestScanner.isEnabled()) {
                     game.wait(0.5)
                     ButtonCareerEndSkills.click(game.imageUtils)
                     game.wait(1.0)
