@@ -1,18 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.4</latestVersion>
-    <latestVersionCode>176</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.4</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.4/v5.10.4-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.4/v5.10.4-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.5</latestVersion>
+    <latestVersionCode>177</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.5</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.5/v5.10.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.5/v5.10.5-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.4 - Parent farming: fix career start getting stuck on Legacy Select
+v5.10.5 - Parent farming reliability, Quick Mode dialog, and Remote Log Viewer live view
 
 Fixed
 -----
-- The Legacy Select screen and the Support Formation (deck) screen share an identical Auto-Select button graphic that the bot couldn't tell apart. It would tap Auto-Select once on whichever screen it saw first, mark legacy-parent selection as done, and then have no code path left to press Next and leave Legacy Select — the bot got stuck there forever and never started a new career.
-- Added a fix that presses Next once the Legacy Select screen is detected, so the bot reliably reaches Support Formation and Start Career again.
-- Added a new "Auto-equip support deck" setting (Parent Farming Settings > Career selection) that taps the Support Formation screen's own Auto-Select to fill owned support-card deck slots, independent from legacy-parent auto-select.
+- The multi-run parent farming loop could report "Could not return to career selection" and stop, for two separate reasons: (1) its success check matched the Legacy Select screen prematurely (it shares an Auto-Select button graphic with Support Formation) and returned before actually advancing past it, and (2) a single slow post-Complete Career "Now Loading" transition could by itself exceed the old 90s navigation deadline before any navigation was even attempted. Widened the deadline (90s->240s, 180s->360s with Breeding Plan) and gave this loop the same Legacy Select recovery logic the per-turn loop already had.
+- The in-game "Quick Mode Settings" popup (shown the first time you tap the Quick training-skip toggle) was never detectable by the bot at all — the dialog-handling code for it existed but was never registered, so the bot would sit in front of it indefinitely. Now properly registered and dismissed.
+
+Added
+-----
+- The Remote Log Viewer now has a "Live View" panel showing a live video feed of the current run, streamed over the same local server used for the real-time log stream.
+- New "Auto-equip support deck" setting (Parent Farming Settings > Career selection) that taps the Support Formation screen's own Auto-Select to fill owned support-card deck slots, independent from legacy-parent auto-select.
 
     </releaseNotes>
   </update>
