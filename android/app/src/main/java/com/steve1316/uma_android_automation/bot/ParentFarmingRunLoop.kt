@@ -281,7 +281,11 @@ object ParentFarmingRunLoop {
         val deadline = System.currentTimeMillis() + if (autoSelect) 180_000 else 90_000
         while (System.currentTimeMillis() < deadline) {
             campaign.tryHandleAllDialogs(timeoutMs = 2_000)
-            if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
+            // Legacy Select also matches isOnCareerSelectionScreen (it shares the Auto-Select button
+            // graphic with Support Formation), so this must exclude it — otherwise the loop declares
+            // success and returns the instant Legacy Select appears, before ever advancing past it,
+            // handing a still-on-Legacy-Select screen back to the caller.
+            if (CareerSelectionAutomation.isOnCareerSelectionScreen(game) && !CareerSelectionAutomation.isInsideLegacyPicker(game)) {
                 game.wait(1.0)
                 if (usedFallback) {
                     ParentDiscordNotifier.sendNavigationFallbackUsed(intendedTrainee, activeCharacter, sessionRunsCompleted)
@@ -303,6 +307,20 @@ object ParentFarmingRunLoop {
                     continue
                 }
             }
+
+            // Advance through Legacy Select (and equip the deck on Support Formation) before the
+            // generic fallback below, which would otherwise tap Back on these screens — same handling
+            // as the per-turn Campaign loop.
+            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+                continue
+            }
+            if (CareerSelectionAutomation.tryAdvancePastLegacyPicker(game)) {
+                continue
+            }
+            if (CareerSelectionAutomation.tryTriggerAutoEquipSupportCards(game)) {
+                continue
+            }
+
             when {
                 ButtonToHome.click(game.imageUtils) -> game.wait(1.0)
                 ButtonClose.click(game.imageUtils) -> game.wait(0.8)
