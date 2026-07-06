@@ -667,7 +667,7 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             "auto_select" -> {
-                if (LegacyParentSelector.isEnabled()) {
+                if (CareerSelectionAutomation.shouldConfirmAutoSelectDialog()) {
                     val confirmed = LegacyParentSelector.confirmAutoSelectDialog(game, result.dialog)
                     if (!confirmed && LegacyParentSelector.hasExceededAutoSelectDialogAttempts()) {
                         result.dialog.close(game.imageUtils)
@@ -679,7 +679,7 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             "confirm_auto_select" -> {
-                if (LegacyParentSelector.isEnabled()) {
+                if (CareerSelectionAutomation.shouldConfirmAutoSelectDialog()) {
                     val confirmed = LegacyParentSelector.confirmConfirmAutoSelectDialog(game, result.dialog)
                     if (!confirmed && LegacyParentSelector.hasExceededConfirmAutoSelectDialogAttempts()) {
                         result.dialog.close(game.imageUtils)
@@ -2447,6 +2447,14 @@ abstract class Campaign(game: Game) : Task(game) {
             }
 
             if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+                return null
+            }
+
+            if (CareerSelectionAutomation.tryAdvancePastLegacyPicker(game)) {
+                return null
+            }
+
+            if (CareerSelectionAutomation.tryTriggerAutoEquipSupportCards(game)) {
                 return null
             }
 

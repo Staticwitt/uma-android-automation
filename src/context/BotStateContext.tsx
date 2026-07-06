@@ -166,6 +166,8 @@ export interface Settings {
         enableAutoSelectLegacyParents: boolean
         /** Open the friend borrow picker at career selection and tap the first OCR match from [supportBorrowPreferredCards]. */
         enableAutoBorrowSupportCard: boolean
+        /** Tap the Support Formation screen's own Auto-Select to fill owned support deck slots at career selection. */
+        enableAutoEquipSupportCards: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
         legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
@@ -476,6 +478,7 @@ export const defaultSettings: Settings = {
         parentFarmingSettingsSnapshot: "",
         enableAutoSelectLegacyParents: false,
         enableAutoBorrowSupportCard: false,
+        enableAutoEquipSupportCards: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",

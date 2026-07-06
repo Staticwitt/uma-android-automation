@@ -4,6 +4,7 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.components.ButtonAutoSelect
 import com.steve1316.uma_android_automation.components.ButtonBorrowSupportCard
+import com.steve1316.uma_android_automation.components.ButtonNext
 import com.steve1316.uma_android_automation.components.ButtonSelectLegacy
 import com.steve1316.uma_android_automation.components.ButtonStartCareer
 
@@ -12,13 +13,19 @@ object CareerSelectionAutomation {
     private const val TAG = "[CAREER_BORROW]"
 
     @Volatile private var autoBorrowAttemptedThisRun = false
+    @Volatile private var autoEquipAttemptedThisRun = false
 
     private const val MAX_START_CAREER_ATTEMPTS = 5
+    private const val MAX_LEGACY_SELECT_NEXT_ATTEMPTS = 5
+
     private val startCareerGuard = RetryGuard(MAX_START_CAREER_ATTEMPTS)
+    private val legacySelectNextGuard = RetryGuard(MAX_LEGACY_SELECT_NEXT_ATTEMPTS)
 
     fun resetForNewRun() {
         autoBorrowAttemptedThisRun = false
+        autoEquipAttemptedThisRun = false
         startCareerGuard.reset()
+        legacySelectNextGuard.reset()
     }
 
     fun isOnCareerSelectionScreen(game: Game): Boolean {
@@ -42,6 +49,58 @@ object CareerSelectionAutomation {
             !ButtonSelectLegacy.check(imageUtils) &&
             !ButtonBorrowSupportCard.check(imageUtils) &&
             !ButtonStartCareer.check(imageUtils)
+    }
+
+    /**
+     * Presses Next to leave the Legacy Select screen once parent selection is done.
+     *
+     * The Legacy Select screen and the Support Formation (deck) screen show an identical
+     * Auto-Select button, so nothing else in this flow can tell them apart on its own. This only
+     * fires while [isInsideLegacyPicker] is true (Next visible, Start Career is not), so it never
+     * fires on the deck screen. Without this, the bot gets stuck on Legacy Select forever — it has
+     * no other code path that advances past it.
+     */
+    fun tryAdvancePastLegacyPicker(game: Game): Boolean {
+        if (!isInsideLegacyPicker(game)) return false
+        if (!ButtonNext.check(game.imageUtils)) return false
+        if (ButtonNext.click(game.imageUtils)) {
+            legacySelectNextGuard.reset()
+            MessageLog.i(TAG, "Advancing past Legacy Select via Next.")
+            game.wait(1.0)
+            return true
+        }
+        if (legacySelectNextGuard.attempt()) {
+            MessageLog.w(TAG, "Giving up on advancing past Legacy Select after $MAX_LEGACY_SELECT_NEXT_ATTEMPTS failed attempts.")
+        }
+        return false
+    }
+
+    private fun isAutoEquipSupportCardsEnabled(): Boolean =
+        SettingsHelper.getBooleanSetting("racing", "enableAutoEquipSupportCards", false)
+
+    /** True when a confirmation dialog triggered by either auto-select flow should be confirmed rather than dismissed. */
+    fun shouldConfirmAutoSelectDialog(): Boolean = LegacyParentSelector.isEnabled() || isAutoEquipSupportCardsEnabled()
+
+    /**
+     * Taps the Support Formation screen's own Auto-Select button to fill the owned support deck slots.
+     *
+     * Distinct from [LegacyParentSelector]'s Auto-Select: both screens share the same button graphic,
+     * so this only fires when [ButtonStartCareer] is visible (the Support Formation / final
+     * confirmation screen), never inside the Legacy Select picker.
+     */
+    fun tryTriggerAutoEquipSupportCards(game: Game): Boolean {
+        if (!isAutoEquipSupportCardsEnabled() || autoEquipAttemptedThisRun) return false
+        if (!ButtonStartCareer.check(game.imageUtils)) return false
+        if (!ButtonAutoSelect.check(game.imageUtils)) return false
+
+        autoEquipAttemptedThisRun = true
+        if (ButtonAutoSelect.click(game.imageUtils)) {
+            MessageLog.i(TAG, "Tapped Support Formation Auto-Select to fill owned deck slots.")
+            game.wait(1.0)
+            return true
+        }
+        MessageLog.w(TAG, "Support Formation Auto-Select button found but click failed.")
+        return false
     }
 
     fun shouldAutoStartCareer(): Boolean =
