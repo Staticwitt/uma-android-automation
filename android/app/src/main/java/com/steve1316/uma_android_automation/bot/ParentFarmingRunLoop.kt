@@ -19,6 +19,16 @@ import java.util.UUID
 object ParentFarmingRunLoop {
     private const val TAG = "[PF_MULTI_RUN]"
 
+    /**
+     * Deadlines for [navigateBackToCareerSelection]. Generous because `game.wait()` transparently
+     * calls the unbounded `Game.waitForLoading()` after every call by default — a single slow
+     * "Now Loading" transition (server-side career-end processing can genuinely take a minute or
+     * more) can consume most of a tight deadline in one blocking call before any navigation is even
+     * attempted, so the budget needs enough headroom to survive that and still have time left to navigate.
+     */
+    private const val NAVIGATE_BACK_DEADLINE_MS = 240_000L
+    private const val NAVIGATE_BACK_DEADLINE_AUTO_SELECT_MS = 360_000L
+
     @Volatile private var sessionId: String = ""
     @Volatile private var sessionRunsCompleted = 0
     @Volatile private var sessionBestQualityScore = 0
@@ -278,7 +288,7 @@ object ParentFarmingRunLoop {
         var activeCharacter = intendedTrainee
         var usedFallback = false
 
-        val deadline = System.currentTimeMillis() + if (autoSelect) 180_000 else 90_000
+        val deadline = System.currentTimeMillis() + if (autoSelect) NAVIGATE_BACK_DEADLINE_AUTO_SELECT_MS else NAVIGATE_BACK_DEADLINE_MS
         while (System.currentTimeMillis() < deadline) {
             campaign.tryHandleAllDialogs(timeoutMs = 2_000)
             // Legacy Select also matches isOnCareerSelectionScreen (it shares the Auto-Select button
