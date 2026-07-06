@@ -1511,6 +1511,45 @@
                 flex-wrap: wrap;
             }
 
+            .live-view {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+                padding: 10px 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+            .live-view-label {
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--text-secondary);
+            }
+            .live-view-frame {
+                position: relative;
+                width: 100%;
+                max-width: 480px;
+                background: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                overflow: hidden;
+            }
+            .live-view-frame img {
+                display: none;
+                width: 100%;
+                height: auto;
+            }
+            .live-view-placeholder {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 32px 16px;
+                color: var(--text-muted);
+                font-size: 13px;
+                text-align: center;
+            }
+
             .dashboard-item {
                 display: flex;
                 flex-direction: column;
@@ -2487,6 +2526,14 @@
 
         <!-- Logs & Dashboard View -->
         <div id="logsView" class="tab-view active">
+            <!-- Live View: MJPEG stream of the current in-game run -->
+            <div class="live-view">
+                <span class="live-view-label">Live View</span>
+                <div class="live-view-frame">
+                    <img id="liveViewImg" alt="Live game view" />
+                    <div id="liveViewPlaceholder" class="live-view-placeholder">Waiting for the bot to start...</div>
+                </div>
+            </div>
             <!-- Dashboard -->
             <div class="dashboard">
             <table class="aptitude-table">
@@ -6400,10 +6447,45 @@
                 if (e.target === this) closeDecisionModal()
             })
 
+            // Wires up the "/video-feed" MJPEG stream in the Live View panel. Self-healing: retries
+            // on a timer whenever no frame has loaded yet, so it recovers once the bot starts without
+            // needing to coordinate with the separate /trainer/status poll.
+            function initLiveView() {
+                const img = document.getElementById("liveViewImg")
+                const placeholder = document.getElementById("liveViewPlaceholder")
+                let connected = false
+
+                function showImage() {
+                    connected = true
+                    img.style.display = "block"
+                    placeholder.style.display = "none"
+                }
+
+                function showPlaceholder() {
+                    connected = false
+                    img.style.display = "none"
+                    placeholder.style.display = "flex"
+                }
+
+                function connectLiveView() {
+                    img.src = "/video-feed?_=" + Date.now()
+                }
+
+                img.addEventListener("load", showImage)
+                img.addEventListener("error", showPlaceholder)
+
+                setInterval(() => {
+                    if (!connected) connectLiveView()
+                }, 5000)
+
+                connectLiveView()
+            }
+
             // Initiate the connection and settings when the page loads.
             initFontSize()
             initToolbar()
             initRunCompleteNotify()
+            initLiveView()
             // Paint an empty Race History grid so the panel takes its full layout immediately,
             // before any CAL: snapshot arrives.
             renderCalendar(null)
