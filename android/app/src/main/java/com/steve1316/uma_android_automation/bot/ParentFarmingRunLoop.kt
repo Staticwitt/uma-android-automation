@@ -19,6 +19,16 @@ import java.util.UUID
 object ParentFarmingRunLoop {
     private const val TAG = "[PF_MULTI_RUN]"
 
+    /**
+     * Deadlines for [navigateBackToCareerSelection]. Generous because `game.wait()` transparently
+     * calls the unbounded `Game.waitForLoading()` after every call by default — a single slow
+     * "Now Loading" transition (server-side career-end processing can genuinely take a minute or
+     * more) can consume most of a tight deadline in one blocking call before any navigation is even
+     * attempted, so the budget needs enough headroom to survive that and still have time left to navigate.
+     */
+    private const val NAVIGATE_BACK_DEADLINE_MS = 240_000L
+    private const val NAVIGATE_BACK_DEADLINE_AUTO_SELECT_MS = 360_000L
+
     @Volatile private var sessionId: String = ""
     @Volatile private var sessionRunsCompleted = 0
     @Volatile private var sessionBestQualityScore = 0
@@ -278,10 +288,14 @@ object ParentFarmingRunLoop {
         var activeCharacter = intendedTrainee
         var usedFallback = false
 
-        val deadline = System.currentTimeMillis() + if (autoSelect) 180_000 else 90_000
+        val deadline = System.currentTimeMillis() + if (autoSelect) NAVIGATE_BACK_DEADLINE_AUTO_SELECT_MS else NAVIGATE_BACK_DEADLINE_MS
         while (System.currentTimeMillis() < deadline) {
             campaign.tryHandleAllDialogs(timeoutMs = 2_000)
-            if (CareerSelectionAutomation.isOnCareerSelectionScreen(game)) {
+            // Legacy Select also matches isOnCareerSelectionScreen (it shares the Auto-Select button
+            // graphic with Support Formation), so this must exclude it — otherwise the loop declares
+            // success and returns the instant Legacy Select appears, before ever advancing past it,
+            // handing a still-on-Legacy-Select screen back to the caller.
+            if (CareerSelectionAutomation.isOnCareerSelectionScreen(game) && !CareerSelectionAutomation.isInsideLegacyPicker(game)) {
                 game.wait(1.0)
                 if (usedFallback) {
                     ParentDiscordNotifier.sendNavigationFallbackUsed(intendedTrainee, activeCharacter, sessionRunsCompleted)
@@ -303,6 +317,20 @@ object ParentFarmingRunLoop {
                     continue
                 }
             }
+
+            // Advance through Legacy Select (and equip the deck on Support Formation) before the
+            // generic fallback below, which would otherwise tap Back on these screens — same handling
+            // as the per-turn Campaign loop.
+            if (LegacyParentSelector.tryTriggerAutoSelect(game)) {
+                continue
+            }
+            if (CareerSelectionAutomation.tryAdvancePastLegacyPicker(game)) {
+                continue
+            }
+            if (CareerSelectionAutomation.tryTriggerAutoEquipSupportCards(game)) {
+                continue
+            }
+
             when {
                 ButtonToHome.click(game.imageUtils) -> game.wait(1.0)
                 ButtonClose.click(game.imageUtils) -> game.wait(0.8)
