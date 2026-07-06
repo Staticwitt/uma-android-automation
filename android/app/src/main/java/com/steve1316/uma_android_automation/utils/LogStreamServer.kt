@@ -3,11 +3,13 @@ package com.steve1316.uma_android_automation.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.graphics.Bitmap
 import android.net.wifi.WifiManager
 import android.util.Log
 import com.steve1316.automation_library.data.SharedData
 import com.steve1316.automation_library.events.JSEvent
 import com.steve1316.automation_library.utils.BotService
+import com.steve1316.automation_library.utils.MediaProjectionService
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.StartModule
@@ -26,6 +28,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.header
 import io.ktor.server.response.respondBytes
+import io.ktor.server.response.respondOutputStream
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -39,6 +42,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
@@ -46,6 +50,7 @@ import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.net.NetworkInterface
@@ -100,6 +105,13 @@ object LogStreamServer {
 
     /** Maximum number of messages to retain in the history buffer. */
     private const val MAX_BUFFER_SIZE = 15000
+
+    /** Delay between frames pushed to "/video-feed", in milliseconds. Kept low (~2.5 fps) since this
+     *  runs on a phone alongside the bot's own automation and streams over local WiFi. */
+    private const val VIDEO_FEED_FRAME_INTERVAL_MS = 400L
+
+    /** JPEG compression quality (0-100) for "/video-feed" frames. Favors bandwidth/CPU over fidelity. */
+    private const val VIDEO_FEED_JPEG_QUALITY = 70
 
     /** Pattern for matching logs: "00:12:34.567 \[DEBUG\] message content". */
     private val logPattern = Pattern.compile("^(\\n?)(\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s*\\[(VERBOSE|DEBUG|INFO|WARN|ERROR)]\\s*(.*)", Pattern.DOTALL)
@@ -1038,6 +1050,7 @@ object LogStreamServer {
             put("clients", clients.size)
             put("historyCount", synchronized(bufferLock) { messageBuffer.size })
             put("smartRaceSolverEnabled", latestSmartRaceSolverEnabled ?: false)
+            put("videoFeedAvailable", MediaProjectionService.isRunning)
             put("settings", loadSettingsSnapshot(context))
         }
     }
@@ -1597,6 +1610,39 @@ object LogStreamServer {
                                     ContentType.Application.Json,
                                     HttpStatusCode.InternalServerError,
                                 )
+                            }
+                        }
+
+                        // Live MJPEG video feed of the current in-game run. Reuses the same cached
+                        // screenshot the bot already pulls for OCR/template matching via
+                        // MediaProjectionService's ImageReader, so this adds only JPEG encoding
+                        // and network write overhead — no extra screen-capture pipeline.
+                        get("/video-feed") {
+                            call.response.header(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                            try {
+                                call.respondOutputStream(ContentType.parse("multipart/x-mixed-replace; boundary=frame")) {
+                                    while (MediaProjectionService.isRunning) {
+                                        val bitmap = MediaProjectionService.takeScreenshotNow()
+                                        if (bitmap == null) {
+                                            delay(VIDEO_FEED_FRAME_INTERVAL_MS)
+                                            continue
+                                        }
+                                        val jpegBytes =
+                                            ByteArrayOutputStream().use { baos ->
+                                                bitmap.compress(Bitmap.CompressFormat.JPEG, VIDEO_FEED_JPEG_QUALITY, baos)
+                                                baos.toByteArray()
+                                            }
+                                        write("--frame\r\n".toByteArray())
+                                        write("Content-Type: image/jpeg\r\n".toByteArray())
+                                        write("Content-Length: ${jpegBytes.size}\r\n\r\n".toByteArray())
+                                        write(jpegBytes)
+                                        write("\r\n".toByteArray())
+                                        flush()
+                                        delay(VIDEO_FEED_FRAME_INTERVAL_MS)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.d(TAG, "[DEBUG] /video-feed:: Client disconnected or stream ended: ${e.message}")
                             }
                         }
 
