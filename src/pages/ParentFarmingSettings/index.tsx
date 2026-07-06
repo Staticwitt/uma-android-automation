@@ -179,6 +179,7 @@ const ParentFarmingSettings = () => {
         parentFarmingTargetFactorSkills,
         enableAutoSelectLegacyParents,
         enableAutoBorrowSupportCard,
+        enableAutoEquipSupportCards,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
@@ -1077,6 +1078,18 @@ const ParentFarmingSettings = () => {
                                         <Switch
                                             checked={enableAutoBorrowSupportCard}
                                             onCheckedChange={(checked) => updateRacingSetting("enableAutoBorrowSupportCard", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
+                                    id="enable-auto-equip-support-cards"
+                                    title="Auto-equip support deck"
+                                    searchTitle="Auto-equip owned support cards"
+                                    description="Tap the deck's own Auto-Select to fill your owned support card slots at career selection."
+                                    right={
+                                        <Switch
+                                            checked={enableAutoEquipSupportCards}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoEquipSupportCards", checked)}
                                         />
                                     }
                                 />

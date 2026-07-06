@@ -250,6 +250,10 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableAutoBorrowSupportCard = false
             anyMigrated = true
         }
+        if (typeof racing.enableAutoEquipSupportCards !== "boolean") {
+            racing.enableAutoEquipSupportCards = false
+            anyMigrated = true
+        }
         if (typeof racing.legacyParentPreferredPair !== "string") {
             racing.legacyParentPreferredPair = "[]"
             anyMigrated = true
