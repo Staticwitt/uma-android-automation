@@ -26,6 +26,14 @@ internal object SupportCardSelection {
 
     private const val POST_TAP_WAIT_SEC = 0.6
 
+    /**
+     * Substrings that identify a non-card control row (e.g. the "Remove" button shown above the
+     * friend list when a support card is already borrowed) rather than an actual friend/card entry,
+     * so it never gets treated as a match. No real friend name or support card title will ever
+     * legitimately contain these words.
+     */
+    private val NON_CARD_ROW_MARKERS = listOf("remove")
+
     private val similarity = StringSimilarityServiceImpl(JaroWinklerStrategy())
 
     fun readStringList(json: String): List<String> {
@@ -133,7 +141,15 @@ internal object SupportCardSelection {
             keyExtractor = { entry -> entryDedupeKey(entry) },
             onEntry = { _, entry ->
                 val text = ocrEntry(game.imageUtils, entry)
-                val name = firstMatchingPreferredName(text, preferredNames)
+                val name = if (NON_CARD_ROW_MARKERS.any { marker -> text.contains(marker) }) {
+                    com.steve1316.automation_library.utils.MessageLog.d(
+                        logTag,
+                        "Skipping non-card control row (ocr=\"$text\").",
+                    )
+                    null
+                } else {
+                    firstMatchingPreferredName(text, preferredNames)
+                }
                 if (name != null) {
                     val score = matchScore(text, name)
                     com.steve1316.automation_library.utils.MessageLog.i(
