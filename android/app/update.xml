@@ -1,27 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.9</latestVersion>
-    <latestVersionCode>181</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.9</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.9/v5.10.9-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.9/v5.10.9-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.10</latestVersion>
+    <latestVersionCode>182</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.10</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.10/v5.10.10-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.10/v5.10.10-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.9 - Upstream bug fixes + support-card dating schedule
-
-Fixed
------
-- Smart Race Solver could tap the wrong same-track race sibling (e.g. Japanese Oaks vs. Tokyo Yushun, both "Tokyo Turf 2400m") in two code paths that were missing the existing fan-count disambiguation check.
-- Rank-optimize skill strategy could miscount purchases by including auto-obtained/unavailable base skills.
-- Circle/cross skill icons OCR-misread as trailing letters are now recovered.
-- Cached skill titles are now fuzzy-corrected so OCR misreads still resolve.
-- Stopped warning when a skill chain ends at an unreleased version.
-- Event Log Visualizer now correctly detects race and scenario details.
-- The app drawer getting stuck is fixed (GestureHandlerRootView was imported but never used to wrap the app).
-- Remote Log Viewer's race history tooltip is now clamped within the viewport.
+v5.10.10 - Multiple support-card dating schedules
 
 Added
 -----
-- Support-card recreation ("dating") schedule: pin specific career turns for recreation outings, with built-in presets (Team Sirius, Heirs to the Throne) or a hand-edited custom calendar. A pinned turn takes priority over every action except mandatory career-goal races. Optionally holds the final outing for a "Pure Passion" turn, with catch-up and abandon handling if the schedule falls behind. Off by default.
+- Support Card Dating now supports multiple cards at once, each with its own name, preset, pinned turns, Pure Passion turn, and outing count. When more than one card is configured, rows in the in-game "Choose Recreation Partner" dialog are matched by name to the right schedule. Leave a card's name blank to match any unclaimed row (the previous single-card behavior, unchanged when only one card is configured).
 
     </releaseNotes>
   </update>
