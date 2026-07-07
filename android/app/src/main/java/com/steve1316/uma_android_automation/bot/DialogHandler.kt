@@ -177,6 +177,10 @@ open class DialogHandler(val game: Game) {
                 dialog.close(game.imageUtils)
             }
 
+            "borrow_card" -> {
+                dialog.close(game.imageUtils)
+            }
+
             "career" -> {
                 dialog.close(game.imageUtils)
             }

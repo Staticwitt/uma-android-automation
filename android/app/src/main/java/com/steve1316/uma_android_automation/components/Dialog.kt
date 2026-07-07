@@ -317,6 +317,7 @@ object DialogObjects {
             DialogAutoSelect,
             DialogAllRewardsEarned,
             DialogBonusUmamusumeDetails,
+            DialogBorrowCard,
             DialogCareer,
             DialogCareerComplete,
             DialogCareerEventDetails,
@@ -502,6 +503,24 @@ object DialogAllRewardsEarned : DialogInterface {
 object DialogBonusUmamusumeDetails : DialogInterface {
     override val name: String = "bonus_umamusume_details"
     override val title: String = "Bonus Umamusume Details"
+    override val closeButton = null
+    override val okButton = null
+    override val buttons: List<BaseComponentInterface> =
+        listOf(
+            ButtonClose,
+        )
+}
+
+/**
+ * The friend support card picker opened by [ButtonBorrowSupportCard].
+ *
+ * Registered as a recognized dialog purely as a safety net: if auto-borrow logic ever leaves this
+ * screen open (e.g. no preferred card matched, or a detection hiccup), the bot would otherwise sit
+ * here forever since nothing else in the per-turn loop recognizes "Borrow Card" as a known screen.
+ */
+object DialogBorrowCard : DialogInterface {
+    override val name: String = "borrow_card"
+    override val title: String = "Borrow Card"
     override val closeButton = null
     override val okButton = null
     override val buttons: List<BaseComponentInterface> =
