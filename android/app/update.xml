@@ -1,17 +1,27 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.8</latestVersion>
-    <latestVersionCode>180</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.8</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.8/v5.10.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.8/v5.10.8-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.9</latestVersion>
+    <latestVersionCode>181</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.9</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.9/v5.10.9-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.9/v5.10.9-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.8 - Parent Farming Skill Point Check fix
+v5.10.9 - Upstream bug fixes + support-card dating schedule
 
 Fixed
 -----
-- Enabling "Skill Point Check" (and its buy-and-continue plan) in Skills settings had no effect while Parent Farming Mode was on: the parent-farming settings resolver unconditionally forced the toggle back off before it ever reached the bot, so the log reported it disabled even though the app showed it enabled. The toggle is now only forced off when its Skill Point Check plan isn't also enabled (in which case enabling it alone would just stop the bot, which still doesn't make sense for an unattended farming run) — otherwise your configured mid-run skill purchase now actually happens.
-- Added a "Skill Point Check Plan" line to the settings log banner (matching the existing Pre-Finals/CareerComplete lines) so its enabled state and configuration are visible going forward.
+- Smart Race Solver could tap the wrong same-track race sibling (e.g. Japanese Oaks vs. Tokyo Yushun, both "Tokyo Turf 2400m") in two code paths that were missing the existing fan-count disambiguation check.
+- Rank-optimize skill strategy could miscount purchases by including auto-obtained/unavailable base skills.
+- Circle/cross skill icons OCR-misread as trailing letters are now recovered.
+- Cached skill titles are now fuzzy-corrected so OCR misreads still resolve.
+- Stopped warning when a skill chain ends at an unreleased version.
+- Event Log Visualizer now correctly detects race and scenario details.
+- The app drawer getting stuck is fixed (GestureHandlerRootView was imported but never used to wrap the app).
+- Remote Log Viewer's race history tooltip is now clamped within the viewport.
+
+Added
+-----
+- Support-card recreation ("dating") schedule: pin specific career turns for recreation outings, with built-in presets (Team Sirius, Heirs to the Throne) or a hand-edited custom calendar. A pinned turn takes priority over every action except mandatory career-goal races. Optionally holds the final outing for a "Pure Passion" turn, with catch-up and abandon handling if the schedule falls behind. Off by default.
 
     </releaseNotes>
   </update>
