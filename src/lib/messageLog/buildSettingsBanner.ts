@@ -220,7 +220,16 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔒 Solver Manual Turn Locks: ${smartRaceSolverLockCount} locked turn(s)
 
 ---------- Skill Options ----------
-🔍 Skill Point Check: ${settings.skills.enableSkillPointCheck ? `Stop on ${settings.skills.skillPointCheck} Skill Points or more` : "❌"}
+🔍 Skill Point Check: ${settings.skills.enableSkillPointCheck ? `${settings.skills.skillPointCheck} Skill Points or more` : "❌"}
+📅 Skill Point Check Plan: ${settings.skills.plans.skillPointCheck.enabled ? "✅ (buy and continue)" : "❌ (stop the bot instead)"}${
+        settings.skills.plans.skillPointCheck.enabled
+            ? `\n\t💲 Buy All Negative Skills: ${
+                  settings.skills.plans.skillPointCheck.enableBuyNegativeSkills ? "✅" : "❌"
+              }\n\t💸 Spending Strategy: ${settings.skills.plans.skillPointCheck.strategy ? "✅" : "❌"}\n\t🚫 Blacklisted Skills: ${csvCount(
+                  settings.skills.plans.skillPointCheck.blacklist
+              )}\n\t🎨 Excluded Categories: ${formatExcludedCategories(settings.skills.plans.skillPointCheck)}`
+            : ""
+    }
 🏃 Running Style Override: ${settings.skills.preferredRunningStyle}
 🛣️ Track Distance Override: ${settings.skills.preferredTrackDistance}
 🛣️ Track Surface Override: ${settings.skills.preferredTrackSurface}
