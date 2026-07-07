@@ -183,6 +183,44 @@ describe("applyMigrations", () => {
         expect((migrated.general as any).stopAtDate).toBeUndefined()
     })
 
+    it("migrates single flat dating schedule fields to a datingCards array", () => {
+        const rawSettings = {
+            general: {
+                datingSchedulePreset: "throneSenior",
+                recreationTurns: [35, 43, 52, 58],
+                purePassionTurn: 60,
+                recreationTotalOutings: 4,
+            },
+        } as any
+        // deepMerge would have already filled in the new default datingCards array, alongside the old raw fields it also copies over unconditionally.
+        const settings = {
+            general: {
+                datingCards: [{ cardName: "", preset: "siriusSenior", recreationTurns: [29, 35, 43, 47, 52, 55, 58], purePassionTurn: -1, totalOutings: 7 }],
+                datingSchedulePreset: "throneSenior",
+                recreationTurns: [35, 43, 52, 58],
+                purePassionTurn: 60,
+                recreationTotalOutings: 4,
+            },
+        } as any
+
+        const { settings: migrated, anyMigrated } = applyMigrations(settings, rawSettings)
+        expect(anyMigrated).toBe(true)
+        expect(migrated.general.datingCards).toEqual([{ cardName: "", preset: "throneSenior", recreationTurns: [35, 43, 52, 58], purePassionTurn: 60, totalOutings: 4 }])
+        expect(migrated.general.datingSchedulePreset).toBeUndefined()
+        expect(migrated.general.recreationTurns).toBeUndefined()
+        expect(migrated.general.purePassionTurn).toBeUndefined()
+        expect(migrated.general.recreationTotalOutings).toBeUndefined()
+    })
+
+    it("does not migrate dating schedule fields when datingCards is already present", () => {
+        const datingCards = [{ cardName: "Kitasan Black", preset: "custom", recreationTurns: [10], purePassionTurn: -1, totalOutings: 1 }]
+        const rawSettings = { general: { datingCards } } as any
+        const settings = { general: { datingCards } } as any
+
+        const { anyMigrated } = applyMigrations(settings, rawSettings)
+        expect(anyMigrated).toBe(false)
+    })
+
     it("returns anyMigrated=false when no migration needed", () => {
         const settings = {
             general: { stopAtDates: ["Senior January Early"] },

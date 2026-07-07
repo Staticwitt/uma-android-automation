@@ -182,7 +182,7 @@ internal object SupportCardSelection {
     internal fun entryDedupeKey(entry: ScrollListEntry): String =
         "${entry.bbox.x}:${entry.bbox.y}:${entry.bbox.w}:${entry.bbox.h}"
 
-    private fun ocrEntry(imageUtils: CustomImageUtils, entry: ScrollListEntry): String =
+    internal fun ocrEntry(imageUtils: CustomImageUtils, entry: ScrollListEntry): String =
         imageUtils.performOCROnRegion(
             entry.bitmap,
             0,

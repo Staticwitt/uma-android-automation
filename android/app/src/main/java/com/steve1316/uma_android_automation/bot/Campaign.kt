@@ -217,22 +217,30 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Whether a scheduled recreation outing that got pre-empted (a race, or recreation not yet available) should be made up on the next available turn. */
     protected val enableRecreationCatchUp: Boolean = SettingsHelper.getBooleanSetting("general", "enableRecreationCatchUp", true)
 
-    /** The set of 1-indexed career turns (1-72) pinned for regular recreation outings. */
-    protected val recreationTurns: Set<Int> =
+    /** Per-card recreation schedules (name to match via OCR in the partner dialog, pinned turns, Pure Passion turn, and chain length), parsed from the JSON array setting. */
+    protected val datingCards: List<DatingSchedule.DatingCardConfig> =
         run {
-            val json = SettingsHelper.getStringSetting("general", "recreationTurns", "[]")
+            val json = SettingsHelper.getStringSetting("general", "datingCards", "[]")
             try {
-                org.json.JSONArray(json).let { arr -> (0 until arr.length()).map { arr.getInt(it) }.toSet() }
+                val arr = org.json.JSONArray(json)
+                (0 until arr.length()).map { i ->
+                    val obj = arr.getJSONObject(i)
+                    val turnsArr = obj.optJSONArray("recreationTurns")
+                    val turns = if (turnsArr == null) setOf() else (0 until turnsArr.length()).map { turnsArr.getInt(it) }.toSet()
+                    DatingSchedule.DatingCardConfig(
+                        cardName = obj.optString("cardName", ""),
+                        recreationTurns = turns,
+                        purePassionTurn = obj.optInt("purePassionTurn", -1),
+                        totalOutings = obj.optInt("totalOutings", 1),
+                    )
+                }
             } catch (_: Exception) {
-                setOf()
+                listOf()
             }
         }
 
-    /** The single career turn pinned for the final outing / Pure Passion activation, or a non-positive value when unset. */
-    protected val purePassionTurn: Int = SettingsHelper.getIntSetting("general", "purePassionTurn", 60)
-
-    /** The total outings in the active support card's recreation chain (Team Sirius 7, Heirs to the Throne 5). */
-    protected val recreationTotalOutings: Int = SettingsHelper.getIntSetting("general", "recreationTotalOutings", 7)
+    /** The first configured card, or a blank/inert default when none are configured. Used by call sites that predate multi-card support (e.g. the legacy no-dialog recreation path). */
+    protected val primaryDatingCard: DatingSchedule.DatingCardConfig = datingCards.firstOrNull() ?: DatingSchedule.DatingCardConfig("", emptySet(), -1, 1)
 
     /** Whether the recreation chain is complete for this run - no more dates are available. Latched true once done (from the in-game complete label) and never reset. */
     protected var recreationDateCompleted: Boolean = false
@@ -240,11 +248,17 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Whether the end-of-career Career Rank screen has already been captured this run, to avoid repeating the OCR check every frame. */
     private var hasCapturedCareerRank: Boolean = false
 
-    /** The number of recreation outings actually started this run. Used to hold the final outing for the Pure Passion turn. */
-    protected var recreationOutingsStarted: Int = 0
+    /** Number of recreation outings started this run, keyed by [DatingSchedule.DatingCardConfig.cardName]. Used to hold each card's final outing for its Pure Passion turn. */
+    protected val recreationOutingsStartedByCard: MutableMap<String, Int> = mutableMapOf()
 
-    /** The group-event chain length as last read from the game's "X/Y" progress, or the configured fallback until the partner dialog is first read. */
-    protected var recreationTotalOutingsKnown: Int = recreationTotalOutings
+    /** Each card's group-event chain length as last read from the game's "X/Y" progress, keyed by card name, or its configured fallback until first read. */
+    protected val recreationTotalOutingsKnownByCard: MutableMap<String, Int> = mutableMapOf()
+
+    /** Number of outings started this run for [card]. */
+    protected fun outingsStarted(card: DatingSchedule.DatingCardConfig): Int = recreationOutingsStartedByCard[card.cardName] ?: 0
+
+    /** [card]'s chain length, as last read from the game or its configured fallback. */
+    protected fun totalOutingsKnown(card: DatingSchedule.DatingCardConfig): Int = recreationTotalOutingsKnownByCard[card.cardName] ?: card.totalOutings
 
     /** The turn number when the stop-at-date check first started. */
     protected var stopAtDateInitialTurnNumber: Int = -1
@@ -1550,13 +1564,17 @@ abstract class Campaign(game: Game) : Task(game) {
      */
     open fun shouldDoRecreationToday(sourceBitmap: Bitmap? = null): Boolean {
         if (!isScheduleActive() || recreationDateCompleted) return false
-        // Do an outing on a pinned turn, or - when catch-up is on - on any turn where a missed outing has left us behind schedule.
-        val pinnedOrBehind =
-            DatingSchedule.isPinnedRecreationTurn(date.day, recreationTurns, purePassionTurn) ||
-                (enableRecreationCatchUp && DatingSchedule.isBehindSchedule(date.day, recreationTurns, recreationOutingsStarted))
-        if (!pinnedOrBehind) return false
-        // If only the final outing remains and this is not the Pure Passion turn, hold it: spend the turn on a normal action instead of opening the recreation.
-        if (DatingSchedule.shouldHoldFinalOuting(recreationOutingsStarted, recreationTotalOutingsKnown, allowFinalOutingNow())) return false
+        // Proceed only when some card is BOTH due today (pinned, or - with catch-up on - behind its own schedule) AND not itself holding its final outing back for a later Pure Passion turn.
+        // Each check must apply to the same card - a due-but-holding card A must not be waved through by an unrelated, unpinned-today card B that merely happens not to be holding.
+        val anyCardDueAndReady =
+            datingCards.any { card ->
+                val started = outingsStarted(card)
+                val dueToday =
+                    DatingSchedule.isPinnedRecreationTurn(date.day, card.recreationTurns, card.purePassionTurn) ||
+                        (enableRecreationCatchUp && DatingSchedule.isBehindSchedule(date.day, card.recreationTurns, started))
+                dueToday && !DatingSchedule.shouldHoldFinalOuting(started, totalOutingsKnown(card), allowFinalOutingNow(card))
+            }
+        if (!anyCardDueAndReady) return false
         val bitmap = sourceBitmap ?: game.imageUtils.getSourceBitmap()
         // Mandatory career-goal races cannot be skipped, so they still outrank a recreation. Scheduled (in-game agenda) and Smart Race Solver races do not - the recreation overrides them.
         if (IconRaceDayRibbon.check(game.imageUtils, sourceBitmap = bitmap) || IconGoalRibbon.check(game.imageUtils, sourceBitmap = bitmap)) {
@@ -1616,21 +1634,21 @@ abstract class Campaign(game: Game) : Task(game) {
         return false
     }
 
-    /** Whether the final chain outing may be taken right now - only on the Pure Passion turn (or when the schedule or Pure Passion turn is off). */
-    private fun allowFinalOutingNow(): Boolean = DatingSchedule.allowFinalOuting(enableDatingSchedule, purePassionTurn, date.day)
+    /** Whether [card]'s final chain outing may be taken right now - only on its Pure Passion turn (or when the schedule or that card's Pure Passion turn is off). */
+    private fun allowFinalOutingNow(card: DatingSchedule.DatingCardConfig): Boolean = DatingSchedule.allowFinalOuting(enableDatingSchedule, card.purePassionTurn, date.day)
 
-    /** Whether the recreation schedule is actively driving decisions: enabled and not abandoned (the Pure Passion window has not passed with the chain unfinished). */
-    private fun isScheduleActive(): Boolean = enableDatingSchedule && !DatingSchedule.isScheduleAbandoned(purePassionTurn, date.day, recreationDateCompleted)
+    /** Whether the recreation schedule is actively driving decisions: enabled and at least one configured card is not abandoned (its Pure Passion window has not passed with its chain unfinished). */
+    private fun isScheduleActive(): Boolean =
+        enableDatingSchedule && datingCards.any { card -> !DatingSchedule.isScheduleAbandoned(card.purePassionTurn, date.day, recreationDateCompleted) }
 
     /**
      * Handles the Recreation date event if detected on the screen.
      *
      * @param recoverMoodIfCompleted If true, recovers mood if the date was already completed.
-     * @param allowFinalOuting If false, the final outing in the chain is held back (the bot backs out of the partner dialog) so it can be done on the Pure Passion turn.
      * @param doDateRecreation If true, advance the support-card date chain (tap the group event). If false, recreate with the trainee instead - used for opportunistic mood / energy recovery so the schedule alone drives the date chain.
      * @return True if the Recreation date event was successfully completed, false otherwise.
      */
-    open fun handleRecreationDate(recoverMoodIfCompleted: Boolean = false, allowFinalOuting: Boolean = true, doDateRecreation: Boolean = true): Boolean {
+    open fun handleRecreationDate(recoverMoodIfCompleted: Boolean = false, doDateRecreation: Boolean = true): Boolean {
         return if (ButtonRecreation.click(game.imageUtils)) {
             // Tap OK for the possibility of a scheduled race warning popup.
             game.wait(game.dialogWaitDelay)
@@ -1670,47 +1688,16 @@ abstract class Campaign(game: Game) : Task(game) {
                             MessageLog.w(TAG, "[WARN] handleRecreationDate:: Could not find the trainee recreation option. Backing out of the partner dialog.")
                             cancelPartnerDialog()
                         }
+                    } else if (datingCards.size <= 1) {
+                        // Exactly one card configured (the common case): identical to the original single-card flow, just reading through the map accessors.
+                        handleSingleCardRecreationDate()
                     } else {
-                        // Read the in-game group-event progress (e.g. "3/4"). This is the authoritative chain position, so it holds correctly even after a bot restart or manual play.
-                        getGroupEventProgress(game.imageUtils.getSourceBitmap())?.let { (completed, total) ->
-                            recreationOutingsStarted = completed
-                            recreationTotalOutingsKnown = total
-                            MessageLog.i(TAG, "[RECREATION_DATE] Group event progress read as $completed/$total.")
-                        }
-
-                        if (DatingSchedule.shouldHoldFinalOuting(recreationOutingsStarted, recreationTotalOutingsKnown, allowFinalOuting)) {
-                            // The next outing would complete the chain and trigger Pure Passion. This is not the Pure Passion turn, so back out and leave the final for that turn.
-                            MessageLog.i(TAG, "[RECREATION_DATE] Next outing is the final one. Holding it for the Pure Passion turn. Backing out.")
-                            cancelPartnerDialog()
-                        } else {
-                            // Use the ScrollList processor to find and click the first available date progress label.
-                            val bResult =
-                                ScrollList.processWithFallback(
-                                    game,
-                                    fallbackComponent = ButtonEventProgressChevron,
-                                    bForceComponentDetection = true,
-                                    onEntry = { _, entry ->
-                                        MessageLog.i(TAG, "[INFO] Found entry: $entry at ${entry.bbox.cx}, ${entry.bbox.cy}")
-                                        game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
-                                        game.waitForLoading()
-                                        true
-                                    },
-                                )
-
-                            if (bResult) {
-                                recreationOutingsStarted++
-                                MessageLog.v(TAG, "[RECREATION_DATE] Started a date from the partner selection dialog. Outings started this run: $recreationOutingsStarted.")
-                                game.waitForLoading()
-                                true
-                            } else {
-                                MessageLog.e(TAG, "[ERROR] handleRecreationDate:: Failed to find any date progress labels in the partner selection dialog. Backing out.")
-                                cancelPartnerDialog()
-                            }
-                        }
+                        // Multiple cards configured: OCR each row's name to work out which card it belongs to.
+                        handleMultiCardRecreationDate()
                     }
                 } else if (LabelEventProgress.click(game.imageUtils)) {
-                    // Legacy support cards or situations where the dialog doesn't apply.
-                    recreationOutingsStarted++
+                    // Legacy support cards or situations where the dialog doesn't apply. No partner-selection dialog exists here to disambiguate cards, so this always advances the primary (first configured) card.
+                    recreationOutingsStartedByCard[primaryDatingCard.cardName] = outingsStarted(primaryDatingCard) + 1
                     game.waitForLoading()
                     MessageLog.v(TAG, "[RECREATION_DATE] Recreation date can be done.")
                     true
@@ -1723,6 +1710,113 @@ abstract class Campaign(game: Game) : Task(game) {
         } else {
             false
         }
+    }
+
+    /**
+     * Handles the "Choose Recreation Partner" dialog when exactly one card is configured - identical to the original single-card behavior: read the
+     * authoritative in-game group-event progress once for the (only) visible chain, then tap the first available row.
+     *
+     * @return True if a date was successfully started (or correctly held back), false if the dialog had to be backed out of due to an error.
+     */
+    private fun handleSingleCardRecreationDate(): Boolean {
+        val card = primaryDatingCard
+        // Read the in-game group-event progress (e.g. "3/4"). This is the authoritative chain position, so it holds correctly even after a bot restart or manual play.
+        getGroupEventProgress(game.imageUtils.getSourceBitmap())?.let { (completed, total) ->
+            recreationOutingsStartedByCard[card.cardName] = completed
+            recreationTotalOutingsKnownByCard[card.cardName] = total
+            MessageLog.i(TAG, "[RECREATION_DATE] Group event progress read as $completed/$total.")
+        }
+
+        if (DatingSchedule.shouldHoldFinalOuting(outingsStarted(card), totalOutingsKnown(card), allowFinalOutingNow(card))) {
+            // The next outing would complete the chain and trigger Pure Passion. This is not the Pure Passion turn, so back out and leave the final for that turn.
+            MessageLog.i(TAG, "[RECREATION_DATE] Next outing is the final one. Holding it for the Pure Passion turn. Backing out.")
+            return cancelPartnerDialog()
+        }
+
+        // Use the ScrollList processor to find and click the first available date progress label.
+        val bResult =
+            ScrollList.processWithFallback(
+                game,
+                fallbackComponent = ButtonEventProgressChevron,
+                bForceComponentDetection = true,
+                onEntry = { _, entry ->
+                    MessageLog.i(TAG, "[INFO] Found entry: $entry at ${entry.bbox.cx}, ${entry.bbox.cy}")
+                    game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
+                    game.waitForLoading()
+                    true
+                },
+            )
+
+        return if (bResult) {
+            recreationOutingsStartedByCard[card.cardName] = outingsStarted(card) + 1
+            MessageLog.v(TAG, "[RECREATION_DATE] Started a date from the partner selection dialog. Outings started this run: ${outingsStarted(card)}.")
+            game.waitForLoading()
+            true
+        } else {
+            MessageLog.e(TAG, "[ERROR] handleRecreationDate:: Failed to find any date progress labels in the partner selection dialog. Backing out.")
+            cancelPartnerDialog()
+        }
+    }
+
+    /**
+     * Handles the "Choose Recreation Partner" dialog when multiple cards are configured. OCRs each row's name (reusing the same fuzzy matching used for the
+     * career-selection support-card list) to work out which configured card it belongs to, and taps the first row whose matched card is ready for an outing
+     * (not holding its final one for a later Pure Passion turn). Rows that match no configured card, or whose matched card is holding, are skipped rather than
+     * tapped, and the scan continues to the next row.
+     *
+     * Unlike the single-card path, this does not attempt to re-read each row's own "X/Y" progress via OCR - only the bot's own per-card outing counter is
+     * used here, since reliably cropping a specific row's progress region from a multi-row dialog needs on-device calibration this could not verify.
+     *
+     * @return True if a date was successfully started, false if the dialog had to be backed out of (no configured card claimed a ready row, or no rows were found at all).
+     */
+    private fun handleMultiCardRecreationDate(): Boolean {
+        var matchedCard: DatingSchedule.DatingCardConfig? = null
+        var sawAnyRow = false
+
+        ScrollList.processWithFallback(
+            game,
+            fallbackComponent = ButtonEventProgressChevron,
+            bForceComponentDetection = true,
+            onEntry = { _, entry ->
+                sawAnyRow = true
+                val ocrText = SupportCardSelection.ocrEntry(game.imageUtils, entry)
+                val card = DatingSchedule.matchCardForRow(ocrText, datingCards, SupportCardSelection::matchesName)
+                when {
+                    card == null -> {
+                        MessageLog.d(TAG, "[DEBUG] handleRecreationDate:: No configured card claims this row (ocr=\"$ocrText\"). Skipping.")
+                        false
+                    }
+                    DatingSchedule.shouldHoldFinalOuting(outingsStarted(card), totalOutingsKnown(card), allowFinalOutingNow(card)) -> {
+                        MessageLog.i(
+                            TAG,
+                            "[RECREATION_DATE] Card \"${card.cardName}\" (ocr=\"$ocrText\") next outing is the final one. Holding it for the Pure Passion turn. Skipping row.",
+                        )
+                        false
+                    }
+                    else -> {
+                        MessageLog.i(TAG, "[RECREATION_DATE] Matched card \"${card.cardName}\" (ocr=\"$ocrText\"). Tapping row.")
+                        game.tap(entry.bbox.cx.toDouble(), entry.bbox.cy.toDouble())
+                        game.waitForLoading()
+                        matchedCard = card
+                        true
+                    }
+                }
+            },
+        )
+
+        val matched = matchedCard
+        if (matched == null) {
+            if (!sawAnyRow) {
+                MessageLog.e(TAG, "[ERROR] handleRecreationDate:: Failed to find any date progress labels in the partner selection dialog. Backing out.")
+            } else {
+                MessageLog.i(TAG, "[RECREATION_DATE] No configured card is ready for an outing from this dialog's rows. Backing out.")
+            }
+            return cancelPartnerDialog()
+        }
+
+        recreationOutingsStartedByCard[matched.cardName] = outingsStarted(matched) + 1
+        MessageLog.v(TAG, "[RECREATION_DATE] Started a date for \"${matched.cardName}\". Outings started this run: ${outingsStarted(matched)}.")
+        return true
     }
 
     /**
@@ -2530,7 +2624,7 @@ abstract class Campaign(game: Game) : Task(game) {
 
             MainScreenAction.DATE -> {
                 MessageLog.i(TAG, "[INFO] Decision made to perform a scheduled recreation outing.")
-                handleRecreationDate(recoverMoodIfCompleted = false, allowFinalOuting = allowFinalOutingNow(), doDateRecreation = true)
+                handleRecreationDate(recoverMoodIfCompleted = false, doDateRecreation = true)
                 bHasCheckedDateThisTurn = false
             }
 

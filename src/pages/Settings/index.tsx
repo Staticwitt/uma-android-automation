@@ -20,7 +20,8 @@ import SearchableItem from "../../components/SearchableItem"
 import SeasonCalendar, { useSeasonCalendarStyles } from "../../components/SeasonCalendar"
 import { Popover, PopoverContent, PopoverTrigger, usePopoverRootContext } from "../../components/ui/popover"
 import { formatCareerTurn, turnDateLabel } from "../../lib/solver/constants"
-import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS } from "../../lib/datingSchedule"
+import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, createDatingCardSchedule, type DatingCardSchedule } from "../../lib/datingSchedule"
+import { Input } from "../../components/ui/input"
 import { useSettings } from "../../context/SettingsContext"
 import { useSettingsFileManager } from "../../hooks/useSettingsFileManager"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
@@ -270,61 +271,84 @@ const Settings = () => {
 
     const renderNavigationSections = () => <SettingsHubNav />
 
-    const handleDatingPresetChange = useCallback(
-        (preset: string) => {
-            const selected = DATING_SCHEDULE_PRESETS[preset]
-            if (selected) {
-                updateGeneral({
-                    datingSchedulePreset: preset,
-                    recreationTurns: [...selected.recreationTurns],
-                    purePassionTurn: selected.purePassionTurn,
-                    recreationTotalOutings: selected.totalOutings,
-                })
-            } else {
-                updateGeneral({ datingSchedulePreset: DATING_SCHEDULE_CUSTOM, recreationTurns: [], purePassionTurn: -1 })
-            }
+    /** Replaces one card's entry in `general.datingCards` by index, leaving the others untouched. */
+    const updateDatingCard = useCallback(
+        (cardIndex: number, updater: (card: DatingCardSchedule) => DatingCardSchedule) => {
+            updateGeneral((prev) => ({ ...prev, datingCards: prev.datingCards.map((card, i) => (i === cardIndex ? updater(card) : card)) }))
         },
         [updateGeneral]
+    )
+
+    const handleDatingPresetChange = useCallback(
+        (cardIndex: number, preset: string) => {
+            const selected = DATING_SCHEDULE_PRESETS[preset]
+            updateDatingCard(cardIndex, (card) =>
+                selected
+                    ? { ...card, preset, recreationTurns: [...selected.recreationTurns], purePassionTurn: selected.purePassionTurn, totalOutings: selected.totalOutings }
+                    : { ...card, preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [], purePassionTurn: -1 }
+            )
+        },
+        [updateDatingCard]
     )
 
     const handleMarkRecreationTurn = useCallback(
-        (turn: number) => {
-            updateGeneral((prev) => ({
-                ...prev,
-                datingSchedulePreset: DATING_SCHEDULE_CUSTOM,
-                recreationTurns: prev.recreationTurns.includes(turn) ? prev.recreationTurns : [...prev.recreationTurns, turn].sort((a, b) => a - b),
-                purePassionTurn: prev.purePassionTurn === turn ? -1 : prev.purePassionTurn,
+        (cardIndex: number, turn: number) => {
+            updateDatingCard(cardIndex, (card) => ({
+                ...card,
+                preset: DATING_SCHEDULE_CUSTOM,
+                recreationTurns: card.recreationTurns.includes(turn) ? card.recreationTurns : [...card.recreationTurns, turn].sort((a, b) => a - b),
+                purePassionTurn: card.purePassionTurn === turn ? -1 : card.purePassionTurn,
             }))
         },
-        [updateGeneral]
+        [updateDatingCard]
     )
 
     const handleSetPurePassionTurn = useCallback(
-        (turn: number) => {
-            updateGeneral((prev) => ({ ...prev, datingSchedulePreset: DATING_SCHEDULE_CUSTOM, purePassionTurn: turn, recreationTurns: prev.recreationTurns.filter((t) => t !== turn) }))
+        (cardIndex: number, turn: number) => {
+            updateDatingCard(cardIndex, (card) => ({ ...card, preset: DATING_SCHEDULE_CUSTOM, purePassionTurn: turn, recreationTurns: card.recreationTurns.filter((t) => t !== turn) }))
         },
-        [updateGeneral]
+        [updateDatingCard]
     )
 
     const handleClearRecreationTurn = useCallback(
-        (turn: number) => {
-            updateGeneral((prev) => ({
-                ...prev,
-                datingSchedulePreset: DATING_SCHEDULE_CUSTOM,
-                recreationTurns: prev.recreationTurns.filter((t) => t !== turn),
-                purePassionTurn: prev.purePassionTurn === turn ? -1 : prev.purePassionTurn,
+        (cardIndex: number, turn: number) => {
+            updateDatingCard(cardIndex, (card) => ({
+                ...card,
+                preset: DATING_SCHEDULE_CUSTOM,
+                recreationTurns: card.recreationTurns.filter((t) => t !== turn),
+                purePassionTurn: card.purePassionTurn === turn ? -1 : card.purePassionTurn,
             }))
+        },
+        [updateDatingCard]
+    )
+
+    const handleCardNameChange = useCallback(
+        (cardIndex: number, cardName: string) => {
+            updateDatingCard(cardIndex, (card) => ({ ...card, cardName }))
+        },
+        [updateDatingCard]
+    )
+
+    const handleTotalOutingsChange = useCallback(
+        (cardIndex: number, totalOutings: number) => {
+            updateDatingCard(cardIndex, (card) => ({ ...card, totalOutings }))
+        },
+        [updateDatingCard]
+    )
+
+    const handleAddDatingCard = useCallback(() => {
+        updateGeneral((prev) => ({ ...prev, datingCards: [...prev.datingCards, createDatingCardSchedule("siriusSenior")] }))
+    }, [updateGeneral])
+
+    const handleRemoveDatingCard = useCallback(
+        (cardIndex: number) => {
+            updateGeneral((prev) => ({ ...prev, datingCards: prev.datingCards.length > 1 ? prev.datingCards.filter((_, i) => i !== cardIndex) : prev.datingCards }))
         },
         [updateGeneral]
     )
 
     const resetDatingSchedule = useCallback(() => {
-        updateGeneral({
-            datingSchedulePreset: defaultSettings.general.datingSchedulePreset,
-            recreationTurns: [...defaultSettings.general.recreationTurns],
-            purePassionTurn: defaultSettings.general.purePassionTurn,
-            recreationTotalOutings: defaultSettings.general.recreationTotalOutings,
-        })
+        updateGeneral({ datingCards: defaultSettings.general.datingCards.map((card) => ({ ...card, recreationTurns: [...card.recreationTurns] })) })
     }, [updateGeneral, defaultSettings])
 
     /** Shared "Reset" pressable used in a section label's right slot. */
@@ -335,9 +359,9 @@ const Settings = () => {
     )
 
     const renderMiscSettings = () => {
-        const renderRecreationPopover = (turn: number) => {
-            const isRecreation = general.recreationTurns.includes(turn)
-            const isPurePassion = general.purePassionTurn === turn
+        const renderRecreationPopover = (cardIndex: number, card: DatingCardSchedule, turn: number) => {
+            const isRecreation = card.recreationTurns.includes(turn)
+            const isPurePassion = card.purePassionTurn === turn
             return (
                 <View style={{ gap: SPACING.sm }}>
                     <Text style={styles.dateTitle}>{formatCareerTurn(turn)}</Text>
@@ -345,18 +369,19 @@ const Settings = () => {
                         turn={turn}
                         isRecreation={isRecreation}
                         isPurePassion={isPurePassion}
-                        onMark={handleMarkRecreationTurn}
-                        onSetPurePassion={handleSetPurePassionTurn}
-                        onClear={handleClearRecreationTurn}
+                        onMark={(t) => handleMarkRecreationTurn(cardIndex, t)}
+                        onSetPurePassion={(t) => handleSetPurePassionTurn(cardIndex, t)}
+                        onClear={(t) => handleClearRecreationTurn(cardIndex, t)}
                     />
                 </View>
             )
         }
 
         // A turn set as the Pure Passion final date shows the amber "mandatory" border and the Pure Passion marker. A plain recreation turn shows the brand border and the recreation marker.
-        const renderRecreationCell = (turn: number, turnInYear: number) => {
-            const isRecreation = general.recreationTurns.includes(turn)
-            const isPurePassion = general.purePassionTurn === turn
+        // Returns a renderCell closure bound to one card, since SeasonCalendar's renderCell prop only takes (turn, turnInYear).
+        const makeRenderRecreationCell = (cardIndex: number, card: DatingCardSchedule) => (turn: number, turnInYear: number) => {
+            const isRecreation = card.recreationTurns.includes(turn)
+            const isPurePassion = card.purePassionTurn === turn
             return (
                 <View key={turn} style={calStyles.calendarCellWrapper}>
                     <Popover>
@@ -369,7 +394,7 @@ const Settings = () => {
                             </Pressable>
                         </PopoverTrigger>
                         <PopoverContent side="top" align="center" insets={{ top: 60, bottom: 60, left: 12, right: 12 }} className="p-3" style={recreationPopoverStyle}>
-                            {renderRecreationPopover(turn)}
+                            {renderRecreationPopover(cardIndex, card, turn)}
                         </PopoverContent>
                     </Popover>
                     <Text style={calStyles.calendarDateLabel}>
@@ -514,66 +539,105 @@ const Settings = () => {
                                 right={<Switch checked={general.enableRecreationCatchUp} onCheckedChange={(checked) => updateGeneral({ enableRecreationCatchUp: checked })} />}
                             />
 
-                            <SearchableItem
-                                id="settings-dating-preset"
-                                title="Schedule Preset"
-                                description="Pick an optimized preset (Pure Passion timed for a summer camp) or Custom to hand-pick turns on the calendar below."
-                                parentId="settings-dating-schedule"
-                            >
-                                <View style={{ padding: SPACING.md, paddingBottom: 0 }}>
-                                    <CustomSelect
-                                        placeholder="Preset"
-                                        width="100%"
-                                        options={datingPresetOptions}
-                                        value={general.datingSchedulePreset}
-                                        onValueChange={(value) => handleDatingPresetChange(value || DATING_SCHEDULE_CUSTOM)}
-                                    />
-                                </View>
-                                {general.purePassionTurn > 0 && (
-                                    <View style={{ paddingHorizontal: SPACING.md }}>
-                                        <Callout variant="info">
-                                            Pure Passion activates when you complete the Heir to the Throne's final recreation date. For about 3 turns, Friendship Training occurs on a facility
-                                            regardless of bond. This preset pins one date per outing and holds the final one for Senior June Late, so those turns land on Senior Summer Training where
-                                            the gains matter most.
-                                        </Callout>
-                                    </View>
-                                )}
-                            </SearchableItem>
-
-                            <SearchableItem
-                                id="settings-recreation-calendar"
-                                title="Recreation Calendar"
-                                description="Tap a turn to mark it as a Recreation date or the single Pure Passion date (editing switches the preset to Custom). Pre-Debut and Summer turns are unavailable."
-                                parentId="settings-dating-schedule"
-                            >
+                            {general.datingCards.length > 1 && (
                                 <View style={{ paddingHorizontal: SPACING.md }}>
-                                    <SeasonCalendar renderCell={renderRecreationCell} deps={[general.recreationTurns, general.purePassionTurn]} />
+                                    <Callout variant="info">
+                                        Each card is matched by name (fuzzy, case-insensitive) against the rows in the in-game "Choose Recreation Partner" dialog. A blank name matches any row no
+                                        other card claimed.
+                                    </Callout>
                                 </View>
-                            </SearchableItem>
+                            )}
 
-                            <SearchableItem
-                                id="settings-recreation-total-outings"
-                                title="Total Recreation Outings"
-                                description="Number of outings in your support card's recreation chain. Team Sirius = 7, Heirs to the Throne = 4. Read from the game automatically when possible; this is the fallback. Used to hold the final outing for the Pure Passion turn."
-                                parentId="settings-dating-schedule"
-                            >
-                                <View style={{ padding: SPACING.md }}>
-                                    <CustomSlider
-                                        searchId="settings-recreation-total-outings"
-                                        value={general.recreationTotalOutings}
-                                        placeholder={defaultSettings.general.recreationTotalOutings}
-                                        onValueChange={(value) => updateGeneral({ recreationTotalOutings: value })}
-                                        onSlidingComplete={(value) => updateGeneral({ recreationTotalOutings: value })}
-                                        min={1}
-                                        max={10}
-                                        step={1}
-                                        label="Total Recreation Outings"
-                                        showValue={true}
-                                        showLabels={true}
-                                        description="Team Sirius = 7, Heirs to the Throne = 4. Pin enough Recreation dates before the Pure Passion date."
-                                    />
+                            {general.datingCards.map((card, cardIndex) => (
+                                <View key={cardIndex} style={styles.dateEntry}>
+                                    <View style={styles.dateEntryHeader}>
+                                        <View style={styles.dateEntryTitleRow}>
+                                            <View style={styles.dateBadge}>
+                                                <Text style={styles.dateBadgeText}>{cardIndex + 1}</Text>
+                                            </View>
+                                            <Input
+                                                value={card.cardName}
+                                                onChangeText={(value) => handleCardNameChange(cardIndex, value)}
+                                                placeholder={general.datingCards.length > 1 ? "Support card name" : "Any card (leave blank if only one)"}
+                                                style={{ flex: 1 }}
+                                            />
+                                        </View>
+                                        {general.datingCards.length > 1 && (
+                                            <Pressable
+                                                onPress={() => handleRemoveDatingCard(cardIndex)}
+                                                style={styles.dateRemoveButton}
+                                                hitSlop={8}
+                                                android_ripple={{ color: colors.ripple, foreground: true }}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`Remove Card ${cardIndex + 1}`}
+                                            >
+                                                <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                                            </Pressable>
+                                        )}
+                                    </View>
+
+                                    <SearchableItem
+                                        id={`settings-dating-preset-${cardIndex}`}
+                                        title={`Schedule Preset (Card ${cardIndex + 1})`}
+                                        description="Pick an optimized preset (Pure Passion timed for a summer camp) or Custom to hand-pick turns on the calendar below."
+                                        parentId="settings-dating-schedule"
+                                    >
+                                        <CustomSelect
+                                            placeholder="Preset"
+                                            width="100%"
+                                            options={datingPresetOptions}
+                                            value={card.preset}
+                                            onValueChange={(value) => handleDatingPresetChange(cardIndex, value || DATING_SCHEDULE_CUSTOM)}
+                                        />
+                                        {card.purePassionTurn > 0 && (
+                                            <View style={{ marginTop: SPACING.sm }}>
+                                                <Callout variant="info">
+                                                    Pure Passion activates when you complete the Heir to the Throne's final recreation date. For about 3 turns, Friendship Training occurs on a
+                                                    facility regardless of bond. This preset pins one date per outing and holds the final one for Senior June Late, so those turns land on Senior
+                                                    Summer Training where the gains matter most.
+                                                </Callout>
+                                            </View>
+                                        )}
+                                    </SearchableItem>
+
+                                    <SearchableItem
+                                        id={`settings-recreation-calendar-${cardIndex}`}
+                                        title={`Recreation Calendar (Card ${cardIndex + 1})`}
+                                        description="Tap a turn to mark it as a Recreation date or the single Pure Passion date (editing switches the preset to Custom). Pre-Debut and Summer turns are unavailable."
+                                        parentId="settings-dating-schedule"
+                                    >
+                                        <SeasonCalendar renderCell={makeRenderRecreationCell(cardIndex, card)} deps={[card.recreationTurns, card.purePassionTurn, cardIndex]} />
+                                    </SearchableItem>
+
+                                    <SearchableItem
+                                        id={`settings-recreation-total-outings-${cardIndex}`}
+                                        title={`Total Recreation Outings (Card ${cardIndex + 1})`}
+                                        description="Number of outings in this support card's recreation chain. Team Sirius = 7, Heirs to the Throne = 4. Read from the game automatically when possible; this is the fallback. Used to hold the final outing for the Pure Passion turn."
+                                        parentId="settings-dating-schedule"
+                                    >
+                                        <CustomSlider
+                                            searchId={`settings-recreation-total-outings-${cardIndex}`}
+                                            value={card.totalOutings}
+                                            placeholder={DATING_SCHEDULE_PRESETS.siriusSenior.totalOutings}
+                                            onValueChange={(value) => handleTotalOutingsChange(cardIndex, value)}
+                                            onSlidingComplete={(value) => handleTotalOutingsChange(cardIndex, value)}
+                                            min={1}
+                                            max={10}
+                                            step={1}
+                                            label="Total Recreation Outings"
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Team Sirius = 7, Heirs to the Throne = 4. Pin enough Recreation dates before the Pure Passion date."
+                                        />
+                                    </SearchableItem>
                                 </View>
-                            </SearchableItem>
+                            ))}
+
+                            <View style={{ paddingHorizontal: SPACING.md }}>
+                                <CustomButton onPress={handleAddDatingCard} variant="outline" icon={<Ionicons name="add" size={18} color={colors.text} />} style={{ marginVertical: SPACING.sm }}>
+                                    Add Card
+                                </CustomButton>
+                            </View>
                         </>
                     )}
                 </Section>

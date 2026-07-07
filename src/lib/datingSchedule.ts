@@ -1,3 +1,5 @@
+import { formatCareerTurn } from "./solver/constants"
+
 /** A named dating-schedule preset that fills the recreation calendar in one tap. */
 export interface DatingSchedulePreset {
     /** Display label shown in the preset selector and the settings banner. */
@@ -31,4 +33,52 @@ export const DATING_SCHEDULE_PRESETS: Record<string, DatingSchedulePreset> = {
         purePassionTurn: 60,
         totalOutings: 4,
     },
+}
+
+/**
+ * A single support card's dating schedule: which card it applies to (matched by OCR name against the "Choose Recreation Partner"
+ * dialog) plus its own pinned turns/Pure Passion turn/outing count. Multiple entries let the bot run separate schedules for
+ * separate cards' recreation chains within the same career.
+ */
+export interface DatingCardSchedule {
+    /** Support card name to match (fuzzy, case-insensitive) against each row in the partner dialog. Empty matches any row that no other configured card claimed - the single-card fallback behavior. */
+    cardName: string
+    /** Selected preset key, or DATING_SCHEDULE_CUSTOM if hand-edited. */
+    preset: string
+    /** Career turns (1-72) pinned for this card's regular recreation outings. */
+    recreationTurns: number[]
+    /** Career turn pinned for this card's final outing / Pure Passion activation, or a non-positive value when unset. */
+    purePassionTurn: number
+    /** Length of this card's recreation chain. */
+    totalOutings: number
+}
+
+/**
+ * Builds a new card schedule seeded from a preset (or blank custom defaults), for the "add card" action in Settings.
+ * @param preset The preset key to seed turns from, or DATING_SCHEDULE_CUSTOM for a blank calendar.
+ * @param cardName The support card name to match this schedule to. Defaults to blank (matches any unclaimed row).
+ * @returns A new DatingCardSchedule.
+ */
+export const createDatingCardSchedule = (preset: string = "siriusSenior", cardName: string = ""): DatingCardSchedule => {
+    const base = DATING_SCHEDULE_PRESETS[preset]
+    return {
+        cardName,
+        preset,
+        recreationTurns: base ? [...base.recreationTurns] : [],
+        purePassionTurn: base ? base.purePassionTurn : -1,
+        totalOutings: base ? base.totalOutings : 1,
+    }
+}
+
+/**
+ * Formats a single card schedule for the settings log banner.
+ * @param card The card schedule to summarize.
+ * @returns A one-line summary, e.g. `"Kitasan Black (Team Sirius | Recreation: ... | Pure Passion: none | Outings: 7)"`.
+ */
+export const formatDatingCardSummary = (card: DatingCardSchedule): string => {
+    const label = DATING_SCHEDULE_PRESETS[card.preset]?.label ?? "Custom"
+    const name = card.cardName.trim() || "any card"
+    const recreation = card.recreationTurns.map(formatCareerTurn).join(", ") || "none"
+    const purePassion = card.purePassionTurn > 0 ? formatCareerTurn(card.purePassionTurn) : "none"
+    return `${name} (${label} | Recreation: ${recreation} | Pure Passion: ${purePassion} | Outings: ${card.totalOutings})`
 }

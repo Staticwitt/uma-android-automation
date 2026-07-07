@@ -48,28 +48,8 @@ const searchConfig: SearchOption[] = [
         page: "SettingsMain",
         parentId: "settings-dating-schedule",
     },
-    {
-        id: "settings-dating-preset",
-        title: "Schedule Preset",
-        description: "Pick an optimized preset (Pure Passion timed for a summer camp) or Custom to hand-pick turns on the recreation calendar.",
-        page: "SettingsMain",
-        parentId: "settings-dating-schedule",
-    },
-    {
-        id: "settings-recreation-calendar",
-        title: "Recreation Calendar",
-        description: "Tap a turn to mark it as a Recreation date or the single Pure Passion date (editing switches the preset to Custom). Pre-Debut and Summer turns are unavailable.",
-        page: "SettingsMain",
-        parentId: "settings-dating-schedule",
-    },
-    {
-        id: "settings-recreation-total-outings",
-        title: "Total Recreation Outings",
-        description:
-            "Number of outings in your support card's recreation chain. Team Sirius = 7, Heirs to the Throne = 4. Read from the game automatically when possible; this is the fallback. Used to hold the final outing for the Pure Passion turn.",
-        page: "SettingsMain",
-        parentId: "settings-dating-schedule",
-    },
+    // Per-card schedule preset/calendar/total-outings entries (settings-dating-preset-0, settings-recreation-calendar-0, ...)
+    // are dynamically self-registered by SearchableItem at render time - see DatingCardSchedule/multi-card support.
     {
         id: "settings-enable-swipe-based-scrolling",
         title: "Enable Swipe-Based Scrolling",

@@ -147,4 +147,49 @@ class DatingScheduleTest {
             assertFalse(DatingSchedule.isScheduleAbandoned(purePassionTurn = -1, currentTurn = 70, chainComplete = false))
         }
     }
+
+    @Nested
+    @DisplayName("matchCardForRow()")
+    inner class MatchCardForRowTests {
+        /** Fake fuzzy matcher for tests: an exact (case-insensitive) substring match, so tests don't depend on the real Jaro-Winkler implementation. */
+        private val exactMatch: (String, String) -> Boolean = { ocrText, name -> name.isNotBlank() && ocrText.lowercase().contains(name.lowercase()) }
+
+        private fun card(name: String, turns: Set<Int> = setOf(10), purePassionTurn: Int = -1, totalOutings: Int = 1) = DatingSchedule.DatingCardConfig(name, turns, purePassionTurn, totalOutings)
+
+        @Test
+        fun `matches the named card whose name appears in the row`() {
+            val cards = listOf(card("Kitasan Black"), card("Special Week"))
+            val matched = DatingSchedule.matchCardForRow("kitasan black - 3/7", cards, exactMatch)
+            assertTrue(matched?.cardName == "Kitasan Black")
+        }
+
+        @Test
+        fun `falls back to the blank-named card when no named card matches`() {
+            val cards = listOf(card("Kitasan Black"), card(""))
+            val matched = DatingSchedule.matchCardForRow("some other umamusume - 1/4", cards, exactMatch)
+            assertTrue(matched?.cardName == "")
+        }
+
+        @Test
+        fun `a specific name match wins over the blank fallback`() {
+            val cards = listOf(card(""), card("Kitasan Black"))
+            val matched = DatingSchedule.matchCardForRow("kitasan black - 3/7", cards, exactMatch)
+            assertTrue(matched?.cardName == "Kitasan Black")
+        }
+
+        @Test
+        fun `returns null when nothing - specific or fallback - claims the row`() {
+            val cards = listOf(card("Kitasan Black"), card("Special Week"))
+            val matched = DatingSchedule.matchCardForRow("unrelated row text", cards, exactMatch)
+            assertTrue(matched == null)
+        }
+
+        @Test
+        fun `first matching named card wins in list-priority order`() {
+            val cards = listOf(card("Kitasan Black"), card("Special Week"))
+            // Row text happens to contain both names; the first configured card takes priority.
+            val matched = DatingSchedule.matchCardForRow("kitasan black special week", cards, exactMatch)
+            assertTrue(matched?.cardName == "Kitasan Black")
+        }
+    }
 }
