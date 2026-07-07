@@ -1,22 +1,18 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.5</latestVersion>
-    <latestVersionCode>177</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.5</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.5/v5.10.5-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.5/v5.10.5-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.6</latestVersion>
+    <latestVersionCode>178</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.6</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.6/v5.10.6-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.6/v5.10.6-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.5 - Parent farming reliability, Quick Mode dialog, and Remote Log Viewer live view
+v5.10.6 - Career-end harvest report and Borrow Card reliability fixes
 
 Fixed
 -----
-- The multi-run parent farming loop could report "Could not return to career selection" and stop, for two separate reasons: (1) its success check matched the Legacy Select screen prematurely (it shares an Auto-Select button graphic with Support Formation) and returned before actually advancing past it, and (2) a single slow post-Complete Career "Now Loading" transition could by itself exceed the old 90s navigation deadline before any navigation was even attempted. Widened the deadline (90s->240s, 180s->360s with Breeding Plan) and gave this loop the same Legacy Select recovery logic the per-turn loop already had.
-- The in-game "Quick Mode Settings" popup (shown the first time you tap the Quick training-skip toggle) was never detectable by the bot at all — the dialog-handling code for it existed but was never registered, so the bot would sit in front of it indefinitely. Now properly registered and dismissed.
-
-Added
------
-- The Remote Log Viewer now has a "Live View" panel showing a live video feed of the current run, streamed over the same local server used for the real-time log stream.
-- New "Auto-equip support deck" setting (Parent Farming Settings > Career selection) that taps the Support Formation screen's own Auto-Select to fill owned support-card deck slots, independent from legacy-parent auto-select.
+- The Career Runs harvest report ("Sparks:" line) could show raw, sometimes garbled OCR text from the in-run spark picks instead of the actual harvested factors, whenever no "CareerComplete" skill plan was configured. The skill list screen (needed for the harvest scanner to read factors) was only being opened when that unrelated skill plan was enabled, so the harvest scanner silently found nothing and the archive fell back to the raw OCR text. The skill list screen is now also opened whenever the harvest report feature itself is enabled.
+- Auto-borrowing a friend's support card could tap the "Remove" button (shown above the friend list whenever a card is already borrowed from a prior run) instead of the intended friend's card, since the generic list-entry scanner could pick it up as if it were a normal row. Rows whose text reads "Remove" are now skipped before matching against your preferred support cards.
+- If the Borrow Card picker was ever left open (from the issue above or any other detection hiccup), the bot had no way to recognize or recover from it and would get stuck on that screen indefinitely. It's now registered as a recognized screen so the per-turn dialog check can close it automatically.
 
     </releaseNotes>
   </update>
