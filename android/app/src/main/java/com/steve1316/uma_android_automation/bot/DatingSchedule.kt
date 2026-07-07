@@ -68,4 +68,30 @@ object DatingSchedule {
     fun isScheduleAbandoned(purePassionTurn: Int, currentTurn: Int, chainComplete: Boolean): Boolean {
         return purePassionTurn > 0 && currentTurn > purePassionTurn && !chainComplete
     }
+
+    /**
+     * One configured card's recreation schedule: which card it applies to (matched by OCR'd name against the "Choose Recreation Partner" dialog) plus its
+     * own pinned turns, Pure Passion turn, and chain length. Mirrors `DatingCardSchedule` on the settings (TypeScript) side.
+     *
+     * @param cardName The support card name to match. Blank matches any row no other configured card claimed - the single-card fallback.
+     * @param recreationTurns The set of turns pinned for this card's regular recreation outings.
+     * @param purePassionTurn The turn pinned for this card's final outing / Pure Passion activation, or a non-positive value when unset.
+     * @param totalOutings The length of this card's recreation chain.
+     */
+    data class DatingCardConfig(val cardName: String, val recreationTurns: Set<Int>, val purePassionTurn: Int, val totalOutings: Int)
+
+    /**
+     * Picks which configured card a partner-dialog row belongs to, given its OCR'd text. Named cards are tried first, in list order, via [matchesName]; a
+     * single blank-named card (the single-card / "any card" fallback) is tried last so a specific name match always wins over the catch-all.
+     *
+     * @param ocrText The OCR'd text of the row.
+     * @param cards The configured per-card schedules.
+     * @param matchesName A fuzzy name-matching predicate (e.g. `SupportCardSelection::matchesName`), injected so this stays testable without OCR/game dependencies.
+     * @return The matched card, or null if nothing - specific or catch-all - claims the row.
+     */
+    fun matchCardForRow(ocrText: String, cards: List<DatingCardConfig>, matchesName: (String, String) -> Boolean): DatingCardConfig? {
+        val named = cards.filter { it.cardName.isNotBlank() }
+        val fallback = cards.firstOrNull { it.cardName.isBlank() }
+        return named.firstOrNull { matchesName(ocrText, it.cardName) } ?: fallback
+    }
 }

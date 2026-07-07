@@ -195,6 +195,28 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
         logWithTimestamp("[SettingsManager] Dropped removed setting enablePopupCheck.")
     }
 
+    // Migration: Convert the single flat dating-schedule fields (one card only) into a datingCards array (multi-card support).
+    // The old fields are absent from the new default, so deepMerge already filled in a fresh single-entry datingCards - overwrite
+    // it with one built from the user's actual prior values instead of losing their configured schedule.
+    const rawGeneral = rawSettings?.general as any
+    if (rawGeneral && rawGeneral.datingCards === undefined && (rawGeneral.recreationTurns !== undefined || rawGeneral.datingSchedulePreset !== undefined)) {
+        general.datingCards = [
+            {
+                cardName: "",
+                preset: rawGeneral.datingSchedulePreset ?? "siriusSenior",
+                recreationTurns: Array.isArray(rawGeneral.recreationTurns) ? rawGeneral.recreationTurns : [],
+                purePassionTurn: typeof rawGeneral.purePassionTurn === "number" ? rawGeneral.purePassionTurn : -1,
+                totalOutings: typeof rawGeneral.recreationTotalOutings === "number" ? rawGeneral.recreationTotalOutings : 1,
+            },
+        ]
+        delete general.datingSchedulePreset
+        delete general.recreationTurns
+        delete general.purePassionTurn
+        delete general.recreationTotalOutings
+        anyMigrated = true
+        logWithTimestamp("[SettingsManager] Migrated single dating schedule fields to datingCards array.")
+    }
+
     // Migration: Rename Trackblazer Charm and Item Floor settings to behavior-first names.
     // The old keys (trackblazerMinStatGainForCharm, trackblazerLowMainStatGainItemFloor) are replaced by
     // trackblazerSkipRiskyCharmTrainingBelowGain and trackblazerSkipBadMoodItemsBelowGain respectively.

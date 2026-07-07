@@ -1,6 +1,6 @@
 import { createContext, useState, useMemo, useCallback, useContext, useEffect, type ReactNode } from "react"
 import { startTiming } from "../lib/performanceLogger"
-import { DATING_SCHEDULE_PRESETS } from "../lib/datingSchedule"
+import { createDatingCardSchedule, type DatingCardSchedule } from "../lib/datingSchedule"
 import { skillPlanSettingsPages } from "../pages/SkillPlanSettings/config"
 
 /**
@@ -41,10 +41,8 @@ export interface Settings {
         stopAtDates: string[]
         enableDatingSchedule: boolean
         enableRecreationCatchUp: boolean
-        datingSchedulePreset: string
-        recreationTurns: number[]
-        purePassionTurn: number
-        recreationTotalOutings: number
+        /** Per-card recreation schedules. Each card's rows in the "Choose Recreation Partner" dialog are matched by OCR'd name; a blank cardName matches any row no other entry claimed. */
+        datingCards: DatingCardSchedule[]
         waitDelay: number
         dialogWaitDelay: number
         /** Log a Wait Delay calibration summary (measured loading-wait stats + a tuning suggestion) at the end of each run. */
@@ -404,10 +402,7 @@ export const defaultSettings: Settings = {
         stopAtDates: ["Senior January Early"],
         enableDatingSchedule: false,
         enableRecreationCatchUp: true,
-        datingSchedulePreset: "siriusSenior",
-        recreationTurns: [...DATING_SCHEDULE_PRESETS.siriusSenior.recreationTurns],
-        purePassionTurn: DATING_SCHEDULE_PRESETS.siriusSenior.purePassionTurn,
-        recreationTotalOutings: DATING_SCHEDULE_PRESETS.siriusSenior.totalOutings,
+        datingCards: [createDatingCardSchedule("siriusSenior")],
         waitDelay: 0.5,
         dialogWaitDelay: 0.5,
         enableDelayCalibrationTelemetry: false,
