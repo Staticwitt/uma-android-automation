@@ -71,9 +71,16 @@ export const resolveParentFarmingSettings = (settings: Settings, options?: Resol
         enableStopBeforeFinals: false,
         scenario: settings.general?.scenario || "Trackblazer",
     }
+    // The top-level "Skill Point Check" toggle used to only mean "stop the bot once this many
+    // skill points are banked", which conflicts with unattended parent farming (a farming run
+    // should never just halt mid-career). It now also gates the Skill Point Check *plan* (buy
+    // skills at that threshold, then keep going), so only force it off when that plan isn't
+    // enabled -- otherwise this was silently discarding a deliberately-configured mid-run skill
+    // purchase during farming, even though the toggle showed enabled in the app.
+    const skillPointCheckPlanEnabled = settings.skills.plans?.skillPointCheck?.enabled ?? false
     const skills = {
         ...settings.skills,
-        enableSkillPointCheck: false,
+        enableSkillPointCheck: skillPointCheckPlanEnabled ? settings.skills.enableSkillPointCheck : false,
     }
 
     if (!goalPreset) {

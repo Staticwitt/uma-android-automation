@@ -73,4 +73,34 @@ describe("parentFarmingResolver", () => {
         expect(result.racing.parentFarmingBundleKey).toBe("grass-wonder-mile")
         expect(result.training.preferredDistanceOverride).toBe("Mile")
     })
+
+    it("resolveParentFarmingSettings forces off Skill Point Check when its plan isn't enabled (stop-the-bot would conflict with unattended farming)", () => {
+        const settings = createSettings()
+        settings.racing.enableParentFarmingMode = true
+        settings.skills.enableSkillPointCheck = true
+
+        const result = resolveParentFarmingSettings(settings)
+        expect(result.skills.enableSkillPointCheck).toBe(false)
+    })
+
+    it("resolveParentFarmingSettings preserves Skill Point Check when its plan is enabled (buys skills and continues, doesn't stop the bot)", () => {
+        const settings = createSettings()
+        settings.racing.enableParentFarmingMode = true
+        settings.skills.enableSkillPointCheck = true
+        settings.skills.plans = {
+            skillPointCheck: {
+                enabled: true,
+                strategy: "",
+                enableBuyNegativeSkills: false,
+                plan: "",
+                blacklist: "",
+                excludeGreenSkills: false,
+                excludeRedSkills: false,
+                excludeUniqueSkills: false,
+            },
+        }
+
+        const result = resolveParentFarmingSettings(settings)
+        expect(result.skills.enableSkillPointCheck).toBe(true)
+    })
 })
