@@ -2310,6 +2310,59 @@ class Racing(private val game: Game, private val campaign: Campaign) {
             return false
         }
 
+        // Peek the Solver's planned race up front so we can short-circuit OCR as soon as we find it on screen, instead of OCR-scanning every candidate first.
+        val plannedKey =
+            SmartRaceSolverIntegration.peekRaceKeyForTurn(currentTurn = campaign.date.day, scenario = game.scenario)
+
+        if (plannedKey != null) {
+            MessageLog.i(TAG, "[RACE] Smart Race Solver wants \"$plannedKey\" for turn ${campaign.date.day} — scanning until matched.")
+            val sourceBitmap = game.imageUtils.getSourceBitmap()
+            for (location in doublePredictionLocations) {
+                val raceName = game.imageUtils.extractRaceName(location)
+                val raceDataList = lookupRaceInDatabase(campaign.date.day, raceName)
+                if (raceDataList.isEmpty()) {
+                    MessageLog.i(TAG, "[RACE] ✗ No match found in database for \"$raceName\".")
+                    continue
+                }
+                raceDataList.forEach { raceData ->
+                    MessageLog.i(TAG, "[RACE] ✓ Matched in database: ${raceData.name} (Grade: ${raceData.grade}, Fans: ${raceData.fans}, Track Surface: ${raceData.trackSurface}).")
+                }
+                val match = raceDataList.firstOrNull { SmartRaceSolverIntegration.isRaceKeyMatch(it, plannedKey) }
+                if (match != null) {
+                    // Two races can share this row's track string (e.g. Oaks vs Derby). Confirm the planned race by its OCR'd fan count before tapping.
+                    if (raceDataList.size > 1) {
+                        val rowFans = game.imageUtils.determineExtraRaceFans(location, sourceBitmap, forceRacing = true).fans
+                        if (!SmartRaceSolverIntegration.isCorrectCollisionRow(match.fans, rowFans)) {
+                            MessageLog.i(TAG, "[RACE] Same-track sibling at this row (fans=$rowFans != planned ${match.fans}). Continuing scan for \"${match.name}\".")
+                            continue
+                        }
+                        if (rowFans == -1) {
+                            MessageLog.w(TAG, "[WARN] processSmartRacing:: Same-track collision but fan OCR failed; tapping scanned row for \"${match.name}\".")
+                        } else {
+                            MessageLog.i(TAG, "[RACE] Same-track collision resolved by fans=$rowFans for \"${match.name}\".")
+                        }
+                    }
+                    MessageLog.v(TAG, "[RACE] Smart Race Solver selected \"${match.name}\". Selecting it.")
+                    SmartRaceSolverIntegration.markPendingRace(
+                        raceKey = match.name,
+                        raceName = match.name,
+                        classYear = campaign.date.year.name,
+                        turnNumber = campaign.date.day,
+                    )
+                    game.tap(location.x, location.y, IconRaceListPredictionDoubleStar.template.path, ignoreWaiting = true)
+                    lastRaceGrade = match.grade
+                    lastRaceFans = match.fans
+                    lastRaceDistance = match.trackDistance
+                    lastRaceIsRival = match.isRival
+                    return true
+                }
+            }
+            MessageLog.i(TAG, "[RACE] Smart Race Solver's planned race \"$plannedKey\" was not found among on-screen candidates. Canceling racing process.")
+            return false
+        }
+
+        // Fallback when the solver had no plan or chose Train/Rest: scan every on-screen
+        // race and let pickRace decide.
         val currentRaces =
             doublePredictionLocations.flatMap { location ->
                 val raceName = game.imageUtils.extractRaceName(location)
