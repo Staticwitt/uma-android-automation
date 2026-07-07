@@ -1,16 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.7</latestVersion>
-    <latestVersionCode>179</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.7</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.7/v5.10.7-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.7/v5.10.7-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.8</latestVersion>
+    <latestVersionCode>180</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.8</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.8/v5.10.8-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.8/v5.10.8-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.7 - Remote Log Viewer Live View sizing fix
+v5.10.8 - Parent Farming Skill Point Check fix
 
 Fixed
 -----
-- The Remote Log Viewer's "Live View" panel could grow to roughly the full native height of the streamed portrait phone screenshot (1000px+), pushing the dashboard and logs far down the page and making them hard to find. The panel is now capped to a fixed, reasonable height, with the stream scaled to fit inside it.
+- Enabling "Skill Point Check" (and its buy-and-continue plan) in Skills settings had no effect while Parent Farming Mode was on: the parent-farming settings resolver unconditionally forced the toggle back off before it ever reached the bot, so the log reported it disabled even though the app showed it enabled. The toggle is now only forced off when its Skill Point Check plan isn't also enabled (in which case enabling it alone would just stop the bot, which still doesn't make sense for an unattended farming run) — otherwise your configured mid-run skill purchase now actually happens.
+- Added a "Skill Point Check Plan" line to the settings log banner (matching the existing Pre-Finals/CareerComplete lines) so its enabled state and configuration are visible going forward.
 
     </releaseNotes>
   </update>
