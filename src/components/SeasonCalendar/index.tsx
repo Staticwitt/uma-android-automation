@@ -148,6 +148,6 @@ export default function SeasonCalendar({ allowSummer = false, renderCell, deps =
         )
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps is a caller-supplied variable-length array, so a spread is required here
     return useMemo(() => <>{YEAR_LABELS.map(renderYearCard)}</>, [styles, allowSummer, ...deps])
 }
