@@ -307,6 +307,18 @@ export const turnDateLabel = (turnInYear: number): string => {
 }
 
 /**
+ * Full "Year Month Phase" label for an absolute 1-indexed career turn (1-72). Junior is turns 1-24, Classic 25-48, Senior 49-72.
+ * Example: turn 60 returns "Senior Late Jun".
+ *
+ * @param turn The absolute 1-indexed career turn number (1-72).
+ * @returns The "Junior/Classic/Senior Early/Late <Month>" label.
+ */
+export const formatCareerTurn = (turn: number): string => {
+    const yearName = turn <= 24 ? "Junior" : turn <= 48 ? "Classic" : "Senior"
+    return `${yearName} ${turnDateLabel((turn - 1) % 24)}`
+}
+
+/**
  * Growth-bonus-adjusted base stat reward for a race grade. Distributes the flat `BASE_STAT_BY_GRADE[grade]` reward
  * across the 5 stats per `RACE_STAT_SPLIT_BY_DISTANCE_TYPE[distanceType]`, scales each stat's share by
  * `(1 + growthBonus[stat] / 100)`, and sums back into a single number. Falls back to the unadjusted base reward
