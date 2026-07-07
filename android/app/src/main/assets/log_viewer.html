@@ -1528,8 +1528,14 @@
             }
             .live-view-frame {
                 position: relative;
-                width: 100%;
-                max-width: 480px;
+                /* The stream is a portrait phone screenshot (much taller than wide). Bounding by
+                   height (rather than width, like a typical landscape video) keeps the panel a
+                   fixed, reasonable size regardless of viewport width instead of growing to the
+                   image's full native height and pushing the logs below off-screen. */
+                height: 220px;
+                max-width: 100%;
+                width: fit-content;
+                min-width: 160px;
                 background: var(--bg-primary);
                 border: 1px solid var(--border-color);
                 border-radius: 6px;
@@ -1537,14 +1543,18 @@
             }
             .live-view-frame img {
                 display: none;
-                width: 100%;
-                height: auto;
+                height: 100%;
+                width: auto;
+                max-width: 100%;
+                object-fit: contain;
             }
             .live-view-placeholder {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 32px 16px;
+                height: 100%;
+                min-width: 160px;
+                padding: 0 16px;
                 color: var(--text-muted);
                 font-size: 13px;
                 text-align: center;
