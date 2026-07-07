@@ -542,8 +542,9 @@ const Settings = () => {
                             {general.datingCards.length > 1 && (
                                 <View style={{ paddingHorizontal: SPACING.md }}>
                                     <Callout variant="info">
-                                        Each card is matched by name (fuzzy, case-insensitive) against the rows in the in-game "Choose Recreation Partner" dialog. A blank name matches any row no
-                                        other card claimed.
+                                        Each card's name is matched (fuzzy, case-insensitive) against the rows in the in-game "Choose Recreation Partner" dialog - so it must be the support card's
+                                        actual in-game name (e.g. "Kitasan Black"), not the preset label below (e.g. "Team Sirius" or "Heirs to the Throne", which never appear in that dialog). A
+                                        blank name matches any row no other card claimed.
                                     </Callout>
                                 </View>
                             )}
@@ -558,7 +559,7 @@ const Settings = () => {
                                             <Input
                                                 value={card.cardName}
                                                 onChangeText={(value) => handleCardNameChange(cardIndex, value)}
-                                                placeholder={general.datingCards.length > 1 ? "Support card name" : "Any card (leave blank if only one)"}
+                                                placeholder={general.datingCards.length > 1 ? "In-game support card name, e.g. Kitasan Black" : "Any card (leave blank if only one)"}
                                                 style={{ flex: 1 }}
                                             />
                                         </View>
