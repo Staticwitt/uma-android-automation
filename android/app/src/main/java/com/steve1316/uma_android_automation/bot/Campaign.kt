@@ -245,6 +245,13 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Whether the recreation chain is complete for this run - no more dates are available. Latched true once done (from the in-game complete label) and never reset. */
     protected var recreationDateCompleted: Boolean = false
 
+    /**
+     * Set true when a recreation attempt this turn backs out without completing an outing (e.g. no configured card's name matched any row in the partner
+     * dialog, or every matched card was holding its final outing). Backing out doesn't advance the turn, so without this guard [shouldDoRecreationToday]
+     * would immediately re-trigger the same failing attempt forever. Cleared as soon as the turn actually advances.
+     */
+    protected var recreationAttemptFailedThisTurn: Boolean = false
+
     /** Whether the end-of-career Career Rank screen has already been captured this run, to avoid repeating the OCR check every frame. */
     private var hasCapturedCareerRank: Boolean = false
 
@@ -1388,6 +1395,7 @@ abstract class Campaign(game: Game) : Task(game) {
             Log.d(TAG, "[DEBUG] updateDate:: Date did not change.")
             return false
         } else {
+            recreationAttemptFailedThisTurn = false
             MessageLog.v(TAG, "[DATE] New date: $date")
             return true
         }
@@ -1563,7 +1571,7 @@ abstract class Campaign(game: Game) : Task(game) {
      * @return True if the bot should perform a recreation outing this turn.
      */
     open fun shouldDoRecreationToday(sourceBitmap: Bitmap? = null): Boolean {
-        if (!isScheduleActive() || recreationDateCompleted) return false
+        if (!isScheduleActive() || recreationDateCompleted || recreationAttemptFailedThisTurn) return false
         // Proceed only when some card is BOTH due today (pinned, or - with catch-up on - behind its own schedule) AND not itself holding its final outing back for a later Pure Passion turn.
         // Each check must apply to the same card - a due-but-holding card A must not be waved through by an unrelated, unpinned-today card B that merely happens not to be holding.
         val anyCardDueAndReady =
@@ -1809,7 +1817,12 @@ abstract class Campaign(game: Game) : Task(game) {
             if (!sawAnyRow) {
                 MessageLog.e(TAG, "[ERROR] handleRecreationDate:: Failed to find any date progress labels in the partner selection dialog. Backing out.")
             } else {
-                MessageLog.i(TAG, "[RECREATION_DATE] No configured card is ready for an outing from this dialog's rows. Backing out.")
+                MessageLog.w(
+                    TAG,
+                    "[WARN] handleRecreationDate:: No configured card's name matched any row in the partner dialog (or the matched card is holding its final " +
+                        "outing). Backing out for this turn. If this keeps happening, double check that each card's \"Card Name\" is the actual support card's " +
+                        "name shown in-game (e.g. \"Kitasan Black\") - not the preset label (e.g. \"Team Sirius\" / \"Heirs to the Throne\"), which never appears in the dialog.",
+                )
             }
             return cancelPartnerDialog()
         }
@@ -2624,7 +2637,9 @@ abstract class Campaign(game: Game) : Task(game) {
 
             MainScreenAction.DATE -> {
                 MessageLog.i(TAG, "[INFO] Decision made to perform a scheduled recreation outing.")
-                handleRecreationDate(recoverMoodIfCompleted = false, doDateRecreation = true)
+                // A false result backs out without completing an outing (e.g. no configured card claimed a row) and does not advance the turn, so guard
+                // against re-deciding DATE again immediately - otherwise the bot loops opening and backing out of the same dialog forever.
+                recreationAttemptFailedThisTurn = !handleRecreationDate(recoverMoodIfCompleted = false, doDateRecreation = true)
                 bHasCheckedDateThisTurn = false
             }
 
