@@ -20,7 +20,7 @@ import SearchableItem from "../../components/SearchableItem"
 import SeasonCalendar, { useSeasonCalendarStyles } from "../../components/SeasonCalendar"
 import { Popover, PopoverContent, PopoverTrigger, usePopoverRootContext } from "../../components/ui/popover"
 import { formatCareerTurn, turnDateLabel } from "../../lib/solver/constants"
-import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, createDatingCardSchedule, type DatingCardSchedule } from "../../lib/datingSchedule"
+import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, type DatingCardSchedule } from "../../lib/datingSchedule"
 import { Input } from "../../components/ui/input"
 import { useSettings } from "../../context/SettingsContext"
 import { useSettingsFileManager } from "../../hooks/useSettingsFileManager"
@@ -340,6 +340,15 @@ const Settings = () => {
         updateGeneral((prev) => ({ ...prev, datingCards: [...prev.datingCards, createDatingCardSchedule("siriusSenior")] }))
     }, [updateGeneral])
 
+    const handleAddDatingCombo = useCallback(
+        (comboKey: string) => {
+            const combo = DATING_SCHEDULE_COMBOS[comboKey]
+            if (!combo) return
+            updateGeneral((prev) => ({ ...prev, datingCards: [...prev.datingCards, ...combo.build()] }))
+        },
+        [updateGeneral]
+    )
+
     const handleRemoveDatingCard = useCallback(
         (cardIndex: number) => {
             updateGeneral((prev) => ({ ...prev, datingCards: prev.datingCards.length > 1 ? prev.datingCards.filter((_, i) => i !== cardIndex) : prev.datingCards }))
@@ -634,10 +643,20 @@ const Settings = () => {
                                 </View>
                             ))}
 
-                            <View style={{ paddingHorizontal: SPACING.md }}>
+                            <View style={{ paddingHorizontal: SPACING.md, gap: SPACING.sm }}>
                                 <CustomButton onPress={handleAddDatingCard} variant="outline" icon={<Ionicons name="add" size={18} color={colors.text} />} style={{ marginVertical: SPACING.sm }}>
                                     Add Card
                                 </CustomButton>
+                                {Object.entries(DATING_SCHEDULE_COMBOS).map(([comboKey, combo]) => (
+                                    <CustomButton
+                                        key={comboKey}
+                                        onPress={() => handleAddDatingCombo(comboKey)}
+                                        variant="outline"
+                                        icon={<Ionicons name="people-outline" size={18} color={colors.text} />}
+                                    >
+                                        Add {combo.label} (staggered)
+                                    </CustomButton>
+                                ))}
                             </View>
                         </>
                     )}

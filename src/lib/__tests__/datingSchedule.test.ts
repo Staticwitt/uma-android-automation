@@ -1,4 +1,4 @@
-import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, createDatingCardSchedule, formatDatingCardSummary } from "../datingSchedule"
+import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, formatDatingCardSummary } from "../datingSchedule"
 
 describe("createDatingCardSchedule", () => {
     it("seeds turns/purePassionTurn/totalOutings from the given preset", () => {
@@ -47,5 +47,36 @@ describe("formatDatingCardSummary", () => {
     it("shows 'none' for an unset Pure Passion turn", () => {
         const card = createDatingCardSchedule("siriusSenior")
         expect(formatDatingCardSummary(card)).toContain("Pure Passion: none")
+    })
+})
+
+describe("DATING_SCHEDULE_COMBOS", () => {
+    it("siriusAndThrone builds two cards with no colliding recreation turns", () => {
+        const cards = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
+        expect(cards).toHaveLength(2)
+        const [sirius, throne] = cards
+        const overlap = sirius.recreationTurns.filter((turn) => throne.recreationTurns.includes(turn))
+        expect(overlap).toEqual([])
+    })
+
+    it("siriusAndThrone gives both cards a blank name for the user to fill in", () => {
+        const cards = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
+        expect(cards.every((card) => card.cardName === "")).toBe(true)
+    })
+
+    it("siriusAndThrone keeps Sirius unmodified and marks the shifted Throne card as Custom", () => {
+        const [sirius, throne] = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
+        expect(sirius.preset).toBe("siriusSenior")
+        expect(sirius.recreationTurns).toEqual(DATING_SCHEDULE_PRESETS.siriusSenior.recreationTurns)
+        expect(throne.preset).toBe(DATING_SCHEDULE_CUSTOM)
+        expect(throne.purePassionTurn).toBe(DATING_SCHEDULE_PRESETS.throneSenior.purePassionTurn)
+        expect(throne.totalOutings).toBe(DATING_SCHEDULE_PRESETS.throneSenior.totalOutings)
+    })
+
+    it("build() returns fresh arrays each call so mutating one combo doesn't affect another", () => {
+        const first = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
+        first[0].recreationTurns.push(999)
+        const second = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
+        expect(second[0].recreationTurns).not.toContain(999)
     })
 })
