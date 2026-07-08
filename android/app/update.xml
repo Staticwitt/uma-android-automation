@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.10</latestVersion>
-    <latestVersionCode>182</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.10</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.10/v5.10.10-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.10/v5.10.10-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.11</latestVersion>
+    <latestVersionCode>183</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.11</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.11/v5.10.11-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.11/v5.10.11-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.10 - Multiple support-card dating schedules
+v5.10.11 - Fix dating schedule getting stuck
 
-Added
+Fixed
 -----
-- Support Card Dating now supports multiple cards at once, each with its own name, preset, pinned turns, Pure Passion turn, and outing count. When more than one card is configured, rows in the in-game "Choose Recreation Partner" dialog are matched by name to the right schedule. Leave a card's name blank to match any unclaimed row (the previous single-card behavior, unchanged when only one card is configured).
+- The bot could get stuck forever on the same turn opening and closing the "Choose Recreation Partner" dialog if a recreation attempt backed out without completing an outing (e.g. a configured card's name didn't match any row). The bot now falls through to a normal action for the rest of that turn instead of retrying immediately, and logs a clearer warning if this happens (it usually means a card's "Card Name" was set to its preset label, like "Team Sirius", instead of the actual in-game support card name).
 
     </releaseNotes>
   </update>
