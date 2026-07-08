@@ -20,7 +20,7 @@ import SearchableItem from "../../components/SearchableItem"
 import SeasonCalendar, { useSeasonCalendarStyles } from "../../components/SeasonCalendar"
 import { Popover, PopoverContent, PopoverTrigger, usePopoverRootContext } from "../../components/ui/popover"
 import { formatCareerTurn, turnDateLabel } from "../../lib/solver/constants"
-import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, type DatingCardSchedule } from "../../lib/datingSchedule"
+import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, parseDatingCardsImport, type DatingCardSchedule } from "../../lib/datingSchedule"
 import { Input } from "../../components/ui/input"
 import { useSettings } from "../../context/SettingsContext"
 import { useSettingsFileManager } from "../../hooks/useSettingsFileManager"
@@ -29,6 +29,9 @@ import { useToast } from "../../context/ToastContext"
 import { TYPE } from "../../lib/type"
 import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
+import { logErrorWithTimestamp } from "../../lib/logger"
+import * as DocumentPicker from "expo-document-picker"
+import { File } from "expo-file-system"
 
 /** GitHub Actions page for the game-data scraper workflow; shows the "Run workflow" button for signed-in maintainers. */
 const GAME_DATA_WORKFLOW_URL = "https://github.com/Staticwitt/uma-android-automation/actions/workflows/update-game-data.yml"
@@ -195,7 +198,7 @@ const Settings = () => {
         return () => handle.cancel()
     }, [])
 
-    const { showToast } = useToast()
+    const { showToast, showError } = useToast()
 
     /**
      * Reset the settings to their default values.
@@ -348,6 +351,28 @@ const Settings = () => {
         },
         [updateGeneral]
     )
+
+    /** Lets the user pick a JSON file defining a dating card list, replacing the current cards with it. Invalid entries are dropped rather than rejected wholesale. */
+    const handleImportDatingCards = useCallback(async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({ type: "application/json", copyToCacheDirectory: true })
+            if (result.canceled || !result.assets?.[0]) return
+
+            const data = await new File(result.assets[0].uri).text()
+            const parsed = JSON.parse(data)
+            const cards = parseDatingCardsImport(parsed)
+            if (cards.length === 0) {
+                showError("No valid dating cards found in that file.")
+                return
+            }
+
+            updateGeneral({ datingCards: cards })
+            showToast(`Imported ${cards.length} dating card${cards.length === 1 ? "" : "s"}.`)
+        } catch (error) {
+            logErrorWithTimestamp("Error importing dating cards:", error)
+            showError("Failed to import dating cards: invalid JSON file.")
+        }
+    }, [updateGeneral, showToast, showError])
 
     const handleRemoveDatingCard = useCallback(
         (cardIndex: number) => {
@@ -657,6 +682,13 @@ const Settings = () => {
                                         Add {combo.label} (staggered)
                                     </CustomButton>
                                 ))}
+                                <CustomButton onPress={handleImportDatingCards} variant="outline" icon={<Ionicons name="document-outline" size={18} color={colors.text} />}>
+                                    Import Cards from JSON
+                                </CustomButton>
+                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                    Replaces the current cards with a JSON array of objects like {'{ "cardName": "Kitasan Black", "preset": "siriusSenior", "recreationTurns": [29, 35, 43, 47, 52, 55, 58], "purePassionTurn": -1, "totalOutings": 7 }'}. Missing or
+                                    invalid fields fall back to safe defaults.
+                                </Text>
                             </View>
                         </>
                     )}

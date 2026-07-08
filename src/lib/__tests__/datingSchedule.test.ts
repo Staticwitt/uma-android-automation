@@ -1,4 +1,4 @@
-import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, formatDatingCardSummary } from "../datingSchedule"
+import { DATING_SCHEDULE_CUSTOM, DATING_SCHEDULE_PRESETS, DATING_SCHEDULE_COMBOS, createDatingCardSchedule, formatDatingCardSummary, parseDatingCardsImport } from "../datingSchedule"
 
 describe("createDatingCardSchedule", () => {
     it("seeds turns/purePassionTurn/totalOutings from the given preset", () => {
@@ -78,5 +78,50 @@ describe("DATING_SCHEDULE_COMBOS", () => {
         first[0].recreationTurns.push(999)
         const second = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
         expect(second[0].recreationTurns).not.toContain(999)
+    })
+})
+
+describe("parseDatingCardsImport", () => {
+    it("parses a well-formed card list", () => {
+        const cards = parseDatingCardsImport([
+            { cardName: "Kitasan Black", preset: "siriusSenior", recreationTurns: [29, 35, 43], purePassionTurn: -1, totalOutings: 7 },
+            { cardName: "Special Week", preset: "custom", recreationTurns: [34, 42], purePassionTurn: 60, totalOutings: 4 },
+        ])
+        expect(cards).toEqual([
+            { cardName: "Kitasan Black", preset: "siriusSenior", recreationTurns: [29, 35, 43], purePassionTurn: -1, totalOutings: 7 },
+            { cardName: "Special Week", preset: "custom", recreationTurns: [34, 42], purePassionTurn: 60, totalOutings: 4 },
+        ])
+    })
+
+    it("returns an empty array for non-array input", () => {
+        expect(parseDatingCardsImport({ cardName: "not an array" })).toEqual([])
+        expect(parseDatingCardsImport(null)).toEqual([])
+        expect(parseDatingCardsImport("garbage")).toEqual([])
+    })
+
+    it("drops non-object entries but keeps valid ones", () => {
+        const cards = parseDatingCardsImport([null, "garbage", 42, { cardName: "Kitasan Black" }])
+        expect(cards).toHaveLength(1)
+        expect(cards[0].cardName).toBe("Kitasan Black")
+    })
+
+    it("defaults missing/invalid fields safely", () => {
+        const [card] = parseDatingCardsImport([{}])
+        expect(card).toEqual({ cardName: "", preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [], purePassionTurn: -1, totalOutings: 1 })
+    })
+
+    it("filters out-of-range and non-integer recreation turns, dedupes, and sorts", () => {
+        const [card] = parseDatingCardsImport([{ recreationTurns: [50, 0, 73, 10.5, 10, 10, "40"] }])
+        expect(card.recreationTurns).toEqual([10, 50])
+    })
+
+    it("derives totalOutings from recreationTurns.length when missing or invalid", () => {
+        const [card] = parseDatingCardsImport([{ recreationTurns: [1, 2, 3], totalOutings: -5 }])
+        expect(card.totalOutings).toBe(4)
+    })
+
+    it("ignores an invalid purePassionTurn type and falls back to -1", () => {
+        const [card] = parseDatingCardsImport([{ purePassionTurn: "60" }])
+        expect(card.purePassionTurn).toBe(-1)
     })
 })

@@ -95,6 +95,30 @@ export const DATING_SCHEDULE_COMBOS: Record<string, DatingScheduleCombo> = {
 }
 
 /**
+ * Parses and sanitizes a JSON-imported dating card list (from the Settings "Import Cards" button) into valid `DatingCardSchedule`s. A hand-edited or
+ * malformed file must never corrupt `general.datingCards`, so every field falls back to a safe default and entries that aren't objects at all are
+ * dropped rather than throwing.
+ *
+ * @param raw The parsed JSON value - expected to be an array of card-like objects, but any shape is accepted defensively.
+ * @returns The sanitized card list. Empty when `raw` isn't an array or contains no usable entries - callers should treat that as an import failure.
+ */
+export const parseDatingCardsImport = (raw: unknown): DatingCardSchedule[] => {
+    if (!Array.isArray(raw)) return []
+    return raw
+        .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+        .map((item) => {
+            const recreationTurns = Array.isArray(item.recreationTurns)
+                ? Array.from(new Set(item.recreationTurns.filter((turn): turn is number => typeof turn === "number" && Number.isInteger(turn) && turn >= 1 && turn <= 72))).sort((a, b) => a - b)
+                : []
+            const purePassionTurn = typeof item.purePassionTurn === "number" && Number.isInteger(item.purePassionTurn) ? item.purePassionTurn : -1
+            const totalOutings = typeof item.totalOutings === "number" && Number.isInteger(item.totalOutings) && item.totalOutings > 0 ? item.totalOutings : Math.max(1, recreationTurns.length + 1)
+            const preset = typeof item.preset === "string" && item.preset.length > 0 ? item.preset : DATING_SCHEDULE_CUSTOM
+            const cardName = typeof item.cardName === "string" ? item.cardName : ""
+            return { cardName, preset, recreationTurns, purePassionTurn, totalOutings }
+        })
+}
+
+/**
  * Formats a single card schedule for the settings log banner.
  * @param card The card schedule to summarize.
  * @returns A one-line summary, e.g. `"Kitasan Black (Team Sirius | Recreation: ... | Pure Passion: none | Outings: 7)"`.
