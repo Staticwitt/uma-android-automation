@@ -70,6 +70,30 @@ export const createDatingCardSchedule = (preset: string = "siriusSenior", cardNa
     }
 }
 
+/** A named combo that adds several pre-staggered cards in one tap, for running multiple recreation chains without their pinned turns colliding. */
+export interface DatingScheduleCombo {
+    /** Display label shown next to the "Add" button. */
+    label: string
+    /** Builds the combo's card schedules, each with a blank card name for the user to fill in. */
+    build: () => DatingCardSchedule[]
+}
+
+/**
+ * Built-in multi-card combos. Team Sirius's default turns (29, 35, 43, 47, 52, 55, 58) fully overlap with Heirs to the Throne's (35, 43, 52, 58), so running both
+ * unmodified would have one card win the shared turn every time and the other silently fall behind. This combo keeps Team Sirius's turns as-is and shifts
+ * Heirs to the Throne's four turns one turn earlier (34, 42, 51, 57) - close enough to preserve the intended pacing but clear of every Sirius turn - so both
+ * chains can actually progress in the same career. Its Pure Passion turn (60) is untouched since Sirius has none.
+ */
+export const DATING_SCHEDULE_COMBOS: Record<string, DatingScheduleCombo> = {
+    siriusAndThrone: {
+        label: "Team Sirius + Heirs to the Throne",
+        build: () => [
+            createDatingCardSchedule("siriusSenior"),
+            { ...createDatingCardSchedule("throneSenior"), preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [34, 42, 51, 57] },
+        ],
+    },
+}
+
 /**
  * Formats a single card schedule for the settings log banner.
  * @param card The card schedule to summarize.
