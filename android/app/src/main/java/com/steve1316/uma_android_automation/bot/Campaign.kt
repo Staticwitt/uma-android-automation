@@ -1780,6 +1780,7 @@ abstract class Campaign(game: Game) : Task(game) {
     private fun handleMultiCardRecreationDate(): Boolean {
         var matchedCard: DatingSchedule.DatingCardConfig? = null
         var sawAnyRow = false
+        val unclaimedRowOcrTexts = mutableListOf<String>()
 
         ScrollList.processWithFallback(
             game,
@@ -1791,6 +1792,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 val card = DatingSchedule.matchCardForRow(ocrText, datingCards, SupportCardSelection::matchesName)
                 when {
                     card == null -> {
+                        unclaimedRowOcrTexts.add(ocrText)
                         MessageLog.d(TAG, "[DEBUG] handleRecreationDate:: No configured card claims this row (ocr=\"$ocrText\"). Skipping.")
                         false
                     }
@@ -1821,7 +1823,8 @@ abstract class Campaign(game: Game) : Task(game) {
                     TAG,
                     "[WARN] handleRecreationDate:: No configured card's name matched any row in the partner dialog (or the matched card is holding its final " +
                         "outing). Backing out for this turn. If this keeps happening, double check that each card's \"Card Name\" is the actual support card's " +
-                        "name shown in-game (e.g. \"Kitasan Black\") - not the preset label (e.g. \"Team Sirius\" / \"Heirs to the Throne\"), which never appears in the dialog.",
+                        "name shown in-game (e.g. \"Kitasan Black\") - not the preset label (e.g. \"Team Sirius\" / \"Heirs to the Throne\"), which never appears in " +
+                        "the dialog. Unclaimed row OCR text this attempt: ${unclaimedRowOcrTexts.joinToString("; ") { "\"$it\"" }}.",
                 )
             }
             return cancelPartnerDialog()

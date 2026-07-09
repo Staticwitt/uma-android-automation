@@ -50,6 +50,25 @@ class SupportCardSelectionTest {
     }
 
     @Test
+    fun matchesName_survivesOneMisreadCharacterInsideALongNoisyRow() {
+        // A single OCR-misread letter inside a two-word name ("silence" -> "sllence"), embedded in a full row of extra
+        // OCR'd text (level/friendship/button labels). Comparing the whole row against the name directly scores well
+        // under the 0.82 threshold here since the row is far longer than the name; isolating the best-matching
+        // same-length window recovers a high score instead.
+        assertTrue(SupportCardSelection.matchesName("sllence suzuka lv30 friendship 45 date available", "Silence Suzuka"))
+    }
+
+    @Test
+    fun matchesName_survivesADigitMisreadForALetterInsideALongNoisyRow() {
+        assertTrue(SupportCardSelection.matchesName("silence su2uka lv30 friendship 45 date available", "Silence Suzuka"))
+    }
+
+    @Test
+    fun matchesName_stillRejectsAnUnrelatedNameInANoisyRow() {
+        assertFalse(SupportCardSelection.matchesName("tokai teio lv30 friendship 45 date available", "Silence Suzuka"))
+    }
+
+    @Test
     fun entryDedupeKey_usesBoundingBox() {
         // entryDedupeKey only reads bbox; a real Bitmap can't be constructed under the
         // unmocked Android-stub unit-test runtime (Bitmap.createBitmap returns null), so mock it.
