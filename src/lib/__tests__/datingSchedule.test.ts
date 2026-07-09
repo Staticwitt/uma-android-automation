@@ -79,6 +79,28 @@ describe("DATING_SCHEDULE_COMBOS", () => {
         const second = DATING_SCHEDULE_COMBOS.siriusAndThrone.build()
         expect(second[0].recreationTurns).not.toContain(999)
     })
+
+    it("siriusThroneFullRoster builds 11 named cards with no colliding pinned turns", () => {
+        const cards = DATING_SCHEDULE_COMBOS.siriusThroneFullRoster.build()
+        expect(cards).toHaveLength(11)
+        expect(cards.every((card) => card.cardName.length > 0)).toBe(true)
+
+        const pinnedByCard = cards.map((card) => (card.purePassionTurn > 0 ? [...card.recreationTurns, card.purePassionTurn] : card.recreationTurns))
+        const allPinned = pinnedByCard.flat()
+        expect(new Set(allPinned).size).toBe(allPinned.length)
+
+        const blocked = allPinned.filter((turn) => turn <= 13 || (turn >= 37 && turn <= 40) || (turn >= 61 && turn <= 64))
+        expect(blocked).toEqual([])
+    })
+
+    it("siriusThroneFullRoster gives Team Sirius and The Throne's Assemblage a held Pure Passion outing", () => {
+        const cards = DATING_SCHEDULE_COMBOS.siriusThroneFullRoster.build()
+        const teamSirius = cards.find((card) => card.cardName === "Team Sirius")
+        const assemblage = cards.find((card) => card.cardName === "The Throne's Assemblage")
+        expect(teamSirius?.purePassionTurn).toBe(58)
+        expect(assemblage?.purePassionTurn).toBe(59)
+        expect(assemblage?.recreationTurns).toEqual([51])
+    })
 })
 
 describe("parseDatingCardsImport", () => {

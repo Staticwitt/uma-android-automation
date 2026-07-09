@@ -78,18 +78,46 @@ export interface DatingScheduleCombo {
     build: () => DatingCardSchedule[]
 }
 
+/** Builds a single-outing, no-Pure-Passion card entry for `siriusThroneFullRoster` below. */
+const singleOutingCard = (cardName: string, turn: number): DatingCardSchedule => ({
+    cardName,
+    preset: DATING_SCHEDULE_CUSTOM,
+    recreationTurns: [turn],
+    purePassionTurn: -1,
+    totalOutings: 1,
+})
+
 /**
  * Built-in multi-card combos. Team Sirius's default turns (29, 35, 43, 47, 52, 55, 58) fully overlap with Heirs to the Throne's (35, 43, 52, 58), so running both
- * unmodified would have one card win the shared turn every time and the other silently fall behind. This combo keeps Team Sirius's turns as-is and shifts
+ * unmodified would have one card win the shared turn every time and the other silently fall behind. `siriusAndThrone` keeps Team Sirius's turns as-is and shifts
  * Heirs to the Throne's four turns one turn earlier (34, 42, 51, 57) - close enough to preserve the intended pacing but clear of every Sirius turn - so both
  * chains can actually progress in the same career. Its Pure Passion turn (60) is untouched since Sirius has none.
+ *
+ * `siriusThroneFullRoster` is a specific 11-card deck/turn plan (9 single-outing cards, plus "Team Sirius" and "The Throne's Assemblage" as their own named
+ * cards each with a held Pure Passion outing) matching one particular Trackblazer schedule. Every pinned turn across all 11 cards is distinct.
  */
 export const DATING_SCHEDULE_COMBOS: Record<string, DatingScheduleCombo> = {
     siriusAndThrone: {
-        label: "Team Sirius + Heirs to the Throne",
+        label: "Team Sirius + Heirs to the Throne (staggered)",
         build: () => [
             createDatingCardSchedule("siriusSenior"),
             { ...createDatingCardSchedule("throneSenior"), preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [34, 42, 51, 57] },
+        ],
+    },
+    siriusThroneFullRoster: {
+        label: "Full Sirius/Throne Roster (11 cards)",
+        build: () => [
+            singleOutingCard("Silence Suzuka", 18),
+            singleOutingCard("Narita Brian", 22),
+            singleOutingCard("Symboli Rudolf", 26),
+            singleOutingCard("Rice Shower", 28),
+            singleOutingCard("Special Week", 32),
+            singleOutingCard("Tokai Teio", 36),
+            singleOutingCard("Mejiro McQueen", 43),
+            singleOutingCard("Tsurumaru Tsuyoshi", 47),
+            singleOutingCard("Winning Ticket", 55),
+            { cardName: "Team Sirius", preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [], purePassionTurn: 58, totalOutings: 1 },
+            { cardName: "The Throne's Assemblage", preset: DATING_SCHEDULE_CUSTOM, recreationTurns: [51], purePassionTurn: 59, totalOutings: 2 },
         ],
     },
 }
