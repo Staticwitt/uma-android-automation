@@ -679,7 +679,7 @@ const Settings = () => {
                                         variant="outline"
                                         icon={<Ionicons name="people-outline" size={18} color={colors.text} />}
                                     >
-                                        Add {combo.label} (staggered)
+                                        Add {combo.label}
                                     </CustomButton>
                                 ))}
                                 <CustomButton onPress={handleImportDatingCards} variant="outline" icon={<Ionicons name="document-outline" size={18} color={colors.text} />}>
