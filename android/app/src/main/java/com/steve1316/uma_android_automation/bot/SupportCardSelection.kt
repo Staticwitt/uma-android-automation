@@ -78,8 +78,30 @@ internal object SupportCardSelection {
         if (!ocrMightMatchName(normalizedOcr, needle)) return 0.0
         return when {
             normalizedOcr.contains(needle) -> 1.0
-            else -> similarity.score(needle, normalizedOcr)
+            else -> bestWindowedSimilarity(normalizedOcr, needle)
         }
+    }
+
+    /**
+     * Best Jaro-Winkler similarity between [needle] and any substring of [haystack] near needle's own length, rather than
+     * comparing [needle] against the entire (often much longer, noisier) haystack directly. A row's full OCR text includes
+     * more than just the card name - bond gauge, level, button labels - and Jaro-Winkler is a whole-string metric, so even a
+     * single misread character inside an otherwise-correct name can sink the whole-string score under threshold even though
+     * the name is clearly legible within the row. Sliding a same-length-ish window across the haystack and keeping the best
+     * score isolates the name-sized substring first, the way a person reading the row would.
+     */
+    private fun bestWindowedSimilarity(haystack: String, needle: String): Double {
+        if (haystack.length <= needle.length) return similarity.score(needle, haystack)
+        var best = 0.0
+        val minWindow = maxOf(1, needle.length - 2)
+        val maxWindow = minOf(haystack.length, needle.length + 2)
+        for (windowLength in minWindow..maxWindow) {
+            for (start in 0..(haystack.length - windowLength)) {
+                val score = similarity.score(needle, haystack.substring(start, start + windowLength))
+                if (score > best) best = score
+            }
+        }
+        return best
     }
 
     internal fun matchesName(ocrText: String, name: String): Boolean = matchScore(ocrText, name) >= MIN_NAME_MATCH_SCORE
