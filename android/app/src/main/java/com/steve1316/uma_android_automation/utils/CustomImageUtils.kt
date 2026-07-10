@@ -805,6 +805,63 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     }
 
     /**
+     * Checks whether [point] (an opponent's laurel label location on Unity Cup's 4th Preseason "Select Opponent"
+     * screen) sits within a pink/magenta-highlighted card - the visual marker for an "Elite Team" opponent (only
+     * offered when the trainee is ranked 10th or higher, has a Team Rank of A or higher, and has triggered at least
+     * one Extreme Spirit Burst this run). Beating an Elite Team unlocks a stronger Team Zenith in the Finals with
+     * better rewards (bigger stat boosts, more skill hints, Aoharu factors).
+     *
+     * The pink/magenta HSV range and the card region size/offset below are a best-effort estimate - they're derived
+     * from this game's Extreme Spirit Burst icon (a similarly pink/magenta UI accent, sampled from an actual
+     * screenshot) rather than a captured reference of the Elite Team highlight itself, since one wasn't available
+     * when this was written. Confidence is lower than the rest of this file's detectors; expect to recalibrate the
+     * region size/offset and/or the HSV bounds after seeing this run against a live "Select Opponent" screen with
+     * Debug Mode on (check the `debug_eliteTeamCard*.png` dumps).
+     *
+     * @param sourceBitmap The current screen capture with the opponent-selection screen open.
+     * @param point The opponent's laurel label location, as returned by `LabelUnityCupOpponentSelectionLaurel.findAll`.
+     * @param debugIndex Distinguishes this opponent's debug image dump from the other two when Debug Mode is on.
+     * @return True if the region around [point] shows a significant proportion of pink/magenta pixels.
+     */
+    fun isEliteTeamHighlighted(sourceBitmap: Bitmap, point: Point, debugIndex: Int): Boolean {
+        // The laurel marks roughly the top of each opponent's card, so the region searched extends mostly downward/outward from it.
+        val cardWidth = (SharedData.displayWidth * 0.30).toInt()
+        val cardHeight = (SharedData.displayHeight * 0.22).toInt()
+        val cardX = (point.x - cardWidth / 2.0).toInt().coerceIn(0, SharedData.displayWidth - cardWidth)
+        val cardY = (point.y - cardHeight * 0.15).toInt().coerceIn(0, SharedData.displayHeight - cardHeight)
+
+        val cardBitmap = createSafeBitmap(sourceBitmap, cardX, cardY, cardWidth, cardHeight, "isEliteTeamHighlighted") ?: return false
+
+        val cardMat = Mat()
+        Utils.bitmapToMat(cardBitmap, cardMat)
+        if (debugMode) Imgcodecs.imwrite("$matchFilePath/debug_eliteTeamCard$debugIndex.png", cardMat)
+
+        val rgbMat = Mat()
+        Imgproc.cvtColor(cardMat, rgbMat, Imgproc.COLOR_BGR2RGB)
+        val hsvMat = Mat()
+        Imgproc.cvtColor(rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV)
+
+        // Pink/magenta range sampled from this game's Extreme Spirit Burst icon glow (hue ~140-165 in OpenCV's 0-180 scale, moderate-to-high saturation and brightness).
+        val pinkLower = Scalar(140.0, 60.0, 150.0)
+        val pinkUpper = Scalar(165.0, 255.0, 255.0)
+
+        val pinkMask = Mat()
+        Core.inRange(hsvMat, pinkLower, pinkUpper, pinkMask)
+        val pinkPixels = Core.countNonZero(pinkMask)
+        val totalPixels = cardMat.rows() * cardMat.cols()
+        val pinkRatio = if (totalPixels > 0) pinkPixels.toDouble() / totalPixels.toDouble() else 0.0
+
+        Log.d(TAG, "[DEBUG] isEliteTeamHighlighted:: Pink pixel ratio at (${point.x}, ${point.y}): ${(pinkRatio * 100).toInt()}%")
+
+        pinkMask.release()
+        hsvMat.release()
+        rgbMat.release()
+        cardMat.release()
+
+        return pinkRatio > 0.08
+    }
+
+    /**
      * Reads a single stat value from the Main screen or Aptitude dialog.
      *
      * @param statName The name of the stat to read.

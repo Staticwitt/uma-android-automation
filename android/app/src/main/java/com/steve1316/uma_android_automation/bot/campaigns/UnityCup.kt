@@ -54,6 +54,15 @@ class UnityCup(game: Game) : Campaign(game) {
     /** Flag indicating if the opponent selection should be overridden. */
     private var bOverrideOpponentSelection: Boolean = false
 
+    /** Whether to deliberately seek out and challenge the pink-highlighted "Elite Team" opponent when one is offered, instead of the default race-prediction-favorability logic. */
+    private val preferEliteTeamOpponent: Boolean = SettingsHelper.getBooleanSetting("training", "preferEliteTeamOpponent", false)
+
+    /** Index of the opponent detected as the Elite Team on the current "Select Opponent" screen, or null if not found/not yet checked/disabled. Reset each time this screen is (re-)entered. */
+    private var eliteTeamOpponentIndex: Int? = null
+
+    /** Whether the opponent currently being confirmed is the deliberately-chosen Elite Team - bypasses the usual race-prediction gating in the confirmation dialog since Elite Teams are meant to be a harder, opt-in challenge. */
+    private var bPickedEliteTeam: Boolean = false
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,6 +142,9 @@ class UnityCup(game: Game) : Campaign(game) {
 
             "unity_cup_confirmation" -> {
                 if (bIsFinals) {
+                    result.dialog.ok(game.imageUtils)
+                } else if (bPickedEliteTeam) {
+                    MessageLog.i(TAG, "[UNITY_CUP] Confirming the Elite Team challenge regardless of race prediction.")
                     result.dialog.ok(game.imageUtils)
                 } else if (bOverrideOpponentSelection || analyzeOpponentRacePrediction()) {
                     result.dialog.ok(game.imageUtils)
@@ -236,6 +248,8 @@ class UnityCup(game: Game) : Campaign(game) {
                 ButtonUnityCupRace.click(game.imageUtils, sourceBitmap = sourceBitmap) -> {
                     selectedOpponentIndex = 0
                     bOverrideOpponentSelection = false
+                    eliteTeamOpponentIndex = null
+                    bPickedEliteTeam = false
                     game.waitForLoading()
                 }
 
@@ -253,7 +267,19 @@ class UnityCup(game: Game) : Campaign(game) {
                         return false
                     }
 
+                    if (preferEliteTeamOpponent && eliteTeamOpponentIndex == null) {
+                        val foundIndex = opponents.indices.firstOrNull { i -> game.imageUtils.isEliteTeamHighlighted(sourceBitmap, opponents[i], i) }
+                        eliteTeamOpponentIndex = foundIndex ?: -1
+                        if (foundIndex != null) {
+                            MessageLog.i(TAG, "[UNITY_CUP] Detected an Elite Team opponent at position #${foundIndex + 1}. Will challenge it directly.")
+                            selectedOpponentIndex = foundIndex
+                        } else {
+                            MessageLog.i(TAG, "[UNITY_CUP] No Elite Team opponent detected this round.")
+                        }
+                    }
+
                     selectedOpponentIndex = selectedOpponentIndex.coerceIn(0, opponents.lastIndex)
+                    bPickedEliteTeam = eliteTeamOpponentIndex != null && selectedOpponentIndex == eliteTeamOpponentIndex
                     val opponent = opponents[selectedOpponentIndex]
                     game.gestureUtils.tap(opponent.x, opponent.y, LabelUnityCupOpponentSelectionLaurel.template.path)
                     // Tiny delay to allow the opponent selection click to register fully.
