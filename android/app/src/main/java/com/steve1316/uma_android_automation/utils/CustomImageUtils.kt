@@ -33,6 +33,7 @@ import com.steve1316.uma_android_automation.components.IconStatSupportEtsukoOton
 import com.steve1316.uma_android_automation.components.IconStatSupportRikoKashimoto
 import com.steve1316.uma_android_automation.components.IconStatSupportYayoiAkikawa
 import com.steve1316.uma_android_automation.components.IconUnityCupSpiritExplosion
+import com.steve1316.uma_android_automation.components.IconUnityCupSpiritExplosionExtreme
 import com.steve1316.uma_android_automation.components.IconUnityCupSpiritTraining
 import com.steve1316.uma_android_automation.components.LabelEnergy
 import com.steve1316.uma_android_automation.components.LabelRivalRacer
@@ -169,8 +170,10 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      *
      * @property numGaugesCanFill Number of gauges that can be filled by this training.
      * @property numGaugesReadyToBurst Number of gauges that are already full and ready to burst.
+     * @property numExtremeGaugesReady Number of facilities showing an Extreme Spirit Burst (available after a facility's regular
+     *   burst has already been triggered there) - strictly better than a regular burst, so scored separately and higher.
      */
-    data class SpiritGaugeResult(val numGaugesCanFill: Int, val numGaugesReadyToBurst: Int)
+    data class SpiritGaugeResult(val numGaugesCanFill: Int, val numGaugesReadyToBurst: Int, val numExtremeGaugesReady: Int = 0)
 
     /**
      * Defines the result of detecting stat gains from a training session.
@@ -726,6 +729,9 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         // Find all Spirit Explosion icons to determine burst readiness.
         val spiritExplosionIcons: ArrayList<Point> = IconUnityCupSpiritExplosion.findAll(this, sourceBitmap = currentBitmap, confidence = 0.9)
 
+        // Find all Extreme Spirit Burst icons (purple, only appear after a facility's regular burst has already been triggered).
+        val extremeSpiritExplosionIcons: ArrayList<Point> = IconUnityCupSpiritExplosionExtreme.findAll(this, sourceBitmap = currentBitmap, confidence = 0.9)
+
         // Analyze all gauges for all spirit training icons to count how many can be filled.
         var numGaugesCanFill = 0
         for ((index, iconLocation) in spiritTrainingIcons.withIndex()) {
@@ -795,7 +801,7 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             gaugeMat.release()
         }
 
-        return SpiritGaugeResult(numGaugesCanFill, spiritExplosionIcons.size)
+        return SpiritGaugeResult(numGaugesCanFill, spiritExplosionIcons.size, extremeSpiritExplosionIcons.size)
     }
 
     /**

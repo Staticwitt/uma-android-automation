@@ -202,6 +202,15 @@ object IconUnityCupSpiritExplosion : ComponentInterface {
     override val template = Template("components/icon/unitycup_spirit_explosion", region = Region.topRightThird)
 }
 
+/**
+ * The purple "Extreme Spirit Burst" icon added in the July 2026 Unity Cup rework - appears on a facility after its regular Spirit
+ * Burst has already been triggered there. Bursting it gives 0% failure chance, bonus stats/stat-cap increases for the trainee and
+ * teammates, and an Ignited Spirit skill hint, so it should always outrank a regular burst.
+ */
+object IconUnityCupSpiritExplosionExtreme : ComponentInterface {
+    override val template = Template("components/icon/unitycup_spirit_explosion_extreme", region = Region.topRightThird)
+}
+
 object IconUnityCupSpiritTraining : ComponentInterface {
     override val template = Template("components/icon/unitycup_spirit_training", region = Region.topRightThird)
 }
