@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.16</latestVersion>
-    <latestVersionCode>188</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.16</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.16/v5.10.16-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.16/v5.10.16-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.17</latestVersion>
+    <latestVersionCode>189</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.17</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.17/v5.10.17-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.17/v5.10.17-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.16 - Unity Cup Elite Team option
+v5.10.17 - More reliable condition reading
 
-Added
+Fixed
 -----
-- Unity Cup: a new "Prefer Elite Team Opponent" setting (off by default) deliberately seeks out and challenges the pink-highlighted "Elite Team" opponent at the 4th Preseason race when one is offered, instead of picking based on race-prediction favorability. Beating it unlocks a stronger Team Zenith in the Finals with better rewards.
+- The bot's trainee condition reader now scrolls to see every active condition instead of only the first 3 - anything beyond the 3rd was previously invisible to item-usage and stat-forcing decisions. Condition matching is now also fuzzier and more tolerant of OCR noise.
 
     </releaseNotes>
   </update>
