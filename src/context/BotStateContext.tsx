@@ -263,6 +263,8 @@ export interface Settings {
         classicMilestonePercent: number
         seniorMilestonePercent: number
         enableUnityCupTrainOnlyMode: boolean
+        /** When enabled, deliberately seeks out and challenges the pink-highlighted "Elite Team" opponent (when offered) at Unity Cup's 4th Preseason race, instead of the default race-prediction-favorability logic. Beating it unlocks a stronger Team Zenith in the Finals with better rewards. */
+        preferEliteTeamOpponent: boolean
         sparkTraitMaxRerolls: number
         sparkTraitMinStars: number
         /** OCR stat-value validation cap. 0 = auto (1800). Values above this are rejected as misreads. */
@@ -638,6 +640,7 @@ export const defaultSettings: Settings = {
         classicMilestonePercent: 33,
         seniorMilestonePercent: 66,
         enableUnityCupTrainOnlyMode: false,
+        preferEliteTeamOpponent: false,
         sparkTraitMaxRerolls: 0,
         sparkTraitMinStars: 0,
         manualStatCap: 0,

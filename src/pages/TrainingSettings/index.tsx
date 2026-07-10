@@ -171,6 +171,7 @@ const TrainingSettings = () => {
         enableTrainingAnalysisValidation,
         enableYoloStatDetection,
         enableUnityCupTrainOnlyMode,
+        preferEliteTeamOpponent,
         sparkTraitMaxRerolls,
         sparkTraitMinStars,
         manualStatCap,
@@ -816,6 +817,14 @@ const TrainingSettings = () => {
                                             title="Train-Only Mode"
                                             description="When enabled, the bot will always choose to train instead of racing optional races during Unity Cup. Mandatory race days, scheduled races, fan/trophy requirements, and Unity Cup race events are still run normally."
                                             right={<Switch checked={enableUnityCupTrainOnlyMode} onCheckedChange={(checked) => updateTrainingSetting("enableUnityCupTrainOnlyMode", checked)} />}
+                                        />
+                                    </SearchableItem>
+                                    <SearchableItem id="prefer-elite-team-opponent">
+                                        <SettingRow
+                                            id="prefer-elite-team-opponent"
+                                            title="Prefer Elite Team Opponent"
+                                            description="When enabled, deliberately seeks out and challenges the pink-highlighted 'Elite Team' opponent at the 4th Preseason race when one is offered (requires rank 10th+, Team Rank A+, and at least one Extreme Spirit Burst), instead of picking based on race-prediction favorability. Beating it unlocks a stronger Team Zenith in the Finals with better rewards."
+                                            right={<Switch checked={preferEliteTeamOpponent} onCheckedChange={(checked) => updateTrainingSetting("preferEliteTeamOpponent", checked)} />}
                                         />
                                     </SearchableItem>
                                     {renderStatSelector(

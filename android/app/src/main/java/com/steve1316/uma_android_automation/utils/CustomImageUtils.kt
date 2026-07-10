@@ -805,6 +805,73 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     }
 
     /**
+     * Checks whether [point] (an opponent's laurel/rank-medal label location on Unity Cup's 4th Preseason
+     * "Select Opponent" screen) sits within a pink/magenta-highlighted card - the visual marker for an "Elite
+     * Team" opponent (only offered when the trainee is ranked 10th or higher, has a Team Rank of A or higher, and
+     * has triggered at least one Extreme Spirit Burst this run). Beating an Elite Team unlocks a stronger Team
+     * Zenith in the Finals with better rewards (bigger stat boosts, more skill hints, Aoharu factors).
+     *
+     * The Elite Team card is a wide, short banner (a real reference screenshot measured ~2.46:1 width:height) with
+     * a diagonal pink-to-pale-pink gradient filling the whole card, not just a border - the rank medal/laurel sits
+     * near the card's left edge, roughly vertically centered, with the rest of the card (character art, "Elite
+     * Team" label, team name) extending to the right of it. This shape strongly suggests the 3 opponents are
+     * stacked as full-width horizontal banners rather than side-by-side columns, so the region searched below
+     * extends mostly rightward (and both up/down) from [point] rather than being centered on it. The HSV pink
+     * range was sampled directly from that reference screenshot's card background (hue clustered ~300-330 degrees,
+     * i.e. ~150-165 in OpenCV's 0-180 scale; saturation and brightness both fairly high across the gradient).
+     *
+     * Both the exact region offsets and the HSV bounds are still a best-effort estimate for how this crops against
+     * the real, un-cropped "Select Opponent" screen (the reference image was itself a zoomed-in crop of a single
+     * card, not a full-screen capture, so its proportions don't map 1:1 to [SharedData.displayWidth]/[SharedData.displayHeight]).
+     * Expect to recalibrate after seeing this run live with Debug Mode on (check the `debug_eliteTeamCard*.png`
+     * dumps and the `[DEBUG] isEliteTeamHighlighted:: Pink pixel ratio...` log lines).
+     *
+     * @param sourceBitmap The current screen capture with the opponent-selection screen open.
+     * @param point The opponent's laurel/rank-medal label location, as returned by `LabelUnityCupOpponentSelectionLaurel.findAll`.
+     * @param debugIndex Distinguishes this opponent's debug image dump from the other two when Debug Mode is on.
+     * @return True if the region around [point] shows a significant proportion of pink/magenta pixels.
+     */
+    fun isEliteTeamHighlighted(sourceBitmap: Bitmap, point: Point, debugIndex: Int): Boolean {
+        // The card is a near-full-width banner with the medal near its left edge, vertically centered - so the region
+        // searched starts slightly left of the medal and extends mostly rightward, centered vertically on it.
+        val cardWidth = (SharedData.displayWidth * 0.85).toInt()
+        val cardHeight = (SharedData.displayHeight * 0.25).toInt()
+        val cardX = (point.x - cardWidth * 0.10).toInt().coerceIn(0, SharedData.displayWidth - cardWidth)
+        val cardY = (point.y - cardHeight / 2.0).toInt().coerceIn(0, SharedData.displayHeight - cardHeight)
+
+        val cardBitmap = createSafeBitmap(sourceBitmap, cardX, cardY, cardWidth, cardHeight, "isEliteTeamHighlighted") ?: return false
+
+        val cardMat = Mat()
+        Utils.bitmapToMat(cardBitmap, cardMat)
+        if (debugMode) Imgcodecs.imwrite("$matchFilePath/debug_eliteTeamCard$debugIndex.png", cardMat)
+
+        val rgbMat = Mat()
+        Imgproc.cvtColor(cardMat, rgbMat, Imgproc.COLOR_BGR2RGB)
+        val hsvMat = Mat()
+        Imgproc.cvtColor(rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV)
+
+        // Pink/magenta range sampled directly from a reference Elite Team card screenshot's gradient background
+        // (hue ~145-172 in OpenCV's 0-180 scale, covering both the pale pink edges and the more saturated pink areas).
+        val pinkLower = Scalar(145.0, 50.0, 140.0)
+        val pinkUpper = Scalar(172.0, 255.0, 255.0)
+
+        val pinkMask = Mat()
+        Core.inRange(hsvMat, pinkLower, pinkUpper, pinkMask)
+        val pinkPixels = Core.countNonZero(pinkMask)
+        val totalPixels = cardMat.rows() * cardMat.cols()
+        val pinkRatio = if (totalPixels > 0) pinkPixels.toDouble() / totalPixels.toDouble() else 0.0
+
+        Log.d(TAG, "[DEBUG] isEliteTeamHighlighted:: Pink pixel ratio at (${point.x}, ${point.y}): ${(pinkRatio * 100).toInt()}%")
+
+        pinkMask.release()
+        hsvMat.release()
+        rgbMat.release()
+        cardMat.release()
+
+        return pinkRatio > 0.08
+    }
+
+    /**
      * Reads a single stat value from the Main screen or Aptitude dialog.
      *
      * @param statName The name of the stat to read.
