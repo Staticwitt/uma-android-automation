@@ -805,30 +805,39 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     }
 
     /**
-     * Checks whether [point] (an opponent's laurel label location on Unity Cup's 4th Preseason "Select Opponent"
-     * screen) sits within a pink/magenta-highlighted card - the visual marker for an "Elite Team" opponent (only
-     * offered when the trainee is ranked 10th or higher, has a Team Rank of A or higher, and has triggered at least
-     * one Extreme Spirit Burst this run). Beating an Elite Team unlocks a stronger Team Zenith in the Finals with
-     * better rewards (bigger stat boosts, more skill hints, Aoharu factors).
+     * Checks whether [point] (an opponent's laurel/rank-medal label location on Unity Cup's 4th Preseason
+     * "Select Opponent" screen) sits within a pink/magenta-highlighted card - the visual marker for an "Elite
+     * Team" opponent (only offered when the trainee is ranked 10th or higher, has a Team Rank of A or higher, and
+     * has triggered at least one Extreme Spirit Burst this run). Beating an Elite Team unlocks a stronger Team
+     * Zenith in the Finals with better rewards (bigger stat boosts, more skill hints, Aoharu factors).
      *
-     * The pink/magenta HSV range and the card region size/offset below are a best-effort estimate - they're derived
-     * from this game's Extreme Spirit Burst icon (a similarly pink/magenta UI accent, sampled from an actual
-     * screenshot) rather than a captured reference of the Elite Team highlight itself, since one wasn't available
-     * when this was written. Confidence is lower than the rest of this file's detectors; expect to recalibrate the
-     * region size/offset and/or the HSV bounds after seeing this run against a live "Select Opponent" screen with
-     * Debug Mode on (check the `debug_eliteTeamCard*.png` dumps).
+     * The Elite Team card is a wide, short banner (a real reference screenshot measured ~2.46:1 width:height) with
+     * a diagonal pink-to-pale-pink gradient filling the whole card, not just a border - the rank medal/laurel sits
+     * near the card's left edge, roughly vertically centered, with the rest of the card (character art, "Elite
+     * Team" label, team name) extending to the right of it. This shape strongly suggests the 3 opponents are
+     * stacked as full-width horizontal banners rather than side-by-side columns, so the region searched below
+     * extends mostly rightward (and both up/down) from [point] rather than being centered on it. The HSV pink
+     * range was sampled directly from that reference screenshot's card background (hue clustered ~300-330 degrees,
+     * i.e. ~150-165 in OpenCV's 0-180 scale; saturation and brightness both fairly high across the gradient).
+     *
+     * Both the exact region offsets and the HSV bounds are still a best-effort estimate for how this crops against
+     * the real, un-cropped "Select Opponent" screen (the reference image was itself a zoomed-in crop of a single
+     * card, not a full-screen capture, so its proportions don't map 1:1 to [SharedData.displayWidth]/[SharedData.displayHeight]).
+     * Expect to recalibrate after seeing this run live with Debug Mode on (check the `debug_eliteTeamCard*.png`
+     * dumps and the `[DEBUG] isEliteTeamHighlighted:: Pink pixel ratio...` log lines).
      *
      * @param sourceBitmap The current screen capture with the opponent-selection screen open.
-     * @param point The opponent's laurel label location, as returned by `LabelUnityCupOpponentSelectionLaurel.findAll`.
+     * @param point The opponent's laurel/rank-medal label location, as returned by `LabelUnityCupOpponentSelectionLaurel.findAll`.
      * @param debugIndex Distinguishes this opponent's debug image dump from the other two when Debug Mode is on.
      * @return True if the region around [point] shows a significant proportion of pink/magenta pixels.
      */
     fun isEliteTeamHighlighted(sourceBitmap: Bitmap, point: Point, debugIndex: Int): Boolean {
-        // The laurel marks roughly the top of each opponent's card, so the region searched extends mostly downward/outward from it.
-        val cardWidth = (SharedData.displayWidth * 0.30).toInt()
-        val cardHeight = (SharedData.displayHeight * 0.22).toInt()
-        val cardX = (point.x - cardWidth / 2.0).toInt().coerceIn(0, SharedData.displayWidth - cardWidth)
-        val cardY = (point.y - cardHeight * 0.15).toInt().coerceIn(0, SharedData.displayHeight - cardHeight)
+        // The card is a near-full-width banner with the medal near its left edge, vertically centered - so the region
+        // searched starts slightly left of the medal and extends mostly rightward, centered vertically on it.
+        val cardWidth = (SharedData.displayWidth * 0.85).toInt()
+        val cardHeight = (SharedData.displayHeight * 0.25).toInt()
+        val cardX = (point.x - cardWidth * 0.10).toInt().coerceIn(0, SharedData.displayWidth - cardWidth)
+        val cardY = (point.y - cardHeight / 2.0).toInt().coerceIn(0, SharedData.displayHeight - cardHeight)
 
         val cardBitmap = createSafeBitmap(sourceBitmap, cardX, cardY, cardWidth, cardHeight, "isEliteTeamHighlighted") ?: return false
 
@@ -841,9 +850,10 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         val hsvMat = Mat()
         Imgproc.cvtColor(rgbMat, hsvMat, Imgproc.COLOR_RGB2HSV)
 
-        // Pink/magenta range sampled from this game's Extreme Spirit Burst icon glow (hue ~140-165 in OpenCV's 0-180 scale, moderate-to-high saturation and brightness).
-        val pinkLower = Scalar(140.0, 60.0, 150.0)
-        val pinkUpper = Scalar(165.0, 255.0, 255.0)
+        // Pink/magenta range sampled directly from a reference Elite Team card screenshot's gradient background
+        // (hue ~145-172 in OpenCV's 0-180 scale, covering both the pale pink edges and the more saturated pink areas).
+        val pinkLower = Scalar(145.0, 50.0, 140.0)
+        val pinkUpper = Scalar(172.0, 255.0, 255.0)
 
         val pinkMask = Mat()
         Core.inRange(hsvMat, pinkLower, pinkUpper, pinkMask)
