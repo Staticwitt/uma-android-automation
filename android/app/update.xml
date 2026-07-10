@@ -1,21 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.14</latestVersion>
-    <latestVersionCode>186</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.14</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.14/v5.10.14-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.14/v5.10.14-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.15</latestVersion>
+    <latestVersionCode>187</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.15</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.15/v5.10.15-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.15/v5.10.15-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.14 - Full Sirius/Throne roster preset and a recreation-matching fix
+v5.10.15 - Unity Cup Extreme Spirit Burst support
 
 Added
 -----
-- Support Card Dating: a new "Add Full Sirius/Throne Roster (11 cards)" preset one-taps a specific 11-card Team Sirius / Heirs to the Throne schedule with no colliding pinned turns.
-
-Fixed
------
-- Support Card Dating: a support card's name could permanently fail to match in the "Choose Recreation Partner" dialog if a single OCR-misread character landed inside it, causing the bot to retry and back out of that card's dating on every turn for the rest of the run. Name matching now isolates the best-matching substring of the row instead of scoring the whole (noisier) row text, so a single misread character no longer sinks the match.
-- Support Card Dating: the "no card matched" warning now includes the row's OCR'd text directly, so a mismatch is diagnosable from a normal run log without enabling Debug Mode.
+- Unity Cup: training analysis now detects the Extreme Spirit Burst added in the July 2026 rework (the purple burst that appears on a facility after its regular Spirit Burst) and prioritizes it above a regular burst, since it guarantees 0% failure chance plus bonus stats/stat-cap increases and an Ignited Spirit skill hint.
 
     </releaseNotes>
   </update>
