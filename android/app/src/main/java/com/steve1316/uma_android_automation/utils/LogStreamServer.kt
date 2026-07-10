@@ -1003,7 +1003,10 @@ object LogStreamServer {
      * @return JSON array of `{"turn": Int, "date": String, "report": String}` objects, oldest first.
      */
     private fun extractDecisionReports(fullLogText: String, turnFilter: Int?): JSONArray {
-        val headerPattern = Pattern.compile("^=+\\s*Turn\\s+(\\d+)\\s*\\(([^)]*)\\)\\s*Decision Report\\s*=+$")
+        // Not anchored to the start of the line: MessageLog.log() inlines the "<elapsed> [LEVEL]" prefix before the first
+        // content line of any message starting with "\n" (which DecisionTracer's report block always does), so the header
+        // never begins at column 0 once it reaches the log.
+        val headerPattern = Pattern.compile("=+\\s*Turn\\s+(\\d+)\\s*\\(([^)]*)\\)\\s*Decision Report\\s*=+$")
         val footerPattern = Pattern.compile("^=+$")
         val lines = fullLogText.split("\n")
         val result = JSONArray()
@@ -1011,13 +1014,13 @@ object LogStreamServer {
         var i = 0
         while (i < lines.size) {
             val headerMatcher = headerPattern.matcher(lines[i].trim())
-            if (headerMatcher.matches()) {
+            if (headerMatcher.find()) {
                 val turn = headerMatcher.group(1)?.toIntOrNull()
                 val dateText = headerMatcher.group(2)?.trim() ?: ""
                 val blockLines = mutableListOf(lines[i])
                 i++
                 while (i < lines.size && !footerPattern.matcher(lines[i].trim()).matches()) {
-                    if (headerPattern.matcher(lines[i].trim()).matches()) break
+                    if (headerPattern.matcher(lines[i].trim()).find()) break
                     blockLines.add(lines[i])
                     i++
                 }
