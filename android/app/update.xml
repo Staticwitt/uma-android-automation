@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.15</latestVersion>
-    <latestVersionCode>187</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.15</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.15/v5.10.15-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.15/v5.10.15-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.16</latestVersion>
+    <latestVersionCode>188</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.16</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.16/v5.10.16-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.16/v5.10.16-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.15 - Unity Cup Extreme Spirit Burst support
+v5.10.16 - Unity Cup Elite Team option
 
 Added
 -----
-- Unity Cup: training analysis now detects the Extreme Spirit Burst added in the July 2026 rework (the purple burst that appears on a facility after its regular Spirit Burst) and prioritizes it above a regular burst, since it guarantees 0% failure chance plus bonus stats/stat-cap increases and an Ignited Spirit skill hint.
+- Unity Cup: a new "Prefer Elite Team Opponent" setting (off by default) deliberately seeks out and challenges the pink-highlighted "Elite Team" opponent at the 4th Preseason race when one is offered, instead of picking based on race-prediction favorability. Beating it unlocks a stronger Team Zenith in the Finals with better rewards.
 
     </releaseNotes>
   </update>
