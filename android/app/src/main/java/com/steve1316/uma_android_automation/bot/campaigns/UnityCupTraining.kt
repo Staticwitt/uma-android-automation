@@ -23,11 +23,13 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
                     if (gaugeResult != null) {
                         result.extras["spiritGaugesCanFill"] = gaugeResult.numGaugesCanFill
                         result.extras["spiritGaugesReadyToBurst"] = gaugeResult.numGaugesReadyToBurst
+                        result.extras["spiritGaugesExtremeReady"] = gaugeResult.numExtremeGaugesReady
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "[ERROR] Error in Spirit Explosion Gauge analysis: ${e.stackTraceToString()}")
                     result.extras["spiritGaugesCanFill"] = 0
                     result.extras["spiritGaugesReadyToBurst"] = 0
+                    result.extras["spiritGaugesExtremeReady"] = 0
                 } finally {
                     result.latch.countDown()
                     Log.d(TAG, "[DEBUG] Total time to analyze Spirit Explosion Gauge for ${result.name}: ${System.currentTimeMillis() - startTime}ms")
@@ -40,9 +42,11 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
                 if (gaugeResult != null) {
                     result.extras["spiritGaugesCanFill"] = gaugeResult.numGaugesCanFill
                     result.extras["spiritGaugesReadyToBurst"] = gaugeResult.numGaugesReadyToBurst
+                    result.extras["spiritGaugesExtremeReady"] = gaugeResult.numExtremeGaugesReady
                 } else {
                     result.extras["spiritGaugesCanFill"] = 0
                     result.extras["spiritGaugesReadyToBurst"] = 0
+                    result.extras["spiritGaugesExtremeReady"] = 0
                 }
             } finally {
                 result.latch.countDown()
@@ -70,17 +74,20 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
     override fun getExtraLogFields(training: TrainingOption): List<String> {
         val canFill = training.extras["spiritGaugesCanFill"] as? Int ?: 0
         val readyToBurst = training.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
-        return if (canFill > 0 || readyToBurst > 0) {
-            listOf("Spirit Gauges: fillable=$canFill, ready to burst=$readyToBurst")
+        val extremeReady = training.extras["spiritGaugesExtremeReady"] as? Int ?: 0
+        return if (canFill > 0 || readyToBurst > 0 || extremeReady > 0) {
+            listOf("Spirit Gauges: fillable=$canFill, ready to burst=$readyToBurst, extreme ready=$extremeReady")
         } else {
             emptyList()
         }
     }
 
     override fun getExtraKeyFactors(selected: TrainingOption, args: Map<String, Any?>): List<String> {
+        val extremeReady = selected.extras["spiritGaugesExtremeReady"] as? Int ?: 0
         val readyToBurst = selected.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
         val canFill = selected.extras["spiritGaugesCanFill"] as? Int ?: 0
         return when {
+            extremeReady > 0 -> listOf("Has $extremeReady Extreme Spirit Burst(s) ready (0% failure, stat cap boost, highest priority).")
             readyToBurst > 0 -> listOf("Has $readyToBurst Spirit Gauge(s) ready to burst (highest priority).")
             canFill > 0 -> listOf("Can fill $canFill Spirit Gauge(s).")
             else -> emptyList()

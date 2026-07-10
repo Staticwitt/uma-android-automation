@@ -709,6 +709,45 @@ class TrainingScoringTest {
     }
 
     @Test
+    @DisplayName("Extreme Spirit Burst outranks a regular burst, which outranks filling, which outranks no gauges")
+    fun testExtremeSpiritBurstHighestPriority() {
+        val trainingWithExtremeBurst =
+            createDefaultTrainingOption(
+                name = StatName.GUTS,
+                extras = mapOf("spiritGaugesExtremeReady" to 1),
+            )
+        val trainingWithBurst =
+            createDefaultTrainingOption(
+                name = StatName.SPEED,
+                extras = mapOf("spiritGaugesReadyToBurst" to 1, "spiritGaugesCanFill" to 0),
+            )
+        val trainingWithFill =
+            createDefaultTrainingOption(
+                name = StatName.STAMINA,
+                extras = mapOf("spiritGaugesCanFill" to 3),
+            )
+        val trainingWithNoGauges =
+            createDefaultTrainingOption(
+                name = StatName.POWER,
+            )
+
+        val config =
+            createDefaultConfig(
+                trainingOptions = listOf(trainingWithExtremeBurst, trainingWithBurst, trainingWithFill, trainingWithNoGauges),
+                scenario = "Unity Cup",
+            )
+
+        val extremeBurstScore = scoreUnityCupTraining(config, trainingWithExtremeBurst)
+        val burstScore = scoreUnityCupTraining(config, trainingWithBurst)
+        val fillScore = scoreUnityCupTraining(config, trainingWithFill)
+        val noGaugeScore = scoreUnityCupTraining(config, trainingWithNoGauges)
+
+        assertTrue(extremeBurstScore > burstScore, "Extreme Spirit Burst should outrank a regular burst even on a Guts facility")
+        assertTrue(burstScore > fillScore, "Training with gauges ready to burst should score higher than training that can fill gauges")
+        assertTrue(fillScore > noGaugeScore, "Training that can fill gauges should score higher than training with no gauges")
+    }
+
+    @Test
     @DisplayName("Speed and Wit get facility preference bonuses when spirit gauge bursting")
     fun testFacilityPreferenceBonusesForBursting() {
         // Zero out stat gains to isolate facility bonuses.

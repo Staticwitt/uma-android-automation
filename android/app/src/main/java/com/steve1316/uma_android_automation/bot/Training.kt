@@ -571,25 +571,36 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
          *
          * The priority order is as follows:
          * 1. Stat Efficiency: Raw stat gains toward targets.
-         * 2. Spirit Explosion: Trainings with gauges ready to burst.
-         * 3. Gauge Filling: Trainings that can fill Spirit Explosion gauges.
-         * 4. Relationship: Relationship building.
+         * 2. Extreme Spirit Burst: Trainings with an Extreme Spirit Burst ready (July 2026 rework) - strictly better than a
+         *    regular burst (0% failure chance, bonus stats/stat-cap increases, Ignited Spirit skill hint), so always outranks one.
+         * 3. Spirit Explosion: Trainings with gauges ready to burst.
+         * 4. Gauge Filling: Trainings that can fill Spirit Explosion gauges.
+         * 5. Relationship: Relationship building.
          *
          * @param config The [TrainingConfig] containing global scoring inputs.
          * @param training The [TrainingOption] to score.
          * @return A score representing the Unity Cup training value.
          */
         fun scoreUnityCupTraining(config: TrainingConfig, training: TrainingOption): Double {
-            MessageLog.v(TAG, "\n[TRAINING] Starting process to score ${training.name} Training for Unity Cup with redirected priority: Stats > Burst > Filling.")
+            MessageLog.v(TAG, "\n[TRAINING] Starting process to score ${training.name} Training for Unity Cup with redirected priority: Stats > Extreme Burst > Burst > Filling.")
 
             val numSpiritGaugesCanFill = training.extras["spiritGaugesCanFill"] as? Int ?: 0
             val numSpiritGaugesReadyToBurst = training.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
+            val numExtremeGaugesReady = training.extras["spiritGaugesExtremeReady"] as? Int ?: 0
 
             // 1. Primary Priority: Stat Efficiency.
             var score = calculateStatEfficiencyScore(config, training)
             MessageLog.i(TAG, "[TRAINING] [${training.name}] Base stat efficiency score: ${String.format("%.2f", score)}")
 
-            // 2. Second Priority: Trainings with Spirit Explosion Gauges ready to burst.
+            // 2. Second Priority: Extreme Spirit Bursts. Guaranteed 0% failure chance regardless of facility, so no per-facility
+            // preference logic is needed here the way regular bursts have below.
+            if (numExtremeGaugesReady > 0) {
+                val extremeBurstBonus = 1400.0 + (numExtremeGaugesReady * 500.0)
+                score += extremeBurstBonus
+                MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding Extreme Spirit Burst bonus for $numExtremeGaugesReady facility(ies): $extremeBurstBonus")
+            }
+
+            // 3. Third Priority: Trainings with Spirit Explosion Gauges ready to burst.
             if (numSpiritGaugesReadyToBurst > 0) {
                 // We give a significant bonus for bursting, but not so much that it always overrides huge stat gains elsewhere.
                 val burstBonus = 800.0 + (numSpiritGaugesReadyToBurst * 400.0)
@@ -628,7 +639,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 }
             }
 
-            // 3. Third Priority: Trainings that can fill Spirit Explosion Gauges (not at 100% yet).
+            // 4. Fourth Priority: Trainings that can fill Spirit Explosion Gauges (not at 100% yet).
             if (numSpiritGaugesCanFill > 0) {
                 // Score increases with number of gauges that can be filled.
                 // Each gauge fills by 25% per training execution.
@@ -643,7 +654,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 }
             }
 
-            // 4. Fourth Priority: Relationship bars.
+            // 5. Fifth Priority: Relationship bars.
             if (training.relationshipBars.isNotEmpty()) {
                 val relationshipScore = calculateRelationshipScore(config, training)
                 val scaledRelationshipScore = relationshipScore * config.scoring.relationshipScale // Scaled to be a significant bonus but below bursting.
