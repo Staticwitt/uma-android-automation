@@ -466,7 +466,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             return scoringConstantsFromMap(map, defaults)
         }
 
-        /** Adapter for the shared `getScenarioStatCap`. Currently a flat 1200 across scenarios; kept here so call sites in `:app` resolve the existing companion symbol. */
+        /** Adapter for the shared `getScenarioStatCap`, which returns real per-scenario, per-stat caps (URA, Unity Cup, Trackblazer); kept here so call sites in `:app` resolve the existing companion symbol. */
         fun getScenarioStatCap(scenario: String, statName: StatName): Int = sharedGetScenarioStatCap(scenario, statName)
 
         /** Adapter for the shared `getCurrentStatCap`. Converts the Android-rich `TrainingConfig` at the boundary. */
