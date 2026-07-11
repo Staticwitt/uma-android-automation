@@ -260,6 +260,13 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
         SharedData.templateSubfolderPathName = "images/"
     }
 
+    /** Converts this bitmap to a new OpenCV [Mat]. */
+    private fun Bitmap.toMat(): Mat {
+        val mat = Mat()
+        Utils.bitmapToMat(this, mat)
+        return mat
+    }
+
     // //////////////////////////////////////////////////////////////////////////////////////////////////
     // //////////////////////////////////////////////////////////////////////////////////////////////////
 
