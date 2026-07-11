@@ -1,16 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.17</latestVersion>
-    <latestVersionCode>189</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.17</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.17/v5.10.17-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.17/v5.10.17-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.18</latestVersion>
+    <latestVersionCode>190</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.18</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.18/v5.10.18-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.18/v5.10.18-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.17 - More reliable condition reading
+v5.10.18 - Log viewer fix
 
 Fixed
 -----
-- The bot's trainee condition reader now scrolls to see every active condition instead of only the first 3 - anything beyond the 3rd was previously invisible to item-usage and stat-forcing decisions. Condition matching is now also fuzzier and more tolerant of OCR noise.
+- The log viewer's Decision Report modal now actually shows the per-turn decision breakdown instead of always appearing empty.
 
     </releaseNotes>
   </update>
