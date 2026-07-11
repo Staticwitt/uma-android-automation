@@ -1,29 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.19</latestVersion>
-    <latestVersionCode>191</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.19</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.19/v5.10.19-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.19/v5.10.19-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.20</latestVersion>
+    <latestVersionCode>192</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.20</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.20/v5.10.20-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.20/v5.10.20-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.19 - Upstream sync: smarter training decisions
-
-Added
------
-- Rainbow trainings are now detected from the glowing ring around support cards instead of orange relationship bars, eliminating false rainbows from maxed supports that are not glowing. A new Rainbow Detection debug test helps calibrate it.
-- The bot now reads your owned skills from the Details screen and shows them as colored pills in the log viewer, along with an estimated overall rank.
-- Optional "Prefer Training on G1 Days" setting: stay and train when a strong rainbow training is available instead of taking the G1 race.
-
-Changed
------
-- Train-or-rest is now decided from all five facilities instead of the Speed facility alone, and a new expected-value gate skips poor-value trainings.
-- Mandatory career goals (fans, trophies, goal points) now outrank pre-summer prep, and skill hints are checked for failure chance before being tapped.
-- Unity Cup burst/fill scoring rebalanced with tunable constants; Trackblazer now skips mood recovery at Normal mood by default and its consecutive-races default dropped from 5 to 3.
+v5.10.20 - YOLO memory leak fix
 
 Fixed
 -----
-- Aptitude letters E and D no longer misread as B.
-- Stats above the cap are no longer discarded when read from the Details dialog.
+- Fixed a memory leak in YOLO stat detection that made each training turn progressively slower and could crash the run out of memory after 10-15 turns. If a run does crash, the reason is now written to the log and shown in a notification instead of the run ending silently.
+- Importing a settings file with wrong-typed fields no longer crashes the app - bad fields are ignored, keep their current values, and are listed on the Import Preview screen.
 
     </releaseNotes>
   </update>
