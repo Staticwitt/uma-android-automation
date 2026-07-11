@@ -557,6 +557,54 @@
                 font-weight: 900;
             }
 
+            .trainer-skills-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-top: 10px;
+            }
+
+            .trainer-skill-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 12px;
+                background: #25223e;
+                color: #dcd6ff;
+                font-family: var(--font-mono);
+                font-size: 11px;
+                cursor: default;
+            }
+
+            .trainer-skill-pill .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #8b84b8;
+                flex-shrink: 0;
+            }
+
+            .trainer-skill-pill.skill-green .dot { background: #6ee87c; }
+            .trainer-skill-pill.skill-blue .dot { background: #6eb6ff; }
+            .trainer-skill-pill.skill-yellow .dot { background: #ffd75e; }
+            .trainer-skill-pill.skill-red .dot { background: #ff7a7a; }
+            .trainer-skill-pill.skill-gold { border: 1px solid #ffd75e; }
+            .trainer-skill-pill.skill-unique { border: 1px solid #d98cff; }
+            .trainer-skill-pill.skill-negative { opacity: 0.65; text-decoration: line-through; }
+
+            .trainer-rank-chip {
+                display: inline-block;
+                margin-left: 8px;
+                padding: 2px 8px;
+                border-radius: 10px;
+                background: rgba(121, 255, 56, 0.15);
+                color: #c9ff80;
+                font-family: var(--font-mono);
+                font-size: 11px;
+                font-weight: 900;
+            }
+
             .trainer-condition-group {
                 border: 1px dashed #4a456f;
                 border-radius: 7px;
@@ -2858,6 +2906,11 @@
                             <div id="trainerDecisionList" class="trainer-decision-list">
                                 <div class="trainer-decision-item"><span>1.</span><span class="trainer-decision-score">-</span><span>Waiting for decision logs...</span></div>
                             </div>
+
+                            <div class="trainer-row-label" style="margin-top: 13px;">Skills <span id="trainerEstimatedRank" class="trainer-rank-chip" style="display: none;"></span></div>
+                            <div id="trainerSkillsList" class="trainer-skills-list">
+                                <span class="trainer-skill-pill"><span class="dot"></span>Waiting for skill reads...</span>
+                            </div>
                         </div>
                     </section>
 
@@ -3366,6 +3419,8 @@
             let messageCount = 0
             let visibleMessageCount = 0
             let allMessages = []
+            // Latest owned-skills snapshot pushed by the backend with the SKILLS: frame ({skills: [{name, color, gold, unique, negative, evalPt, desc, level?}]}). Null until the first read.
+            let latestSkillsSnapshot = null
             let activeFilters = new Set(["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR"])
             let searchQuery = ""
             let isFiltering = false
@@ -3515,6 +3570,14 @@
                         // Parent farming archive/session state changed. Refetch if the Legacy Parents
                         // tab has already been opened; otherwise the next tab activation loads fresh data.
                         if (window.__legacyParentsLoaded) refreshLegacyParents()
+                    } else if (event.data.startsWith("SKILLS:")) {
+                        // Owned-skills snapshot pushed after the bot reads the Details Skills tab or buys skills. Cached and re-rendered into the trainer panel's Skills section.
+                        try {
+                            latestSkillsSnapshot = JSON.parse(event.data.substring(7))
+                            trainerRenderSkills()
+                        } catch (e) {
+                            console.error("Error parsing skills snapshot:", e)
+                        }
                     } else if (event.data === "CAREER_UPDATE") {
                         // Career run archive changed. Refetch if the Career Runs tab has already been
                         // opened; otherwise the next tab activation loads fresh data.
@@ -4066,6 +4129,8 @@
                 messageCount = 0
                 visibleMessageCount = 0
                 condensationBuffer = []
+                latestSkillsSnapshot = null
+                trainerRenderSkills()
                 updateMessageCountDisplay()
 
                 // Clear images too.
@@ -6369,6 +6434,42 @@
                 target.className = `trainer-grade grade-${grade || "G"}`
             }
 
+            /** Renders the owned-skill pills from the latest SKILLS: snapshot into the trainer panel, colored by in-game category with gold/unique/negative treatments and a hover tooltip. */
+            function trainerRenderSkills() {
+                const list = document.getElementById("trainerSkillsList")
+                if (!list) return
+                const skills = latestSkillsSnapshot && Array.isArray(latestSkillsSnapshot.skills) ? latestSkillsSnapshot.skills : []
+                if (skills.length === 0) {
+                    list.innerHTML = '<span class="trainer-skill-pill"><span class="dot"></span>Waiting for skill reads...</span>'
+                    return
+                }
+                list.innerHTML = skills.map((skill) => {
+                    const classes = ["trainer-skill-pill"]
+                    if (skill.color) classes.push("skill-" + skill.color)
+                    if (skill.gold) classes.push("skill-gold")
+                    if (skill.unique) classes.push("skill-unique")
+                    if (skill.negative) classes.push("skill-negative")
+                    const levelSuffix = skill.unique && skill.level ? " Lv" + skill.level : ""
+                    const tooltip = skill.desc ? `${skill.name}${levelSuffix} — ${skill.desc}` : skill.name + levelSuffix
+                    return `<span class="${classes.join(" ")}" title="${escapeHtml(tooltip)}"><span class="dot"></span>${escapeHtml(skill.name)}${escapeHtml(levelSuffix)}</span>`
+                }).join("")
+            }
+
+            /** Shows the latest "[TRAINEE] Estimated Rank: X (score)" verbose log line as a chip in the Skills section header. Hidden until the first estimate lands. */
+            function trainerUpdateEstimatedRank() {
+                const chip = document.getElementById("trainerEstimatedRank")
+                if (!chip) return
+                const latest = [...allMessages].reverse().find((entry) => {
+                    const message = entry.parsed && entry.parsed.message ? entry.parsed.message : ""
+                    return message.includes("Estimated Rank:")
+                })
+                if (!latest) return
+                const match = latest.parsed.message.match(/Estimated Rank:\s*(\S+)\s*\((\d+)\)/)
+                if (!match) return
+                chip.textContent = `Est. Rank ${match[1]} (${match[2]})`
+                chip.style.display = "inline-block"
+            }
+
             function trainerBuildDecisionItems() {
                 const latestDecision = [...allMessages].reverse().find((entry) => {
                     const message = entry.parsed && entry.parsed.message ? entry.parsed.message : ""
@@ -6452,6 +6553,7 @@
                 trainerUpdateGrade("trainerAptEnd", "aptEnd")
 
                 trainerBuildDecisionItems()
+                trainerUpdateEstimatedRank()
                 trainerRenderLogStream()
             }
 

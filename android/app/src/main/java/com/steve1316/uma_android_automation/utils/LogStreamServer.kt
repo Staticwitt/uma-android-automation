@@ -173,6 +173,10 @@ object LogStreamServer {
      *  waiting for any other signal. Null until the first run reports a value. */
     @Volatile private var latestSmartRaceSolverEnabled: Boolean? = null
 
+    /** Latest owned-skills snapshot pushed after the Skills tab is read. Replayed to each new client after the log history flush so the Skills panel paints
+     *  immediately on connect. Null until the first snapshot arrives this run. */
+    @Volatile private var latestSkillsSnapshot: String? = null
+
     /**
      * Represents a parsed log entry for structured transmission.
      *
@@ -262,6 +266,13 @@ object LogStreamServer {
          * [BroadcastParentFarmingUpdate].
          */
         object BroadcastCareerRunUpdate : LogAction()
+
+        /**
+         * Broadcasts an owned-skills snapshot to all connected clients. Distinct from [Broadcast] so the framing message never lands in the log replay buffer.
+         *
+         * @property json Pre-serialized skills snapshot JSON sent verbatim to clients with a `SKILLS:` prefix.
+         */
+        data class BroadcastSkills(val json: String) : LogAction()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -463,6 +474,15 @@ object LogStreamServer {
                     session.send(Frame.Text("SRS_STATE:$enabled"))
                 } catch (e: Exception) {
                     Log.w(TAG, "[WARN] handleNewClientAction:: Failed to replay SRS state: ${e.message}")
+                }
+            }
+
+            // Replay the most recent owned-skills snapshot (if any) so the Skills panel paints immediately on a mid-run browser refresh.
+            latestSkillsSnapshot?.let { snapshot ->
+                try {
+                    session.send(Frame.Text("SKILLS:$snapshot"))
+                } catch (e: Exception) {
+                    Log.w(TAG, "[WARN] handleNewClientAction:: Failed to replay skills snapshot: ${e.message}")
                 }
             }
 
@@ -783,6 +803,9 @@ object LogStreamServer {
         // Drop the cached SRS-enabled flag so the next run's Racing init is the source of truth.
         latestSmartRaceSolverEnabled = null
 
+        // Drop the cached skills snapshot so the new run starts with no replay.
+        latestSkillsSnapshot = null
+
         // Ensure we are unmuted for the new run.
         isMuted = false
 
@@ -906,6 +929,19 @@ object LogStreamServer {
     }
 
     /**
+     * Caches and broadcasts an owned-skills snapshot to all connected clients and replays it to clients that connect later. Called after the Skills tab is read.
+     *
+     * @param json Pre-serialized skills snapshot JSON.
+     */
+    fun broadcastSkillsSnapshot(json: String) {
+        latestSkillsSnapshot = json
+        if (!isRunning) return
+        serverScope?.launch {
+            actionChannel?.send(LogAction.BroadcastSkills(json))
+        }
+    }
+
+    /**
      * Sends the `PF_UPDATE` framing message to all currently connected clients. Carries no
      * payload — clients are expected to refetch `/parent-run-archive` and `/parent-farming-session`.
      */
@@ -940,6 +976,23 @@ object LogStreamServer {
         for (client in clients) {
             try {
                 client.send(Frame.Text("CAREER_UPDATE"))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
+     * Sends an owned-skills snapshot to all currently connected clients with the `SKILLS:` framing prefix the viewer uses to route the payload to its Skills panel.
+     * Skipped silently when no clients are connected.
+     *
+     * @param json The pre-serialized skills snapshot JSON.
+     */
+    private suspend fun handleSkillsBroadcast(json: String) {
+        if (clients.isEmpty()) return
+        val frame = "SKILLS:$json"
+        for (client in clients) {
+            try {
+                client.send(Frame.Text(frame))
             } catch (_: Exception) {
             }
         }
@@ -1226,6 +1279,10 @@ object LogStreamServer {
 
                             is LogAction.BroadcastCareerRunUpdate -> {
                                 handleCareerRunUpdateBroadcast()
+                            }
+
+                            is LogAction.BroadcastSkills -> {
+                                handleSkillsBroadcast(action.json)
                             }
                         }
                     }
