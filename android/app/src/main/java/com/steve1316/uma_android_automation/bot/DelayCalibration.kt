@@ -57,7 +57,16 @@ object DelayCalibration {
             try {
                 val json = JSONObject(raw.ifBlank { "{}" })
                 val map = mutableMapOf<String, Double>()
-                json.keys().forEach { key -> map[key] = json.getDouble(key) }
+                val skipped = mutableListOf<String>()
+                json.keys().forEach { key ->
+                    // Coerce each value individually and skip the ones that are not finite numbers. A single malformed entry
+                    // (e.g. a stray string left over from a bad write or migration) must not discard every valid override.
+                    val value = json.optDouble(key, Double.NaN)
+                    if (value.isFinite()) map[key] = value else skipped.add(key)
+                }
+                if (skipped.isNotEmpty()) {
+                    MessageLog.w(TAG, "[WARN] Ignored ${skipped.size} non-numeric delayOverrides entr${if (skipped.size == 1) "y" else "ies"} (${skipped.joinToString(", ")}); other overrides still apply.")
+                }
                 map
             } catch (e: Exception) {
                 MessageLog.w(TAG, "[WARN] Failed to parse the delayOverrides setting, ignoring per-action overrides: ${e.message}")

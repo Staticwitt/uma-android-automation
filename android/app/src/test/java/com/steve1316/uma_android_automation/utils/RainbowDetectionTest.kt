@@ -20,6 +20,8 @@ class RainbowDetectionTest {
         assertEquals(1, rainbowHuesPresent(greenFraction = 0.0, cyanFraction = 0.80, pinkFraction = 0.0), "Cyan alone (e.g. a sky background) is not a ring")
         assertEquals(2, rainbowHuesPresent(greenFraction = 0.05, cyanFraction = 0.10, pinkFraction = 0.0), "Two hues without pink is not a ring")
         assertEquals(0, rainbowHuesPresent(greenFraction = 0.01, cyanFraction = 0.02, pinkFraction = 0.01), "All three below the presence floor is not a ring")
+        // The false-positive mode the raised 0.045 floor targets: one strong art color with the other two only just above the old 0.03 floor. Should now read as a single hue, not a ring.
+        assertEquals(1, rainbowHuesPresent(greenFraction = 0.20, cyanFraction = 0.035, pinkFraction = 0.04), "One dominant art color with two faint hues (0.03-0.045) is not a ring")
     }
 
     @Test
