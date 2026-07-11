@@ -67,6 +67,8 @@ const RacingSettings = () => {
         enableCompleteCareerOnFailure,
         enableStopOnMandatoryRaces,
         enableForceRacing,
+        enableG1DayPreference,
+        g1DayMinRainbowCount,
         juniorYearRaceStrategy,
         originalRaceStrategy,
         enablePerDistanceStrategy,
@@ -311,6 +313,29 @@ const RacingSettings = () => {
                                 right={<Switch checked={enableForceRacing} onCheckedChange={(checked) => updateRacingSetting("enableForceRacing", checked)} />}
                             />
                             {enableForceRacing && <Callout variant="warning">Warning: Enabling this will override all other racing settings and they will be ignored.</Callout>}
+                            <SettingRow
+                                id="enable-g1-day-preference"
+                                title="Prefer Training on G1 Days"
+                                description="On a G1 race day (Classic/Senior years), peek at the trainings first and stay to train when a strong rainbow training is available instead of taking the race."
+                                right={<Switch checked={enableG1DayPreference} onCheckedChange={(checked) => updateRacingSetting("enableG1DayPreference", checked)} />}
+                            />
+                            {enableG1DayPreference && (
+                                <View style={{ padding: SPACING.md }}>
+                                    <CustomSlider
+                                        searchId="g1-day-min-rainbow-count"
+                                        value={g1DayMinRainbowCount}
+                                        placeholder={defaultSettings.racing.g1DayMinRainbowCount}
+                                        onValueChange={(value) => updateRacingSetting("g1DayMinRainbowCount", value)}
+                                        min={1}
+                                        max={5}
+                                        step={1}
+                                        label="Minimum Rainbows to Train Over G1"
+                                        showValue={true}
+                                        showLabels={true}
+                                        description="The best training must have at least this many rainbow supports to train instead of racing the G1."
+                                    />
+                                </View>
+                            )}
                         </Section>
 
                         <Section label="Strategy">

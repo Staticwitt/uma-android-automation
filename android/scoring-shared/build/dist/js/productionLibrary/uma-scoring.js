@@ -13,6 +13,7 @@
   'use strict';
   //region block: imports
   var imul = Math.imul;
+  var startsWith = kotlin_kotlin.$_$.e1;
   var coerceAtLeast = kotlin_kotlin.$_$.b1;
   var VOID = kotlin_kotlin.$_$.a;
   var Unit_instance = kotlin_kotlin.$_$.e;
@@ -25,24 +26,24 @@
   var numberToInt = kotlin_kotlin.$_$.x;
   var equals = kotlin_kotlin.$_$.o;
   var listOf = kotlin_kotlin.$_$.j;
-  var ensureNotNull = kotlin_kotlin.$_$.h1;
-  var to = kotlin_kotlin.$_$.j1;
+  var ensureNotNull = kotlin_kotlin.$_$.i1;
+  var to = kotlin_kotlin.$_$.k1;
   var mapOf = kotlin_kotlin.$_$.l;
   var isNumber = kotlin_kotlin.$_$.v;
   var numberToDouble = kotlin_kotlin.$_$.w;
-  var isFinite = kotlin_kotlin.$_$.i1;
+  var isFinite = kotlin_kotlin.$_$.j1;
   var collectionSizeOrDefault = kotlin_kotlin.$_$.f;
   var mapCapacity = kotlin_kotlin.$_$.k;
   var LinkedHashMap_init_$Create$ = kotlin_kotlin.$_$.b;
   var protoOf = kotlin_kotlin.$_$.y;
   var initMetadataForCompanion = kotlin_kotlin.$_$.u;
-  var THROW_IAE = kotlin_kotlin.$_$.g1;
+  var THROW_IAE = kotlin_kotlin.$_$.h1;
   var enumEntries = kotlin_kotlin.$_$.m;
-  var Enum = kotlin_kotlin.$_$.e1;
+  var Enum = kotlin_kotlin.$_$.f1;
   var defineProp = kotlin_kotlin.$_$.n;
   var initMetadataForClass = kotlin_kotlin.$_$.t;
   var getBooleanHashCode = kotlin_kotlin.$_$.p;
-  var THROW_CCE = kotlin_kotlin.$_$.f1;
+  var THROW_CCE = kotlin_kotlin.$_$.g1;
   var getStringHashCode = kotlin_kotlin.$_$.r;
   var getNumberHashCode = kotlin_kotlin.$_$.q;
   var hashCode = kotlin_kotlin.$_$.s;
@@ -60,23 +61,30 @@
   initMetadataForClass(TrainingOption, 'TrainingOption');
   initMetadataForClass(TrainingConfig, 'TrainingConfig');
   initMetadataForClass(TrainingScoringConstants, 'TrainingScoringConstants', TrainingScoringConstants);
+  initMetadataForClass(RawScoreBreakdown, 'RawScoreBreakdown');
   //endregion
   function getScenarioStatCap(scenario, statName) {
-    if (scenario.startsWith('URA')) {
-      return 1400;
+    var tmp;
+    if (startsWith(scenario, 'URA')) {
+      tmp = 1400;
     } else if (scenario === 'Unity Cup') {
-      return equals(statName, StatName_WIT_getInstance()) ? 1800 : 1300;
+      tmp = statName.equals(StatName_WIT_getInstance()) ? 1800 : 1300;
     } else if (scenario === 'Trackblazer') {
-      if (equals(statName, StatName_STAMINA_getInstance())) {
-        return 1900;
-      } else if (equals(statName, StatName_WIT_getInstance())) {
-        return 1500;
-      } else {
-        return 1200;
+      switch (statName.z_1) {
+        case 1:
+          tmp = 1900;
+          break;
+        case 4:
+          tmp = 1500;
+          break;
+        default:
+          tmp = 1200;
+          break;
       }
     } else {
-      return 1200;
+      tmp = 1200;
     }
+    return tmp;
   }
   function getCurrentStatCap(statName, config) {
     return getScenarioStatCap(config.scenario, statName);
@@ -115,75 +123,95 @@
   function calculateStatEfficiencyScore(config, training) {
     var score = 0.0;
     var activePriority = config.currentDate.isSummer ? config.summerTrainingStatPriority : config.statPrioritization;
-    var _iterator__ex2g4s = get_entries().b();
-    while (_iterator__ex2g4s.c()) {
-      var statName = _iterator__ex2g4s.d();
-      var tmp0_elvis_lhs = config.currentStats.s(statName);
+    var _iterator__ex2g4s = get_entries().d();
+    while (_iterator__ex2g4s.e()) {
+      var statName = _iterator__ex2g4s.f();
+      var tmp0_elvis_lhs = config.currentStats.u(statName);
       var currentStat = tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs;
-      var tmp1_elvis_lhs = config.statTargets.s(statName);
+      var tmp1_elvis_lhs = config.statTargets.u(statName);
       var targetStat = tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs;
-      var tmp2_elvis_lhs = training.statGains.s(statName);
+      var tmp2_elvis_lhs = training.statGains.u(statName);
       var statGain = tmp2_elvis_lhs == null ? 0 : tmp2_elvis_lhs;
       if (statGain > 0 && targetStat > 0) {
-        var priorityIndex = activePriority.j(statName);
-        var completionPercent = currentStat / targetStat * 100.0;
+        var priorityIndex = activePriority.l(statName);
+        // Inline function 'kotlin.comparisons.minOf' call
+        var tmp = Math.min(currentStat, 1200);
+        // Inline function 'kotlin.comparisons.maxOf' call
+        var b = currentStat - 1200;
+        var effectiveCurrent = tmp + Math.max(0.0, b) * 0.5;
+        // Inline function 'kotlin.comparisons.minOf' call
+        var tmp_0 = Math.min(targetStat, 1200);
+        // Inline function 'kotlin.comparisons.maxOf' call
+        var b_0 = targetStat - 1200;
+        var effectiveTarget = tmp_0 + Math.max(0.0, b_0) * 0.5;
+        var completionPercent = effectiveTarget > 0.0 ? effectiveCurrent / effectiveTarget * 100.0 : 100.0;
         // Inline function 'kotlin.run' call
         var breakpoints = config.scoring.ratioBreakpoints;
         var multipliers = config.scoring.ratioMultipliers;
-        var tmp$ret$1;
+        var tmp$ret$5;
         $l$block: {
           // Inline function 'kotlin.collections.indexOfFirst' call
           var index = 0;
-          var _iterator__ex2g4s_0 = breakpoints.b();
-          while (_iterator__ex2g4s_0.c()) {
-            var item = _iterator__ex2g4s_0.d();
+          var _iterator__ex2g4s_0 = breakpoints.d();
+          while (_iterator__ex2g4s_0.e()) {
+            var item = _iterator__ex2g4s_0.f();
             if (completionPercent < item) {
-              tmp$ret$1 = index;
+              tmp$ret$5 = index;
               break $l$block;
             }
             index = index + 1 | 0;
           }
-          tmp$ret$1 = -1;
+          tmp$ret$5 = -1;
         }
-        var bucket = tmp$ret$1;
-        var ratioMultiplier = bucket === -1 ? last(multipliers) : multipliers.f(bucket);
-        var tmp;
-        if (!(priorityIndex === -1)) {
-          tmp = 1.0 + config.scoring.priorityCoefficient * (activePriority.g() - priorityIndex | 0);
-        } else {
-          tmp = 1.0;
-        }
-        var priorityMultiplier = tmp;
-        var tmp_0;
-        if (config.enableTrainingLevelWeighting && statName.equals(training.name) && !(priorityIndex === -1)) {
-          tmp_0 = levelBoostMultiplier(priorityIndex + 1 | 0, training.trainingLevel, config.scoring);
-        } else {
-          tmp_0 = 1.0;
-        }
-        var levelMultiplier = tmp_0;
-        var isMainStat = training.name.equals(statName);
+        var bucket = tmp$ret$5;
+        var ratioMultiplier = bucket === -1 ? last(multipliers) : multipliers.h(bucket);
         var tmp_1;
+        if (!(priorityIndex === -1)) {
+          tmp_1 = 1.0 + config.scoring.priorityCoefficient * (activePriority.i() - priorityIndex | 0);
+        } else {
+          tmp_1 = 1.0;
+        }
+        var priorityMultiplier = tmp_1;
         var tmp_2;
+        if (config.enableTrainingLevelWeighting && statName.equals(training.name) && !(priorityIndex === -1)) {
+          tmp_2 = levelBoostMultiplier(priorityIndex + 1 | 0, training.trainingLevel, config.scoring);
+        } else {
+          tmp_2 = 1.0;
+        }
+        var levelMultiplier = tmp_2;
+        var isMainStat = training.name.equals(statName);
+        var tmp_3;
+        var tmp_4;
         if (isMainStat) {
-          var tmp3_elvis_lhs = config.scoring.mainStatThresholds.s(statName);
-          var tmp_3;
+          var tmp3_elvis_lhs = config.scoring.mainStatThresholds.u(statName);
+          var tmp_5;
           if (tmp3_elvis_lhs == null) {
             var message = 'No mainStatThresholds entry for ' + statName.toString();
             throw IllegalStateException_init_$Create$(toString(message));
           } else {
-            tmp_3 = tmp3_elvis_lhs;
+            tmp_5 = tmp3_elvis_lhs;
           }
-          tmp_2 = statGain >= tmp_3;
+          tmp_4 = statGain >= tmp_5;
         } else {
-          tmp_2 = false;
+          tmp_4 = false;
         }
-        if (tmp_2) {
-          tmp_1 = config.scoring.mainStatBonusMagnitude;
+        if (tmp_4) {
+          tmp_3 = config.scoring.mainStatBonusMagnitude;
         } else {
-          tmp_1 = 1.0;
+          tmp_3 = 1.0;
         }
-        var mainStatBonus = tmp_1;
-        var statScore = statGain;
+        var mainStatBonus = tmp_3;
+        var tmp_6;
+        if (currentStat >= 1200) {
+          tmp_6 = statGain * 0.5;
+        } else if ((currentStat + statGain | 0) <= 1200) {
+          tmp_6 = statGain;
+        } else {
+          var belowCap = 1200 - currentStat | 0;
+          tmp_6 = belowCap + (statGain - belowCap | 0) * 0.5;
+        }
+        var effectiveGain = tmp_6;
+        var statScore = effectiveGain;
         statScore = statScore * ratioMultiplier;
         statScore = statScore * priorityMultiplier;
         statScore = statScore * levelMultiplier;
@@ -194,13 +222,13 @@
     return score;
   }
   function calculateRelationshipScore(config, training) {
-    if (training.relationshipBars.e())
+    if (training.relationshipBars.g())
       return 0.0;
     var score = 0.0;
     var maxScore = 0.0;
-    var _iterator__ex2g4s = training.relationshipBars.b();
-    $l$loop: while (_iterator__ex2g4s.c()) {
-      var bar = _iterator__ex2g4s.d();
+    var _iterator__ex2g4s = training.relationshipBars.d();
+    $l$loop: while (_iterator__ex2g4s.e()) {
+      var bar = _iterator__ex2g4s.f();
       if (config.enableBondEfficiencyCapping && isBarFullyMaxed(bar))
         continue $l$loop;
       var baseValue;
@@ -231,7 +259,7 @@
   }
   function calculateMiscScore(config, training) {
     var score = 50.0;
-    var tmp0_elvis_lhs = config.skillHintsPerLocation.s(training.name);
+    var tmp0_elvis_lhs = config.skillHintsPerLocation.u(training.name);
     var numSkillHints = tmp0_elvis_lhs == null ? 0 : tmp0_elvis_lhs;
     score = score + config.scoring.skillHintPerHintScore * numSkillHints;
     if (config.enablePrioritizeSkillHints && numSkillHints > 0) {
@@ -240,12 +268,16 @@
     return coerceIn(score, 0.0, 100.0);
   }
   function calculateRawTrainingScore(config, training) {
-    if (config.blacklist.h(training.name))
-      return 0.0;
+    return rawTrainingScoreComponents(config, training).total;
+  }
+  function rawTrainingScoreComponents(config, training) {
+    var zero = new RawScoreBreakdown(0.0, 0.0, 0.0, 1.0, 1.0, 0.0);
+    if (config.blacklist.j(training.name))
+      return zero;
     var tmp0 = config.currentStats;
     // Inline function 'kotlin.collections.getOrElse' call
     var key = training.name;
-    var tmp0_elvis_lhs = tmp0.s(key);
+    var tmp0_elvis_lhs = tmp0.u(key);
     var tmp;
     if (tmp0_elvis_lhs == null) {
       tmp = 0;
@@ -256,7 +288,7 @@
     var tmp0_0 = training.statGains;
     // Inline function 'kotlin.collections.getOrElse' call
     var key_0 = training.name;
-    var tmp0_elvis_lhs_0 = tmp0_0.s(key_0);
+    var tmp0_elvis_lhs_0 = tmp0_0.u(key_0);
     var tmp_0;
     if (tmp0_elvis_lhs_0 == null) {
       tmp_0 = 0;
@@ -268,24 +300,23 @@
     var finaleBonus = getFinaleStatBonus(config.currentDate.day);
     var effectiveStatCap = (statCap - 100 | 0) - finaleBonus | 0;
     if (currentStat >= statCap)
-      return 0.0;
+      return zero;
     if (config.disableTrainingOnMaxedStat && currentStat >= effectiveStatCap) {
-      var canUseAllowance = training.numRainbow > 0 && !config.statsTrainedOverBuffer.h(training.name);
+      var canUseAllowance = training.numRainbow > 0 && !config.statsTrainedOverBuffer.j(training.name);
       if (!canUseAllowance)
-        return 0.0;
+        return zero;
     }
     if (potentialStat >= effectiveStatCap) {
-      var canUseAllowance_0 = training.numRainbow > 0 && !config.statsTrainedOverBuffer.h(training.name);
+      var canUseAllowance_0 = training.numRainbow > 0 && !config.statsTrainedOverBuffer.j(training.name);
       if (!canUseAllowance_0)
-        return 0.0;
+        return zero;
     }
-    var totalScore = 0.0;
     var statScore = calculateStatEfficiencyScore(config, training);
     var relationshipScore = calculateRelationshipScore(config, training);
     var miscScore = calculateMiscScore(config, training);
     var tmp_1;
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!training.relationshipBars.e()) {
+    if (!training.relationshipBars.g()) {
       tmp_1 = config.scoring.statWeightWithBars;
     } else {
       tmp_1 = config.scoring.statWeightWithoutBars;
@@ -293,37 +324,39 @@
     var statWeight = tmp_1;
     var tmp_2;
     // Inline function 'kotlin.collections.isNotEmpty' call
-    if (!training.relationshipBars.e()) {
+    if (!training.relationshipBars.g()) {
       tmp_2 = config.scoring.relationshipWeightWithBars;
     } else {
       tmp_2 = 0.0;
     }
     var relationshipWeight = tmp_2;
     var miscWeight = config.scoring.miscWeight;
-    totalScore = totalScore + statScore * statWeight;
-    totalScore = totalScore + relationshipScore * relationshipWeight;
-    totalScore = totalScore + miscScore * miscWeight;
+    var statScoreWeighted = statScore * statWeight;
+    var relationshipScoreWeighted = relationshipScore * relationshipWeight;
+    var miscScoreWeighted = miscScore * miscWeight;
+    var totalScore = statScoreWeighted + relationshipScoreWeighted + miscScoreWeighted;
     var tmp_3;
-    if (training.numRainbow > 0 && config.currentDate.year.a1(DateYear_JUNIOR_getInstance()) > 0) {
+    if (training.numRainbow > 0 && config.currentDate.year.c1(DateYear_JUNIOR_getInstance()) > 0) {
       tmp_3 = config.enableRainbowTrainingBonus ? config.scoring.rainbowMultiplierEnabled : config.scoring.rainbowMultiplierDisabled;
     } else {
       tmp_3 = 1.0;
     }
     var rainbowMultiplier = tmp_3;
     totalScore = totalScore * rainbowMultiplier;
+    var anticipatoryMultiplier = 1.0;
     var tmp_4;
-    if (config.enablePrioritizeNearMaxFriendship && config.currentDate.year.a1(DateYear_JUNIOR_getInstance()) > 0 && training.numRainbow === 0) {
+    if (config.enablePrioritizeNearMaxFriendship && config.currentDate.year.c1(DateYear_JUNIOR_getInstance()) > 0 && training.numRainbow === 0) {
       // Inline function 'kotlin.collections.isNotEmpty' call
-      tmp_4 = !training.relationshipBars.e();
+      tmp_4 = !training.relationshipBars.g();
     } else {
       tmp_4 = false;
     }
     if (tmp_4) {
       var contributions = 0.0;
       var qualifyingBars = 0;
-      var _iterator__ex2g4s = training.relationshipBars.b();
-      while (_iterator__ex2g4s.c()) {
-        var bar = _iterator__ex2g4s.d();
+      var _iterator__ex2g4s = training.relationshipBars.d();
+      while (_iterator__ex2g4s.e()) {
+        var bar = _iterator__ex2g4s.f();
         if ((bar.dominantColor === 'green' || bar.dominantColor === 'blue') && bar.fillPercent > config.scoring.anticipatoryMinFillPercent) {
           contributions = contributions + bar.fillPercent / 100.0;
           qualifyingBars = qualifyingBars + 1 | 0;
@@ -333,11 +366,11 @@
         var tmp0_1 = config.scoring.anticipatoryCap;
         // Inline function 'kotlin.comparisons.minOf' call
         var b = config.scoring.anticipatoryCoefficient * contributions;
-        var anticipatoryMultiplier = 1.0 + Math.min(tmp0_1, b);
+        anticipatoryMultiplier = 1.0 + Math.min(tmp0_1, b);
         totalScore = totalScore * anticipatoryMultiplier;
       }
     }
-    return coerceAtLeast_0(totalScore, 0.0);
+    return new RawScoreBreakdown(statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, coerceAtLeast_0(totalScore, 0.0));
   }
   function estimateFailureChanceFromEnergy(currentEnergy, statName) {
     statName = statName === VOID ? null : statName;
@@ -355,13 +388,13 @@
   }
   function scoringConstantsFromMap(settings, defaults) {
     defaults = defaults === VOID ? new TrainingScoringConstants() : defaults;
-    return defaults.copy(VOID, listOf([scoringConstantsFromMap$d(settings, 'ratioMultiplier1', defaults.ratioMultipliers.f(0)), scoringConstantsFromMap$d(settings, 'ratioMultiplier2', defaults.ratioMultipliers.f(1)), scoringConstantsFromMap$d(settings, 'ratioMultiplier3', defaults.ratioMultipliers.f(2)), scoringConstantsFromMap$d(settings, 'ratioMultiplier4', defaults.ratioMultipliers.f(3)), scoringConstantsFromMap$d(settings, 'ratioMultiplier5', defaults.ratioMultipliers.f(4)), scoringConstantsFromMap$d(settings, 'ratioMultiplier6', defaults.ratioMultipliers.f(5)), scoringConstantsFromMap$d(settings, 'ratioMultiplier7', defaults.ratioMultipliers.f(6))]), scoringConstantsFromMap$d(settings, 'priorityCoefficient', defaults.priorityCoefficient), scoringConstantsFromMap$d(settings, 'levelBoostRank1Factor', defaults.levelBoostRank1Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank2Factor', defaults.levelBoostRank2Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank3Factor', defaults.levelBoostRank3Factor), mapOf([to(StatName_SPEED_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdSpeed', ensureNotNull(defaults.mainStatThresholds.s(StatName_SPEED_getInstance())))), to(StatName_STAMINA_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdStamina', ensureNotNull(defaults.mainStatThresholds.s(StatName_STAMINA_getInstance())))), to(StatName_POWER_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdPower', ensureNotNull(defaults.mainStatThresholds.s(StatName_POWER_getInstance())))), to(StatName_GUTS_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdGuts', ensureNotNull(defaults.mainStatThresholds.s(StatName_GUTS_getInstance())))), to(StatName_WIT_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdWit', ensureNotNull(defaults.mainStatThresholds.s(StatName_WIT_getInstance()))))]), scoringConstantsFromMap$d(settings, 'mainStatBonusMagnitude', defaults.mainStatBonusMagnitude), scoringConstantsFromMap$d(settings, 'relationshipOrangeValue', defaults.relationshipOrangeValue), scoringConstantsFromMap$d(settings, 'relationshipGreenValue', defaults.relationshipGreenValue), scoringConstantsFromMap$d(settings, 'relationshipBlueValue', defaults.relationshipBlueValue), scoringConstantsFromMap$d(settings, 'relationshipDiminishingFactor', defaults.relationshipDiminishingFactor), scoringConstantsFromMap$d(settings, 'relationshipEarlyGameBonus', defaults.relationshipEarlyGameBonus), scoringConstantsFromMap$d(settings, 'relationshipTrainerSupportBonus', defaults.relationshipTrainerSupportBonus), scoringConstantsFromMap$d(settings, 'skillHintPerHintScore', defaults.skillHintPerHintScore), scoringConstantsFromMap$d(settings, 'skillHintOverrideScore', defaults.skillHintOverrideScore), scoringConstantsFromMap$d(settings, 'statWeightWithBars', defaults.statWeightWithBars), scoringConstantsFromMap$d(settings, 'statWeightWithoutBars', defaults.statWeightWithoutBars), scoringConstantsFromMap$d(settings, 'relationshipWeightWithBars', defaults.relationshipWeightWithBars), scoringConstantsFromMap$d(settings, 'miscWeight', defaults.miscWeight), scoringConstantsFromMap$d(settings, 'juniorEarlyGameFlatBonus', defaults.juniorEarlyGameFlatBonus), scoringConstantsFromMap$d(settings, 'relationshipScale', defaults.relationshipScale), scoringConstantsFromMap$d(settings, 'rainbowMultiplierEnabled', defaults.rainbowMultiplierEnabled), scoringConstantsFromMap$d(settings, 'rainbowMultiplierDisabled', defaults.rainbowMultiplierDisabled), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceBase', defaults.rainbowPerInstanceBase), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceDecay', defaults.rainbowPerInstanceDecay), scoringConstantsFromMap$d(settings, 'anticipatoryMinFillPercent', defaults.anticipatoryMinFillPercent), scoringConstantsFromMap$d(settings, 'anticipatoryCoefficient', defaults.anticipatoryCoefficient), scoringConstantsFromMap$d(settings, 'anticipatoryCap', defaults.anticipatoryCap));
+    return defaults.copy(VOID, listOf([scoringConstantsFromMap$d(settings, 'ratioMultiplier1', defaults.ratioMultipliers.h(0)), scoringConstantsFromMap$d(settings, 'ratioMultiplier2', defaults.ratioMultipliers.h(1)), scoringConstantsFromMap$d(settings, 'ratioMultiplier3', defaults.ratioMultipliers.h(2)), scoringConstantsFromMap$d(settings, 'ratioMultiplier4', defaults.ratioMultipliers.h(3)), scoringConstantsFromMap$d(settings, 'ratioMultiplier5', defaults.ratioMultipliers.h(4)), scoringConstantsFromMap$d(settings, 'ratioMultiplier6', defaults.ratioMultipliers.h(5)), scoringConstantsFromMap$d(settings, 'ratioMultiplier7', defaults.ratioMultipliers.h(6))]), scoringConstantsFromMap$d(settings, 'priorityCoefficient', defaults.priorityCoefficient), scoringConstantsFromMap$d(settings, 'levelBoostRank1Factor', defaults.levelBoostRank1Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank2Factor', defaults.levelBoostRank2Factor), scoringConstantsFromMap$d(settings, 'levelBoostRank3Factor', defaults.levelBoostRank3Factor), mapOf([to(StatName_SPEED_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdSpeed', ensureNotNull(defaults.mainStatThresholds.u(StatName_SPEED_getInstance())))), to(StatName_STAMINA_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdStamina', ensureNotNull(defaults.mainStatThresholds.u(StatName_STAMINA_getInstance())))), to(StatName_POWER_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdPower', ensureNotNull(defaults.mainStatThresholds.u(StatName_POWER_getInstance())))), to(StatName_GUTS_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdGuts', ensureNotNull(defaults.mainStatThresholds.u(StatName_GUTS_getInstance())))), to(StatName_WIT_getInstance(), scoringConstantsFromMap$i(settings, 'mainStatThresholdWit', ensureNotNull(defaults.mainStatThresholds.u(StatName_WIT_getInstance()))))]), scoringConstantsFromMap$d(settings, 'mainStatBonusMagnitude', defaults.mainStatBonusMagnitude), scoringConstantsFromMap$d(settings, 'relationshipOrangeValue', defaults.relationshipOrangeValue), scoringConstantsFromMap$d(settings, 'relationshipGreenValue', defaults.relationshipGreenValue), scoringConstantsFromMap$d(settings, 'relationshipBlueValue', defaults.relationshipBlueValue), scoringConstantsFromMap$d(settings, 'relationshipDiminishingFactor', defaults.relationshipDiminishingFactor), scoringConstantsFromMap$d(settings, 'relationshipEarlyGameBonus', defaults.relationshipEarlyGameBonus), scoringConstantsFromMap$d(settings, 'relationshipTrainerSupportBonus', defaults.relationshipTrainerSupportBonus), scoringConstantsFromMap$d(settings, 'skillHintPerHintScore', defaults.skillHintPerHintScore), scoringConstantsFromMap$d(settings, 'skillHintOverrideScore', defaults.skillHintOverrideScore), scoringConstantsFromMap$d(settings, 'statWeightWithBars', defaults.statWeightWithBars), scoringConstantsFromMap$d(settings, 'statWeightWithoutBars', defaults.statWeightWithoutBars), scoringConstantsFromMap$d(settings, 'relationshipWeightWithBars', defaults.relationshipWeightWithBars), scoringConstantsFromMap$d(settings, 'miscWeight', defaults.miscWeight), scoringConstantsFromMap$d(settings, 'juniorEarlyGameFlatBonus', defaults.juniorEarlyGameFlatBonus), scoringConstantsFromMap$d(settings, 'relationshipScale', defaults.relationshipScale), scoringConstantsFromMap$d(settings, 'rainbowMultiplierEnabled', defaults.rainbowMultiplierEnabled), scoringConstantsFromMap$d(settings, 'rainbowMultiplierDisabled', defaults.rainbowMultiplierDisabled), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceBase', defaults.rainbowPerInstanceBase), scoringConstantsFromMap$d(settings, 'rainbowPerInstanceDecay', defaults.rainbowPerInstanceDecay), scoringConstantsFromMap$d(settings, 'anticipatoryMinFillPercent', defaults.anticipatoryMinFillPercent), scoringConstantsFromMap$d(settings, 'anticipatoryCoefficient', defaults.anticipatoryCoefficient), scoringConstantsFromMap$d(settings, 'anticipatoryCap', defaults.anticipatoryCap), scoringConstantsFromMap$d(settings, 'unityFillBaseBonus', defaults.unityFillBaseBonus), scoringConstantsFromMap$d(settings, 'unityFillPerGaugeBonus', defaults.unityFillPerGaugeBonus), scoringConstantsFromMap$d(settings, 'unityBurstBaseBonus', defaults.unityBurstBaseBonus), scoringConstantsFromMap$d(settings, 'unityBurstPerGaugeBonus', defaults.unityBurstPerGaugeBonus), scoringConstantsFromMap$d(settings, 'unityFillEnergyPenaltyPerGauge', defaults.unityFillEnergyPenaltyPerGauge), scoringConstantsFromMap$d(settings, 'unityBurstEnergyPenaltyPerGauge', defaults.unityBurstEnergyPenaltyPerGauge));
   }
   function isBarFullyMaxed(bar) {
     return bar.dominantColor === 'orange' && bar.fillPercent >= 99.9;
   }
   function scoringConstantsFromMap$d($settings, key, fallback) {
-    var tmp = $settings.s(key);
+    var tmp = $settings.u(key);
     var tmp0_safe_receiver = isNumber(tmp) ? tmp : null;
     var tmp1_safe_receiver = tmp0_safe_receiver == null ? null : numberToDouble(tmp0_safe_receiver);
     var tmp_0;
@@ -381,7 +414,7 @@
     return tmp2_elvis_lhs == null ? fallback : tmp2_elvis_lhs;
   }
   function scoringConstantsFromMap$i($settings, key, fallback) {
-    var tmp = $settings.s(key);
+    var tmp = $settings.u(key);
     var tmp0_safe_receiver = isNumber(tmp) ? tmp : null;
     var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : numberToInt(tmp0_safe_receiver);
     return tmp1_elvis_lhs == null ? fallback : tmp1_elvis_lhs;
@@ -399,19 +432,19 @@
     var capacity = coerceAtLeast(mapCapacity(collectionSizeOrDefault(this_0, 10)), 16);
     // Inline function 'kotlin.collections.associateByTo' call
     var destination = LinkedHashMap_init_$Create$(capacity);
-    var _iterator__ex2g4s = this_0.b();
-    while (_iterator__ex2g4s.c()) {
-      var element = _iterator__ex2g4s.d();
-      var tmp$ret$0 = element.w_1;
-      destination.b2(tmp$ret$0, element);
+    var _iterator__ex2g4s = this_0.d();
+    while (_iterator__ex2g4s.e()) {
+      var element = _iterator__ex2g4s.f();
+      var tmp$ret$0 = element.y_1;
+      destination.d2(tmp$ret$0, element);
     }
-    tmp.m7_1 = destination;
+    tmp.o7_1 = destination;
   }
   protoOf(Companion).fromName = function (value) {
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$1 = value.toUpperCase();
-    return this.m7_1.s(tmp$ret$1);
+    return this.o7_1.u(tmp$ret$1);
   };
   var Companion_instance;
   function Companion_getInstance() {
@@ -473,35 +506,35 @@
     var capacity = coerceAtLeast(mapCapacity(collectionSizeOrDefault(this_0, 10)), 16);
     // Inline function 'kotlin.collections.associateByTo' call
     var destination = LinkedHashMap_init_$Create$(capacity);
-    var _iterator__ex2g4s = this_0.b();
-    while (_iterator__ex2g4s.c()) {
-      var element = _iterator__ex2g4s.d();
-      var tmp$ret$0 = element.w_1;
-      destination.b2(tmp$ret$0, element);
+    var _iterator__ex2g4s = this_0.d();
+    while (_iterator__ex2g4s.e()) {
+      var element = _iterator__ex2g4s.f();
+      var tmp$ret$0 = element.y_1;
+      destination.d2(tmp$ret$0, element);
     }
-    tmp.p7_1 = destination;
+    tmp.r7_1 = destination;
     var tmp_0 = this;
     // Inline function 'kotlin.collections.associateBy' call
     var this_1 = get_entries_0();
     var capacity_0 = coerceAtLeast(mapCapacity(collectionSizeOrDefault(this_1, 10)), 16);
     // Inline function 'kotlin.collections.associateByTo' call
     var destination_0 = LinkedHashMap_init_$Create$(capacity_0);
-    var _iterator__ex2g4s_0 = this_1.b();
-    while (_iterator__ex2g4s_0.c()) {
-      var element_0 = _iterator__ex2g4s_0.d();
-      var tmp$ret$3 = element_0.x_1;
-      destination_0.b2(tmp$ret$3, element_0);
+    var _iterator__ex2g4s_0 = this_1.d();
+    while (_iterator__ex2g4s_0.e()) {
+      var element_0 = _iterator__ex2g4s_0.f();
+      var tmp$ret$3 = element_0.z_1;
+      destination_0.d2(tmp$ret$3, element_0);
     }
-    tmp_0.q7_1 = destination_0;
+    tmp_0.s7_1 = destination_0;
   }
   protoOf(Companion_0).fromName = function (value) {
     // Inline function 'kotlin.text.uppercase' call
     // Inline function 'kotlin.js.asDynamic' call
     var tmp$ret$1 = value.toUpperCase();
-    return this.p7_1.s(tmp$ret$1);
+    return this.r7_1.u(tmp$ret$1);
   };
   protoOf(Companion_0).fromOrdinal = function (ordinal) {
-    return this.q7_1.s(ordinal);
+    return this.s7_1.u(ordinal);
   };
   var Companion_instance_0;
   function Companion_getInstance_0() {
@@ -547,7 +580,7 @@
     Enum.call(this, name, ordinal);
     this.longName = longName;
   }
-  protoOf(DateYear).t7 = function () {
+  protoOf(DateYear).v7 = function () {
     return this.longName;
   };
   function GameDateSnapshot(year, day, bIsPreDebut, isSummer) {
@@ -559,22 +592,10 @@
     this.bIsPreDebut = bIsPreDebut;
     this.isSummer = isSummer;
   }
-  protoOf(GameDateSnapshot).u7 = function () {
-    return this.year;
-  };
-  protoOf(GameDateSnapshot).v7 = function () {
-    return this.day;
-  };
   protoOf(GameDateSnapshot).w7 = function () {
-    return this.bIsPreDebut;
+    return this.year;
   };
   protoOf(GameDateSnapshot).x7 = function () {
-    return this.isSummer;
-  };
-  protoOf(GameDateSnapshot).a7 = function () {
-    return this.year;
-  };
-  protoOf(GameDateSnapshot).b7 = function () {
     return this.day;
   };
   protoOf(GameDateSnapshot).y7 = function () {
@@ -583,7 +604,19 @@
   protoOf(GameDateSnapshot).z7 = function () {
     return this.isSummer;
   };
-  protoOf(GameDateSnapshot).a8 = function (year, day, bIsPreDebut, isSummer) {
+  protoOf(GameDateSnapshot).c7 = function () {
+    return this.year;
+  };
+  protoOf(GameDateSnapshot).d7 = function () {
+    return this.day;
+  };
+  protoOf(GameDateSnapshot).a8 = function () {
+    return this.bIsPreDebut;
+  };
+  protoOf(GameDateSnapshot).b8 = function () {
+    return this.isSummer;
+  };
+  protoOf(GameDateSnapshot).c8 = function (year, day, bIsPreDebut, isSummer) {
     return new GameDateSnapshot(year, day, bIsPreDebut, isSummer);
   };
   protoOf(GameDateSnapshot).copy = function (year, day, bIsPreDebut, isSummer, $super) {
@@ -591,7 +624,7 @@
     day = day === VOID ? this.day : day;
     bIsPreDebut = bIsPreDebut === VOID ? this.bIsPreDebut : bIsPreDebut;
     isSummer = isSummer === VOID ? this.isSummer : isSummer;
-    return $super === VOID ? this.a8(year, day, bIsPreDebut, isSummer) : $super.a8.call(this, year, day, bIsPreDebut, isSummer);
+    return $super === VOID ? this.c8(year, day, bIsPreDebut, isSummer) : $super.c8.call(this, year, day, bIsPreDebut, isSummer);
   };
   protoOf(GameDateSnapshot).toString = function () {
     return 'GameDateSnapshot(year=' + this.year.toString() + ', day=' + this.day + ', bIsPreDebut=' + this.bIsPreDebut + ', isSummer=' + this.isSummer + ')';
@@ -625,32 +658,32 @@
     this.fillPercent = fillPercent;
     this.isTrainerSupport = isTrainerSupport;
   }
-  protoOf(BarFillResult).b8 = function () {
-    return this.dominantColor;
-  };
-  protoOf(BarFillResult).c8 = function () {
-    return this.fillPercent;
-  };
   protoOf(BarFillResult).d8 = function () {
-    return this.isTrainerSupport;
-  };
-  protoOf(BarFillResult).a7 = function () {
     return this.dominantColor;
   };
-  protoOf(BarFillResult).b7 = function () {
+  protoOf(BarFillResult).e8 = function () {
     return this.fillPercent;
   };
-  protoOf(BarFillResult).y7 = function () {
+  protoOf(BarFillResult).f8 = function () {
     return this.isTrainerSupport;
   };
-  protoOf(BarFillResult).e8 = function (dominantColor, fillPercent, isTrainerSupport) {
+  protoOf(BarFillResult).c7 = function () {
+    return this.dominantColor;
+  };
+  protoOf(BarFillResult).d7 = function () {
+    return this.fillPercent;
+  };
+  protoOf(BarFillResult).a8 = function () {
+    return this.isTrainerSupport;
+  };
+  protoOf(BarFillResult).g8 = function (dominantColor, fillPercent, isTrainerSupport) {
     return new BarFillResult(dominantColor, fillPercent, isTrainerSupport);
   };
   protoOf(BarFillResult).copy = function (dominantColor, fillPercent, isTrainerSupport, $super) {
     dominantColor = dominantColor === VOID ? this.dominantColor : dominantColor;
     fillPercent = fillPercent === VOID ? this.fillPercent : fillPercent;
     isTrainerSupport = isTrainerSupport === VOID ? this.isTrainerSupport : isTrainerSupport;
-    return $super === VOID ? this.e8(dominantColor, fillPercent, isTrainerSupport) : $super.e8.call(this, dominantColor, fillPercent, isTrainerSupport);
+    return $super === VOID ? this.g8(dominantColor, fillPercent, isTrainerSupport) : $super.g8.call(this, dominantColor, fillPercent, isTrainerSupport);
   };
   protoOf(BarFillResult).toString = function () {
     return 'BarFillResult(dominantColor=' + this.dominantColor + ', fillPercent=' + this.fillPercent + ', isTrainerSupport=' + this.isTrainerSupport + ')';
@@ -685,34 +718,16 @@
     this.numSkillHints = numSkillHints;
     this.trainingLevel = trainingLevel;
   }
-  protoOf(TrainingOption).y = function () {
+  protoOf(TrainingOption).a1 = function () {
     return this.name;
-  };
-  protoOf(TrainingOption).f8 = function () {
-    return this.statGains;
-  };
-  protoOf(TrainingOption).g8 = function () {
-    return this.relationshipBars;
   };
   protoOf(TrainingOption).h8 = function () {
-    return this.numRainbow;
-  };
-  protoOf(TrainingOption).i8 = function () {
-    return this.numSkillHints;
-  };
-  protoOf(TrainingOption).j8 = function () {
-    return this.trainingLevel;
-  };
-  protoOf(TrainingOption).a7 = function () {
-    return this.name;
-  };
-  protoOf(TrainingOption).b7 = function () {
     return this.statGains;
   };
-  protoOf(TrainingOption).y7 = function () {
+  protoOf(TrainingOption).i8 = function () {
     return this.relationshipBars;
   };
-  protoOf(TrainingOption).z7 = function () {
+  protoOf(TrainingOption).j8 = function () {
     return this.numRainbow;
   };
   protoOf(TrainingOption).k8 = function () {
@@ -721,7 +736,25 @@
   protoOf(TrainingOption).l8 = function () {
     return this.trainingLevel;
   };
-  protoOf(TrainingOption).m8 = function (name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel) {
+  protoOf(TrainingOption).c7 = function () {
+    return this.name;
+  };
+  protoOf(TrainingOption).d7 = function () {
+    return this.statGains;
+  };
+  protoOf(TrainingOption).a8 = function () {
+    return this.relationshipBars;
+  };
+  protoOf(TrainingOption).b8 = function () {
+    return this.numRainbow;
+  };
+  protoOf(TrainingOption).m8 = function () {
+    return this.numSkillHints;
+  };
+  protoOf(TrainingOption).n8 = function () {
+    return this.trainingLevel;
+  };
+  protoOf(TrainingOption).o8 = function (name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel) {
     return new TrainingOption(name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel);
   };
   protoOf(TrainingOption).copy = function (name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel, $super) {
@@ -731,7 +764,7 @@
     numRainbow = numRainbow === VOID ? this.numRainbow : numRainbow;
     numSkillHints = numSkillHints === VOID ? this.numSkillHints : numSkillHints;
     trainingLevel = trainingLevel === VOID ? this.trainingLevel : trainingLevel;
-    return $super === VOID ? this.m8(name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel) : $super.m8.call(this, name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel);
+    return $super === VOID ? this.o8(name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel) : $super.o8.call(this, name, statGains, relationshipBars, numRainbow, numSkillHints, trainingLevel);
   };
   protoOf(TrainingOption).toString = function () {
     return 'TrainingOption(name=' + this.name.toString() + ', statGains=' + toString(this.statGains) + ', relationshipBars=' + toString(this.relationshipBars) + ', numRainbow=' + this.numRainbow + ', numSkillHints=' + this.numSkillHints + ', trainingLevel=' + this.trainingLevel + ')';
@@ -774,10 +807,10 @@
       var this_0 = get_entries();
       var result = LinkedHashMap_init_$Create$(coerceAtLeast(mapCapacity(collectionSizeOrDefault(this_0, 10)), 16));
       // Inline function 'kotlin.collections.associateWithTo' call
-      var _iterator__ex2g4s = this_0.b();
-      while (_iterator__ex2g4s.c()) {
-        var element = _iterator__ex2g4s.d();
-        result.b2(element, 0);
+      var _iterator__ex2g4s = this_0.d();
+      while (_iterator__ex2g4s.e()) {
+        var element = _iterator__ex2g4s.f();
+        result.d2(element, 0);
       }
       tmp = result;
     } else {
@@ -807,103 +840,103 @@
     this.statsTrainedOverBuffer = statsTrainedOverBuffer;
     this.scoring = scoring;
   }
-  protoOf(TrainingConfig).n8 = function () {
-    return this.currentStats;
-  };
-  protoOf(TrainingConfig).o8 = function () {
-    return this.statPrioritization;
-  };
   protoOf(TrainingConfig).p8 = function () {
-    return this.summerTrainingStatPriority;
+    return this.currentStats;
   };
   protoOf(TrainingConfig).q8 = function () {
-    return this.statTargets;
-  };
-  protoOf(TrainingConfig).r8 = function () {
-    return this.currentDate;
-  };
-  protoOf(TrainingConfig).s8 = function () {
-    return this.scenario;
-  };
-  protoOf(TrainingConfig).t8 = function () {
-    return this.enableRainbowTrainingBonus;
-  };
-  protoOf(TrainingConfig).u8 = function () {
-    return this.blacklist;
-  };
-  protoOf(TrainingConfig).v8 = function () {
-    return this.disableTrainingOnMaxedStat;
-  };
-  protoOf(TrainingConfig).w8 = function () {
-    return this.skillHintsPerLocation;
-  };
-  protoOf(TrainingConfig).x8 = function () {
-    return this.enablePrioritizeSkillHints;
-  };
-  protoOf(TrainingConfig).y8 = function () {
-    return this.enableTrainingLevelWeighting;
-  };
-  protoOf(TrainingConfig).z8 = function () {
-    return this.enablePrioritizeNearMaxFriendship;
-  };
-  protoOf(TrainingConfig).a9 = function () {
-    return this.enableBondEfficiencyCapping;
-  };
-  protoOf(TrainingConfig).b9 = function () {
-    return this.statsTrainedOverBuffer;
-  };
-  protoOf(TrainingConfig).c9 = function () {
-    return this.scoring;
-  };
-  protoOf(TrainingConfig).a7 = function () {
-    return this.currentStats;
-  };
-  protoOf(TrainingConfig).b7 = function () {
     return this.statPrioritization;
   };
-  protoOf(TrainingConfig).y7 = function () {
+  protoOf(TrainingConfig).r8 = function () {
     return this.summerTrainingStatPriority;
   };
-  protoOf(TrainingConfig).z7 = function () {
+  protoOf(TrainingConfig).s8 = function () {
     return this.statTargets;
   };
-  protoOf(TrainingConfig).k8 = function () {
+  protoOf(TrainingConfig).t8 = function () {
     return this.currentDate;
   };
-  protoOf(TrainingConfig).l8 = function () {
+  protoOf(TrainingConfig).u8 = function () {
     return this.scenario;
   };
-  protoOf(TrainingConfig).d9 = function () {
+  protoOf(TrainingConfig).v8 = function () {
     return this.enableRainbowTrainingBonus;
   };
-  protoOf(TrainingConfig).e9 = function () {
+  protoOf(TrainingConfig).w8 = function () {
     return this.blacklist;
   };
-  protoOf(TrainingConfig).f9 = function () {
+  protoOf(TrainingConfig).x8 = function () {
     return this.disableTrainingOnMaxedStat;
   };
-  protoOf(TrainingConfig).g9 = function () {
+  protoOf(TrainingConfig).y8 = function () {
     return this.skillHintsPerLocation;
   };
-  protoOf(TrainingConfig).h9 = function () {
+  protoOf(TrainingConfig).z8 = function () {
     return this.enablePrioritizeSkillHints;
   };
-  protoOf(TrainingConfig).i9 = function () {
+  protoOf(TrainingConfig).a9 = function () {
     return this.enableTrainingLevelWeighting;
   };
-  protoOf(TrainingConfig).j9 = function () {
+  protoOf(TrainingConfig).b9 = function () {
     return this.enablePrioritizeNearMaxFriendship;
   };
-  protoOf(TrainingConfig).k9 = function () {
+  protoOf(TrainingConfig).c9 = function () {
     return this.enableBondEfficiencyCapping;
   };
-  protoOf(TrainingConfig).l9 = function () {
+  protoOf(TrainingConfig).d9 = function () {
     return this.statsTrainedOverBuffer;
   };
-  protoOf(TrainingConfig).m9 = function () {
+  protoOf(TrainingConfig).e9 = function () {
     return this.scoring;
   };
-  protoOf(TrainingConfig).n9 = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) {
+  protoOf(TrainingConfig).c7 = function () {
+    return this.currentStats;
+  };
+  protoOf(TrainingConfig).d7 = function () {
+    return this.statPrioritization;
+  };
+  protoOf(TrainingConfig).a8 = function () {
+    return this.summerTrainingStatPriority;
+  };
+  protoOf(TrainingConfig).b8 = function () {
+    return this.statTargets;
+  };
+  protoOf(TrainingConfig).m8 = function () {
+    return this.currentDate;
+  };
+  protoOf(TrainingConfig).n8 = function () {
+    return this.scenario;
+  };
+  protoOf(TrainingConfig).f9 = function () {
+    return this.enableRainbowTrainingBonus;
+  };
+  protoOf(TrainingConfig).g9 = function () {
+    return this.blacklist;
+  };
+  protoOf(TrainingConfig).h9 = function () {
+    return this.disableTrainingOnMaxedStat;
+  };
+  protoOf(TrainingConfig).i9 = function () {
+    return this.skillHintsPerLocation;
+  };
+  protoOf(TrainingConfig).j9 = function () {
+    return this.enablePrioritizeSkillHints;
+  };
+  protoOf(TrainingConfig).k9 = function () {
+    return this.enableTrainingLevelWeighting;
+  };
+  protoOf(TrainingConfig).l9 = function () {
+    return this.enablePrioritizeNearMaxFriendship;
+  };
+  protoOf(TrainingConfig).m9 = function () {
+    return this.enableBondEfficiencyCapping;
+  };
+  protoOf(TrainingConfig).n9 = function () {
+    return this.statsTrainedOverBuffer;
+  };
+  protoOf(TrainingConfig).o9 = function () {
+    return this.scoring;
+  };
+  protoOf(TrainingConfig).p9 = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) {
     return new TrainingConfig(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring);
   };
   protoOf(TrainingConfig).copy = function (currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring, $super) {
@@ -923,7 +956,7 @@
     enableBondEfficiencyCapping = enableBondEfficiencyCapping === VOID ? this.enableBondEfficiencyCapping : enableBondEfficiencyCapping;
     statsTrainedOverBuffer = statsTrainedOverBuffer === VOID ? this.statsTrainedOverBuffer : statsTrainedOverBuffer;
     scoring = scoring === VOID ? this.scoring : scoring;
-    return $super === VOID ? this.n9(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) : $super.n9.call(this, currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring);
+    return $super === VOID ? this.p9(currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring) : $super.p9.call(this, currentStats, statPrioritization, summerTrainingStatPriority, statTargets, currentDate, scenario, enableRainbowTrainingBonus, blacklist, disableTrainingOnMaxedStat, skillHintsPerLocation, enablePrioritizeSkillHints, enableTrainingLevelWeighting, enablePrioritizeNearMaxFriendship, enableBondEfficiencyCapping, statsTrainedOverBuffer, scoring);
   };
   protoOf(TrainingConfig).toString = function () {
     return 'TrainingConfig(currentStats=' + toString(this.currentStats) + ', statPrioritization=' + toString(this.statPrioritization) + ', summerTrainingStatPriority=' + toString(this.summerTrainingStatPriority) + ', statTargets=' + toString(this.statTargets) + ', currentDate=' + this.currentDate.toString() + ', scenario=' + this.scenario + ', enableRainbowTrainingBonus=' + this.enableRainbowTrainingBonus + ', blacklist=' + toString(this.blacklist) + ', disableTrainingOnMaxedStat=' + this.disableTrainingOnMaxedStat + ', skillHintsPerLocation=' + toString(this.skillHintsPerLocation) + ', enablePrioritizeSkillHints=' + this.enablePrioritizeSkillHints + ', enableTrainingLevelWeighting=' + this.enableTrainingLevelWeighting + ', enablePrioritizeNearMaxFriendship=' + this.enablePrioritizeNearMaxFriendship + ', enableBondEfficiencyCapping=' + this.enableBondEfficiencyCapping + ', statsTrainedOverBuffer=' + toString(this.statsTrainedOverBuffer) + ', scoring=' + this.scoring.toString() + ')';
@@ -987,7 +1020,7 @@
       return false;
     return true;
   };
-  function TrainingScoringConstants(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) {
+  function TrainingScoringConstants(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge) {
     ratioBreakpoints = ratioBreakpoints === VOID ? listOf([15.0, 30.0, 45.0, 60.0, 75.0, 90.0]) : ratioBreakpoints;
     ratioMultipliers = ratioMultipliers === VOID ? listOf([5.0, 4.0, 3.0, 2.0, 1.0, 0.5, 0.3]) : ratioMultipliers;
     priorityCoefficient = priorityCoefficient === VOID ? 0.5 : priorityCoefficient;
@@ -1008,7 +1041,7 @@
     statWeightWithoutBars = statWeightWithoutBars === VOID ? 0.7 : statWeightWithoutBars;
     relationshipWeightWithBars = relationshipWeightWithBars === VOID ? 0.1 : relationshipWeightWithBars;
     miscWeight = miscWeight === VOID ? 0.3 : miscWeight;
-    juniorEarlyGameFlatBonus = juniorEarlyGameFlatBonus === VOID ? 200.0 : juniorEarlyGameFlatBonus;
+    juniorEarlyGameFlatBonus = juniorEarlyGameFlatBonus === VOID ? 100.0 : juniorEarlyGameFlatBonus;
     relationshipScale = relationshipScale === VOID ? 1.5 : relationshipScale;
     rainbowMultiplierEnabled = rainbowMultiplierEnabled === VOID ? 2.0 : rainbowMultiplierEnabled;
     rainbowMultiplierDisabled = rainbowMultiplierDisabled === VOID ? 1.5 : rainbowMultiplierDisabled;
@@ -1017,6 +1050,12 @@
     anticipatoryMinFillPercent = anticipatoryMinFillPercent === VOID ? 50.0 : anticipatoryMinFillPercent;
     anticipatoryCoefficient = anticipatoryCoefficient === VOID ? 0.2 : anticipatoryCoefficient;
     anticipatoryCap = anticipatoryCap === VOID ? 0.6 : anticipatoryCap;
+    unityFillBaseBonus = unityFillBaseBonus === VOID ? 60.0 : unityFillBaseBonus;
+    unityFillPerGaugeBonus = unityFillPerGaugeBonus === VOID ? 40.0 : unityFillPerGaugeBonus;
+    unityBurstBaseBonus = unityBurstBaseBonus === VOID ? 800.0 : unityBurstBaseBonus;
+    unityBurstPerGaugeBonus = unityBurstPerGaugeBonus === VOID ? 400.0 : unityBurstPerGaugeBonus;
+    unityFillEnergyPenaltyPerGauge = unityFillEnergyPenaltyPerGauge === VOID ? 0.0 : unityFillEnergyPenaltyPerGauge;
+    unityBurstEnergyPenaltyPerGauge = unityBurstEnergyPenaltyPerGauge === VOID ? 0.0 : unityBurstEnergyPenaltyPerGauge;
     this.ratioBreakpoints = ratioBreakpoints;
     this.ratioMultipliers = ratioMultipliers;
     this.priorityCoefficient = priorityCoefficient;
@@ -1046,190 +1085,232 @@
     this.anticipatoryMinFillPercent = anticipatoryMinFillPercent;
     this.anticipatoryCoefficient = anticipatoryCoefficient;
     this.anticipatoryCap = anticipatoryCap;
+    this.unityFillBaseBonus = unityFillBaseBonus;
+    this.unityFillPerGaugeBonus = unityFillPerGaugeBonus;
+    this.unityBurstBaseBonus = unityBurstBaseBonus;
+    this.unityBurstPerGaugeBonus = unityBurstPerGaugeBonus;
+    this.unityFillEnergyPenaltyPerGauge = unityFillEnergyPenaltyPerGauge;
+    this.unityBurstEnergyPenaltyPerGauge = unityBurstEnergyPenaltyPerGauge;
     // Inline function 'kotlin.require' call
-    if (!(this.ratioMultipliers.g() === (this.ratioBreakpoints.g() + 1 | 0))) {
-      var message = 'ratioMultipliers must have exactly one more entry than ratioBreakpoints (got ' + this.ratioMultipliers.g() + ' multipliers vs ' + this.ratioBreakpoints.g() + ' breakpoints)';
+    if (!(this.ratioMultipliers.i() === (this.ratioBreakpoints.i() + 1 | 0))) {
+      var message = 'ratioMultipliers must have exactly one more entry than ratioBreakpoints (got ' + this.ratioMultipliers.i() + ' multipliers vs ' + this.ratioBreakpoints.i() + ' breakpoints)';
       throw IllegalArgumentException_init_$Create$(toString(message));
     }
   }
-  protoOf(TrainingScoringConstants).o9 = function () {
-    return this.ratioBreakpoints;
-  };
-  protoOf(TrainingScoringConstants).p9 = function () {
-    return this.ratioMultipliers;
-  };
   protoOf(TrainingScoringConstants).q9 = function () {
-    return this.priorityCoefficient;
+    return this.ratioBreakpoints;
   };
   protoOf(TrainingScoringConstants).r9 = function () {
-    return this.levelBoostRank1Factor;
-  };
-  protoOf(TrainingScoringConstants).s9 = function () {
-    return this.levelBoostRank2Factor;
-  };
-  protoOf(TrainingScoringConstants).t9 = function () {
-    return this.levelBoostRank3Factor;
-  };
-  protoOf(TrainingScoringConstants).u9 = function () {
-    return this.mainStatThresholds;
-  };
-  protoOf(TrainingScoringConstants).v9 = function () {
-    return this.mainStatBonusMagnitude;
-  };
-  protoOf(TrainingScoringConstants).w9 = function () {
-    return this.relationshipOrangeValue;
-  };
-  protoOf(TrainingScoringConstants).x9 = function () {
-    return this.relationshipGreenValue;
-  };
-  protoOf(TrainingScoringConstants).y9 = function () {
-    return this.relationshipBlueValue;
-  };
-  protoOf(TrainingScoringConstants).z9 = function () {
-    return this.relationshipDiminishingFactor;
-  };
-  protoOf(TrainingScoringConstants).aa = function () {
-    return this.relationshipEarlyGameBonus;
-  };
-  protoOf(TrainingScoringConstants).ba = function () {
-    return this.relationshipTrainerSupportBonus;
-  };
-  protoOf(TrainingScoringConstants).ca = function () {
-    return this.skillHintPerHintScore;
-  };
-  protoOf(TrainingScoringConstants).da = function () {
-    return this.skillHintOverrideScore;
-  };
-  protoOf(TrainingScoringConstants).ea = function () {
-    return this.statWeightWithBars;
-  };
-  protoOf(TrainingScoringConstants).fa = function () {
-    return this.statWeightWithoutBars;
-  };
-  protoOf(TrainingScoringConstants).ga = function () {
-    return this.relationshipWeightWithBars;
-  };
-  protoOf(TrainingScoringConstants).ha = function () {
-    return this.miscWeight;
-  };
-  protoOf(TrainingScoringConstants).ia = function () {
-    return this.juniorEarlyGameFlatBonus;
-  };
-  protoOf(TrainingScoringConstants).ja = function () {
-    return this.relationshipScale;
-  };
-  protoOf(TrainingScoringConstants).ka = function () {
-    return this.rainbowMultiplierEnabled;
-  };
-  protoOf(TrainingScoringConstants).la = function () {
-    return this.rainbowMultiplierDisabled;
-  };
-  protoOf(TrainingScoringConstants).ma = function () {
-    return this.rainbowPerInstanceBase;
-  };
-  protoOf(TrainingScoringConstants).na = function () {
-    return this.rainbowPerInstanceDecay;
-  };
-  protoOf(TrainingScoringConstants).oa = function () {
-    return this.anticipatoryMinFillPercent;
-  };
-  protoOf(TrainingScoringConstants).pa = function () {
-    return this.anticipatoryCoefficient;
-  };
-  protoOf(TrainingScoringConstants).qa = function () {
-    return this.anticipatoryCap;
-  };
-  protoOf(TrainingScoringConstants).a7 = function () {
-    return this.ratioBreakpoints;
-  };
-  protoOf(TrainingScoringConstants).b7 = function () {
     return this.ratioMultipliers;
   };
-  protoOf(TrainingScoringConstants).y7 = function () {
+  protoOf(TrainingScoringConstants).s9 = function () {
     return this.priorityCoefficient;
   };
-  protoOf(TrainingScoringConstants).z7 = function () {
+  protoOf(TrainingScoringConstants).t9 = function () {
     return this.levelBoostRank1Factor;
   };
-  protoOf(TrainingScoringConstants).k8 = function () {
+  protoOf(TrainingScoringConstants).u9 = function () {
     return this.levelBoostRank2Factor;
   };
-  protoOf(TrainingScoringConstants).l8 = function () {
+  protoOf(TrainingScoringConstants).v9 = function () {
     return this.levelBoostRank3Factor;
   };
-  protoOf(TrainingScoringConstants).d9 = function () {
+  protoOf(TrainingScoringConstants).w9 = function () {
     return this.mainStatThresholds;
   };
-  protoOf(TrainingScoringConstants).e9 = function () {
+  protoOf(TrainingScoringConstants).x9 = function () {
     return this.mainStatBonusMagnitude;
   };
-  protoOf(TrainingScoringConstants).f9 = function () {
+  protoOf(TrainingScoringConstants).y9 = function () {
     return this.relationshipOrangeValue;
   };
-  protoOf(TrainingScoringConstants).g9 = function () {
+  protoOf(TrainingScoringConstants).z9 = function () {
     return this.relationshipGreenValue;
   };
-  protoOf(TrainingScoringConstants).h9 = function () {
+  protoOf(TrainingScoringConstants).aa = function () {
     return this.relationshipBlueValue;
   };
-  protoOf(TrainingScoringConstants).i9 = function () {
+  protoOf(TrainingScoringConstants).ba = function () {
     return this.relationshipDiminishingFactor;
   };
-  protoOf(TrainingScoringConstants).j9 = function () {
+  protoOf(TrainingScoringConstants).ca = function () {
     return this.relationshipEarlyGameBonus;
   };
-  protoOf(TrainingScoringConstants).k9 = function () {
+  protoOf(TrainingScoringConstants).da = function () {
     return this.relationshipTrainerSupportBonus;
   };
-  protoOf(TrainingScoringConstants).l9 = function () {
+  protoOf(TrainingScoringConstants).ea = function () {
     return this.skillHintPerHintScore;
   };
-  protoOf(TrainingScoringConstants).m9 = function () {
+  protoOf(TrainingScoringConstants).fa = function () {
     return this.skillHintOverrideScore;
   };
-  protoOf(TrainingScoringConstants).ra = function () {
+  protoOf(TrainingScoringConstants).ga = function () {
     return this.statWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).sa = function () {
+  protoOf(TrainingScoringConstants).ha = function () {
     return this.statWeightWithoutBars;
   };
-  protoOf(TrainingScoringConstants).ta = function () {
+  protoOf(TrainingScoringConstants).ia = function () {
     return this.relationshipWeightWithBars;
   };
-  protoOf(TrainingScoringConstants).ua = function () {
+  protoOf(TrainingScoringConstants).ja = function () {
     return this.miscWeight;
   };
-  protoOf(TrainingScoringConstants).va = function () {
+  protoOf(TrainingScoringConstants).ka = function () {
     return this.juniorEarlyGameFlatBonus;
   };
-  protoOf(TrainingScoringConstants).wa = function () {
+  protoOf(TrainingScoringConstants).la = function () {
     return this.relationshipScale;
   };
-  protoOf(TrainingScoringConstants).xa = function () {
+  protoOf(TrainingScoringConstants).ma = function () {
     return this.rainbowMultiplierEnabled;
   };
-  protoOf(TrainingScoringConstants).ya = function () {
+  protoOf(TrainingScoringConstants).na = function () {
     return this.rainbowMultiplierDisabled;
   };
-  protoOf(TrainingScoringConstants).za = function () {
+  protoOf(TrainingScoringConstants).oa = function () {
     return this.rainbowPerInstanceBase;
   };
-  protoOf(TrainingScoringConstants).ab = function () {
+  protoOf(TrainingScoringConstants).pa = function () {
     return this.rainbowPerInstanceDecay;
   };
-  protoOf(TrainingScoringConstants).bb = function () {
+  protoOf(TrainingScoringConstants).qa = function () {
     return this.anticipatoryMinFillPercent;
   };
-  protoOf(TrainingScoringConstants).cb = function () {
+  protoOf(TrainingScoringConstants).ra = function () {
     return this.anticipatoryCoefficient;
   };
-  protoOf(TrainingScoringConstants).db = function () {
+  protoOf(TrainingScoringConstants).sa = function () {
     return this.anticipatoryCap;
   };
-  protoOf(TrainingScoringConstants).eb = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) {
-    return new TrainingScoringConstants(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap);
+  protoOf(TrainingScoringConstants).ta = function () {
+    return this.unityFillBaseBonus;
   };
-  protoOf(TrainingScoringConstants).copy = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, $super) {
+  protoOf(TrainingScoringConstants).ua = function () {
+    return this.unityFillPerGaugeBonus;
+  };
+  protoOf(TrainingScoringConstants).va = function () {
+    return this.unityBurstBaseBonus;
+  };
+  protoOf(TrainingScoringConstants).wa = function () {
+    return this.unityBurstPerGaugeBonus;
+  };
+  protoOf(TrainingScoringConstants).xa = function () {
+    return this.unityFillEnergyPenaltyPerGauge;
+  };
+  protoOf(TrainingScoringConstants).ya = function () {
+    return this.unityBurstEnergyPenaltyPerGauge;
+  };
+  protoOf(TrainingScoringConstants).c7 = function () {
+    return this.ratioBreakpoints;
+  };
+  protoOf(TrainingScoringConstants).d7 = function () {
+    return this.ratioMultipliers;
+  };
+  protoOf(TrainingScoringConstants).a8 = function () {
+    return this.priorityCoefficient;
+  };
+  protoOf(TrainingScoringConstants).b8 = function () {
+    return this.levelBoostRank1Factor;
+  };
+  protoOf(TrainingScoringConstants).m8 = function () {
+    return this.levelBoostRank2Factor;
+  };
+  protoOf(TrainingScoringConstants).n8 = function () {
+    return this.levelBoostRank3Factor;
+  };
+  protoOf(TrainingScoringConstants).f9 = function () {
+    return this.mainStatThresholds;
+  };
+  protoOf(TrainingScoringConstants).g9 = function () {
+    return this.mainStatBonusMagnitude;
+  };
+  protoOf(TrainingScoringConstants).h9 = function () {
+    return this.relationshipOrangeValue;
+  };
+  protoOf(TrainingScoringConstants).i9 = function () {
+    return this.relationshipGreenValue;
+  };
+  protoOf(TrainingScoringConstants).j9 = function () {
+    return this.relationshipBlueValue;
+  };
+  protoOf(TrainingScoringConstants).k9 = function () {
+    return this.relationshipDiminishingFactor;
+  };
+  protoOf(TrainingScoringConstants).l9 = function () {
+    return this.relationshipEarlyGameBonus;
+  };
+  protoOf(TrainingScoringConstants).m9 = function () {
+    return this.relationshipTrainerSupportBonus;
+  };
+  protoOf(TrainingScoringConstants).n9 = function () {
+    return this.skillHintPerHintScore;
+  };
+  protoOf(TrainingScoringConstants).o9 = function () {
+    return this.skillHintOverrideScore;
+  };
+  protoOf(TrainingScoringConstants).za = function () {
+    return this.statWeightWithBars;
+  };
+  protoOf(TrainingScoringConstants).ab = function () {
+    return this.statWeightWithoutBars;
+  };
+  protoOf(TrainingScoringConstants).bb = function () {
+    return this.relationshipWeightWithBars;
+  };
+  protoOf(TrainingScoringConstants).cb = function () {
+    return this.miscWeight;
+  };
+  protoOf(TrainingScoringConstants).db = function () {
+    return this.juniorEarlyGameFlatBonus;
+  };
+  protoOf(TrainingScoringConstants).eb = function () {
+    return this.relationshipScale;
+  };
+  protoOf(TrainingScoringConstants).fb = function () {
+    return this.rainbowMultiplierEnabled;
+  };
+  protoOf(TrainingScoringConstants).gb = function () {
+    return this.rainbowMultiplierDisabled;
+  };
+  protoOf(TrainingScoringConstants).hb = function () {
+    return this.rainbowPerInstanceBase;
+  };
+  protoOf(TrainingScoringConstants).ib = function () {
+    return this.rainbowPerInstanceDecay;
+  };
+  protoOf(TrainingScoringConstants).jb = function () {
+    return this.anticipatoryMinFillPercent;
+  };
+  protoOf(TrainingScoringConstants).kb = function () {
+    return this.anticipatoryCoefficient;
+  };
+  protoOf(TrainingScoringConstants).lb = function () {
+    return this.anticipatoryCap;
+  };
+  protoOf(TrainingScoringConstants).mb = function () {
+    return this.unityFillBaseBonus;
+  };
+  protoOf(TrainingScoringConstants).nb = function () {
+    return this.unityFillPerGaugeBonus;
+  };
+  protoOf(TrainingScoringConstants).ob = function () {
+    return this.unityBurstBaseBonus;
+  };
+  protoOf(TrainingScoringConstants).pb = function () {
+    return this.unityBurstPerGaugeBonus;
+  };
+  protoOf(TrainingScoringConstants).qb = function () {
+    return this.unityFillEnergyPenaltyPerGauge;
+  };
+  protoOf(TrainingScoringConstants).rb = function () {
+    return this.unityBurstEnergyPenaltyPerGauge;
+  };
+  protoOf(TrainingScoringConstants).sb = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge) {
+    return new TrainingScoringConstants(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge);
+  };
+  protoOf(TrainingScoringConstants).copy = function (ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge, $super) {
     ratioBreakpoints = ratioBreakpoints === VOID ? this.ratioBreakpoints : ratioBreakpoints;
     ratioMultipliers = ratioMultipliers === VOID ? this.ratioMultipliers : ratioMultipliers;
     priorityCoefficient = priorityCoefficient === VOID ? this.priorityCoefficient : priorityCoefficient;
@@ -1259,10 +1340,16 @@
     anticipatoryMinFillPercent = anticipatoryMinFillPercent === VOID ? this.anticipatoryMinFillPercent : anticipatoryMinFillPercent;
     anticipatoryCoefficient = anticipatoryCoefficient === VOID ? this.anticipatoryCoefficient : anticipatoryCoefficient;
     anticipatoryCap = anticipatoryCap === VOID ? this.anticipatoryCap : anticipatoryCap;
-    return $super === VOID ? this.eb(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap) : $super.eb.call(this, ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap);
+    unityFillBaseBonus = unityFillBaseBonus === VOID ? this.unityFillBaseBonus : unityFillBaseBonus;
+    unityFillPerGaugeBonus = unityFillPerGaugeBonus === VOID ? this.unityFillPerGaugeBonus : unityFillPerGaugeBonus;
+    unityBurstBaseBonus = unityBurstBaseBonus === VOID ? this.unityBurstBaseBonus : unityBurstBaseBonus;
+    unityBurstPerGaugeBonus = unityBurstPerGaugeBonus === VOID ? this.unityBurstPerGaugeBonus : unityBurstPerGaugeBonus;
+    unityFillEnergyPenaltyPerGauge = unityFillEnergyPenaltyPerGauge === VOID ? this.unityFillEnergyPenaltyPerGauge : unityFillEnergyPenaltyPerGauge;
+    unityBurstEnergyPenaltyPerGauge = unityBurstEnergyPenaltyPerGauge === VOID ? this.unityBurstEnergyPenaltyPerGauge : unityBurstEnergyPenaltyPerGauge;
+    return $super === VOID ? this.sb(ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge) : $super.sb.call(this, ratioBreakpoints, ratioMultipliers, priorityCoefficient, levelBoostRank1Factor, levelBoostRank2Factor, levelBoostRank3Factor, mainStatThresholds, mainStatBonusMagnitude, relationshipOrangeValue, relationshipGreenValue, relationshipBlueValue, relationshipDiminishingFactor, relationshipEarlyGameBonus, relationshipTrainerSupportBonus, skillHintPerHintScore, skillHintOverrideScore, statWeightWithBars, statWeightWithoutBars, relationshipWeightWithBars, miscWeight, juniorEarlyGameFlatBonus, relationshipScale, rainbowMultiplierEnabled, rainbowMultiplierDisabled, rainbowPerInstanceBase, rainbowPerInstanceDecay, anticipatoryMinFillPercent, anticipatoryCoefficient, anticipatoryCap, unityFillBaseBonus, unityFillPerGaugeBonus, unityBurstBaseBonus, unityBurstPerGaugeBonus, unityFillEnergyPenaltyPerGauge, unityBurstEnergyPenaltyPerGauge);
   };
   protoOf(TrainingScoringConstants).toString = function () {
-    return 'TrainingScoringConstants(ratioBreakpoints=' + toString(this.ratioBreakpoints) + ', ratioMultipliers=' + toString(this.ratioMultipliers) + ', priorityCoefficient=' + this.priorityCoefficient + ', levelBoostRank1Factor=' + this.levelBoostRank1Factor + ', levelBoostRank2Factor=' + this.levelBoostRank2Factor + ', levelBoostRank3Factor=' + this.levelBoostRank3Factor + ', mainStatThresholds=' + toString(this.mainStatThresholds) + ', mainStatBonusMagnitude=' + this.mainStatBonusMagnitude + ', relationshipOrangeValue=' + this.relationshipOrangeValue + ', relationshipGreenValue=' + this.relationshipGreenValue + ', relationshipBlueValue=' + this.relationshipBlueValue + ', relationshipDiminishingFactor=' + this.relationshipDiminishingFactor + ', relationshipEarlyGameBonus=' + this.relationshipEarlyGameBonus + ', relationshipTrainerSupportBonus=' + this.relationshipTrainerSupportBonus + ', skillHintPerHintScore=' + this.skillHintPerHintScore + ', skillHintOverrideScore=' + this.skillHintOverrideScore + ', statWeightWithBars=' + this.statWeightWithBars + ', statWeightWithoutBars=' + this.statWeightWithoutBars + ', relationshipWeightWithBars=' + this.relationshipWeightWithBars + ', miscWeight=' + this.miscWeight + ', juniorEarlyGameFlatBonus=' + this.juniorEarlyGameFlatBonus + ', relationshipScale=' + this.relationshipScale + ', rainbowMultiplierEnabled=' + this.rainbowMultiplierEnabled + ', rainbowMultiplierDisabled=' + this.rainbowMultiplierDisabled + ', rainbowPerInstanceBase=' + this.rainbowPerInstanceBase + ', rainbowPerInstanceDecay=' + this.rainbowPerInstanceDecay + ', anticipatoryMinFillPercent=' + this.anticipatoryMinFillPercent + ', anticipatoryCoefficient=' + this.anticipatoryCoefficient + ', anticipatoryCap=' + this.anticipatoryCap + ')';
+    return 'TrainingScoringConstants(ratioBreakpoints=' + toString(this.ratioBreakpoints) + ', ratioMultipliers=' + toString(this.ratioMultipliers) + ', priorityCoefficient=' + this.priorityCoefficient + ', levelBoostRank1Factor=' + this.levelBoostRank1Factor + ', levelBoostRank2Factor=' + this.levelBoostRank2Factor + ', levelBoostRank3Factor=' + this.levelBoostRank3Factor + ', mainStatThresholds=' + toString(this.mainStatThresholds) + ', mainStatBonusMagnitude=' + this.mainStatBonusMagnitude + ', relationshipOrangeValue=' + this.relationshipOrangeValue + ', relationshipGreenValue=' + this.relationshipGreenValue + ', relationshipBlueValue=' + this.relationshipBlueValue + ', relationshipDiminishingFactor=' + this.relationshipDiminishingFactor + ', relationshipEarlyGameBonus=' + this.relationshipEarlyGameBonus + ', relationshipTrainerSupportBonus=' + this.relationshipTrainerSupportBonus + ', skillHintPerHintScore=' + this.skillHintPerHintScore + ', skillHintOverrideScore=' + this.skillHintOverrideScore + ', statWeightWithBars=' + this.statWeightWithBars + ', statWeightWithoutBars=' + this.statWeightWithoutBars + ', relationshipWeightWithBars=' + this.relationshipWeightWithBars + ', miscWeight=' + this.miscWeight + ', juniorEarlyGameFlatBonus=' + this.juniorEarlyGameFlatBonus + ', relationshipScale=' + this.relationshipScale + ', rainbowMultiplierEnabled=' + this.rainbowMultiplierEnabled + ', rainbowMultiplierDisabled=' + this.rainbowMultiplierDisabled + ', rainbowPerInstanceBase=' + this.rainbowPerInstanceBase + ', rainbowPerInstanceDecay=' + this.rainbowPerInstanceDecay + ', anticipatoryMinFillPercent=' + this.anticipatoryMinFillPercent + ', anticipatoryCoefficient=' + this.anticipatoryCoefficient + ', anticipatoryCap=' + this.anticipatoryCap + ', unityFillBaseBonus=' + this.unityFillBaseBonus + ', unityFillPerGaugeBonus=' + this.unityFillPerGaugeBonus + ', unityBurstBaseBonus=' + this.unityBurstBaseBonus + ', unityBurstPerGaugeBonus=' + this.unityBurstPerGaugeBonus + ', unityFillEnergyPenaltyPerGauge=' + this.unityFillEnergyPenaltyPerGauge + ', unityBurstEnergyPenaltyPerGauge=' + this.unityBurstEnergyPenaltyPerGauge + ')';
   };
   protoOf(TrainingScoringConstants).hashCode = function () {
     var result = hashCode(this.ratioBreakpoints);
@@ -1294,6 +1381,12 @@
     result = imul(result, 31) + getNumberHashCode(this.anticipatoryMinFillPercent) | 0;
     result = imul(result, 31) + getNumberHashCode(this.anticipatoryCoefficient) | 0;
     result = imul(result, 31) + getNumberHashCode(this.anticipatoryCap) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityFillBaseBonus) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityFillPerGaugeBonus) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityBurstBaseBonus) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityBurstPerGaugeBonus) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityFillEnergyPenaltyPerGauge) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.unityBurstEnergyPenaltyPerGauge) | 0;
     return result;
   };
   protoOf(TrainingScoringConstants).equals = function (other) {
@@ -1360,6 +1453,106 @@
       return false;
     if (!equals(this.anticipatoryCap, tmp0_other_with_cast.anticipatoryCap))
       return false;
+    if (!equals(this.unityFillBaseBonus, tmp0_other_with_cast.unityFillBaseBonus))
+      return false;
+    if (!equals(this.unityFillPerGaugeBonus, tmp0_other_with_cast.unityFillPerGaugeBonus))
+      return false;
+    if (!equals(this.unityBurstBaseBonus, tmp0_other_with_cast.unityBurstBaseBonus))
+      return false;
+    if (!equals(this.unityBurstPerGaugeBonus, tmp0_other_with_cast.unityBurstPerGaugeBonus))
+      return false;
+    if (!equals(this.unityFillEnergyPenaltyPerGauge, tmp0_other_with_cast.unityFillEnergyPenaltyPerGauge))
+      return false;
+    if (!equals(this.unityBurstEnergyPenaltyPerGauge, tmp0_other_with_cast.unityBurstEnergyPenaltyPerGauge))
+      return false;
+    return true;
+  };
+  function RawScoreBreakdown(statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total) {
+    this.statScoreWeighted = statScoreWeighted;
+    this.relationshipScoreWeighted = relationshipScoreWeighted;
+    this.miscScoreWeighted = miscScoreWeighted;
+    this.rainbowMultiplier = rainbowMultiplier;
+    this.anticipatoryMultiplier = anticipatoryMultiplier;
+    this.total = total;
+  }
+  protoOf(RawScoreBreakdown).tb = function () {
+    return this.statScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).ub = function () {
+    return this.relationshipScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).vb = function () {
+    return this.miscScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).wb = function () {
+    return this.rainbowMultiplier;
+  };
+  protoOf(RawScoreBreakdown).xb = function () {
+    return this.anticipatoryMultiplier;
+  };
+  protoOf(RawScoreBreakdown).yb = function () {
+    return this.total;
+  };
+  protoOf(RawScoreBreakdown).c7 = function () {
+    return this.statScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).d7 = function () {
+    return this.relationshipScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).a8 = function () {
+    return this.miscScoreWeighted;
+  };
+  protoOf(RawScoreBreakdown).b8 = function () {
+    return this.rainbowMultiplier;
+  };
+  protoOf(RawScoreBreakdown).m8 = function () {
+    return this.anticipatoryMultiplier;
+  };
+  protoOf(RawScoreBreakdown).n8 = function () {
+    return this.total;
+  };
+  protoOf(RawScoreBreakdown).zb = function (statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total) {
+    return new RawScoreBreakdown(statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total);
+  };
+  protoOf(RawScoreBreakdown).copy = function (statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total, $super) {
+    statScoreWeighted = statScoreWeighted === VOID ? this.statScoreWeighted : statScoreWeighted;
+    relationshipScoreWeighted = relationshipScoreWeighted === VOID ? this.relationshipScoreWeighted : relationshipScoreWeighted;
+    miscScoreWeighted = miscScoreWeighted === VOID ? this.miscScoreWeighted : miscScoreWeighted;
+    rainbowMultiplier = rainbowMultiplier === VOID ? this.rainbowMultiplier : rainbowMultiplier;
+    anticipatoryMultiplier = anticipatoryMultiplier === VOID ? this.anticipatoryMultiplier : anticipatoryMultiplier;
+    total = total === VOID ? this.total : total;
+    return $super === VOID ? this.zb(statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total) : $super.zb.call(this, statScoreWeighted, relationshipScoreWeighted, miscScoreWeighted, rainbowMultiplier, anticipatoryMultiplier, total);
+  };
+  protoOf(RawScoreBreakdown).toString = function () {
+    return 'RawScoreBreakdown(statScoreWeighted=' + this.statScoreWeighted + ', relationshipScoreWeighted=' + this.relationshipScoreWeighted + ', miscScoreWeighted=' + this.miscScoreWeighted + ', rainbowMultiplier=' + this.rainbowMultiplier + ', anticipatoryMultiplier=' + this.anticipatoryMultiplier + ', total=' + this.total + ')';
+  };
+  protoOf(RawScoreBreakdown).hashCode = function () {
+    var result = getNumberHashCode(this.statScoreWeighted);
+    result = imul(result, 31) + getNumberHashCode(this.relationshipScoreWeighted) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.miscScoreWeighted) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.rainbowMultiplier) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.anticipatoryMultiplier) | 0;
+    result = imul(result, 31) + getNumberHashCode(this.total) | 0;
+    return result;
+  };
+  protoOf(RawScoreBreakdown).equals = function (other) {
+    if (this === other)
+      return true;
+    if (!(other instanceof RawScoreBreakdown))
+      return false;
+    var tmp0_other_with_cast = other instanceof RawScoreBreakdown ? other : THROW_CCE();
+    if (!equals(this.statScoreWeighted, tmp0_other_with_cast.statScoreWeighted))
+      return false;
+    if (!equals(this.relationshipScoreWeighted, tmp0_other_with_cast.relationshipScoreWeighted))
+      return false;
+    if (!equals(this.miscScoreWeighted, tmp0_other_with_cast.miscScoreWeighted))
+      return false;
+    if (!equals(this.rainbowMultiplier, tmp0_other_with_cast.rainbowMultiplier))
+      return false;
+    if (!equals(this.anticipatoryMultiplier, tmp0_other_with_cast.anticipatoryMultiplier))
+      return false;
+    if (!equals(this.total, tmp0_other_with_cast.total))
+      return false;
     return true;
   };
   function StatName_SPEED_getInstance() {
@@ -1395,10 +1588,10 @@
     return DateYear_SENIOR_instance;
   }
   //region block: post-declaration
-  defineProp(protoOf(StatName), 'name', protoOf(StatName).y);
-  defineProp(protoOf(StatName), 'ordinal', protoOf(StatName).z);
-  defineProp(protoOf(DateYear), 'name', protoOf(DateYear).y);
-  defineProp(protoOf(DateYear), 'ordinal', protoOf(DateYear).z);
+  defineProp(protoOf(StatName), 'name', protoOf(StatName).a1);
+  defineProp(protoOf(StatName), 'ordinal', protoOf(StatName).b1);
+  defineProp(protoOf(DateYear), 'name', protoOf(DateYear).a1);
+  defineProp(protoOf(DateYear), 'ordinal', protoOf(DateYear).b1);
   //endregion
   //region block: exports
   function $jsExportAll$(_) {
@@ -1414,6 +1607,7 @@
     $com$steve1316$uma_scoring.calculateRelationshipScore = calculateRelationshipScore;
     $com$steve1316$uma_scoring.calculateMiscScore = calculateMiscScore;
     $com$steve1316$uma_scoring.calculateRawTrainingScore = calculateRawTrainingScore;
+    $com$steve1316$uma_scoring.rawTrainingScoreComponents = rawTrainingScoreComponents;
     $com$steve1316$uma_scoring.estimateFailureChanceFromEnergy = estimateFailureChanceFromEnergy;
     $com$steve1316$uma_scoring.scoringConstantsFromMap = scoringConstantsFromMap;
     var $com = _.com || (_.com = {});
@@ -1440,6 +1634,7 @@
     $com$steve1316$uma_scoring.TrainingOption = TrainingOption;
     $com$steve1316$uma_scoring.TrainingConfig = TrainingConfig;
     $com$steve1316$uma_scoring.TrainingScoringConstants = TrainingScoringConstants;
+    $com$steve1316$uma_scoring.RawScoreBreakdown = RawScoreBreakdown;
   }
   $jsExportAll$(_);
   kotlin_kotlin.$jsExportAll$(_);

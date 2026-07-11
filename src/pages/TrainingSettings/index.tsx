@@ -166,6 +166,7 @@ const TrainingSettings = () => {
         enablePrioritizeSkillHints,
         enableTrainingLevelWeighting,
         disableStatTargets,
+        enableRunningStyleStaminaAdjustment,
         enableGoalRaceStatBias,
         goalRaceStatBiasLookaheadTurns,
         enableTrainingAnalysisValidation,
@@ -987,6 +988,14 @@ const TrainingSettings = () => {
                                             }
                                         />
                                     </SearchableItem>
+                                    <SettingRow
+                                        id="enable-running-style-stamina-adjustment"
+                                        title="Running Style Stamina Adjustment"
+                                        description="Scale the stamina stat target by the trainee's running style: Front Runners need less stamina to hold the lead, End Closers more to close from the back. Applies on top of the built-in per-style stat bias. Off by default."
+                                        right={
+                                            <Switch checked={enableRunningStyleStaminaAdjustment} onCheckedChange={(checked) => updateTrainingSetting("enableRunningStyleStaminaAdjustment", checked)} />
+                                        }
+                                    />
                                     <SettingRow
                                         id="disable-stat-targets"
                                         title="Disable Stat Targets"

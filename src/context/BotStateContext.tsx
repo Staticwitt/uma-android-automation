@@ -70,6 +70,8 @@ export interface Settings {
         enableCompleteCareerOnFailure: boolean
         enableStopOnMandatoryRaces: boolean
         enableForceRacing: boolean
+        enableG1DayPreference: boolean
+        g1DayMinRainbowCount: number
         enableUserInGameRaceAgenda: boolean
         limitRacesToInGameAgenda: boolean
         skipSummerTrainingForAgenda: boolean
@@ -209,6 +211,7 @@ export interface Settings {
         preferredRunningStyle: string
         preferredTrackDistance: string
         preferredTrackSurface: string
+        prioritizeRecoveryForStamina: boolean
         plans: Record<string, SkillPlanSettingsConfig>
     }
 
@@ -255,6 +258,8 @@ export interface Settings {
         trainWitDuringFinale: boolean
         enablePrioritizeSkillHints: boolean
         enableTrainingLevelWeighting: boolean
+        /** Scale the stamina stat target by running style (Front Runners need less, End Closers more). Off by default. */
+        enableRunningStyleStaminaAdjustment: boolean
         disableStatTargets: boolean
         enableGoalRaceStatBias: boolean
         goalRaceStatBiasLookaheadTurns: number
@@ -363,6 +368,8 @@ export interface Settings {
     // Scenario specific overrides
     scenarioOverrides: {
         trackblazerConsecutiveRacesLimit: number
+        /** The mood the trainee must be strictly below before Trackblazer recovers mood: GOOD (eager), NORMAL (default), or BAD (rarely). */
+        trackblazerMoodRecoveryFloor: string
         trackblazerEnergyThreshold: number
         trackblazerForceTrainEnergyFloor: number
         trackblazerShopCheckGrades: string[]
@@ -391,6 +398,7 @@ export interface Settings {
         trackblazerGlowStickFinalReserve: number
         trackblazerGlowStickMinFans: number
         trackblazerValueAwareShopping: boolean
+        unityCupBurstMaxFailureChance: number
     }
 }
 
@@ -427,6 +435,8 @@ export const defaultSettings: Settings = {
         enableCompleteCareerOnFailure: false,
         enableStopOnMandatoryRaces: false,
         enableForceRacing: false,
+        enableG1DayPreference: false,
+        g1DayMinRainbowCount: 2,
         enableUserInGameRaceAgenda: false,
         limitRacesToInGameAgenda: true,
         skipSummerTrainingForAgenda: false,
@@ -530,6 +540,7 @@ export const defaultSettings: Settings = {
         preferredRunningStyle: "inherit",
         preferredTrackDistance: "inherit",
         preferredTrackSurface: "no_preference",
+        prioritizeRecoveryForStamina: true,
         plans: Object.keys(skillPlanSettingsPages).reduce(
             (acc, curr) => {
                 acc[curr] = {
@@ -633,6 +644,7 @@ export const defaultSettings: Settings = {
         trainWitDuringFinale: false,
         enablePrioritizeSkillHints: false,
         enableTrainingLevelWeighting: true,
+        enableRunningStyleStaminaAdjustment: false,
         disableStatTargets: false,
         enableGoalRaceStatBias: false,
         goalRaceStatBiasLookaheadTurns: 3,
@@ -715,7 +727,8 @@ export const defaultSettings: Settings = {
         enableAskTheDocs: false,
     },
     scenarioOverrides: {
-        trackblazerConsecutiveRacesLimit: 5,
+        trackblazerConsecutiveRacesLimit: 3,
+        trackblazerMoodRecoveryFloor: "NORMAL",
         trackblazerEnergyThreshold: 40,
         trackblazerForceTrainEnergyFloor: 20,
         trackblazerShopCheckGrades: ["G1", "G2", "G3"],
@@ -744,6 +757,7 @@ export const defaultSettings: Settings = {
         trackblazerGlowStickFinalReserve: 1,
         trackblazerGlowStickMinFans: 20000,
         trackblazerValueAwareShopping: false,
+        unityCupBurstMaxFailureChance: 0,
     },
 }
 

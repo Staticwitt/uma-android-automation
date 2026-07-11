@@ -60,6 +60,7 @@ export declare namespace com.steve1316.uma_scoring {
     function calculateRelationshipScore(config: com.steve1316.uma_scoring.TrainingConfig, training: com.steve1316.uma_scoring.TrainingOption): number;
     function calculateMiscScore(config: com.steve1316.uma_scoring.TrainingConfig, training: com.steve1316.uma_scoring.TrainingOption): number;
     function calculateRawTrainingScore(config: com.steve1316.uma_scoring.TrainingConfig, training: com.steve1316.uma_scoring.TrainingOption): number;
+    function rawTrainingScoreComponents(config: com.steve1316.uma_scoring.TrainingConfig, training: com.steve1316.uma_scoring.TrainingOption): com.steve1316.uma_scoring.RawScoreBreakdown;
     function estimateFailureChanceFromEnergy(currentEnergy: number, statName?: Nullable<com.steve1316.uma_scoring.StatName>): number;
     function scoringConstantsFromMap(settings: kotlin.collections.KtMap<string, Nullable<any>>, defaults?: com.steve1316.uma_scoring.TrainingScoringConstants): com.steve1316.uma_scoring.TrainingScoringConstants;
 }
@@ -218,7 +219,7 @@ export declare namespace com.steve1316.uma_scoring {
         const constructor: abstract new () => TrainingConfig;
     }
     class TrainingScoringConstants {
-        constructor(ratioBreakpoints?: kotlin.collections.KtList<number>, ratioMultipliers?: kotlin.collections.KtList<number>, priorityCoefficient?: number, levelBoostRank1Factor?: number, levelBoostRank2Factor?: number, levelBoostRank3Factor?: number, mainStatThresholds?: kotlin.collections.KtMap<com.steve1316.uma_scoring.StatName, number>, mainStatBonusMagnitude?: number, relationshipOrangeValue?: number, relationshipGreenValue?: number, relationshipBlueValue?: number, relationshipDiminishingFactor?: number, relationshipEarlyGameBonus?: number, relationshipTrainerSupportBonus?: number, skillHintPerHintScore?: number, skillHintOverrideScore?: number, statWeightWithBars?: number, statWeightWithoutBars?: number, relationshipWeightWithBars?: number, miscWeight?: number, juniorEarlyGameFlatBonus?: number, relationshipScale?: number, rainbowMultiplierEnabled?: number, rainbowMultiplierDisabled?: number, rainbowPerInstanceBase?: number, rainbowPerInstanceDecay?: number, anticipatoryMinFillPercent?: number, anticipatoryCoefficient?: number, anticipatoryCap?: number);
+        constructor(ratioBreakpoints?: kotlin.collections.KtList<number>, ratioMultipliers?: kotlin.collections.KtList<number>, priorityCoefficient?: number, levelBoostRank1Factor?: number, levelBoostRank2Factor?: number, levelBoostRank3Factor?: number, mainStatThresholds?: kotlin.collections.KtMap<com.steve1316.uma_scoring.StatName, number>, mainStatBonusMagnitude?: number, relationshipOrangeValue?: number, relationshipGreenValue?: number, relationshipBlueValue?: number, relationshipDiminishingFactor?: number, relationshipEarlyGameBonus?: number, relationshipTrainerSupportBonus?: number, skillHintPerHintScore?: number, skillHintOverrideScore?: number, statWeightWithBars?: number, statWeightWithoutBars?: number, relationshipWeightWithBars?: number, miscWeight?: number, juniorEarlyGameFlatBonus?: number, relationshipScale?: number, rainbowMultiplierEnabled?: number, rainbowMultiplierDisabled?: number, rainbowPerInstanceBase?: number, rainbowPerInstanceDecay?: number, anticipatoryMinFillPercent?: number, anticipatoryCoefficient?: number, anticipatoryCap?: number, unityFillBaseBonus?: number, unityFillPerGaugeBonus?: number, unityBurstBaseBonus?: number, unityBurstPerGaugeBonus?: number, unityFillEnergyPenaltyPerGauge?: number, unityBurstEnergyPenaltyPerGauge?: number);
         get ratioBreakpoints(): kotlin.collections.KtList<number>;
         get ratioMultipliers(): kotlin.collections.KtList<number>;
         get priorityCoefficient(): number;
@@ -248,7 +249,13 @@ export declare namespace com.steve1316.uma_scoring {
         get anticipatoryMinFillPercent(): number;
         get anticipatoryCoefficient(): number;
         get anticipatoryCap(): number;
-        copy(ratioBreakpoints?: kotlin.collections.KtList<number>, ratioMultipliers?: kotlin.collections.KtList<number>, priorityCoefficient?: number, levelBoostRank1Factor?: number, levelBoostRank2Factor?: number, levelBoostRank3Factor?: number, mainStatThresholds?: kotlin.collections.KtMap<com.steve1316.uma_scoring.StatName, number>, mainStatBonusMagnitude?: number, relationshipOrangeValue?: number, relationshipGreenValue?: number, relationshipBlueValue?: number, relationshipDiminishingFactor?: number, relationshipEarlyGameBonus?: number, relationshipTrainerSupportBonus?: number, skillHintPerHintScore?: number, skillHintOverrideScore?: number, statWeightWithBars?: number, statWeightWithoutBars?: number, relationshipWeightWithBars?: number, miscWeight?: number, juniorEarlyGameFlatBonus?: number, relationshipScale?: number, rainbowMultiplierEnabled?: number, rainbowMultiplierDisabled?: number, rainbowPerInstanceBase?: number, rainbowPerInstanceDecay?: number, anticipatoryMinFillPercent?: number, anticipatoryCoefficient?: number, anticipatoryCap?: number): com.steve1316.uma_scoring.TrainingScoringConstants;
+        get unityFillBaseBonus(): number;
+        get unityFillPerGaugeBonus(): number;
+        get unityBurstBaseBonus(): number;
+        get unityBurstPerGaugeBonus(): number;
+        get unityFillEnergyPenaltyPerGauge(): number;
+        get unityBurstEnergyPenaltyPerGauge(): number;
+        copy(ratioBreakpoints?: kotlin.collections.KtList<number>, ratioMultipliers?: kotlin.collections.KtList<number>, priorityCoefficient?: number, levelBoostRank1Factor?: number, levelBoostRank2Factor?: number, levelBoostRank3Factor?: number, mainStatThresholds?: kotlin.collections.KtMap<com.steve1316.uma_scoring.StatName, number>, mainStatBonusMagnitude?: number, relationshipOrangeValue?: number, relationshipGreenValue?: number, relationshipBlueValue?: number, relationshipDiminishingFactor?: number, relationshipEarlyGameBonus?: number, relationshipTrainerSupportBonus?: number, skillHintPerHintScore?: number, skillHintOverrideScore?: number, statWeightWithBars?: number, statWeightWithoutBars?: number, relationshipWeightWithBars?: number, miscWeight?: number, juniorEarlyGameFlatBonus?: number, relationshipScale?: number, rainbowMultiplierEnabled?: number, rainbowMultiplierDisabled?: number, rainbowPerInstanceBase?: number, rainbowPerInstanceDecay?: number, anticipatoryMinFillPercent?: number, anticipatoryCoefficient?: number, anticipatoryCap?: number, unityFillBaseBonus?: number, unityFillPerGaugeBonus?: number, unityBurstBaseBonus?: number, unityBurstPerGaugeBonus?: number, unityFillEnergyPenaltyPerGauge?: number, unityBurstEnergyPenaltyPerGauge?: number): com.steve1316.uma_scoring.TrainingScoringConstants;
         toString(): string;
         hashCode(): number;
         equals(other: Nullable<any>): boolean;
@@ -256,6 +263,23 @@ export declare namespace com.steve1316.uma_scoring {
     /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
     namespace TrainingScoringConstants.$metadata$ {
         const constructor: abstract new () => TrainingScoringConstants;
+    }
+    class RawScoreBreakdown {
+        constructor(statScoreWeighted: number, relationshipScoreWeighted: number, miscScoreWeighted: number, rainbowMultiplier: number, anticipatoryMultiplier: number, total: number);
+        get statScoreWeighted(): number;
+        get relationshipScoreWeighted(): number;
+        get miscScoreWeighted(): number;
+        get rainbowMultiplier(): number;
+        get anticipatoryMultiplier(): number;
+        get total(): number;
+        copy(statScoreWeighted?: number, relationshipScoreWeighted?: number, miscScoreWeighted?: number, rainbowMultiplier?: number, anticipatoryMultiplier?: number, total?: number): com.steve1316.uma_scoring.RawScoreBreakdown;
+        toString(): string;
+        hashCode(): number;
+        equals(other: Nullable<any>): boolean;
+    }
+    /** @deprecated $metadata$ is used for internal purposes, please don't use it in your code, because it can be removed at any moment */
+    namespace RawScoreBreakdown.$metadata$ {
+        const constructor: abstract new () => RawScoreBreakdown;
     }
 }
 export as namespace com_steve1316_uma_scoring_scoring_shared;

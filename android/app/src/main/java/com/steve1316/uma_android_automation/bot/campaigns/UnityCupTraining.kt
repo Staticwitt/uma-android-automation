@@ -5,6 +5,7 @@ import android.util.Log
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.bot.Training
+import com.steve1316.uma_android_automation.bot.TrainingScoringMode
 import com.steve1316.uma_android_automation.types.DateYear
 
 /**
@@ -55,9 +56,9 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
         }
     }
 
-    override fun getTrainingScoringMode(): String {
+    override fun getTrainingScoringMode(): TrainingScoringMode {
         return if (campaign.date.year < DateYear.SENIOR) {
-            "Unity Cup (Spirit Gauge)"
+            TrainingScoringMode.UNITY_CUP
         } else {
             super.getTrainingScoringMode()
         }
@@ -79,18 +80,6 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
             listOf("Spirit Gauges: fillable=$canFill, ready to burst=$readyToBurst, extreme ready=$extremeReady")
         } else {
             emptyList()
-        }
-    }
-
-    override fun getExtraKeyFactors(selected: TrainingOption, args: Map<String, Any?>): List<String> {
-        val extremeReady = selected.extras["spiritGaugesExtremeReady"] as? Int ?: 0
-        val readyToBurst = selected.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
-        val canFill = selected.extras["spiritGaugesCanFill"] as? Int ?: 0
-        return when {
-            extremeReady > 0 -> listOf("Has $extremeReady Extreme Spirit Burst(s) ready (0% failure, stat cap boost, highest priority).")
-            readyToBurst > 0 -> listOf("Has $readyToBurst Spirit Gauge(s) ready to burst (highest priority).")
-            canFill > 0 -> listOf("Can fill $canFill Spirit Gauge(s).")
-            else -> emptyList()
         }
     }
 }

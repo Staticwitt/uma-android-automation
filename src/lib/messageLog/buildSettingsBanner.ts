@@ -159,6 +159,7 @@ export function buildSettingsBanner(settings: Settings): string {
 🤖 Enable YOLO Stat Detection: ${settings.training.enableYoloStatDetection ? "✅" : "❌"}
 
 ---------- Training Stat Targets by Distance ----------
+🏃 Running Style Stamina Adjustment: ${settings.training.enableRunningStyleStaminaAdjustment ? "✅" : "❌"}
 🛑 Disable Stat Targets: ${settings.training.disableStatTargets ? "✅ (all stats treated as cap=1200)" : "❌"}
 🏁 Goal Race Stat Reallocation: ${settings.training.enableGoalRaceStatBias ? `✅ (lookahead ${settings.training.goalRaceStatBiasLookaheadTurns} turns)` : "❌"}
 🎯 Classic Year Milestone: ${settings.training.classicMilestonePercent}%
@@ -199,6 +200,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🏳️ Complete Career on Failure: ${settings.racing.enableCompleteCareerOnFailure ? "✅" : "❌"}
 🏁 Stop on Mandatory Race: ${settings.racing.enableStopOnMandatoryRaces ? "✅" : "❌"}
 🏃 Force Racing Every Day: ${settings.racing.enableForceRacing ? "✅" : "❌"}
+🌈 Prefer Training on G1 Days: ${settings.racing.enableG1DayPreference ? `✅ (>= ${settings.racing.g1DayMinRainbowCount} rainbows)` : "❌"}
 🏁 Enable User In-Game Race Agenda: ${settings.racing.enableUserInGameRaceAgenda ? "✅" : "❌"}
 🏁 Limit Extra Races to Agenda: ${settings.racing.limitRacesToInGameAgenda ? "✅" : "❌"}
 🏁 Skip Summer Training for Agenda: ${settings.racing.skipSummerTrainingForAgenda ? "✅" : "❌"}
@@ -234,6 +236,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🏃 Running Style Override: ${settings.skills.preferredRunningStyle}
 🛣️ Track Distance Override: ${settings.skills.preferredTrackDistance}
 🛣️ Track Surface Override: ${settings.skills.preferredTrackSurface}
+💧 Prioritize Recovery Skills for Stamina: ${settings.skills.prioritizeRecoveryForStamina ? "✅" : "❌"}
 📅 Pre-Finals Skill Plan: ${settings.skills.plans.preFinals.enabled ? "✅" : "❌"}${
         settings.skills.plans.preFinals.enabled
             ? `\n\t💲 Buy All Negative Skills: ${
@@ -283,6 +286,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 📣 Trackblazer Enable Megaphone Race-Forecast Force: ${settings.scenarioOverrides?.trackblazerEnableMegaphoneForceRaceForecast ? "✅" : "❌"}
 📣 Trackblazer Megaphone Race-Forecast Force Threshold: ${settings.scenarioOverrides?.trackblazerMegaphoneForceRaceForecastThreshold}
 📣 Trackblazer Megaphone Surplus-Burn Reserve: ${settings.scenarioOverrides?.trackblazerMegaphoneSurplusBurnReserve}
+😐 Trackblazer Mood Recovery Floor: ${settings.scenarioOverrides?.trackblazerMoodRecoveryFloor ?? "NORMAL"}
+💥 Unity Cup Burst Failure-Chance Exemption: ${settings.scenarioOverrides?.unityCupBurstMaxFailureChance && settings.scenarioOverrides.unityCupBurstMaxFailureChance > 0 ? `${settings.scenarioOverrides.unityCupBurstMaxFailureChance}%` : "❌"}
 
 ---------- Misc Options ----------
 🔍 Enable Crane Game Attempt: ${settings.general.enableCraneGameAttempt ? "✅" : "❌"}
