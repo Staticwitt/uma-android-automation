@@ -10,6 +10,9 @@ import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.matchesPrefe
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.recoveryBoostedRatio
 import com.steve1316.uma_android_automation.bot.SkillPlan.SkillPlanSettings
 import com.steve1316.uma_android_automation.bot.SkillPlan.SpendingStrategy
+import com.steve1316.uma_android_automation.types.RunningStyle
+import com.steve1316.uma_android_automation.types.TrackDistance
+import com.steve1316.uma_android_automation.types.TrackSurface
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
