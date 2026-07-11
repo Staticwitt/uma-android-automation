@@ -75,10 +75,12 @@ private const val RAINBOW_SUPPORT_REGION_HEIGHT_FRACTION = 0.75
  * @param greenFraction Fraction of glow-annulus pixels that are bright green.
  * @param cyanFraction Fraction that are bright cyan.
  * @param pinkFraction Fraction that are bright pink.
- * @param minFraction The per-hue presence floor (default 0.03).
+ * @param minFraction The per-hue presence floor (default 0.045). Raised from the original 0.03 after an on-device false positive: a real rainbow glow sweeps all three pastels roughly
+ *   evenly, so a genuine ring clears this on every hue, whereas a low-bond support's card art typically shows one strong art color with the other two only just scraping a 0.03 floor.
+ *   Requiring each hue to reach 0.045 rejects that asymmetric look-alike without lowering the bar for real rings.
  * @return The number of the three hues that are present (a ring needs all three).
  */
-internal fun rainbowHuesPresent(greenFraction: Double, cyanFraction: Double, pinkFraction: Double, minFraction: Double = 0.03): Int =
+internal fun rainbowHuesPresent(greenFraction: Double, cyanFraction: Double, pinkFraction: Double, minFraction: Double = 0.045): Int =
     listOf(greenFraction, cyanFraction, pinkFraction).count { it > minFraction }
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -211,11 +213,12 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      */
     data class RainbowRingResult(val huesPresent: Int, val greenFraction: Double, val cyanFraction: Double, val pinkFraction: Double, val brightChromaticFraction: Double) {
         /**
-         * Whether the annulus shows a rainbow glow: all three pastel hues co-present (huesPresent == 3) and one of them vividly dominant (>= 0.08; measured true rings had a dominant hue
-         * >= 0.096 versus a 0.058 false positive). Validated at 100% on the labeled training-screen dataset.
+         * Whether the annulus shows a rainbow glow: all three pastel hues co-present (huesPresent == 3) and one of them vividly dominant (>= 0.085; measured true rings had a dominant hue
+         * >= 0.096 versus a 0.058 false positive). The dominant floor was nudged 0.08 -> 0.085 alongside the per-hue floor raise for a little more margin against an on-device false
+         * positive, staying safely below the 0.096 seen on real rings.
          */
         val isRainbow: Boolean
-            get() = huesPresent >= 3 && maxOf(greenFraction, cyanFraction, pinkFraction) >= 0.08
+            get() = huesPresent >= 3 && maxOf(greenFraction, cyanFraction, pinkFraction) >= 0.085
     }
 
     /**
