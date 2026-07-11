@@ -470,8 +470,12 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
                 Thread {
                     try {
                         entryPoint.start()
-                    } catch (e: Exception) {
-                        EventBus.getDefault().postSticky(ExceptionEvent(e))
+                    } catch (t: Throwable) {
+                        // Catch Throwable, not just Exception: an Error like OutOfMemoryError otherwise kills the bot thread
+                        // silently - the run just ends with a log save and no result line, leaving the user with no idea why.
+                        // Log it first so the crash reason survives into the saved log file even if the event delivery fails.
+                        MessageLog.e(TAG, "[FATAL] Bot thread died with an uncaught throwable: ${t.stackTraceToString()}")
+                        EventBus.getDefault().postSticky(ExceptionEvent(t))
                     }
                 }
 
