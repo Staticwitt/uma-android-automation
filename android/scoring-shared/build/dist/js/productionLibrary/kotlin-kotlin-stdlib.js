@@ -111,13 +111,13 @@ if (typeof String.prototype.startsWith === 'undefined') {
   initMetadataForClass(AbstractMutableCollection, 'AbstractMutableCollection', VOID, AbstractCollection, [AbstractCollection, Collection]);
   initMetadataForClass(IteratorImpl, 'IteratorImpl');
   initMetadataForClass(ListIteratorImpl, 'ListIteratorImpl', VOID, IteratorImpl);
-  initMetadataForClass(AbstractMutableList, 'AbstractMutableList', VOID, AbstractMutableCollection, [AbstractMutableCollection, Collection, KtList]);
+  initMetadataForClass(AbstractMutableList, 'AbstractMutableList', VOID, AbstractMutableCollection, [AbstractMutableCollection, KtList, Collection]);
   initMetadataForClass(SubList, 'SubList', VOID, AbstractMutableList);
   initMetadataForClass(AbstractMap, 'AbstractMap', VOID, VOID, [KtMap]);
   initMetadataForClass(AbstractMutableMap, 'AbstractMutableMap', VOID, AbstractMap, [AbstractMap, KtMap]);
   initMetadataForClass(AbstractMutableSet, 'AbstractMutableSet', VOID, AbstractMutableCollection, [AbstractMutableCollection, KtSet, Collection]);
   initMetadataForCompanion(Companion_4);
-  initMetadataForClass(ArrayList, 'ArrayList', ArrayList_init_$Create$, AbstractMutableList, [AbstractMutableList, Collection, KtList]);
+  initMetadataForClass(ArrayList, 'ArrayList', ArrayList_init_$Create$, AbstractMutableList, [AbstractMutableList, KtList, Collection]);
   initMetadataForClass(HashMap, 'HashMap', HashMap_init_$Create$, AbstractMutableMap, [AbstractMutableMap, KtMap]);
   initMetadataForClass(HashMapKeys, 'HashMapKeys', VOID, AbstractMutableSet, [KtSet, Collection, AbstractMutableSet]);
   initMetadataForClass(HashMapValues, 'HashMapValues', VOID, AbstractMutableCollection, [Collection, AbstractMutableCollection]);
@@ -345,9 +345,6 @@ if (typeof String.prototype.startsWith === 'undefined') {
       throw NoSuchElementException_init_$Create$_0('List is empty.');
     return _this__u8e3s4.h(get_lastIndex(_this__u8e3s4));
   }
-  function coerceAtLeast(_this__u8e3s4, minimumValue) {
-    return _this__u8e3s4 < minimumValue ? minimumValue : _this__u8e3s4;
-  }
   function coerceIn(_this__u8e3s4, minimumValue, maximumValue) {
     if (minimumValue > maximumValue)
       throw IllegalArgumentException_init_$Create$_0('Cannot coerce value to an empty range: maximum ' + maximumValue + ' is less than minimum ' + minimumValue + '.');
@@ -357,7 +354,7 @@ if (typeof String.prototype.startsWith === 'undefined') {
       return maximumValue;
     return _this__u8e3s4;
   }
-  function coerceAtLeast_0(_this__u8e3s4, minimumValue) {
+  function coerceAtLeast(_this__u8e3s4, minimumValue) {
     return _this__u8e3s4 < minimumValue ? minimumValue : _this__u8e3s4;
   }
   function coerceIn_0(_this__u8e3s4, minimumValue, maximumValue) {
@@ -368,6 +365,9 @@ if (typeof String.prototype.startsWith === 'undefined') {
     if (_this__u8e3s4 > maximumValue)
       return maximumValue;
     return _this__u8e3s4;
+  }
+  function coerceAtLeast_0(_this__u8e3s4, minimumValue) {
+    return _this__u8e3s4 < minimumValue ? minimumValue : _this__u8e3s4;
   }
   function coerceAtMost(_this__u8e3s4, maximumValue) {
     return _this__u8e3s4 > maximumValue ? maximumValue : _this__u8e3s4;
@@ -3712,9 +3712,6 @@ if (typeof String.prototype.startsWith === 'undefined') {
   function emptyList() {
     return EmptyList_getInstance();
   }
-  function get_lastIndex(_this__u8e3s4) {
-    return _this__u8e3s4.i() - 1 | 0;
-  }
   function EmptyList() {
     EmptyList_instance = this;
     this.v6_1 = new Long(-1478467534, -1720727600);
@@ -3812,6 +3809,9 @@ if (typeof String.prototype.startsWith === 'undefined') {
     if (EmptyList_instance == null)
       new EmptyList();
     return EmptyList_instance;
+  }
+  function get_lastIndex(_this__u8e3s4) {
+    return _this__u8e3s4.i() - 1 | 0;
   }
   function EmptyIterator() {
   }
@@ -4190,8 +4190,8 @@ if (typeof String.prototype.startsWith === 'undefined') {
   _.$_$.z = toString_1;
   _.$_$.a1 = coerceAtLeast_0;
   _.$_$.b1 = coerceAtLeast;
-  _.$_$.c1 = coerceIn;
-  _.$_$.d1 = coerceIn_0;
+  _.$_$.c1 = coerceIn_0;
+  _.$_$.d1 = coerceIn;
   _.$_$.e1 = startsWith;
   _.$_$.f1 = Enum;
   _.$_$.g1 = THROW_CCE;
