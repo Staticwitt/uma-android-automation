@@ -4,6 +4,10 @@ import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.SkillCandida
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateCommonPurchases
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateOptimizeRankPurchases
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateSkillPurchases
+import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.isRecoverySkill
+import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.isStaminaHeavyDistance
+import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.matchesPreference
+import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.recoveryBoostedRatio
 import com.steve1316.uma_android_automation.bot.SkillPlan.SkillPlanSettings
 import com.steve1316.uma_android_automation.bot.SkillPlan.SpendingStrategy
 import org.junit.jupiter.api.Assertions.*
@@ -558,6 +562,89 @@ class SkillPlanPurchasingTest {
             val commonResult = calculateCommonPurchases(candidates, budget = 1000, settings = settings)
 
             assertTrue(commonResult.isEmpty(), "Common phase with no plan and both flags off should buy nothing")
+        }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // //////////////////////////////////////////////////////////////////////////////////////////////////
+    // matchesPreference()
+
+    @Nested
+    @DisplayName("matchesPreference()")
+    inner class MatchesPreferenceTests {
+        @Test
+        fun `no preference set means everything matches`() {
+            assertTrue(matchesPreference(TrackDistance.SPRINT, RunningStyle.LATE_SURGER, emptyList(), TrackSurface.DIRT, null, null, null))
+        }
+
+        @Test
+        fun `matching distance is kept and off-distance is excluded`() {
+            assertTrue(matchesPreference(TrackDistance.MEDIUM, null, emptyList(), null, TrackDistance.MEDIUM, null, null))
+            assertFalse(matchesPreference(TrackDistance.SPRINT, null, emptyList(), null, TrackDistance.MEDIUM, null, null))
+        }
+
+        @Test
+        fun `generic skill with null axis is always kept`() {
+            assertTrue(matchesPreference(null, null, emptyList(), null, TrackDistance.MEDIUM, RunningStyle.FRONT_RUNNER, TrackSurface.TURF))
+        }
+
+        @Test
+        fun `explicit running style match is kept`() {
+            assertTrue(matchesPreference(null, RunningStyle.FRONT_RUNNER, emptyList(), null, null, RunningStyle.FRONT_RUNNER, null))
+        }
+
+        @Test
+        fun `inferred running style match is kept`() {
+            assertTrue(matchesPreference(null, null, listOf(RunningStyle.FRONT_RUNNER), null, null, RunningStyle.FRONT_RUNNER, null))
+        }
+
+        @Test
+        fun `committed running style with no matching inferred is excluded`() {
+            assertFalse(matchesPreference(null, RunningStyle.LATE_SURGER, listOf(RunningStyle.LATE_SURGER), null, null, RunningStyle.FRONT_RUNNER, null))
+        }
+
+        @Test
+        fun `matching surface kept and off-surface excluded`() {
+            assertTrue(matchesPreference(null, null, emptyList(), TrackSurface.TURF, null, null, TrackSurface.TURF))
+            assertFalse(matchesPreference(null, null, emptyList(), TrackSurface.DIRT, null, null, TrackSurface.TURF))
+        }
+
+        @Test
+        fun `one off-axis fails the whole match`() {
+            // distance matches MEDIUM but surface DIRT != preferred TURF -> excluded
+            assertFalse(matchesPreference(TrackDistance.MEDIUM, null, emptyList(), TrackSurface.DIRT, TrackDistance.MEDIUM, null, TrackSurface.TURF))
+        }
+
+        @Test
+        fun `explicit style match passes despite non-matching inferred styles`() {
+            assertTrue(matchesPreference(null, RunningStyle.FRONT_RUNNER, listOf(RunningStyle.LATE_SURGER), null, null, RunningStyle.FRONT_RUNNER, null))
+        }
+    }
+
+    @Nested
+    @DisplayName("Recovery-skill priority")
+    inner class RecoveryPriorityTests {
+        @Test
+        fun `recovery skills are detected from their description`() {
+            assertTrue(isRecoverySkill("Slightly recovers endurance on the final corner."), "A description mentioning recovery is a recovery skill")
+            assertTrue(isRecoverySkill("RECOVER stamina when overtaken."), "Detection is case-insensitive")
+            assertFalse(isRecoverySkill("Increases velocity slightly on a straight."), "A pure speed skill is not a recovery skill")
+        }
+
+        @Test
+        fun `only Medium and Long builds are stamina-heavy`() {
+            assertTrue(isStaminaHeavyDistance(TrackDistance.MEDIUM), "Medium leans on stamina")
+            assertTrue(isStaminaHeavyDistance(TrackDistance.LONG), "Long leans on stamina the most")
+            assertFalse(isStaminaHeavyDistance(TrackDistance.SPRINT), "Sprint does not lean on recovery")
+            assertFalse(isStaminaHeavyDistance(TrackDistance.MILE), "Mile does not lean on recovery")
+            assertFalse(isStaminaHeavyDistance(null), "No distance preference is not stamina-heavy")
+        }
+
+        @Test
+        fun `recovery ratio is boosted only for recovery skills on stamina-heavy builds`() {
+            assertEquals(3.0, recoveryBoostedRatio(baseRatio = 2.0, isRecovery = true, staminaHeavy = true, boost = 1.5), 0.001, "Recovery skill on a stamina build is boosted")
+            assertEquals(2.0, recoveryBoostedRatio(baseRatio = 2.0, isRecovery = false, staminaHeavy = true, boost = 1.5), 0.001, "A non-recovery skill is never boosted")
+            assertEquals(2.0, recoveryBoostedRatio(baseRatio = 2.0, isRecovery = true, staminaHeavy = false, boost = 1.5), 0.001, "Recovery skill on a non-stamina build is not boosted")
         }
     }
 }

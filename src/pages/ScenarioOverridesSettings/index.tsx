@@ -27,7 +27,51 @@ import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 
 /** Scenarios that currently have a dedicated set of overrides on this page. Only these appear in the campaign picker, since picking any other scenario would render nothing. */
-const SCENARIOS_WITH_OVERRIDES = ["Trackblazer"] as const
+const SCENARIOS_WITH_OVERRIDES = ["Trackblazer", "Unity Cup"] as const
+
+/** Props for `ChipMultiSelect`. */
+interface ChipMultiSelectProps {
+    /** Section header shown above the chip grid. */
+    title: string
+    /** Muted description shown under the header. */
+    description: string
+    /** All selectable chip labels. */
+    options: string[]
+    /** Currently-selected labels. */
+    selected: string[]
+    /** Called with the next selection whenever a chip is toggled. */
+    onToggle: (next: string[]) => void
+}
+
+/**
+ * A labeled multi-select grid of toggle chips backed by a string-array setting. Tapping a chip adds or removes it and reports the next array via `onToggle`.
+ * @param props See `ChipMultiSelectProps`.
+ * @returns The labeled chip grid.
+ */
+function ChipMultiSelect({ title, description, options, selected, onToggle }: ChipMultiSelectProps) {
+    const { colors } = useTheme()
+    return (
+        <View style={{ padding: SPACING.md }}>
+            <Text style={{ fontSize: 16, color: colors.text, marginBottom: 8 }}>{title}</Text>
+            <Text style={{ fontSize: 14, color: colors.text, opacity: 0.7, marginBottom: 12 }}>{description}</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: 20 }}>
+                {options.map((opt) => {
+                    const isSelected = selected.includes(opt)
+                    return (
+                        <Pressable
+                            key={opt}
+                            style={{ padding: 10, borderRadius: 8, marginRight: 8, marginBottom: 8, overflow: "hidden", backgroundColor: isSelected ? colors.brand : colors.surface }}
+                            onPress={() => onToggle(isSelected ? selected.filter((o) => o !== opt) : [...selected, opt])}
+                            android_ripple={{ color: isSelected ? colors.rippleInverse : colors.ripple, foreground: true }}
+                        >
+                            <Text style={{ fontSize: 14, fontWeight: "600", color: isSelected ? colors.onBrand : colors.text }}>{opt}</Text>
+                        </Pressable>
+                    )
+                })}
+            </View>
+        </View>
+    )
+}
 
 /**
  * The Scenario Overrides Settings page.
@@ -154,15 +198,24 @@ const ScenarioOverridesSettings = () => {
         updateOverrideSetting("trackblazerMegaphoneSurplusBurnReserve", defaultSettings.scenarioOverrides.trackblazerMegaphoneSurplusBurnReserve)
     }, [updateOverrideSetting, defaultSettings])
 
-    /** Reset all scenario overrides to defaults. */
+    /** Reset the Unity Cup Training section to defaults. */
+    const resetUnityCupDefaults = useCallback(() => {
+        updateOverrideSetting("unityCupBurstMaxFailureChance", defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance)
+    }, [updateOverrideSetting, defaultSettings])
+
+    /** Reset the currently-edited scenario's overrides to defaults. */
     const resetAllDefaults = useCallback(() => {
-        resetRacingDefaults()
-        resetEnergyDefaults()
-        resetTrainingDefaults()
-        resetShopDefaults()
-        resetConservationDefaults()
+        if (activeCampaign === "Unity Cup") {
+            resetUnityCupDefaults()
+        } else {
+            resetRacingDefaults()
+            resetEnergyDefaults()
+            resetTrainingDefaults()
+            resetShopDefaults()
+            resetConservationDefaults()
+        }
         setShowResetAll(false)
-    }, [resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults])
+    }, [activeCampaign, resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults, resetUnityCupDefaults])
 
     const styles = useMemo(
         () =>
@@ -429,6 +482,17 @@ const ScenarioOverridesSettings = () => {
                                             description="When mood is BAD or AWFUL, refuse to use Reset Whistle / Good-Luck Charm / Megaphone if the selected training's main stat gain is below this floor. Prevents wasting items on structurally low-return turns where the mood multiplier caps the stat gains."
                                         />
                                     </View>
+
+                                    <ChipMultiSelect
+                                        title="Mood Recovery Floor"
+                                        description="Recover mood only when it drops strictly below this floor. NORMAL (the default) skips recovery at Normal mood so more turns go to training; GOOD recovers eagerly like the base campaigns; BAD almost never recovers."
+                                        options={["GOOD", "NORMAL", "BAD"]}
+                                        selected={[scenarioOverrides.trackblazerMoodRecoveryFloor]}
+                                        onToggle={(next) => {
+                                            const pick = next.find((o) => o !== scenarioOverrides.trackblazerMoodRecoveryFloor)
+                                            if (pick) updateOverrideSetting("trackblazerMoodRecoveryFloor", pick)
+                                        }}
+                                    />
                                 </Section>
 
                                 {/* Training */}
@@ -466,18 +530,14 @@ const ScenarioOverridesSettings = () => {
                                     {scenarioOverrides.trackblazerEnableIrregularTraining && (
                                         <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
-                                                searchId="trackblazer-irregular-training-min-stat-gain"
-                                                searchCondition={scenarioOverrides.trackblazerEnableIrregularTraining}
-                                                parentId="trackblazer-enable-irregular-training"
-                                                value={scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
-                                                placeholder={defaultSettings.scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
-                                                onValueChange={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
-                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
-                                                min={20}
+                                                searchId="unity-cup-burst-max-failure-chance"
+                                                value={scenarioOverrides.unityCupBurstMaxFailureChance}
+                                                placeholder={defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance}
+                                                onValueChange={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                                min={0}
                                                 max={100}
                                                 step={5}
-                                                label="Minimum Main Stat Gain for Irregular Training"
-                                                labelUnit=""
+                                                label="Burst Failure-Chance Exemption"
                                                 showValue={true}
                                                 showLabels={true}
                                                 description="Sets the minimum main stat gain required to skip racing and perform Irregular Training instead."
@@ -623,27 +683,6 @@ const ScenarioOverridesSettings = () => {
                                                 onChangeText={setSearchQuery}
                                                 placeholder="Search items by name..."
                                             />
-                                            <View style={{ height: 400 }}>
-                                                <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                                                    {filteredItems.map((itemName) => (
-                                                        <Pressable
-                                                            key={itemName}
-                                                            onPress={() => handleItemPress(itemName)}
-                                                            style={styles.itemContainer}
-                                                            android_ripple={{ color: colors.ripple, foreground: true }}
-                                                        >
-                                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                                                                <Image source={trackblazerIcons[itemName].icon} style={{ width: 48, height: 48, marginRight: 8 }} />
-                                                                <View style={{ flex: 1 }}>
-                                                                    <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>{itemName}</Text>
-                                                                    <Text style={{ fontSize: 12, color: colors.text, opacity: 0.6, marginTop: 2 }}>{trackblazerIcons[itemName].description}</Text>
-                                                                </View>
-                                                                {scenarioOverrides.trackblazerExcludedItems.includes(itemName) && <CircleCheckBig size={18} color={"green"} />}
-                                                            </View>
-                                                        </Pressable>
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
                                         </View>
                                     </View>
                                 </Section>

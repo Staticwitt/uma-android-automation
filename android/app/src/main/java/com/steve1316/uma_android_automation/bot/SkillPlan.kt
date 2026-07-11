@@ -34,6 +34,9 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
     /** The preferred track surface from settings. */
     val skillSettingTrackSurfaceString = SettingsHelper.getStringSetting("skills", "preferredTrackSurface")
 
+    /** Whether to nudge recovery skills up the ranking on stamina-heavy (Medium/Long) builds. Default on. */
+    private val prioritizeRecoveryForStamina: Boolean = SettingsHelper.getBooleanSetting("skills", "prioritizeRecoveryForStamina", true)
+
     /** The preferred track distance override for training. */
     private val trainingSettingTrackDistanceString = SettingsHelper.getStringSetting("training", "preferredDistanceOverride")
 
@@ -141,6 +144,83 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
 
     companion object {
         private val TAG: String = "[${MainActivity.loggerTag}]SkillPlan"
+
+        /** The double-circle (double-O) marker found in double-circle skill names. */
+        private const val DOUBLE_CIRCLE_CHAR: Char = '\u25CE'
+
+        /**
+         * Whether a skill is a recovery skill. Recovery skills describe restoring stamina/endurance, so their description contains "recover". Data-driven off the skill description, not a
+         * fixed name list, so new recovery skills are caught automatically. Pure and unit-testable.
+         *
+         * @param description The skill's description text.
+         * @return True when the skill recovers stamina/endurance.
+         */
+        fun isRecoverySkill(description: String): Boolean = description.contains("recover", ignoreCase = true)
+
+        /**
+         * Whether the build is stamina-heavy, meaning recovery skills carry more value. Medium and Long distances lean on stamina and recovery far more than Sprint or Mile. Pure and testable.
+         *
+         * @param distance The resolved preferred track distance, or null for no preference.
+         * @return True for Medium or Long builds.
+         */
+        fun isStaminaHeavyDistance(distance: TrackDistance?): Boolean = distance == TrackDistance.MEDIUM || distance == TrackDistance.LONG
+
+        /**
+         * The ranking ratio a skill sorts by, boosted for recovery skills on stamina-heavy builds. A modest multiplier that nudges recovery skills up without overriding a clearly stronger
+         * stat skill. Returns the base ratio unchanged when the boost does not apply. Pure and testable.
+         *
+         * @param baseRatio The skill's normal evaluation-point-to-price ratio.
+         * @param isRecovery Whether the skill is a recovery skill.
+         * @param staminaHeavy Whether the boost is active this run (setting on and a Medium/Long build).
+         * @param boost The multiplier to apply when the boost is active. Defaults to 1.5 - a nudge on stamina-heavy (Medium/Long) builds so strong stat skills still compete, not a hard override.
+         * @return The effective ratio to sort by.
+         */
+        fun recoveryBoostedRatio(baseRatio: Double, isRecovery: Boolean, staminaHeavy: Boolean, boost: Double = 1.5): Double =
+            if (isRecovery && staminaHeavy) baseRatio * boost else baseRatio
+
+        /**
+         * The ranking ratio a skill sorts by: its evaluation-point ratio, boosted for recovery skills on stamina-heavy builds. Shared by the auto-strategy sort sites. The description scan
+         * is skipped entirely when the boost is inactive, so it costs nothing on the common (feature-off or Sprint/Mile) path.
+         *
+         * @param entry The skill being ranked.
+         * @param staminaHeavy Whether the recovery boost is active this run (setting on and a Medium/Long build).
+         * @return The effective ratio to sort by, highest first.
+         */
+        fun rankingRatio(entry: SkillListEntry, staminaHeavy: Boolean): Double =
+            recoveryBoostedRatio(entry.evaluationPointRatio, staminaHeavy && isRecoverySkill(entry.skillData.description), staminaHeavy)
+
+        /**
+         * Whether a skill is compatible with the resolved Style preference on every axis. A skill passes when, for each axis with a
+         * preference, it either has no commitment on that axis (generic / aptitude-independent) or its value matches. Running style
+         * matches on the explicit style or any inferred style, mirroring the Optimize Skills include-pass.
+         *
+         * @param skillDistance The skill's track distance, or null.
+         * @param skillStyle The skill's explicit running style, or null.
+         * @param skillInferredStyles The skill's inferred running styles (may be empty).
+         * @param skillSurface The skill's track surface, or null.
+         * @param prefDistance The preferred track distance, or null for no restriction.
+         * @param prefStyle The preferred running style, or null for no restriction.
+         * @param prefSurface The preferred track surface, or null for no restriction.
+         * @return True if the skill is buyable under the preference.
+         */
+        fun matchesPreference(
+            skillDistance: TrackDistance?,
+            skillStyle: RunningStyle?,
+            skillInferredStyles: List<RunningStyle>,
+            skillSurface: TrackSurface?,
+            prefDistance: TrackDistance?,
+            prefStyle: RunningStyle?,
+            prefSurface: TrackSurface?,
+        ): Boolean {
+            val distanceOk = prefDistance == null || skillDistance == null || skillDistance == prefDistance
+            val surfaceOk = prefSurface == null || skillSurface == null || skillSurface == prefSurface
+            val styleOk =
+                prefStyle == null ||
+                    (skillStyle == null && skillInferredStyles.isEmpty()) ||
+                    skillStyle == prefStyle ||
+                    prefStyle in skillInferredStyles
+            return distanceOk && surfaceOk && styleOk
+        }
 
         /**
          * Represents a skill available for purchase in a pure calculation context.
@@ -601,6 +681,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
         MessageLog.d(TAG, "[DEBUG] getSkillsToBuyOptimizeSkillsStrategy:: Using preferred running style: $preferredRunningStyle")
         MessageLog.d(TAG, "[DEBUG] getSkillsToBuyOptimizeSkillsStrategy:: Using preferred track distance: $preferredTrackDistance")
         MessageLog.d(TAG, "[DEBUG] getSkillsToBuyOptimizeSkillsStrategy:: Using preferred track surface: $preferredTrackSurface")
+        val staminaHeavy = prioritizeRecoveryForStamina && isStaminaHeavyDistance(preferredTrackDistance)
 
         // Retrieve skills that match the specified aptitudes or are style-agnostic.
         fun getFilteredSkills(remainingSkillPoints: Int): Map<String, SkillListEntry> {
@@ -641,8 +722,8 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                     continue
                 }
 
-                // Sort within the tier by evaluation point ratio.
-                val sortedByPointRatio: List<SkillListEntry> = group.sortedByDescending { it.evaluationPointRatio }
+                // Sort within the tier by evaluation point ratio, nudging recovery skills up on stamina-heavy builds.
+                val sortedByPointRatio: List<SkillListEntry> = group.sortedByDescending { rankingRatio(it, staminaHeavy) }
                 for (entry in sortedByPointRatio) {
                     // Don't add duplicate entries.
                     if (entry.name in result || entry.name in skillsToBuy) {
@@ -695,6 +776,14 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
     private fun getSkillsToBuyOptimizeRankStrategy(skillPlanSettings: SkillPlanSettings, skillList: SkillList, skillsToBuy: List<String>, availableSkillPoints: Int): Map<String, Int> {
         val result: MutableMap<String, Int> = mutableMapOf()
         var remainingSkillPoints = availableSkillPoints
+        // Resolve the preferred track distance the same way the Optimize Skills strategy does, since the recovery boost keys off stamina-heavy (Medium/Long) builds.
+        val preferredTrackDistance: TrackDistance? =
+            when (skillSettingTrackDistanceString.lowercase()) {
+                "no_preference" -> null
+                "inherit" -> TrackDistance.fromName(trainingSettingTrackDistanceString) ?: campaign.trainee.trackDistance
+                else -> TrackDistance.fromName(skillSettingTrackDistanceString)
+            }
+        val staminaHeavy = prioritizeRecoveryForStamina && isStaminaHeavyDistance(preferredTrackDistance)
 
         // Iterate until no more affordable skills are found, as purchasing can unlock new options.
         val maxIterations = 10
@@ -703,7 +792,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
         while (remainingSkills.any { it.value.screenPrice <= remainingSkillPoints }) {
             val sortedByPointRatio: List<SkillListEntry> =
                 remainingSkills.values
-                    .sortedByDescending { it.evaluationPointRatio }
+                    .sortedByDescending { rankingRatio(it, staminaHeavy) }
 
             for (entry in sortedByPointRatio) {
                 // Don't add duplicate entries.

@@ -249,15 +249,15 @@ flowchart TD
     C -->|Yes| RACE
     C -->|No| D{"Maiden race\nnot completed?"}
     D -->|Yes| RACE
-    D -->|No| E{"Pre-Summer prep?\n(June Late, Classic/Senior)"}
+    D -->|No| F{"Fan or Trophy\nrequirement active?"}
+    F -->|Yes| RACE
+    F -->|No| E{"Pre-Summer prep?\n(June Late, Classic/Senior)"}
     E -->|Yes| PreSummer{"Energy < 70%?"}
     PreSummer -->|Yes| REST["→ REST"]
     PreSummer -->|No| MoodCheck{"Mood < Great?"}
     MoodCheck -->|Yes| RECOVER["→ RECOVER_MOOD"]
     MoodCheck -->|No| WIT["→ TRAIN (forced Wit)"]
-    E -->|No| F{"Fan or Trophy\nrequirement active?"}
-    F -->|Yes| RACE
-    F -->|No| G{"Injury detected?\n(skipped in Finale)"}
+    E -->|No| G{"Injury detected?\n(skipped in Finale)"}
     G -->|Yes| NONE["→ NONE\n(injury handled internally)"]
     G -->|No| H{"Mood recovery\nneeded?"}
     H -->|Yes| RECOVER
@@ -274,15 +274,16 @@ flowchart TD
 2. **Racing popup:** If a previous race selection triggered a popup that wasn't fully resolved, continue with racing.
 3. **Force Racing:** User setting that bypasses all other logic and forces racing every turn.
 4. **Maiden Race:** The first race of the campaign must be completed before regular training resumes.
-5. **Pre-Summer Prep (June Late):** On the last turn before Summer training, the bot ensures energy is high (≥70%) and mood is Great. If energy is low, it rests. If mood is low, it recovers mood. If both are fine, it trains Wit (which recovers some energy in preparation for Summer Training).[^1]
+5. **Fan/Trophy Requirements:** If the game requires a minimum fan count, trophy count, or goal race points, the bot prioritizes racing to meet it. This **outranks** pre-summer prep so a mandatory career goal (e.g. a "win a G1" trophy) is never skipped in favor of a summer-prep training. A G1-only trophy on a turn where the races database holds no G1 does **not** force the race-screen round-trip; the bot falls through and trains instead.
+6. **Pre-Summer Prep (June Late):** On the last turn before Summer training, the bot ensures energy is high (≥70%) and mood is Great. If energy is low, it rests. If mood is low, it recovers mood. If both are fine, it trains Wit (which recovers some energy in preparation for Summer Training).[^1]
 
 [^1]: Wit is chosen as the "throwaway" training because it recovers some energy, helping the trainee enter Summer Training in better condition.
-6. **Fan/Trophy Requirements:** If the game requires a minimum fan count or trophy count, the bot prioritizes racing to meet it.
 7. **Injury Check:** If an injury is detected, the bot handles it (usually by resting). This check is **skipped during Finale turns** since those races are mandatory.
-8. **Mood Recovery:** If mood has dropped to Normal or below, the bot recovers before training (bad mood penalizes training gains).
-9. **Extra Racing:** If the bot is eligible for extra races (based on farming fans, racing plan, or smart racing logic), it races.
-10. **Energy Banking (opt-in, off by default):** If enabled, and energy is below a configurable threshold (default 50%) while the next mandatory race is within a configurable lookahead window (default 2 turns, read via the same "turns remaining before next goal" OCR Racing.kt uses for extra-race timing), the bot rests instead of training. This generalizes the Pre-Summer Prep energy check (item 5) so the same "don't enter a mandatory race running on empty" logic applies year-round, ahead of *any* mandatory race, not just before Summer.
-11. **Default: Train.** If nothing else applies, the bot trains.
+8. **Mood Recovery:** If mood has dropped below the recovery floor, the bot recovers before training (bad mood penalizes training gains). Skipped once the finale is underway, since recovering mood with at most three turns left wastes one of them.
+9. **G1-Day Preference (opt-in, off by default):** On a G1 race day (Classic/Senior years), the bot peeks at the training screen first and stays to train when the best training has enough rainbow supports (configurable threshold); otherwise it races the G1.
+10. **Extra Racing:** If the bot is eligible for extra races (based on farming fans, racing plan, or smart racing logic), it races. The fan-farming interval fallback respects the Minimum Energy for Optional Racing floor.
+11. **Energy Banking (opt-in, off by default):** If enabled, and energy is below a configurable threshold (default 50%) while the next mandatory race is within a configurable lookahead window (default 2 turns, read via the same "turns remaining before next goal" OCR Racing.kt uses for extra-race timing), the bot rests instead of training. This generalizes the Pre-Summer Prep energy check (item 6) so the same "don't enter a mandatory race running on empty" logic applies year-round, ahead of *any* mandatory race, not just before Summer.
+12. **Default: Train.** If nothing else applies, the bot trains. The train/rest decision is made from the full five-facility analysis, not the Speed facility's failure chance alone.
 
 > [!NOTE]
 > **Trackblazer override:** Before calling the base decision logic, Trackblazer's `decideNextAction()` first checks for **Irregular Training** — evaluating whether a high-value training opportunity exists that's worth skipping a race for. See [Section 11.6](#116-irregular-training) for details.

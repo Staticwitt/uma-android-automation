@@ -268,6 +268,12 @@ const searchConfig: SearchOption[] = [
         page: "TrainingSettings",
     },
     {
+        id: "enable-running-style-stamina-adjustment",
+        title: "Running Style Stamina Adjustment",
+        description: "Scale the stamina stat target by the trainee's running style: Front Runners need less stamina, End Closers more. Off by default.",
+        page: "TrainingSettings",
+    },
+    {
         id: "disable-stat-targets",
         title: "Disable Stat Targets",
         description:
@@ -574,6 +580,26 @@ const searchConfig: SearchOption[] = [
         title: "Days to Run Extra Races",
         description: "Extra races are eligible only on days where current day % value == 0. For example, 5 means days 5, 10, 15, etc. Has no effect when Smart Race Solver is enabled.",
         page: "RacingSettings",
+    },
+    {
+        id: "min-energy-for-extra-racing",
+        title: "Minimum Energy for Extra Races",
+        description:
+            "Skip the fan-farming extra race when energy is below this percentage. 0 disables the floor. Only gates the standard fan-farming cadence, never mandatory, scheduled, or solver races.",
+        page: "RacingSettings",
+    },
+    {
+        id: "enable-g1-day-preference",
+        title: "Prefer Training on G1 Days",
+        description: "On a G1 race day (Classic/Senior years), peek at the trainings first and stay to train when a strong rainbow training is available instead of taking the race.",
+        page: "RacingSettings",
+    },
+    {
+        id: "g1-day-min-rainbow-count",
+        title: "Minimum Rainbows to Train Over G1",
+        description: "The best training must have at least this many rainbow supports to train instead of racing the G1.",
+        page: "RacingSettings",
+        parentId: "enable-g1-day-preference",
     },
     {
         id: "ignore-consecutive-race-warning",
@@ -886,6 +912,12 @@ const searchConfig: SearchOption[] = [
         description: "Dictates which skills are considered for purchase based on the terrain.",
         page: "Skills",
     },
+    {
+        id: "prioritize-recovery-for-stamina",
+        title: "Prioritize Recovery Skills for Stamina",
+        description: "On Medium/Long builds, nudge recovery skills up the auto-purchase ranking so the trainee holds pace longer. Has no effect on Sprint/Mile builds.",
+        page: "Skills",
+    },
 
     // ============================================================
     // Skill Plan Settings — Skill Point Check
@@ -1003,6 +1035,18 @@ const searchConfig: SearchOption[] = [
         title: "Trackblazer Consecutive Races Limit",
         description:
             "Sets the maximum number of consecutive races the bot is allowed to run in the Trackblazer scenario before stopping. Note that a -30 stat penalty can apply starting from 3 consecutive races.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "trackblazer-mood-recovery-floor",
+        title: "Trackblazer Mood Recovery Floor",
+        description: "Recover mood only when it drops strictly below this floor. NORMAL (the default) skips recovery at Normal mood so more turns go to training.",
+        page: "ScenarioOverridesSettings",
+    },
+    {
+        id: "unity-cup-burst-max-failure-chance",
+        title: "Unity Cup Burst Failure-Chance Exemption",
+        description: "Allow a training with a Spirit Explosion gauge ready to burst up to this failure chance before it is skipped. 0 disables the exemption and uses the normal failure limit.",
         page: "ScenarioOverridesSettings",
     },
     {

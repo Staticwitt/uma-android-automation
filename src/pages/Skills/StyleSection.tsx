@@ -7,6 +7,7 @@ import { SheetModal } from "../../components/ui/sheet-modal"
 import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import InfoCallout from "../../components/ui/info-callout"
+import { Switch } from "../../components/ui/switch"
 import { SkillsContext, defaultSettings } from "../../context/BotStateContext"
 import { useTheme } from "../../context/ThemeContext"
 import { TYPE } from "../../lib/type"
@@ -62,7 +63,7 @@ const StyleSection: React.FC = () => {
     const { colors } = useTheme()
     const { skills, updateSkills } = useContext(SkillsContext)
     const merged = { ...defaultSettings.skills, ...skills }
-    const { preferredRunningStyle, preferredTrackDistance, preferredTrackSurface } = merged
+    const { preferredRunningStyle, preferredTrackDistance, preferredTrackSurface, prioritizeRecoveryForStamina } = merged
     const modalShellStyles = useModalShellStyles()
     const [openPicker, setOpenPicker] = useState<OpenPicker>(null)
 
@@ -152,6 +153,12 @@ const StyleSection: React.FC = () => {
                     description="Dictates which skills are considered for purchase based on the terrain."
                     onPress={() => setOpenPicker("surface")}
                     right={chipFor(surfaceChip)}
+                />
+                <SettingRow
+                    id="prioritize-recovery-for-stamina"
+                    title="Prioritize Recovery Skills for Stamina"
+                    description="On Medium/Long builds, nudge recovery skills up the auto-purchase ranking so the trainee holds pace longer. Has no effect on Sprint/Mile builds."
+                    right={<Switch checked={prioritizeRecoveryForStamina} onCheckedChange={(checked) => updateSkills({ prioritizeRecoveryForStamina: checked })} />}
                 />
             </Section>
 
