@@ -6471,9 +6471,14 @@
             }
 
             function trainerBuildDecisionItems() {
+                // DecisionTracer (bot/DecisionTracer.kt) emits one "... Decision Report ..." block per turn via
+                // MessageLog.i, containing a "Training selected: STAT (source=...)" line and, below it, "- STAT
+                // (considered|REJECTED): score=N.NN, ..." runner-up lines. This is the only per-turn ranking data
+                // the bot actually logs, so rank against that instead of the "Decision @"/"DecisionEngine:" markers
+                // that no backend code ever emits (which left this panel permanently stuck on its placeholder).
                 const latestDecision = [...allMessages].reverse().find((entry) => {
                     const message = entry.parsed && entry.parsed.message ? entry.parsed.message : ""
-                    return message.includes("Decision @") || message.includes("DecisionEngine:")
+                    return message.includes("Decision Report")
                 })
                 const list = document.getElementById("trainerDecisionList")
                 if (!list) return
@@ -6483,16 +6488,35 @@
                 }
 
                 const message = latestDecision.parsed.message
-                const rows = message
-                    .split("\n")
-                    .map((line) => line.trim())
-                    .filter((line) => /^\d+\./.test(line) || /picked/i.test(line))
+                const lines = message.split("\n").map((line) => line.trim())
+
+                const pickedMatch = lines.map((line) => line.match(/^Training selected:\s*(\w+)/)).find(Boolean)
+                const candidates = []
+                if (pickedMatch && pickedMatch[1] !== "NONE") {
+                    candidates.push({ score: null, label: `${pickedMatch[1]} (picked)` })
+                }
+                lines.forEach((line) => {
+                    const match = line.match(/^-\s*(\w+)\s*\((considered|REJECTED)\):\s*(?:score=(-?[\d.]+))?/)
+                    if (!match) return
+                    const [, stat, verdict, score] = match
+                    candidates.push({
+                        score: score !== undefined ? parseFloat(score) : null,
+                        label: verdict === "REJECTED" ? `${stat} (rejected)` : stat,
+                    })
+                })
+
+                if (candidates.length === 0) {
+                    list.innerHTML = '<div class="trainer-decision-item"><span>1.</span><span class="trainer-decision-score">-</span><span>No ranking data this turn.</span></div>'
+                    return
+                }
+
+                const ranked = candidates
+                    .sort((a, b) => (b.score ?? Infinity) - (a.score ?? Infinity))
                     .slice(0, 8)
 
-                list.innerHTML = rows.map((line, index) => {
-                    const score = line.match(/(-?\d+(?:\.\d+)?)/)
-                    const label = line.replace(/^\d+\.\s*/, "").replace(/\s+/g, " ")
-                    return `<div class="trainer-decision-item"><span>${index + 1}.</span><span class="trainer-decision-score">${score ? escapeHtml(score[1]) : "-"}</span><span>${escapeHtml(label)}</span></div>`
+                list.innerHTML = ranked.map((item, index) => {
+                    const scoreText = item.score === null ? "picked" : item.score.toFixed(1)
+                    return `<div class="trainer-decision-item"><span>${index + 1}.</span><span class="trainer-decision-score">${escapeHtml(scoreText)}</span><span>${escapeHtml(item.label)}</span></div>`
                 }).join("")
             }
 
