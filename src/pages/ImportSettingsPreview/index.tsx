@@ -4,6 +4,7 @@ import { useNavigation, useRoute, CommonActions } from "@react-navigation/native
 import { useTheme } from "../../context/ThemeContext"
 import CustomButton from "../../components/CustomButton"
 import { SettingsChange } from "../../hooks/useSettingsFileManager"
+import type { ImportTypeIssue } from "../../lib/settingsUtils"
 import { useSettings } from "../../context/SettingsContext"
 import { DomainHeader } from "../../components/ui/domain-header"
 import { usePerformanceLogging } from "../../hooks/usePerformanceLogging"
@@ -19,6 +20,8 @@ interface ImportSettingsPreviewParams {
     changes: SettingsChange[]
     /** The file URI of the imported settings JSON file. */
     fileUri: string
+    /** Fields dropped from the file because their value's type did not match the app's schema. They keep their current values on import. */
+    issues?: ImportTypeIssue[]
 }
 
 /**
@@ -37,6 +40,7 @@ const ImportSettingsPreview = () => {
     const params = (route.params as ImportSettingsPreviewParams) || { changes: [], fileUri: "" }
     const changes = params.changes || []
     const fileUri = params.fileUri || ""
+    const issues = params.issues || []
 
     // Group changes by category and return an object with the category as the key and the changes as the value.
     const groupedChanges = useMemo(() => {
@@ -122,6 +126,24 @@ const ImportSettingsPreview = () => {
                     alignItems: "center",
                     backgroundColor: colors.bg,
                 },
+                issuesBanner: {
+                    borderWidth: 1,
+                    borderColor: colors.warningText,
+                    borderRadius: 8,
+                    padding: SPACING.md,
+                    marginBottom: 16,
+                },
+                issuesTitle: {
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: colors.warningText,
+                    marginBottom: 4,
+                },
+                issuesText: {
+                    fontSize: 11,
+                    color: colors.textMuted,
+                    lineHeight: 16,
+                },
             }),
         [colors]
     )
@@ -160,6 +182,14 @@ const ImportSettingsPreview = () => {
         <View style={styles.root}>
             <DomainHeader breadcrumb="Tools" title="Import Preview" subtitle="Review setting changes before applying an import." />
             <ScrollView style={styles.content} showsVerticalScrollIndicator={true}>
+                {issues.length > 0 && (
+                    <View style={styles.issuesBanner}>
+                        <Text style={styles.issuesTitle}>
+                            {issues.length} field{issues.length !== 1 ? "s" : ""} in this file {issues.length !== 1 ? "have" : "has"} the wrong type and will be ignored
+                        </Text>
+                        <Text style={styles.issuesText}>{issues.map((issue) => `${issue.category}.${issue.key} (expected ${issue.expected}, got ${issue.received})`).join("\n")}</Text>
+                    </View>
+                )}
                 {changes.length === 0 ? (
                     <View style={styles.noChangesContainer}>
                         <Text style={styles.noChangesText}>No settings would be changed. The imported settings are identical to your current settings.</Text>

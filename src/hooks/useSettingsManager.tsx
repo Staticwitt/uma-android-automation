@@ -6,7 +6,7 @@ import { defaultSettings, Settings, BotMetaContext, useSettingsSnapshot } from "
 import { databaseManager } from "../lib/database"
 import { startTiming } from "../lib/performanceLogger"
 import { logWithTimestamp, logErrorWithTimestamp } from "../lib/logger"
-import { deepMerge, convertSettingsToBatch, applyMigrations, stripDbOwnedKeys } from "../lib/settingsUtils"
+import { deepMerge, convertSettingsToBatch, applyMigrations, stripDbOwnedKeys, sanitizeImportedSettings } from "../lib/settingsUtils"
 
 export { deepMerge, convertSettingsToBatch, applyMigrations }
 
@@ -269,12 +269,17 @@ export const useSettingsManager = () => {
     }
 
     /**
-     * Ensure all required `Settings` fields exist by filling missing ones with defaults.
+     * Ensure all required `Settings` fields exist by filling missing ones with defaults. Fields whose imported value has the
+     * wrong type for the schema are dropped first (falling back to the default) so a malformed file can never crash the app.
      * @param decoded - The `Settings` object to fix.
      * @returns A `Settings` object with all required fields populated.
      */
     const fixSettings = (decoded: Settings): Settings => {
-        const merged = deepMerge(defaultSettings, decoded as Partial<Settings>)
+        const { sanitized, issues } = sanitizeImportedSettings(defaultSettings, decoded as Partial<Settings>)
+        if (issues.length > 0) {
+            logWithTimestamp(`[SettingsManager] Import dropped ${issues.length} type-mismatched field(s): ${issues.map((i) => `${i.category}.${i.key}`).join(", ")}`)
+        }
+        const merged = deepMerge(defaultSettings, sanitized)
         // Apply all migrations to the settings.
         const { settings } = applyMigrations(merged, decoded)
         return settings

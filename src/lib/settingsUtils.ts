@@ -21,6 +21,73 @@ export const deepMerge = <T extends Record<string, any>>(target: T, source: Part
     return output
 }
 
+/** A field dropped from an imported settings file because its value's type did not match the app's schema. */
+export interface ImportTypeIssue {
+    /** The settings category the field lives in (e.g. "training"). */
+    category: string
+    /** The offending field key. */
+    key: string
+    /** Human-readable expected type derived from the default value (e.g. "array", "number"). */
+    expected: string
+    /** Human-readable type of the rejected imported value. */
+    received: string
+}
+
+/** Human-readable type tag used for the import mismatch report: distinguishes arrays from plain objects, everything else via typeof. */
+const typeTag = (value: unknown): string => (Array.isArray(value) ? "array" : value === null ? "null" : typeof value)
+
+/**
+ * Strips type-mismatched fields from an imported settings object before it is merged into app state.
+ *
+ * `deepMerge` copies imported values wholesale, so a hand-edited preset with the wrong type for a field (e.g. a CSV string
+ * where the app stores an array) used to be written into React state untouched and crash later at render time. This walks
+ * the import against `defaults`: any key that exists in the defaults but whose imported value has a different type tag
+ * (array / object / string / number / boolean) is dropped and reported. Keys absent from the defaults are left untouched —
+ * they may be old-location fields that `applyMigrations` still knows how to relocate.
+ *
+ * @param defaults - The full default settings object that defines each field's expected type.
+ * @param imported - The parsed, untrusted import to sanitize. Not mutated.
+ * @returns The sanitized copy plus the list of dropped fields (empty when the import was clean).
+ */
+export const sanitizeImportedSettings = <T extends Record<string, any>>(defaults: T, imported: Partial<T>): { sanitized: Partial<T>; issues: ImportTypeIssue[] } => {
+    const issues: ImportTypeIssue[] = []
+    const sanitized: Record<string, any> = {}
+
+    for (const [category, categoryValues] of Object.entries(imported as Record<string, any>)) {
+        const defaultCategory = (defaults as Record<string, any>)[category]
+
+        // Whole-category mismatches (e.g. "training": "oops") and unknown categories pass through untouched for applyMigrations to sort out,
+        // unless the default category is an object and the import isn't - that shape can never merge sensibly, so drop it.
+        if (!defaultCategory || typeof defaultCategory !== "object" || Array.isArray(defaultCategory)) {
+            sanitized[category] = categoryValues
+            continue
+        }
+        if (!categoryValues || typeof categoryValues !== "object" || Array.isArray(categoryValues)) {
+            issues.push({ category, key: "(entire category)", expected: "object", received: typeTag(categoryValues) })
+            continue
+        }
+
+        const filtered: Record<string, any> = {}
+        for (const [key, value] of Object.entries(categoryValues as Record<string, any>)) {
+            const defaultValue = defaultCategory[key]
+            // Unknown keys (not in defaults) are kept: they may be legacy fields a migration relocates. Null defaults carry no type information.
+            if (!(key in defaultCategory) || defaultValue === null || defaultValue === undefined || value === null) {
+                filtered[key] = value
+                continue
+            }
+            if (typeTag(defaultValue) !== typeTag(value)) {
+                issues.push({ category, key, expected: typeTag(defaultValue), received: typeTag(value) })
+                logWithTimestamp(`[SettingsImport] Dropping "${category}.${key}": expected ${typeTag(defaultValue)}, got ${typeTag(value)}.`)
+                continue
+            }
+            filtered[key] = value
+        }
+        sanitized[category] = filtered
+    }
+
+    return { sanitized: sanitized as Partial<T>, issues }
+}
+
 /**
  * Persisted settings whose canonical owner is *not* the React-state `Settings` object. They live
  * in SQLite and are read directly by Kotlin (or by a dedicated JS writer) — round-tripping them

@@ -6,7 +6,7 @@ import { useNavigation } from "@react-navigation/native"
 import { useSettings } from "../context/SettingsContext"
 import { Settings, defaultSettings, getLatestSettingsSnapshot } from "../context/BotStateContext"
 import { logErrorWithTimestamp } from "../lib/logger"
-import { deepMerge, applyMigrations } from "../lib/settingsUtils"
+import { deepMerge, applyMigrations, sanitizeImportedSettings, type ImportTypeIssue } from "../lib/settingsUtils"
 
 /**
  * Format a value for display in the preview dialog.
@@ -98,15 +98,17 @@ const compareSettings = (current: Settings, imported: Settings) => {
  * @returns A `Settings` object with all fields populated (merged with defaults).
  * @throws Error if file cannot be read or parsed.
  */
-const loadFromJSONFile = async (fileUri: string): Promise<Settings> => {
+const loadFromJSONFile = async (fileUri: string): Promise<{ settings: Settings; issues: ImportTypeIssue[] }> => {
     try {
         const data = await new File(fileUri).text()
         const parsed = JSON.parse(data) as Settings
-        // Merge with defaults so missing fields populate, then apply migrations so the preview reflects the post-import shape
+        // Drop type-mismatched fields first (they fall back to defaults and are surfaced on the preview screen), merge with
+        // defaults so missing fields populate, then apply migrations so the preview reflects the post-import shape
         // (e.g. fields relocated between categories show up under the new category, matching what `useSettingsManager.importSettings` does).
-        const merged = deepMerge(defaultSettings, parsed as Partial<Settings>)
+        const { sanitized, issues } = sanitizeImportedSettings(defaultSettings, parsed as Partial<Settings>)
+        const merged = deepMerge(defaultSettings, sanitized)
         const { settings } = applyMigrations(merged, parsed)
-        return settings
+        return { settings, issues }
     } catch (error) {
         logErrorWithTimestamp(`Error reading settings from JSON file: ${error}`)
         throw error
@@ -183,7 +185,7 @@ export const useSettingsFileManager = () => {
      */
     const compareAndPreviewSettings = async (fileUri: string) => {
         try {
-            const importedSettings = await loadFromJSONFile(fileUri)
+            const { settings: importedSettings, issues } = await loadFromJSONFile(fileUri)
             const changes = compareSettings(getLatestSettingsSnapshot(), importedSettings)
 
             const formattedChanges = changes.map((change) => ({
@@ -199,6 +201,7 @@ export const useSettingsFileManager = () => {
             ;(navigation as any).navigate("ImportSettingsPreview", {
                 changes: formattedChanges,
                 fileUri: fileUri,
+                issues: issues,
             })
         } catch (error) {
             logErrorWithTimestamp("Error comparing settings:", error)
