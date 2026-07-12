@@ -31,6 +31,7 @@ import com.steve1316.uma_android_automation.utils.AppUpdateChecker
 import com.steve1316.uma_android_automation.utils.LogStreamServer
 import com.steve1316.uma_android_automation.bot.DiscordEmbedColors
 import com.steve1316.uma_android_automation.bot.ParentFarmingSessionState
+import com.steve1316.uma_android_automation.bot.CareerRunArchive
 import com.steve1316.uma_android_automation.bot.ParentRunArchive
 import dev.kord.common.Color
 import dev.kord.common.entity.Snowflake
@@ -643,6 +644,25 @@ class StartModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaM
             promise.resolve(null)
         } catch (e: Exception) {
             promise.reject("PARENT_RUN_ARCHIVE", "Failed to clear parent run archive: ${e.message}")
+        }
+    }
+
+    @ReactMethod
+    fun getCareerRunArchive(promise: Promise) {
+        try {
+            promise.resolve(CareerRunArchive.readJson(context))
+        } catch (e: Exception) {
+            promise.reject("CAREER_RUN_ARCHIVE", "Failed to read career run archive: ${e.message}")
+        }
+    }
+
+    @ReactMethod
+    fun clearCareerRunArchive(promise: Promise) {
+        try {
+            CareerRunArchive.clear(context)
+            promise.resolve(null)
+        } catch (e: Exception) {
+            promise.reject("CAREER_RUN_ARCHIVE", "Failed to clear career run archive: ${e.message}")
         }
     }
 
