@@ -319,6 +319,8 @@ export interface Settings {
         ocrThreshold: number
         templateMatchConfidence: number
         templateMatchCustomScale: number
+        /** Per-device rainbow-detection thresholds fitted by the calibration wizard, as JSON `{"perHueFloor":n,"dominantThreshold":n}`. Empty string = use built-in defaults. */
+        rainbowCalibration: string
         enableAutoDisplayProfileTuning: boolean
         debugMode_startTemplateMatchingTest: boolean
         debugMode_startSingleTrainingOCRTest: boolean
@@ -688,6 +690,7 @@ export const defaultSettings: Settings = {
         ocrThreshold: 230,
         templateMatchConfidence: 0.8,
         templateMatchCustomScale: 1.0,
+        rainbowCalibration: "",
         enableAutoDisplayProfileTuning: true,
         debugMode_startTemplateMatchingTest: false,
         debugMode_startSingleTrainingOCRTest: false,
