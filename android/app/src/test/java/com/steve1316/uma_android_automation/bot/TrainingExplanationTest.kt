@@ -160,13 +160,17 @@ class TrainingExplanationTest {
     @DisplayName("Unity Cup burst exemption raises the failure ceiling only when a gauge is ready and the setting is above the base")
     fun testBurstExemptFailureChance() {
         // Default setting (0) is a pure pass-through even with a gauge ready.
-        assertEquals(15, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 1, burstMax = 0))
+        assertEquals(15, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 1, extremeReady = 0, burstMax = 0))
         // No gauge ready: the exemption never applies regardless of the setting.
-        assertEquals(15, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 0, burstMax = 40))
+        assertEquals(15, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 0, extremeReady = 0, burstMax = 40))
         // Gauge ready and setting above base: the ceiling is raised to the burst max.
-        assertEquals(40, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 1, burstMax = 40))
+        assertEquals(40, burstExemptFailureChance(baseFailureChance = 15, readyToBurst = 1, extremeReady = 0, burstMax = 40))
         // Setting below the base never lowers the ceiling.
-        assertEquals(30, burstExemptFailureChance(baseFailureChance = 30, readyToBurst = 2, burstMax = 20))
+        assertEquals(30, burstExemptFailureChance(baseFailureChance = 30, readyToBurst = 2, extremeReady = 0, burstMax = 20))
+        // An Extreme Spirit Burst is guaranteed 0% failure, so it is fully exempt from the failure-chance gate regardless of the base or the setting.
+        assertEquals(Int.MAX_VALUE, burstExemptFailureChance(baseFailureChance = 30, readyToBurst = 0, extremeReady = 1, burstMax = 0))
+        // Extreme readiness takes precedence over a regular ready-to-burst gauge.
+        assertEquals(Int.MAX_VALUE, burstExemptFailureChance(baseFailureChance = 30, readyToBurst = 1, extremeReady = 1, burstMax = 15))
     }
 
     @Test

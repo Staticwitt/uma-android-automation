@@ -1,17 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.21</latestVersion>
-    <latestVersionCode>193</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.21</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.21/v5.10.21-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.21/v5.10.21-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.22</latestVersion>
+    <latestVersionCode>194</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.22</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.21 - Settings and detection fixes
+v5.10.22 - Unity Cup Extreme Spirit Burst fixes
 
 Fixed
 -----
-- A single corrupted delay-override entry no longer silently disables all per-action delay tuning; bad entries are skipped and the rest still apply.
-- Tightened rainbow detection so low-bond support cards no longer register as false rainbows.
+- The bot no longer rests through an Extreme Spirit Burst in Unity Cup. Extreme bursts are guaranteed 0% failure but were being filtered out by the failure-chance and expected-value gates because the exemption only checked regular ready-to-burst gauges, not the separate Extreme burst state.
+- The bot no longer races past an Extreme Spirit Burst or a strong rainbow in Unity Cup. When the Smart Race Solver had an optional race planned, it went straight to racing without checking the training board (the solver's schedule can't see spirit gauges). It now peeks the board first and trains a ready Extreme Burst, or a rainbow count at/above the G1-day threshold, instead of taking the optional race. Mandatory and scheduled races are unaffected.
 
     </releaseNotes>
   </update>
