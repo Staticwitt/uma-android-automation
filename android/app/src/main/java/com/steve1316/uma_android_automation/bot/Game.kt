@@ -15,6 +15,7 @@ import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.bot.DiscordEmbedService
 import com.steve1316.uma_android_automation.bot.SkillDatabase
 import com.steve1316.uma_android_automation.bot.Task
+import com.steve1316.uma_android_automation.bot.campaigns.GrandLive
 import com.steve1316.uma_android_automation.bot.campaigns.Trackblazer
 import com.steve1316.uma_android_automation.bot.campaigns.UnityCup
 import com.steve1316.uma_android_automation.bot.campaigns.UraFinale
@@ -79,6 +80,7 @@ class Game(val myContext: Context) {
             "URA Finale" -> UraFinale(this)
             "Unity Cup" -> UnityCup(this)
             "Trackblazer" -> Trackblazer(this)
+            "Grand Live" -> GrandLive(this)
             else -> throw InterruptedException("Invalid scenario: $scenario")
         }
 
