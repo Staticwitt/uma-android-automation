@@ -2753,7 +2753,15 @@ abstract class Campaign(game: Game) : Task(game) {
             return MainScreenAction.RECOVER_MOOD
         }
 
-        SmartRaceSolverMainScreenGate.maybeSolverMainScreenAction(this, game.scenario, date.day)?.let { return it }
+        SmartRaceSolverMainScreenGate.maybeSolverMainScreenAction(this, game.scenario, date.day)?.let { solverAction ->
+            // In Unity Cup the solver's schedule cannot see spirit gauges, so before committing to an OPTIONAL solver-planned race, peek the training screen and let an Extreme
+            // Spirit Burst (guaranteed 0% failure) or a rainbow count >= g1DayMinRainbowCount override the race. Mandatory/scheduled races were already handled above, so any race
+            // the solver gate returns here is optional. The solver re-solves every turn, so a skipped race is rescheduled if it is still needed for a fan/epithet target.
+            if (solverAction == MainScreenAction.RACE && game.scenario == "Unity Cup" && !isFinals) {
+                unityCupTrainingBeatsPlannedRace()?.let { return it }
+            }
+            return solverAction
+        }
 
         if (shouldRunG1DayPreScreen(racing.enableG1DayPreference, date.year, date.isSummer(), isFinals, trainee.energy, racing.minimumEnergyForOptionalRacing, hasG1Race = { racing.hasG1RacesAtTurn(date.day) })) {
             g1DayPreScreenResult()?.let { return it }
@@ -2812,6 +2820,39 @@ abstract class Campaign(game: Game) : Task(game) {
             decisionTracer.recordActionChoice(MainScreenAction.RACE, "G1-day preference: best training has only $bestNumRainbow rainbow(s) < $threshold threshold; racing the G1")
             training.clearAnalysisCache()
             MainScreenAction.RACE
+        }
+    }
+
+    /**
+     * Unity Cup only: a Smart Race Solver-planned OPTIONAL race should yield to high-value board state the solver's schedule cannot see - an Extreme Spirit Burst (guaranteed 0% failure,
+     * the scenario's highest-value action) or a rainbow count of at least [Racing.g1DayMinRainbowCount]. Peeks the training screen, analyzes it, and backs out. On TRAIN the cached analysis
+     * is reused for free by the follow-up handleTraining(); on RACE the cache is cleared so a stale analysis cannot leak into a later turn. The solver re-solves every turn, so a race
+     * skipped here is rescheduled next turn if it is still needed for a fan/epithet target.
+     *
+     * @return TRAIN to stay and train the burst/rainbow, or null to keep the solver's planned race (including when the training screen could not be entered).
+     */
+    private fun unityCupTrainingBeatsPlannedRace(): MainScreenAction? {
+        if (!ButtonTraining.click(game.imageUtils)) return null
+        game.wait(0.5)
+
+        training.analyzeTrainings()
+        val results = training.cachedAnalysisResults
+        val bestNumRainbow = results?.maxOfOrNull { it.numRainbow } ?: 0
+        val bestExtremeReady = results?.maxOfOrNull { it.extras["spiritGaugesExtremeReady"] as? Int ?: 0 } ?: 0
+        val threshold = racing.g1DayMinRainbowCount
+
+        // Back out to the main screen either way. On TRAIN, handleTraining re-enters and reuses the cached analysis; on RACE, the racing flow expects to start from the main screen.
+        ButtonBack.click(game.imageUtils)
+        game.wait(1.0)
+
+        return if (bestExtremeReady > 0 || g1DayPrefersTraining(bestNumRainbow, threshold)) {
+            val reason = if (bestExtremeReady > 0) "Extreme Spirit Burst ready ($bestExtremeReady)" else "best training has $bestNumRainbow rainbow(s) >= $threshold"
+            MessageLog.i(TAG, "[INFO] Unity Cup: overriding the solver's planned optional race - $reason. Training instead.")
+            decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Unity Cup training override before solver race: $reason")
+            MainScreenAction.TRAIN
+        } else {
+            training.clearAnalysisCache()
+            null
         }
     }
 

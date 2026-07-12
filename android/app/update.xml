@@ -6,11 +6,12 @@
     <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.22 - Extreme Spirit Burst fix
+v5.10.22 - Unity Cup Extreme Spirit Burst fixes
 
 Fixed
 -----
-- The bot no longer skips (and rests through) an Extreme Spirit Burst in Unity Cup. Extreme bursts are guaranteed 0% failure but were being filtered out by the failure-chance and expected-value gates because the exemption only checked regular ready-to-burst gauges, not the separate Extreme burst state.
+- The bot no longer rests through an Extreme Spirit Burst in Unity Cup. Extreme bursts are guaranteed 0% failure but were being filtered out by the failure-chance and expected-value gates because the exemption only checked regular ready-to-burst gauges, not the separate Extreme burst state.
+- The bot no longer races past an Extreme Spirit Burst or a strong rainbow in Unity Cup. When the Smart Race Solver had an optional race planned, it went straight to racing without checking the training board (the solver's schedule can't see spirit gauges). It now peeks the board first and trains a ready Extreme Burst, or a rainbow count at/above the G1-day threshold, instead of taking the optional race. Mandatory and scheduled races are unaffected.
 
     </releaseNotes>
   </update>
