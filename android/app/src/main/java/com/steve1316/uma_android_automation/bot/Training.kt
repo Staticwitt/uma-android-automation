@@ -803,14 +803,22 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
 
         /**
          * Unity Cup burst exemption. A training with a Spirit Explosion gauge ready to burst may be worth a higher failure chance than the base ceiling, so this raises the ceiling to
-         * `burstMax` when a gauge is ready. No-op when no gauge is ready or when `burstMax` is below the base, keeping the default (0) a pure pass-through. Pure and unit-testable.
+         * `burstMax` when a gauge is ready. An Extreme Spirit Burst is guaranteed 0% failure regardless of facility (July 2026 rework) and shows a separate icon that is not counted in
+         * `readyToBurst`, so it is fully exempt (ceiling raised to [Int.MAX_VALUE]) and can never be filtered out by the failure-chance gate. No-op when nothing is burst-ready or when
+         * `burstMax` is below the base, keeping the default (0) a pure pass-through. Pure and unit-testable.
          *
          * @param baseFailureChance The normal (or risky) failure-chance ceiling for this training.
          * @param readyToBurst The number of Spirit Explosion gauges ready to burst on this training.
-         * @param burstMax The Unity Cup burst failure-chance ceiling from settings. 0 disables the exemption.
+         * @param extremeReady The number of Extreme Spirit Bursts ready on this training (guaranteed 0% failure).
+         * @param burstMax The Unity Cup burst failure-chance ceiling from settings. 0 disables the regular-burst exemption.
          * @return The effective failure-chance ceiling to apply to this training.
          */
-        fun burstExemptFailureChance(baseFailureChance: Int, readyToBurst: Int, burstMax: Int): Int = if (readyToBurst > 0) maxOf(baseFailureChance, burstMax) else baseFailureChance
+        fun burstExemptFailureChance(baseFailureChance: Int, readyToBurst: Int, extremeReady: Int, burstMax: Int): Int =
+            when {
+                extremeReady > 0 -> Int.MAX_VALUE
+                readyToBurst > 0 -> maxOf(baseFailureChance, burstMax)
+                else -> baseFailureChance
+            }
 
         /**
          * Key factors for the Friendship scoring mode. Mirrors `scoreFriendshipTraining`, which ranks purely by relationship-bar color.
@@ -1706,9 +1714,11 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 } else {
                     maximumFailureChance
                 }
-            // Unity Cup burst exemption: a gauge ready to burst may be worth a higher failure chance than usual. No-op unless the setting is raised and a gauge is ready to burst.
+            // Unity Cup burst exemption: a gauge ready to burst may be worth a higher failure chance than usual, and an Extreme Spirit Burst (guaranteed 0% failure, separate icon not
+            // counted in readyToBurst) is fully exempt. No-op unless a gauge is ready to burst or extreme-ready.
             val readyToBurst = result.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
-            val effectiveFailureChance = burstExemptFailureChance(baseFailureChance, readyToBurst, unityCupBurstMaxFailureChance)
+            val extremeReady = result.extras["spiritGaugesExtremeReady"] as? Int ?: 0
+            val effectiveFailureChance = burstExemptFailureChance(baseFailureChance, readyToBurst, extremeReady, unityCupBurstMaxFailureChance)
 
             // Filter out trainings that exceed the effective failure chance threshold.
             if (!test && !ignoreFailureChance && result.failureChance > effectiveFailureChance) {
@@ -1745,7 +1755,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             // Expected-value gate: skip trainings whose total stat gain is poor value for their failure chance. Exempt when risky training opted into this training, when a Unity Cup
             // burst is ready (burst value is not captured by statGains), or for Good-Luck Charm flows (ignoreFailureChance).
             val riskyExempt = enableRiskyTraining && mainStatGain >= riskyTrainingMinStatGain
-            val burstExempt = (result.extras["spiritGaugesReadyToBurst"] as? Int ?: 0) > 0
+            val burstExempt = readyToBurst > 0 || extremeReady > 0
             if (!test && !ignoreFailureChance && enableExpectedValueGate && !riskyExempt && !burstExempt) {
                 val totalStatGain = result.statGains.values.sum()
                 if (failsExpectedValueGate(totalStatGain, result.failureChance, expectedValueGainPerFailPercent, expectedValueMinFailureChance)) {
