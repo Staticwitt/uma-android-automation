@@ -13,6 +13,7 @@ import com.steve1316.automation_library.utils.BotService
 import com.steve1316.automation_library.utils.ImageUtils
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import org.json.JSONObject
 import com.steve1316.uma_android_automation.MainActivity
 import com.steve1316.uma_android_automation.bot.Game
 import com.steve1316.uma_android_automation.components.ButtonRaceListFullStats
@@ -114,6 +115,28 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     /** Custom scale factor for template matching. */
     override var customScale: Double = SettingsHelper.getDoubleSetting("debug", "templateMatchCustomScale", 1.0)
 
+    /** Per-device rainbow-detection thresholds fitted by the calibration wizard (stored as JSON in debug settings). Falls back to the production defaults when unset or malformed. */
+    private val rainbowCalibration: RainbowCalibration = loadRainbowCalibration()
+
+    /** Parses the stored per-device rainbow calibration, or returns [RainbowCalibrator.DEFAULT] when it is unset or malformed. */
+    private fun loadRainbowCalibration(): RainbowCalibration {
+        val json = SettingsHelper.getStringSetting("debug", "rainbowCalibration")
+        if (json.isBlank()) return RainbowCalibrator.DEFAULT
+        return try {
+            val obj = JSONObject(json)
+            val floor = obj.optDouble("perHueFloor", RainbowCalibrator.DEFAULT.perHueFloor)
+            val dominant = obj.optDouble("dominantThreshold", RainbowCalibrator.DEFAULT.dominantThreshold)
+            if (floor.isFinite() && dominant.isFinite() && floor > 0.0 && dominant > 0.0) {
+                RainbowCalibration(floor, dominant, separable = true, margin = 0.0)
+            } else {
+                RainbowCalibrator.DEFAULT
+            }
+        } catch (e: Exception) {
+            MessageLog.w(TAG, "[WARN] Malformed debug/rainbowCalibration; using default rainbow thresholds: ${e.message}")
+            RainbowCalibrator.DEFAULT
+        }
+    }
+
     /**
      * Applies display-profile template scale when auto-tuning is enabled (e.g. Samsung Tab S10 FE).
      * Call after [SharedData] dimensions are known (at bot start).
@@ -211,14 +234,21 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
      * @property pinkFraction Fraction that are bright pink.
      * @property brightChromaticFraction Fraction of annulus pixels that are bright and saturated (the overall glow strength).
      */
-    data class RainbowRingResult(val huesPresent: Int, val greenFraction: Double, val cyanFraction: Double, val pinkFraction: Double, val brightChromaticFraction: Double) {
+    data class RainbowRingResult(
+        val huesPresent: Int,
+        val greenFraction: Double,
+        val cyanFraction: Double,
+        val pinkFraction: Double,
+        val brightChromaticFraction: Double,
+        val dominantThreshold: Double = 0.085,
+    ) {
         /**
-         * Whether the annulus shows a rainbow glow: all three pastel hues co-present (huesPresent == 3) and one of them vividly dominant (>= 0.085; measured true rings had a dominant hue
-         * >= 0.096 versus a 0.058 false positive). The dominant floor was nudged 0.08 -> 0.085 alongside the per-hue floor raise for a little more margin against an on-device false
-         * positive, staying safely below the 0.096 seen on real rings.
+         * Whether the annulus shows a rainbow glow: all three pastel hues co-present (huesPresent == 3) and one of them vividly dominant (>= [dominantThreshold]). The default 0.085 matches
+         * measured true rings (dominant hue >= 0.096 versus a 0.058 false positive); a per-device calibration (fitted by [RainbowCalibrator]) may override it via the constructor so a device
+         * whose real rings render weaker still detects them. Default-argument callers (e.g. unit tests) keep the original 0.085 behavior.
          */
         val isRainbow: Boolean
-            get() = huesPresent >= 3 && maxOf(greenFraction, cyanFraction, pinkFraction) >= 0.085
+            get() = huesPresent >= 3 && maxOf(greenFraction, cyanFraction, pinkFraction) >= dominantThreshold
     }
 
     /**
@@ -873,8 +903,8 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
         listOf(rgbaMat, rgbMat, hsvMat, annulusMask).forEach { it.release() }
 
-        val huesPresent = rainbowHuesPresent(greenFraction, cyanFraction, pinkFraction)
-        val result = RainbowRingResult(huesPresent, greenFraction, cyanFraction, pinkFraction, brightChromaticFraction)
+        val huesPresent = rainbowHuesPresent(greenFraction, cyanFraction, pinkFraction, rainbowCalibration.perHueFloor)
+        val result = RainbowRingResult(huesPresent, greenFraction, cyanFraction, pinkFraction, brightChromaticFraction, rainbowCalibration.dominantThreshold)
         if (debugMode) {
             MessageLog.d(
                 TAG,
