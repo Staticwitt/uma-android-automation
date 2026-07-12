@@ -20,8 +20,9 @@ private const val BASE_STAT_CAP = 1200
  *  - URA Finale:   +200 all stats
  *  - Unity Cup:    +100 all stats, +600 Wit
  *  - Trackblazer:  +700 Stamina, +300 Wit
+ *  - Grand Live:   +400 Speed (only the Speed cap is confirmed from reference; the other stats stay at base pending confirmation)
  *
- * @param scenario The campaign name (e.g. "URA Finale", "Unity Cup", "Trackblazer").
+ * @param scenario The campaign name (e.g. "URA Finale", "Unity Cup", "Trackblazer", "Grand Live").
  * @param statName The stat being capped.
  * @return The maximum value for the specified stat in the given scenario.
  */
@@ -34,6 +35,7 @@ fun getScenarioStatCap(scenario: String, statName: StatName): Int = when {
         StatName.WIT -> BASE_STAT_CAP + 300
         else -> BASE_STAT_CAP
     }
+    scenario == "Grand Live" -> if (statName == StatName.SPEED) BASE_STAT_CAP + 400 else BASE_STAT_CAP
     else -> BASE_STAT_CAP
 }
 

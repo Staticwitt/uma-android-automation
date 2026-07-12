@@ -81,6 +81,8 @@
           tmp = 1200;
           break;
       }
+    } else if (scenario === 'Grand Live') {
+      tmp = statName.equals(StatName_SPEED_getInstance()) ? 1600 : 1200;
     } else {
       tmp = 1200;
     }

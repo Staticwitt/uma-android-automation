@@ -1178,11 +1178,15 @@ Trackblazer uses a specialized race selection algorithm (`findSuitableRace()`, f
 
 ## 12. Scenario: Grand Live
 
-Grand Live is currently supported through the **shared `Campaign` career loop** with no scenario-specific overrides. Date detection, the training system, the smart racing plan, training events, skill buying, and mood/energy management all come from the base systems described in Sections 3–8, so selecting Grand Live plays out much like [URA Finale](#9-scenario-ura-finale).
+Grand Live is an idol-training scenario: alongside the usual career, the trainee earns **Performance tokens** from training, spends them in a scenario shop on **Lessons** (baseline stat boosts) and **Songs**, and performs a **Live concert every six months** (starting late December). Songs matter a lot — at least 3 must be owned before each concert to pass it, each purchase grants an immediate permanent stat/efficiency boost, and performed songs add passive run-long buffs. It also acts as a stat-booster: the **Speed cap is raised to 1600**. The first ~5 turns behave like a standard URA run before the scenario mechanics unlock.
 
-The `GrandLive` subclass (`bot/campaigns/GrandLive.kt`) is the landing spot for the scenario's unique mechanics — the **Lesson** screen, the five **Performance** stats, and the periodic **Grand Live concert** (and its finale). Those screens are **not yet automated**: they have no template assets or detection wired up, so a run relies entirely on the shared logic. Because unknown scenarios fall back gracefully, this still yields a complete run — training uses the base stat caps ([`getScenarioStatCap`](#62-scoring-algorithm) returns the base cap for Grand Live), the training blacklist falls back to the global list, and races follow the standard plan.
+### Current support
 
-When assets and detection for the Lesson/concert screens are added, the scenario-specific hooks (`checkCampaignSpecificConditions()`, `onBeforeMainScreenUpdate()`, a `GrandLiveTraining` subclass, and so on) should be overridden in `GrandLive`, mirroring how [Unity Cup](#10-scenario-unity-cup) and [Trackblazer](#11-scenario-trackblazer) extend the base campaign.
+Grand Live currently runs on the **shared `Campaign` career loop** with no scenario-specific overrides. Date detection, the training system, the smart racing plan, training events, skill buying, and mood/energy management all come from the base systems (Sections 3–8), so a run plays out much like [URA Finale](#9-scenario-ura-finale). The one scenario-aware behavior wired up so far is the stat cap: [`getScenarioStatCap`](#62-scoring-algorithm) returns **1600 for Speed** (base for the other four stats, pending confirmation of their true caps), so training scoring stops over-capping Speed too early. The per-scenario training blacklist and everything else fall back gracefully to their defaults.
+
+### Not yet automated
+
+The scenario's interactive screens — the **Lesson/shop** loop, the five **Performance** token types, and the **concert/finale** flow — are **not** detected or driven: they have no template assets or OCR wired up, so token spending, song purchasing, and concert handling are left to the player. The `GrandLive` subclass (`bot/campaigns/GrandLive.kt`) is the landing spot for them. When assets and detection are added, the scenario-specific hooks (`checkCampaignSpecificConditions()`, `onBeforeMainScreenUpdate()`, a `GrandLiveTraining` subclass, and so on) should be overridden there, mirroring how [Unity Cup](#10-scenario-unity-cup) and [Trackblazer](#11-scenario-trackblazer) extend the base campaign.
 
 ---
 
