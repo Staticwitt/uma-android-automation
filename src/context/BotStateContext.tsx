@@ -330,6 +330,7 @@ export interface Settings {
         debugMode_startSkillListBuyTest: boolean
         debugMode_startScrollBarDetectionTest: boolean
         debugMode_startRainbowDetectionTest: boolean
+        debugMode_startSupportCardScanTest: boolean
         debugMode_startTrackblazerRaceSelectionTest: boolean
         debugMode_startTrackblazerInventorySyncTest: boolean
         debugMode_startTrackblazerBuyItemsTest: boolean
@@ -700,6 +701,7 @@ export const defaultSettings: Settings = {
         debugMode_startSkillListBuyTest: false,
         debugMode_startScrollBarDetectionTest: false,
         debugMode_startRainbowDetectionTest: false,
+        debugMode_startSupportCardScanTest: false,
         debugMode_startTrackblazerRaceSelectionTest: false,
         debugMode_startTrackblazerInventorySyncTest: false,
         debugMode_startTrackblazerBuyItemsTest: false,
