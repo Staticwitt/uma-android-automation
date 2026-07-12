@@ -36,6 +36,9 @@ import Ionicons from "@react-native-vector-icons/ionicons"
 import { TrainingScoringSandbox } from "../../components/TrainingScoringSandbox"
 import { TrainingScoringAdvanced } from "../../components/TrainingScoringAdvanced"
 import { StickySandboxButton } from "../../components/TrainingScoringAdvanced/StickySandboxButton"
+import { AutoTuneSuggestionsSheet } from "../../components/AutoTuneSuggestionsSheet"
+import { GlassFab } from "../../components/ui/glass-fab"
+import { Wand2 } from "lucide-react-native"
 
 type TrainingSectionTab = "all" | "priorities" | "behavior" | "scoring" | "targets"
 
@@ -97,6 +100,7 @@ const TrainingSettings = () => {
     )
     const { showToast, showError } = useToast()
     const [scoringSandboxOpen, setScoringSandboxOpen] = useState(false)
+    const [autoTuneOpen, setAutoTuneOpen] = useState(false)
     const [advancedExpanded, setAdvancedExpanded] = useState(false)
     const [activeSection, setActiveSection] = useState<TrainingSectionTab>("all")
     const showSection = useCallback((key: TrainingSectionTab) => activeSection === "all" || activeSection === key, [activeSection])
@@ -1477,6 +1481,13 @@ const TrainingSettings = () => {
             </SearchPageProvider>
             {advancedExpanded && <StickySandboxButton onPress={() => setScoringSandboxOpen(true)} />}
             <TrainingScoringSandbox open={scoringSandboxOpen} onClose={() => setScoringSandboxOpen(false)} />
+            <GlassFab
+                onPress={() => setAutoTuneOpen(true)}
+                accessibilityLabel="Open auto-tune suggestions"
+                icon={<Wand2 size={22} color={colors.brand} />}
+                style={{ position: "absolute", left: SPACING.lg, bottom: SPACING.lg }}
+            />
+            <AutoTuneSuggestionsSheet visible={autoTuneOpen} onClose={() => setAutoTuneOpen(false)} />
         </View>
     )
 }
