@@ -1,17 +1,17 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.20</latestVersion>
-    <latestVersionCode>192</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.20</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.20/v5.10.20-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.20/v5.10.20-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.21</latestVersion>
+    <latestVersionCode>193</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.21</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.21/v5.10.21-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.21/v5.10.21-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.20 - YOLO memory leak fix
+v5.10.21 - Settings and detection fixes
 
 Fixed
 -----
-- Fixed a memory leak in YOLO stat detection that made each training turn progressively slower and could crash the run out of memory after 10-15 turns. If a run does crash, the reason is now written to the log and shown in a notification instead of the run ending silently.
-- Importing a settings file with wrong-typed fields no longer crashes the app - bad fields are ignored, keep their current values, and are listed on the Import Preview screen.
+- A single corrupted delay-override entry no longer silently disables all per-action delay tuning; bad entries are skipped and the rest still apply.
+- Tightened rainbow detection so low-bond support cards no longer register as false rainbows.
 
     </releaseNotes>
   </update>
