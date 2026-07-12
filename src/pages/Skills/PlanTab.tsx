@@ -19,6 +19,8 @@ import { Callout } from "../../components/ui/callout"
 import skillsData from "../../data/skills.json"
 import icons from "./icons"
 import { mergeSkillPlanConfig, parseSkillIdCsv } from "../../lib/skillPlanSettings"
+import { suggestSkillPlan, type SkillDbEntry } from "../../lib/skillCandidates"
+import type { Distance, RunningStyle } from "../../lib/skillPurchaseOptimizer"
 
 /** Represents a skill entry from the `skills.json` data file. */
 interface Skill {
@@ -83,6 +85,7 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
     const [searchQuery, setSearchQuery] = useState("")
     const [showSelected, setShowSelected] = useState(false)
     const [selectionMode, setSelectionMode] = useState<"plan" | "blacklist">("plan")
+    const [spBudget, setSpBudget] = useState("1200")
 
     const planIds: number[] = useMemo(() => parseSkillIdCsv(plan), [plan])
 
@@ -144,6 +147,22 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
     const clearActiveList = useCallback(() => {
         updatePlanSetting(selectionMode, "")
     }, [selectionMode, updatePlanSetting])
+
+    /**
+     * Fills the plan with the highest-value skills affordable within the entered SP budget, using the optimizer (respects
+     * gold-skill prerequisites and this plan's negative-skill policy). The distance/style are read from the skill overrides for
+     * forward compatibility, though the bundled skill data currently carries no distance/style relevance tags.
+     */
+    const handleSuggestPlan = useCallback(() => {
+        const sp = parseInt(spBudget, 10)
+        if (!Number.isFinite(sp) || sp <= 0) return
+        const distanceMap: Record<string, Distance> = { sprint: "Sprint", mile: "Mile", medium: "Medium", long: "Long" }
+        const styleMap: Record<string, RunningStyle> = { front: "Front", pace: "Pace", late: "Late", end: "End" }
+        const distance = distanceMap[(skills.preferredTrackDistance || "").toLowerCase()] ?? "Medium"
+        const style = styleMap[(skills.preferredRunningStyle || "").toLowerCase()] ?? "Pace"
+        const { skillIds } = suggestSkillPlan(skillData as SkillDbEntry[], sp, { distance, style, allowNegative: enableBuyNegativeSkills })
+        updatePlanSetting("plan", skillIds.join(","))
+    }, [spBudget, skills.preferredTrackDistance, skills.preferredRunningStyle, enableBuyNegativeSkills, updatePlanSetting])
 
     const selectionExtraData = useMemo(
         () => ({
@@ -370,6 +389,18 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                             Clear
                         </CustomButton>
                     </View>
+
+                    {isPlanMode && (
+                        <View style={{ marginBottom: SPACING.md }}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
+                                <Input style={{ flex: 1 }} value={spBudget} onChangeText={setSpBudget} placeholder="SP budget (e.g. 1200)" />
+                                <CustomButton onPress={handleSuggestPlan}>Suggest plan</CustomButton>
+                            </View>
+                            <Text style={styles.listHelperText}>
+                                Fills the plan with the highest-value skills that SP can afford, respecting gold-skill prerequisites. Review the picks before running.
+                            </Text>
+                        </View>
+                    )}
 
                     <View style={styles.modeTabsRow}>
                         <Pressable onPress={() => setSelectionMode("plan")} style={[styles.modeTab, isPlanMode && styles.modeTabActive]} android_ripple={{ color: colors.ripple, foreground: true }}>
