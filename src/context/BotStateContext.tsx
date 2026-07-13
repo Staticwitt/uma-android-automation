@@ -252,6 +252,12 @@ export interface Settings {
         energyBankingThreshold: number
         energyBankingLookaheadTurns: number
         minimumMoodForTraining: string
+        /** Stop an unattended run early once its projected final grade is below the target grade, so a farm restarts on a fresher run. Off by default. */
+        enableAutoAbandon: boolean
+        /** The grade the run aims for; a projection below it (after the min turn) abandons the run. */
+        autoAbandonTargetGrade: string
+        /** Earliest turn the projection is trusted enough to abandon on. */
+        autoAbandonMinTurn: number
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
@@ -641,6 +647,9 @@ export const defaultSettings: Settings = {
         energyBankingThreshold: 50,
         energyBankingLookaheadTurns: 2,
         minimumMoodForTraining: "GOOD",
+        enableAutoAbandon: false,
+        autoAbandonTargetGrade: "A",
+        autoAbandonMinTurn: 36,
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,
