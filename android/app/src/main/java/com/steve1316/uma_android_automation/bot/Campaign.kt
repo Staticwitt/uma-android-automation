@@ -2085,6 +2085,32 @@ abstract class Campaign(game: Game) : Task(game) {
                 aptitudes,
                 trainee.uniqueSkillLevel,
             )
+        trainee.estimatedRank?.let { rank ->
+            RankProjection.record(date.day, rank.totalScore)
+            broadcastRankProjection()
+        }
+    }
+
+    /**
+     * Projects the final rank from the Estimated Rank trajectory so far and surfaces it: a live frame to the Remote Log Viewer's
+     * projection panel every turn, and a throttled line into the in-app log. Called from [updateEstimatedRank] once per turn.
+     */
+    fun broadcastRankProjection() {
+        val projection = RankProjection.project(RankProjection.DEFAULT_FINALE_TURN) ?: return
+        val json =
+            org.json.JSONObject()
+                .put("currentGrade", projection.currentGrade)
+                .put("currentScore", projection.currentScore)
+                .put("projectedGrade", projection.projectedGrade)
+                .put("projectedScore", projection.projectedScore)
+                .put("scorePerTurn", projection.scorePerTurn)
+        LogStreamServer.broadcastRankProjection(json.toString())
+        if (date.day % 6 == 0) {
+            MessageLog.i(
+                TAG,
+                "[PROJECTION] On track for ${projection.projectedGrade} (score ~${projection.projectedScore}) by the finale; currently ${projection.currentGrade} (${projection.currentScore}).",
+            )
+        }
     }
 
     /**
