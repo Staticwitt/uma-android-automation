@@ -45,6 +45,7 @@ interface DebugTestDescriptor {
         | "debugMode_startSkillListBuyTest"
         | "debugMode_startScrollBarDetectionTest"
         | "debugMode_startRainbowDetectionTest"
+        | "debugMode_startSupportCardScanTest"
         | "debugMode_startTrackblazerRaceSelectionTest"
         | "debugMode_startTrackblazerInventorySyncTest"
         | "debugMode_startTrackblazerBuyItemsTest"
@@ -111,6 +112,13 @@ const DEBUG_TESTS: DebugTestDescriptor[] = [
         title: "Start Rainbow Detection Test",
         description:
             "Disables normal bot operations and starts the Rainbow detection test. Run this on the Training screen: it detects the rainbow glow ring on each support face circle for a few seconds, logs the per-support metrics and the derived rainbow count, and saves an annotated crop to help calibrate the detector.",
+    },
+    {
+        key: "debugMode_startSupportCardScanTest",
+        searchId: "debug-support-card-scan-test",
+        title: "Start Support Card Scan Test",
+        description:
+            "Disables normal bot operations and starts the Support Card scan. Run this on the Support Card List (Enhance tab): it lays a 5-column tile grid over the screen and logs each tile's detected type / rarity / limit-break / level plus the raw hue and pip measurements, and saves an annotated crop to help calibrate the grid geometry and hue bands.",
     },
     {
         key: "debugMode_startTrackblazerRaceSelectionTest",

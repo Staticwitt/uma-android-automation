@@ -1032,6 +1032,118 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
     }
 
     /**
+     * Diagnostic scan of the Support Card List screen. Lays the 5-column tile grid over the current screen and, for each visible
+     * tile, measures the type-icon hue, counts limit-break pips, and OCRs the level and rarity, logging every measurement and its
+     * classification and saving an annotated crop. Calibration-first (like the rainbow test): point the game at the Support Card
+     * List and run it, then the logged hues / pip-fills / levels tune the geometry and hue bands in [SupportCardScanLayout] and
+     * [cardTypeFromHue] before the results feed the deck recommender.
+     *
+     * @param sourceBitmap Optional pre-captured screen; a fresh capture is taken when null.
+     * @return The detected cards, one per visible tile.
+     */
+    fun scanSupportCardList(sourceBitmap: Bitmap? = null): List<DetectedSupportCard> {
+        val bitmap = sourceBitmap ?: getSourceBitmap()
+        val tiles = SupportCardScanLayout.tileGrid(SharedData.displayWidth, SharedData.displayHeight)
+        val detected = mutableListOf<DetectedSupportCard>()
+        val sb = StringBuilder("========== Support Card Scan ==========\n")
+
+        val annotated: Mat? =
+            runCatching {
+                val m = Mat()
+                Utils.bitmapToMat(bitmap, m)
+                m
+            }.getOrNull()
+
+        for (tile in tiles) {
+            val iconRect = supportCardSubRect(tile, SupportCardScanLayout.TYPE_ICON)
+            val (hue, sat) = regionMeanHueSat(bitmap, iconRect[0], iconRect[1], iconRect[2], iconRect[3])
+            val type = cardTypeFromHue(hue, sat)
+
+            val pipsRect = supportCardSubRect(tile, SupportCardScanLayout.PIPS)
+            val cellW = (pipsRect[2] / 4).coerceAtLeast(1)
+            val pipFills = (0 until 4).map { i -> regionSaturatedFraction(bitmap, pipsRect[0] + i * cellW, pipsRect[1], cellW, pipsRect[3]) }
+            val limitBreak = pipCountFromFills(pipFills)
+
+            val levelRect = supportCardSubRect(tile, SupportCardScanLayout.LEVEL)
+            val levelText = runCatching { performOCROnRegion(bitmap, levelRect[0], levelRect[1], levelRect[2], levelRect[3], debugName = "cardLevel") }.getOrDefault("")
+            val level = Regex("\\d+").find(levelText)?.value?.toIntOrNull() ?: -1
+
+            val rarityRect = supportCardSubRect(tile, SupportCardScanLayout.RARITY_BADGE)
+            val rarityText = runCatching { performOCROnRegion(bitmap, rarityRect[0], rarityRect[1], rarityRect[2], rarityRect[3], debugName = "cardRarity") }.getOrDefault("")
+            val rarity = normalizeRarity(rarityText)
+
+            detected.add(DetectedSupportCard(type = type, rarity = rarity, limitBreak = limitBreak, level = level))
+            sb.appendLine(
+                "tile(r${tile.row},c${tile.col}) type=$type (hue=${decimalFormat.format(hue)} sat=${decimalFormat.format(sat)}) rarity=${rarity.ifEmpty { "?" }}(\"${rarityText.trim()}\") " +
+                    "lb=$limitBreak/4 pips=[${pipFills.joinToString(",") { decimalFormat.format(it) }}] lvl=$level(\"${levelText.trim()}\")",
+            )
+            if (annotated != null) {
+                Imgproc.rectangle(annotated, Point(tile.x.toDouble(), tile.y.toDouble()), Point((tile.x + tile.width).toDouble(), (tile.y + tile.height).toDouble()), Scalar(0.0, 255.0, 0.0), 2)
+                Imgproc.rectangle(annotated, Point(iconRect[0].toDouble(), iconRect[1].toDouble()), Point((iconRect[0] + iconRect[2]).toDouble(), (iconRect[1] + iconRect[3]).toDouble()), Scalar(0.0, 0.0, 255.0), 2)
+            }
+        }
+
+        if (annotated != null) {
+            runCatching { Imgcodecs.imwrite("$matchFilePath/debugSupportCardScan.png", annotated) }
+            annotated.release()
+        }
+        try {
+            File("$matchFilePath/debugSupportCardScan.txt").writeText(sb.toString())
+        } catch (e: Exception) {
+            MessageLog.e(TAG, "[ERROR] scanSupportCardList:: Failed to write metrics text: ${e.message}")
+        }
+        MessageLog.i(TAG, sb.toString())
+        return detected
+    }
+
+    /** Absolute-pixel rect (x,y,w,h) of a tile sub-region. */
+    private fun supportCardSubRect(tile: SupportCardTile, sub: TileSubRegion): IntArray =
+        intArrayOf(
+            tile.x + (tile.width * sub.xFrac).toInt(),
+            tile.y + (tile.height * sub.yFrac).toInt(),
+            (tile.width * sub.wFrac).toInt().coerceAtLeast(1),
+            (tile.height * sub.hFrac).toInt().coerceAtLeast(1),
+        )
+
+    /** Mean hue (0-180) and saturation (0-255) over the vividly-colored pixels of a region; (0,0) when none clear the saturation floor. */
+    private fun regionMeanHueSat(bitmap: Bitmap, x: Int, y: Int, w: Int, h: Int): Pair<Double, Double> {
+        val crop = createSafeBitmap(bitmap, x, y, w, h, "scanSupportCardList hue") ?: return 0.0 to 0.0
+        val rgba = Mat()
+        Utils.bitmapToMat(crop, rgba)
+        val rgb = Mat()
+        Imgproc.cvtColor(rgba, rgb, Imgproc.COLOR_BGR2RGB)
+        val hsv = Mat()
+        Imgproc.cvtColor(rgb, hsv, Imgproc.COLOR_RGB2HSV)
+        val mask = Mat()
+        Core.inRange(hsv, Scalar(0.0, 60.0, 50.0), Scalar(180.0, 255.0, 255.0), mask)
+        val result =
+            if (Core.countNonZero(mask) == 0) {
+                0.0 to 0.0
+            } else {
+                val mean = Core.mean(hsv, mask)
+                mean.`val`[0] to mean.`val`[1]
+            }
+        listOf(rgba, rgb, hsv, mask).forEach { it.release() }
+        return result
+    }
+
+    /** Fraction of a region's pixels that are vividly colored (a filled pip diamond vs a gray empty one). */
+    private fun regionSaturatedFraction(bitmap: Bitmap, x: Int, y: Int, w: Int, h: Int): Double {
+        val crop = createSafeBitmap(bitmap, x, y, w, h, "scanSupportCardList pips") ?: return 0.0
+        val rgba = Mat()
+        Utils.bitmapToMat(crop, rgba)
+        val rgb = Mat()
+        Imgproc.cvtColor(rgba, rgb, Imgproc.COLOR_BGR2RGB)
+        val hsv = Mat()
+        Imgproc.cvtColor(rgb, hsv, Imgproc.COLOR_RGB2HSV)
+        val mask = Mat()
+        Core.inRange(hsv, Scalar(0.0, 70.0, 60.0), Scalar(180.0, 255.0, 255.0), mask)
+        val frac = Core.countNonZero(mask).toDouble() / (hsv.rows() * hsv.cols()).coerceAtLeast(1)
+        listOf(rgba, rgb, hsv, mask).forEach { it.release() }
+        return frac
+    }
+
+    /**
      * Analyzes Spirit Explosion gauges for the Unity Cup scenario.
      *
      * @param sourceBitmap Optional source bitmap to use. Defaults to null.

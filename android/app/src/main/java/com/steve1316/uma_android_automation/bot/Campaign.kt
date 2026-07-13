@@ -476,6 +476,7 @@ abstract class Campaign(game: Game) : Task(game) {
                 "debugMode_startScrollBarDetectionTest" to ::startScrollBarDetectionTest,
                 "debugMode_startSkillListBuyTest" to skillPlan::startSkillListBuyTest,
                 "debugMode_startRainbowDetectionTest" to ::startRainbowDetectionTest,
+                "debugMode_startSupportCardScanTest" to ::startSupportCardScanTest,
             )
 
         var bDidAnyTestsRun = false
@@ -503,6 +504,18 @@ abstract class Campaign(game: Game) : Task(game) {
             if (pass < passes) game.wait(1.0)
         }
         MessageLog.i(TAG, "[TEST] Rainbow Detection test complete. Check the logged metrics and the saved debugRainbowDetection.png crop to calibrate geometry/thresholds.")
+    }
+
+    /**
+     * Debug scan of the Support Card List screen. Point the game at the Support Card List (Enhance tab) and run this: it lays the
+     * 5-column tile grid over the screen and logs each tile's detected type / rarity / limit-break / level plus the raw
+     * measurements, and saves an annotated crop, so the grid geometry and hue bands can be calibrated before the results feed the
+     * deck recommender.
+     */
+    open fun startSupportCardScanTest() {
+        MessageLog.i(TAG, "\n[TEST] Now beginning the Support Card Scan test. Point the game at the Support Card List (Enhance tab) so the card grid is visible.")
+        val cards = game.imageUtils.scanSupportCardList()
+        MessageLog.i(TAG, "[TEST] Support Card Scan test complete. Detected ${cards.size} tiles. Check the logged per-tile metrics and the saved debugSupportCardScan.png crop to calibrate geometry/hue bands.")
     }
 
     /**
