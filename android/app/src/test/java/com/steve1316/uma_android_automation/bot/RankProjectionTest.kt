@@ -19,6 +19,19 @@ class RankProjectionTest {
     }
 
     @Test
+    @DisplayName("Recency weighting pulls the slope toward the recent trend, not the whole-run average")
+    fun testRecencyWeightedSlope() {
+        // An accelerating run (Junior slow -> Senior steep) should project above its flat whole-run average.
+        val accelerating = listOf(10 to 1000, 20 to 1400, 30 to 2100, 40 to 3200, 50 to 4800)
+        val acceleratingAverage = (4800 - 1000).toDouble() / (50 - 10)
+        assertTrue(RankProjection.slope(accelerating) > acceleratingAverage, "Recent steeper turns should raise the slope above the whole-run average")
+        // A decelerating run (plateauing) should project below its flat average.
+        val decelerating = listOf(10 to 1000, 20 to 2200, 30 to 3100, 40 to 3700, 50 to 4000)
+        val deceleratingAverage = (4000 - 1000).toDouble() / (50 - 10)
+        assertTrue(RankProjection.slope(decelerating) < deceleratingAverage, "Recent flatter turns should lower the slope below the whole-run average")
+    }
+
+    @Test
     @DisplayName("Projects the final score by extrapolating the fitted slope to the final turn")
     fun testProjectExtrapolation() {
         val proj = RankProjection.projectFrom(listOf(10 to 2000, 20 to 3000, 30 to 4000), totalTurns = 73)!!

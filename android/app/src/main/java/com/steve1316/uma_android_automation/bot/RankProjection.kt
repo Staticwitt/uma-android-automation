@@ -1,6 +1,7 @@
 package com.steve1316.uma_android_automation.bot
 
 import com.steve1316.uma_scoring.scoreToRankLabel
+import kotlin.math.pow
 
 /**
  * A projected final rank, extrapolated from the per-turn Estimated Rank score trajectory.
@@ -31,6 +32,13 @@ object RankProjection {
     /** The career turn the projection extrapolates to (the finale). */
     const val DEFAULT_FINALE_TURN = 73
 
+    /**
+     * Recency half-life, in turns, for the weighted slope. A run's score trajectory is convex - it climbs slowly in Junior/early-Classic, then steeply in Senior as bonds max and
+     * rainbows/spirit bursts land - so a flat least-squares fit anchored by the slow early turns badly under-projects mid-run. Weighting each observation by `2^(-turnsAgo/HALF_LIFE)`
+     * makes the slope track the recent (steeper) trend, so the projection reflects where the run is actually heading. Points this many turns before the latest count half as much.
+     */
+    private const val RECENCY_HALF_LIFE_TURNS = 12.0
+
     private val observations = mutableListOf<Pair<Int, Int>>() // (turn, score), one per turn
 
     /** Clears the accumulated observations. Call at run start. */
@@ -48,21 +56,32 @@ object RankProjection {
     fun project(totalTurns: Int): RankProjectionResult? = projectFrom(observations, totalTurns)
 
     /**
-     * Least-squares slope of score over turn. Returns 0 with fewer than two points or when the turns do not vary.
+     * Recency-weighted least-squares slope of score over turn, weighting each observation by `2^(-turnsAgo / RECENCY_HALF_LIFE_TURNS)` so recent turns dominate the fit and the
+     * projection follows the run's accelerating trajectory instead of being dragged down by slow early turns. Reduces to the ordinary slope for a perfectly linear series (any
+     * weighting of collinear points recovers the exact slope). Returns 0 with fewer than two points or when the turns do not vary.
      *
      * @param points (turn, score) observations.
      * @return Score gained per turn.
      */
     fun slope(points: List<Pair<Int, Int>>): Double {
         if (points.size < 2) return 0.0
-        val n = points.size
-        val meanT = points.sumOf { it.first }.toDouble() / n
-        val meanS = points.sumOf { it.second }.toDouble() / n
+        val latestTurn = points.maxOf { it.first }
+        val weights = points.map { 2.0.pow(-(latestTurn - it.first).toDouble() / RECENCY_HALF_LIFE_TURNS) }
+        val weightSum = weights.sum()
+        var meanT = 0.0
+        var meanS = 0.0
+        for (i in points.indices) {
+            meanT += weights[i] * points[i].first
+            meanS += weights[i] * points[i].second
+        }
+        meanT /= weightSum
+        meanS /= weightSum
         var cov = 0.0
         var varT = 0.0
-        for ((t, s) in points) {
-            cov += (t - meanT) * (s - meanS)
-            varT += (t - meanT) * (t - meanT)
+        for (i in points.indices) {
+            val dt = points[i].first - meanT
+            cov += weights[i] * dt * (points[i].second - meanS)
+            varT += weights[i] * dt * dt
         }
         return if (varT == 0.0) 0.0 else cov / varT
     }
