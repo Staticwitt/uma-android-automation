@@ -163,6 +163,9 @@ const TrainingSettings = () => {
         energyBankingThreshold,
         energyBankingLookaheadTurns,
         minimumMoodForTraining,
+        enableAutoAbandon,
+        autoAbandonTargetGrade,
+        autoAbandonMinTurn,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
@@ -800,6 +803,59 @@ const TrainingSettings = () => {
                                             }
                                         />
                                     </SearchableItem>
+                                    <SettingRow
+                                        id="enable-auto-abandon"
+                                        title="Auto-Abandon Doomed Runs"
+                                        description="For unattended farming: once the live rank projection says the run will finish below the target grade (after the minimum turn), stop the run so you can restart on a fresher one. Off by default."
+                                        right={<Switch checked={enableAutoAbandon} onCheckedChange={(checked) => updateTrainingSetting("enableAutoAbandon", checked)} />}
+                                    />
+                                    {enableAutoAbandon && (
+                                        <SearchableItem
+                                            id="auto-abandon-target-grade"
+                                            title="Auto-Abandon Target Grade"
+                                            description="A run projected below this grade (after the minimum turn) is abandoned."
+                                        >
+                                            <Row
+                                                title="Auto-Abandon Target Grade"
+                                                description="A run projected below this grade (after the minimum turn) is abandoned."
+                                                right={
+                                                    <CustomSelect
+                                                        value={autoAbandonTargetGrade}
+                                                        onValueChange={(value) => updateTrainingSetting("autoAbandonTargetGrade", value)}
+                                                        options={[
+                                                            { label: "B", value: "B" },
+                                                            { label: "A", value: "A" },
+                                                            { label: "A+", value: "A+" },
+                                                            { label: "S", value: "S" },
+                                                            { label: "S+", value: "S+" },
+                                                            { label: "SS", value: "SS" },
+                                                        ]}
+                                                        placeholder="Select grade"
+                                                        width={140}
+                                                    />
+                                                }
+                                            />
+                                        </SearchableItem>
+                                    )}
+                                    {enableAutoAbandon && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={autoAbandonMinTurn || defaultSettings.training.autoAbandonMinTurn}
+                                                placeholder={defaultSettings.training.autoAbandonMinTurn}
+                                                onValueChange={(value) => updateTrainingSetting("autoAbandonMinTurn", value)}
+                                                min={12}
+                                                max={60}
+                                                step={4}
+                                                label="Auto-Abandon Minimum Turn"
+                                                labelUnit=" turn"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="The projection is only trusted enough to abandon on from this turn onward, so early noise never abandons a recoverable run."
+                                                searchId="auto-abandon-min-turn"
+                                                parentId="enable-auto-abandon"
+                                            />
+                                        </View>
+                                    )}
                                 </Section>
 
                                 <Section label="URA Finale">

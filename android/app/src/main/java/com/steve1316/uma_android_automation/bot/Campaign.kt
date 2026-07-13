@@ -245,6 +245,14 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Minimum mood at or above which the bot will train through without forcing a mood-recovery outing. Below this threshold, mood recovery is forced. Defaults to [Mood.GOOD] to preserve prior hardcoded behavior. */
     protected val minimumMoodForTraining: Mood = Mood.fromName(SettingsHelper.getStringSetting("training", "minimumMoodForTraining", "GOOD")) ?: Mood.GOOD
 
+    /** Projection-driven auto-abandon config: when enabled, a run whose projected final grade is below [autoAbandonTargetGrade] after turn [autoAbandonMinTurn] is stopped so an unattended farm can restart on a fresher run. Disabled by default. */
+    private val autoAbandonConfig: AbandonConfig =
+        AbandonConfig(
+            enabled = SettingsHelper.getBooleanSetting("training", "enableAutoAbandon", false),
+            minTurn = SettingsHelper.getIntSetting("training", "autoAbandonMinTurn", 36),
+            targetGrade = SettingsHelper.getStringSetting("training", "autoAbandonTargetGrade", "A").ifBlank { "A" },
+        )
+
     /**
      * Resolves the [TrackDistance] of the upcoming mandatory/scheduled race for [GoalRaceStatBias],
      * or null when the feature is disabled, the race is outside its configured lookahead window, the
@@ -2114,6 +2122,20 @@ abstract class Campaign(game: Game) : Task(game) {
     }
 
     /**
+     * If projection-driven auto-abandon is enabled, stops the run once its projected final grade is below the configured target after the trust turn. Uses the same projection
+     * [broadcastRankProjection] surfaces, so the decision matches what the log viewer shows. Stops via [CampaignBreakpointException] (the standard stop-condition mechanism), which
+     * ends the current run so an unattended farm can restart on a fresher one. A no-op when disabled or before the trust turn.
+     */
+    private fun checkAutoAbandon() {
+        if (!autoAbandonConfig.enabled) return
+        val decision = RunAbandonPolicy.evaluate(RankProjection.project(RankProjection.DEFAULT_FINALE_TURN), date.day, autoAbandonConfig)
+        if (decision.shouldAbandon) {
+            MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} Stopping the run.")
+            throw CampaignBreakpointException("Auto-abandon: ${decision.reason}")
+        }
+    }
+
+    /**
      * Sends the trainee's owned skills to the Remote Log Viewer's Skills panel, each with its in-game category color (green/blue/yellow/red) plus gold / unique / negative flags
      * derived from the skill's icon id via SkillData, the unique skill's level, and its description and icon id for the panel's hover tooltip. Safe to call whenever the owned-skill set changes.
      */
@@ -2530,6 +2552,7 @@ abstract class Campaign(game: Game) : Task(game) {
 
         // Compute the estimated overall rank, then print the trainee info after all turn-start updates and potential fan count updates.
         updateEstimatedRank()
+        checkAutoAbandon()
         trainee.logInfo()
 
         // Scenario-specific main screen entry hook (e.g. for item usage).
