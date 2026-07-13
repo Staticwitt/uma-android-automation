@@ -48,6 +48,27 @@ fun getScenarioStatCap(scenario: String, statName: StatName): Int = when {
 fun getCurrentStatCap(statName: StatName, config: TrainingConfig): Int = getScenarioStatCap(config.scenario, statName)
 
 /**
+ * Effective fraction of a stat gain under the July 2026 soft cap. A point at or below [BASE_STAT_CAP] (1200) is fully effective; a point from there up to [statCap] is worth half;
+ * a point that would land above [statCap] is wasted. Returns the effective portion of the whole gain (so a caller multiplies a raw stat score by it), and 1.0 for a non-positive
+ * gain. This is the same math `calculateStatEfficiencyScore` applies inline, exposed so other scorers (e.g. the training-event optimizer) share one soft-cap model.
+ *
+ * @param currentStat The stat's value before the gain.
+ * @param statGain The raw gain.
+ * @param statCap The real (dynamic or per-scenario) cap for the stat.
+ * @return Effective fraction of the gain, in [0.0, 1.0].
+ */
+@JsExport
+fun softCapEffectivenessMultiplier(currentStat: Int, statGain: Int, statCap: Int): Double {
+    if (statGain <= 0) return 1.0
+    val end = minOf(currentStat + statGain, statCap)
+    if (end <= currentStat) return 0.0
+    val fullPortion = (minOf(end, BASE_STAT_CAP) - currentStat).coerceAtLeast(0)
+    val softPortion = (end - maxOf(currentStat, BASE_STAT_CAP)).coerceAtLeast(0)
+    val effectiveGain = fullPortion + softPortion * 0.5
+    return effectiveGain / statGain
+}
+
+/**
  * Number of remaining finale races based on the current turn. Finale races occur on turns 73, 74, and 75. Before the finale (turn <= 72), all 3 races remain.
  *
  * @param currentDay Current turn (1-75).
