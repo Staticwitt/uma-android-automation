@@ -1,23 +1,22 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.23</latestVersion>
-    <latestVersionCode>195</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.23</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.23/v5.10.23-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.23/v5.10.23-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.24</latestVersion>
+    <latestVersionCode>196</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.24</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.24/v5.10.24-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.24/v5.10.24-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.23 - Assistant tooling: auto-tuner, skill planner, live rank projection
+v5.10.24 - Cross-run insights, auto-abandon, live decision panel
 
 Added
 -----
-- Post-career auto-tuner. After a run, tap the wand on Training Settings to get suggested preset edits (stat targets, failure cap, priorities) derived from the run's archive, and apply them with one tap.
-- SP-aware skill purchase suggestions. The skill plan editor has a "Suggest plan" button: enter your SP budget and it fills a plan that maximizes relevant skills within budget, respecting gold-skill prerequisites.
-- Live final-rank projection. The remote log viewer shows a projected-grade chip next to Estimated Rank, extrapolated from your score trajectory to the finale and floored at your current score. The same projection appears as a "Projected rank" field in the Discord live-status embed.
-- Support Card Scan debug test and a per-device rainbow calibration fitter: groundwork for screenshot-based deck import and tuned rainbow detection. These are calibration tools -- run the debug tests to gather device data.
+- Cross-Run Insights. A new panel on Training Settings (the trend button next to the auto-tune wand) analyzes your whole career-run archive and surfaces patterns a single run can't show: which stat actually drives your final rank, what your best runs carry more of, which races you keep losing, and your rating trend and consistency. Optionally scoped to one scenario.
+- Auto-Abandon doomed runs. For unattended farming: once the live rank projection says a run will finish below your target grade (after a configurable trust turn), the bot stops the run so you can restart on a fresher one. Off by default; set the target grade and minimum turn in Training Settings.
+- Live "why this training" panel. The Remote Log Viewer's decision panel now updates every turn from a structured feed: the scoring mode, every candidate training's score with the pick flagged, and the key factors behind the choice.
 
-Notes
+Fixed
 -----
-- Champions Meeting targeting for CM16 (Leo Cup) is delivered via an importable preset, not a code change.
+- The weekly game-data scraper no longer aborts the whole refresh when Game8 changes its skill tier-list page layout; the tier list is skipped gracefully and the rest of the data still updates.
     </releaseNotes>
   </update>
 </AppUpdater>
