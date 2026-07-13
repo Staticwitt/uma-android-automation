@@ -2346,6 +2346,9 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 sb.appendLine(formatScoreBreakdown(selected.name, rawTrainingScoreComponents(config, selected)))
                 secondBest?.let { sb.appendLine(formatScoreBreakdown(it.first.name, rawTrainingScoreComponents(config, it.first))) }
             }
+
+            // Broadcast a structured "why this training" frame to the Remote Log Viewer's decision panel (WHY:), so a viewer can see the ranked scores and key factors live.
+            broadcastTrainingDecision(scoringMode, selected, scoreRanked, keyFactors)
         } else if (scores.isNotEmpty() || skippedScores.isNotEmpty()) {
             sb.appendLine("")
             sb.appendLine("--- Selection Explanation ---")
@@ -2378,6 +2381,46 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
 
         sb.appendLine("================================================")
         MessageLog.v(TAG, sb.toString())
+    }
+
+    /**
+     * Broadcasts a structured "why this training" frame (`WHY:`) to the Remote Log Viewer so its decision panel can show, live, the scoring mode, every candidate's final score
+     * (highest first, with the pick flagged), and the key factors behind the choice. Purely additive to the verbose text log; the transport no-ops when no viewer is connected.
+     *
+     * @param scoringMode The scoring mode that produced the scores.
+     * @param selected The chosen training.
+     * @param scoreRanked Every scored candidate, highest score first, as (option, score, skipped) triples.
+     * @param keyFactors The human-readable reasons collected for the pick.
+     */
+    private fun broadcastTrainingDecision(
+        scoringMode: TrainingScoringMode,
+        selected: TrainingOption,
+        scoreRanked: List<Triple<TrainingOption, Double, Boolean>>,
+        keyFactors: List<String>,
+    ) {
+        try {
+            val optionsJson = org.json.JSONArray()
+            scoreRanked.forEach { (option, score, _) ->
+                optionsJson.put(
+                    org.json.JSONObject()
+                        .put("stat", option.name.name)
+                        .put("score", score)
+                        .put("selected", option == selected),
+                )
+            }
+            val keyFactorsJson = org.json.JSONArray()
+            keyFactors.forEach { keyFactorsJson.put(it) }
+            val decisionJson =
+                org.json.JSONObject()
+                    .put("turn", campaign.date.day)
+                    .put("mode", scoringMode.label)
+                    .put("selected", selected.name.name)
+                    .put("options", optionsJson)
+                    .put("keyFactors", keyFactorsJson)
+            com.steve1316.uma_android_automation.utils.LogStreamServer.broadcastDecision(decisionJson.toString())
+        } catch (e: Exception) {
+            MessageLog.w(TAG, "[WARN] broadcastTrainingDecision:: Failed to broadcast decision frame: ${e.message}")
+        }
     }
 
     /**
