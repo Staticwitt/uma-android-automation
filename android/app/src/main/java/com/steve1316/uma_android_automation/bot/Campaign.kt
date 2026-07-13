@@ -2816,11 +2816,12 @@ abstract class Campaign(game: Game) : Task(game) {
         }
 
         SmartRaceSolverMainScreenGate.maybeSolverMainScreenAction(this, game.scenario, date.day)?.let { solverAction ->
-            // In Unity Cup the solver's schedule cannot see spirit gauges, so before committing to an OPTIONAL solver-planned race, peek the training screen and let an Extreme
-            // Spirit Burst (guaranteed 0% failure) or a rainbow count >= g1DayMinRainbowCount override the race. Mandatory/scheduled races were already handled above, so any race
-            // the solver gate returns here is optional. The solver re-solves every turn, so a skipped race is rescheduled if it is still needed for a fan/epithet target.
-            if (solverAction == MainScreenAction.RACE && game.scenario == "Unity Cup" && !isFinals) {
-                unityCupTrainingBeatsPlannedRace()?.let { return it }
+            // In Unity Cup the solver's schedule cannot see spirit gauges, so before committing to a solver-planned OPTIONAL race OR a planned rest, peek the training screen and let an
+            // Extreme Spirit Burst (guaranteed 0% failure) or a rainbow count >= g1DayMinRainbowCount override it. Mandatory/scheduled races were already handled above, so any race the
+            // solver gate returns here is optional, and a planned rest resting through a ready burst is pure waste. The solver re-solves every turn, so a skipped race/rest is
+            // rescheduled if it is still needed.
+            if ((solverAction == MainScreenAction.RACE || solverAction == MainScreenAction.REST) && game.scenario == "Unity Cup" && !isFinals) {
+                unityCupTrainingBeatsPlannedAction(solverAction)?.let { return it }
             }
             return solverAction
         }
@@ -2886,14 +2887,16 @@ abstract class Campaign(game: Game) : Task(game) {
     }
 
     /**
-     * Unity Cup only: a Smart Race Solver-planned OPTIONAL race should yield to high-value board state the solver's schedule cannot see - an Extreme Spirit Burst (guaranteed 0% failure,
-     * the scenario's highest-value action) or a rainbow count of at least [Racing.g1DayMinRainbowCount]. Peeks the training screen, analyzes it, and backs out. On TRAIN the cached analysis
-     * is reused for free by the follow-up handleTraining(); on RACE the cache is cleared so a stale analysis cannot leak into a later turn. The solver re-solves every turn, so a race
-     * skipped here is rescheduled next turn if it is still needed for a fan/epithet target.
+     * Unity Cup only: a Smart Race Solver-planned OPTIONAL race or a planned REST should yield to high-value board state the solver's schedule cannot see - an Extreme Spirit Burst
+     * (guaranteed 0% failure, the scenario's highest-value action) or a rainbow count of at least [Racing.g1DayMinRainbowCount]. Peeks the training screen, analyzes it, and backs out.
+     * On TRAIN the cached analysis is reused for free by the follow-up handleTraining(); otherwise the cache is cleared so a stale analysis cannot leak into a later turn. The solver
+     * re-solves every turn, so a race/rest skipped here is rescheduled next turn if it is still needed. Resting through a ready Extreme Burst was pure waste - even at full energy the
+     * solver would rest on a scheduled Rest turn without ever seeing the burst.
      *
-     * @return TRAIN to stay and train the burst/rainbow, or null to keep the solver's planned race (including when the training screen could not be entered).
+     * @param plannedAction The action the solver planned ([MainScreenAction.RACE] or [MainScreenAction.REST]), used only for the log/trace wording.
+     * @return TRAIN to stay and train the burst/rainbow, or null to keep the solver's planned action (including when the training screen could not be entered).
      */
-    private fun unityCupTrainingBeatsPlannedRace(): MainScreenAction? {
+    private fun unityCupTrainingBeatsPlannedAction(plannedAction: MainScreenAction): MainScreenAction? {
         if (!ButtonTraining.click(game.imageUtils)) return null
         game.wait(0.5)
 
@@ -2903,14 +2906,15 @@ abstract class Campaign(game: Game) : Task(game) {
         val bestExtremeReady = results?.maxOfOrNull { it.extras["spiritGaugesExtremeReady"] as? Int ?: 0 } ?: 0
         val threshold = racing.g1DayMinRainbowCount
 
-        // Back out to the main screen either way. On TRAIN, handleTraining re-enters and reuses the cached analysis; on RACE, the racing flow expects to start from the main screen.
+        // Back out to the main screen either way. On TRAIN, handleTraining re-enters and reuses the cached analysis; otherwise the racing/rest flow expects to start from the main screen.
         ButtonBack.click(game.imageUtils)
         game.wait(1.0)
 
         return if (bestExtremeReady > 0 || g1DayPrefersTraining(bestNumRainbow, threshold)) {
+            val planned = if (plannedAction == MainScreenAction.REST) "rest" else "optional race"
             val reason = if (bestExtremeReady > 0) "Extreme Spirit Burst ready ($bestExtremeReady)" else "best training has $bestNumRainbow rainbow(s) >= $threshold"
-            MessageLog.i(TAG, "[INFO] Unity Cup: overriding the solver's planned optional race - $reason. Training instead.")
-            decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Unity Cup training override before solver race: $reason")
+            MessageLog.i(TAG, "[INFO] Unity Cup: overriding the solver's planned $planned - $reason. Training instead.")
+            decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Unity Cup training override before solver $planned: $reason")
             MainScreenAction.TRAIN
         } else {
             training.clearAnalysisCache()
