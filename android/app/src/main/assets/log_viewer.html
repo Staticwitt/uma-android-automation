@@ -3421,6 +3421,8 @@
             let allMessages = []
             // Latest owned-skills snapshot pushed by the backend with the SKILLS: frame ({skills: [{name, color, gold, unique, negative, evalPt, desc, level?}]}). Null until the first read.
             let latestSkillsSnapshot = null
+            // Latest training decision pushed by the backend with the WHY: frame ({turn, mode, selected, options: [{stat, score, selected}], keyFactors: [...]}). Null until the first decision. Feeds the decision panel structurally instead of scraping the text log.
+            let latestDecisionSnapshot = null
             let activeFilters = new Set(["VERBOSE", "DEBUG", "INFO", "WARN", "ERROR"])
             let searchQuery = ""
             let isFiltering = false
@@ -3584,6 +3586,14 @@
                             trainerUpdateRankProjection(JSON.parse(event.data.substring(5)))
                         } catch (e) {
                             console.error("Error parsing rank projection:", e)
+                        }
+                    } else if (event.data.startsWith("WHY:")) {
+                        // Structured training decision pushed each training turn ({turn, mode, selected, options, keyFactors}). Feeds the decision panel directly.
+                        try {
+                            latestDecisionSnapshot = JSON.parse(event.data.substring(4))
+                            trainerBuildDecisionItems()
+                        } catch (e) {
+                            console.error("Error parsing decision frame:", e)
                         }
                     } else if (event.data === "CAREER_UPDATE") {
                         // Career run archive changed. Refetch if the Career Runs tab has already been
@@ -4137,7 +4147,9 @@
                 visibleMessageCount = 0
                 condensationBuffer = []
                 latestSkillsSnapshot = null
+                latestDecisionSnapshot = null
                 trainerRenderSkills()
+                trainerBuildDecisionItems()
                 updateMessageCountDisplay()
 
                 // Clear images too.
@@ -6498,6 +6510,30 @@
                 })
                 const list = document.getElementById("trainerDecisionList")
                 if (!list) return
+
+                // Prefer the structured WHY: frame when the backend has pushed one this run; it carries every candidate's exact score and the key factors, so we don't have to scrape the text log.
+                if (latestDecisionSnapshot && Array.isArray(latestDecisionSnapshot.options)) {
+                    const d = latestDecisionSnapshot
+                    const ranked = [...d.options].sort((a, b) => (typeof b.score === "number" ? b.score : -Infinity) - (typeof a.score === "number" ? a.score : -Infinity)).slice(0, 8)
+                    const header = `<div class="trainer-decision-item" style="opacity:0.65"><span></span><span class="trainer-decision-score">${escapeHtml(String(d.mode || ""))}</span><span>turn ${escapeHtml(String(d.turn ?? ""))}</span></div>`
+                    const items = ranked
+                        .map((item, index) => {
+                            const scoreText = typeof item.score === "number" ? item.score.toFixed(1) : "-"
+                            const label = item.selected ? `${item.stat} (picked)` : item.stat
+                            const weight = item.selected ? ' style="font-weight:600"' : ""
+                            return `<div class="trainer-decision-item"${weight}><span>${index + 1}.</span><span class="trainer-decision-score">${escapeHtml(scoreText)}</span><span>${escapeHtml(String(label))}</span></div>`
+                        })
+                        .join("")
+                    const factors = Array.isArray(d.keyFactors)
+                        ? d.keyFactors
+                              .slice(0, 5)
+                              .map((f) => `<div class="trainer-decision-item" style="opacity:0.8"><span>&bull;</span><span class="trainer-decision-score"></span><span>${escapeHtml(String(f))}</span></div>`)
+                              .join("")
+                        : ""
+                    list.innerHTML = header + items + factors
+                    return
+                }
+
                 if (!latestDecision) {
                     list.innerHTML = '<div class="trainer-decision-item"><span>1.</span><span class="trainer-decision-score">-</span><span>Waiting for decision logs...</span></div>'
                     return
