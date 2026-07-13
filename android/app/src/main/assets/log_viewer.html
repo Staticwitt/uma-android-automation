@@ -2907,7 +2907,7 @@
                                 <div class="trainer-decision-item"><span>1.</span><span class="trainer-decision-score">-</span><span>Waiting for decision logs...</span></div>
                             </div>
 
-                            <div class="trainer-row-label" style="margin-top: 13px;">Skills <span id="trainerEstimatedRank" class="trainer-rank-chip" style="display: none;"></span></div>
+                            <div class="trainer-row-label" style="margin-top: 13px;">Skills <span id="trainerEstimatedRank" class="trainer-rank-chip" style="display: none;"></span> <span id="trainerRankProjection" class="trainer-rank-chip" style="display: none;"></span></div>
                             <div id="trainerSkillsList" class="trainer-skills-list">
                                 <span class="trainer-skill-pill"><span class="dot"></span>Waiting for skill reads...</span>
                             </div>
@@ -3577,6 +3577,13 @@
                             trainerRenderSkills()
                         } catch (e) {
                             console.error("Error parsing skills snapshot:", e)
+                        }
+                    } else if (event.data.startsWith("RANK:")) {
+                        // Final-rank projection pushed each turn ({currentGrade, currentScore, projectedGrade, projectedScore, scorePerTurn}). Rendered as a chip next to the Est. Rank chip.
+                        try {
+                            trainerUpdateRankProjection(JSON.parse(event.data.substring(5)))
+                        } catch (e) {
+                            console.error("Error parsing rank projection:", e)
                         }
                     } else if (event.data === "CAREER_UPDATE") {
                         // Career run archive changed. Refetch if the Career Runs tab has already been
@@ -6467,6 +6474,15 @@
                 const match = latest.parsed.message.match(/Estimated Rank:\s*(\S+)\s*\((\d+)\)/)
                 if (!match) return
                 chip.textContent = `Est. Rank ${match[1]} (${match[2]})`
+                chip.style.display = "inline-block"
+            }
+
+            /** Renders the latest final-rank projection (from the RANK: frame) as a chip: the grade the run is on track to finish at. */
+            function trainerUpdateRankProjection(data) {
+                const chip = document.getElementById("trainerRankProjection")
+                if (!chip || !data || !data.projectedGrade) return
+                chip.textContent = `→ Projected ${data.projectedGrade} (${data.projectedScore})`
+                chip.title = `On track to finish around rank ${data.projectedGrade} by the finale (~+${Math.round(data.scorePerTurn)}/turn).`
                 chip.style.display = "inline-block"
             }
 

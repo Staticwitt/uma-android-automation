@@ -177,6 +177,9 @@ object LogStreamServer {
      *  immediately on connect. Null until the first snapshot arrives this run. */
     @Volatile private var latestSkillsSnapshot: String? = null
 
+    /** Latest final-rank projection pushed each turn. Replayed to each new client on connect so the projection panel paints immediately. Null until the first arrives this run. */
+    @Volatile private var latestRankProjection: String? = null
+
     /**
      * Represents a parsed log entry for structured transmission.
      *
@@ -273,6 +276,13 @@ object LogStreamServer {
          * @property json Pre-serialized skills snapshot JSON sent verbatim to clients with a `SKILLS:` prefix.
          */
         data class BroadcastSkills(val json: String) : LogAction()
+
+        /**
+         * Broadcasts a final-rank projection to all connected clients. Distinct from [Broadcast] so the framing message never lands in the log replay buffer.
+         *
+         * @property json Pre-serialized projection JSON sent verbatim to clients with a `RANK:` prefix.
+         */
+        data class BroadcastRankProjection(val json: String) : LogAction()
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,6 +493,15 @@ object LogStreamServer {
                     session.send(Frame.Text("SKILLS:$snapshot"))
                 } catch (e: Exception) {
                     Log.w(TAG, "[WARN] handleNewClientAction:: Failed to replay skills snapshot: ${e.message}")
+                }
+            }
+
+            // Replay the most recent rank projection so the projection panel paints immediately on a mid-run browser refresh.
+            latestRankProjection?.let { snapshot ->
+                try {
+                    session.send(Frame.Text("RANK:$snapshot"))
+                } catch (e: Exception) {
+                    Log.w(TAG, "[WARN] handleNewClientAction:: Failed to replay rank projection: ${e.message}")
                 }
             }
 
@@ -806,6 +825,9 @@ object LogStreamServer {
         // Drop the cached skills snapshot so the new run starts with no replay.
         latestSkillsSnapshot = null
 
+        // Drop the cached rank projection so the new run starts with no replay.
+        latestRankProjection = null
+
         // Ensure we are unmuted for the new run.
         isMuted = false
 
@@ -938,6 +960,36 @@ object LogStreamServer {
         if (!isRunning) return
         serverScope?.launch {
             actionChannel?.send(LogAction.BroadcastSkills(json))
+        }
+    }
+
+    /**
+     * Broadcasts a final-rank projection to connected clients, caching it for replay to late-joining clients. No-op transport when
+     * the server isn't running, but the cache is still updated so a client connecting later still gets the latest projection.
+     *
+     * @param json Pre-serialized projection JSON.
+     */
+    fun broadcastRankProjection(json: String) {
+        latestRankProjection = json
+        if (!isRunning) return
+        serverScope?.launch {
+            actionChannel?.send(LogAction.BroadcastRankProjection(json))
+        }
+    }
+
+    /**
+     * Sends a rank projection to all currently connected clients with the `RANK:` framing prefix the viewer uses to route the payload to its projection panel. Skipped when no clients connected.
+     *
+     * @param json The pre-serialized projection JSON.
+     */
+    private suspend fun handleRankProjectionBroadcast(json: String) {
+        if (clients.isEmpty()) return
+        val frame = "RANK:$json"
+        for (client in clients) {
+            try {
+                client.send(Frame.Text(frame))
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1283,6 +1335,10 @@ object LogStreamServer {
 
                             is LogAction.BroadcastSkills -> {
                                 handleSkillsBroadcast(action.json)
+                            }
+
+                            is LogAction.BroadcastRankProjection -> {
+                                handleRankProjectionBroadcast(action.json)
                             }
                         }
                     }

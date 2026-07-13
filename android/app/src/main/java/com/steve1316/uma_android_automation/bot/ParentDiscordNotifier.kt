@@ -132,6 +132,9 @@ object ParentDiscordNotifier {
         fields.add(DiscordEmbedField("Mood", formatMood(trainee.mood), inline = true))
         fields.add(DiscordEmbedField("Races", "${raceStats.wins}W / ${raceStats.losses}L", inline = true))
         fields.add(DiscordEmbedField("Runtime", runtime, inline = true))
+        RankProjection.project(RankProjection.DEFAULT_FINALE_TURN)?.let { p ->
+            fields.add(DiscordEmbedField("Projected rank", "${p.projectedGrade} (${p.projectedScore}) · now ${p.currentGrade}", inline = true))
+        }
 
         val qualityInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs = null, epithetTurn = date.day)
         val projectedQuality = ParentRunQuality.estimateLive(qualityInput)
