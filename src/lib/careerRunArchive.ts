@@ -6,6 +6,7 @@
 import { NativeModules } from "react-native"
 import type { AutoTuneSettingsInput, CareerRunRecord, DistanceKey } from "./careerAutoTune"
 import { activeTargetsForDistance } from "./careerAutoTune"
+import type { MetaRunInput } from "./careerMetaTune"
 
 /** A parsed career-run archive entry (superset of what the auto-tuner reads). */
 export interface CareerRunArchiveEntry {
@@ -176,3 +177,18 @@ export const buildAutoTuneInput = (settings: AutoTuneSettingsSlice, entry: Caree
         maximumFailureChance: settings.maximumFailureChance,
     }
 }
+
+/**
+ * Reduces an archive entry to the lean {@link MetaRunInput} the cross-run meta-tuner consumes.
+ *
+ * @param entry The career run to reduce.
+ * @returns The meta-analysis input for `analyzeCareerRuns`.
+ */
+export const toMetaRunInput = (entry: CareerRunArchiveEntry): MetaRunInput => ({
+    completedAtMs: entry.completedAtMs,
+    scenario: entry.scenario,
+    careerRating: entry.careerRating,
+    careerRank: entry.careerRank,
+    stats: entry.stats,
+    raceRecords: entry.raceRecords.map((r) => ({ name: r.name, won: r.won })),
+})
