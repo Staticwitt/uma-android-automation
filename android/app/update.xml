@@ -1,18 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.22</latestVersion>
-    <latestVersionCode>194</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.22</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.22/v5.10.22-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.23</latestVersion>
+    <latestVersionCode>195</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.23</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.23/v5.10.23-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.23/v5.10.23-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.22 - Unity Cup Extreme Spirit Burst fixes
+v5.10.23 - Assistant tooling: auto-tuner, skill planner, live rank projection
 
-Fixed
+Added
 -----
-- The bot no longer rests through an Extreme Spirit Burst in Unity Cup. Extreme bursts are guaranteed 0% failure but were being filtered out by the failure-chance and expected-value gates because the exemption only checked regular ready-to-burst gauges, not the separate Extreme burst state.
-- The bot no longer races past an Extreme Spirit Burst or a strong rainbow in Unity Cup. When the Smart Race Solver had an optional race planned, it went straight to racing without checking the training board (the solver's schedule can't see spirit gauges). It now peeks the board first and trains a ready Extreme Burst, or a rainbow count at/above the G1-day threshold, instead of taking the optional race. Mandatory and scheduled races are unaffected.
+- Post-career auto-tuner. After a run, tap the wand on Training Settings to get suggested preset edits (stat targets, failure cap, priorities) derived from the run's archive, and apply them with one tap.
+- SP-aware skill purchase suggestions. The skill plan editor has a "Suggest plan" button: enter your SP budget and it fills a plan that maximizes relevant skills within budget, respecting gold-skill prerequisites.
+- Live final-rank projection. The remote log viewer shows a projected-grade chip next to Estimated Rank, extrapolated from your score trajectory to the finale and floored at your current score. The same projection appears as a "Projected rank" field in the Discord live-status embed.
+- Support Card Scan debug test and a per-device rainbow calibration fitter: groundwork for screenshot-based deck import and tuned rainbow detection. These are calibration tools -- run the debug tests to gather device data.
 
+Notes
+-----
+- Champions Meeting targeting for CM16 (Leo Cup) is delivered via an importable preset, not a code change.
     </releaseNotes>
   </update>
 </AppUpdater>
