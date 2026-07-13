@@ -52,6 +52,9 @@ object RankProjection {
 
     fun hasData(): Boolean = observations.isNotEmpty()
 
+    /** Number of per-turn observations accumulated this run. Used to gate decisions (e.g. auto-abandon) that must not fire on a too-short trajectory, such as right after the bot is started mid-career. */
+    fun observationCount(): Int = observations.size
+
     /** Projects the final rank at [totalTurns] from the live observations, or null when none have been recorded. */
     fun project(totalTurns: Int): RankProjectionResult? = projectFrom(observations, totalTurns)
 
