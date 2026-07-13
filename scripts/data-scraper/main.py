@@ -1,7 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, WebDriverException
+from selenium.common.exceptions import NoSuchElementException, ElementClickInterceptedException, WebDriverException, TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -581,44 +581,68 @@ class SkillScraper(BaseScraper):
         Returns:
             The tier list of skills as a dictionary mapping skill name to tier.
         """
-        driver = create_chromedriver()
-        driver.get("https://game8.co/games/Umamusume-Pretty-Derby/archives/536805")
-
-        # Game8 renders the tier-list tables client-side after the initial page load,
-        # so wait for the first tier table to appear before querying any of them.
-        WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, "//h4[@id='hs_1']/following-sibling::table[2]")))
-
         h4_tier_map = {
             "hs_1": 0,  # SS
             "hs_2": 1,  # S
             "hs_3": 2,  # A
             "hs_4": 3,  # B
         }
+        table_xpath = "//h4[@id='{h4_id}']/following-sibling::table[2]"
 
+        driver = create_chromedriver()
         res = {}
+        try:
+            # Game8 renders the tier-list tables client-side after the initial page load, so load the page and
+            # wait for the first tier table to appear before querying any of them. The tier list is supplementary
+            # enrichment (skills are looked up with `.get(..., None)` in `start()` and missing tiers are not
+            # errors), so a load timeout / layout change / connectivity blip here must NOT abort the whole weekly
+            # data refresh the way it used to - degrade gracefully to an empty map instead.
+            try:
+                driver.get("https://game8.co/games/Umamusume-Pretty-Derby/archives/536805")
+                WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.XPATH, table_xpath.format(h4_id="hs_1")))
+                )
+            except (TimeoutException, WebDriverException) as exc:
+                logging.warning(
+                    "Game8 skill tier list unavailable (%s: %s); its page layout likely changed or the site was "
+                    "unreachable. Skipping tier annotations for this run - update the archive URL / table XPath "
+                    "(currently '%s') in scrape_skill_tier_list to restore them.",
+                    type(exc).__name__,
+                    str(exc).splitlines()[0] if str(exc).strip() else "no message",
+                    table_xpath.format(h4_id="hs_1"),
+                )
+                return res
 
-        for h4_id, tier_name in h4_tier_map.items():
-            table = driver.find_element(By.XPATH, f"//h4[@id='{h4_id}']/following-sibling::table[2]")
-            tds = table.find_elements(By.TAG_NAME, "td")
+            for h4_id, tier_name in h4_tier_map.items():
+                try:
+                    table = driver.find_element(By.XPATH, table_xpath.format(h4_id=h4_id))
+                except NoSuchElementException:
+                    # Only some headers moved - keep the tiers we can still find rather than losing all of them.
+                    logging.warning(f"Game8 tier table for header '{h4_id}' (tier {tier_name}) not found; skipping it.")
+                    continue
+                tds = table.find_elements(By.TAG_NAME, "td")
 
-            for td in tds:
-                divs = td.find_elements(By.TAG_NAME, "div")
-                for div in divs:
-                    anchor = div.find_elements(By.TAG_NAME, "a")[-1]
-                    skill_name = anchor.text.strip()
-                    # Make sure we use the same special characters as GameTora.
-                    skill_name = skill_name.replace("◯", "○")
-                    skill_name = skill_name.replace("◎", "◎")
-                    # Get rid of any double spaces.
-                    skill_name = skill_name.replace("  ", "")
-                    if skill_name in res and res[skill_name] != tier_name:
-                        logging.warning(
-                            f"Skill is already in tier map with conflicting value: {skill_name} ({tier_name} != {res[skill_name]})"
-                        )
-                        continue
-                    res[skill_name] = tier_name
-
-        driver.quit()
+                for td in tds:
+                    divs = td.find_elements(By.TAG_NAME, "div")
+                    for div in divs:
+                        anchors = div.find_elements(By.TAG_NAME, "a")
+                        if not anchors:
+                            continue
+                        anchor = anchors[-1]
+                        skill_name = anchor.text.strip()
+                        # Make sure we use the same special characters as GameTora.
+                        skill_name = skill_name.replace("◯", "○")
+                        skill_name = skill_name.replace("◎", "◎")
+                        # Get rid of any double spaces.
+                        skill_name = skill_name.replace("  ", "")
+                        if skill_name in res and res[skill_name] != tier_name:
+                            logging.warning(
+                                f"Skill is already in tier map with conflicting value: {skill_name} ({tier_name} != {res[skill_name]})"
+                            )
+                            continue
+                        res[skill_name] = tier_name
+        finally:
+            driver.quit()
 
         # They misspelled some skill names so we need to fix them.
         # Pretty much if you run the scraper and it throws an error for a skill,
@@ -805,10 +829,19 @@ class SkillScraper(BaseScraper):
                     # We can ignore any negative skills since they won't appear in the tier list.
                     tmp_skill_name = skill_to_tier_map_lowercase.get(skill_name_en.lower(), None)
                     bIsNegative = skill_iconid % 10 == 4
-                    if tmp_skill_name is None and not bIsNegative:
+                    # Only warn per-skill when we actually have a tier list to compare against; a degraded
+                    # (empty) scrape already logged a single warning and would otherwise flood the log here.
+                    if tmp_skill_name is None and not bIsNegative and skill_to_tier_map:
                         logging.warning(f"Skill Tier Unknown: {skill_name_en}")
 
                     community_tier = skill_to_tier_map.get(tmp_skill_name, None)
+                    # If the tier scrape degraded to an empty map (e.g. Game8 changed its layout), preserve the
+                    # tier previously stored in skills.json instead of nulling it out, since `self.data[skill_name_en]`
+                    # below overwrites the existing entry wholesale.
+                    if community_tier is None and not skill_to_tier_map:
+                        existing_entry = self.data.get(skill_name_en)
+                        if existing_entry is not None:
+                            community_tier = existing_entry.get("community_tier")
 
                     # Corrections to invalid GameTora skill data.
                     if skill_name_en.lower() == "indomitable" and skill_id != 200471:
