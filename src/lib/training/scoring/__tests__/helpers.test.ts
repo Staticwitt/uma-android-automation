@@ -94,6 +94,17 @@ describe("getCurrentStatCap", () => {
         }
     })
 
+    test("Grand Live: Speed caps at 1600", () => {
+        expect(getCurrentStatCap(StatName.SPEED, makeConfig({ scenario: "Grand Live" }))).toBe(1600)
+    })
+
+    test("Grand Live: Stamina, Power, Guts, Wit cap at 1200", () => {
+        const config = makeConfig({ scenario: "Grand Live" })
+        for (const stat of [StatName.STAMINA, StatName.POWER, StatName.GUTS, StatName.WIT]) {
+            expect(getCurrentStatCap(stat, config)).toBe(1200)
+        }
+    })
+
     test("unknown scenario falls back to 1200 for all stats", () => {
         const config = makeConfig({ scenario: "Unknown" })
         for (const stat of [StatName.SPEED, StatName.STAMINA, StatName.POWER, StatName.GUTS, StatName.WIT]) {
