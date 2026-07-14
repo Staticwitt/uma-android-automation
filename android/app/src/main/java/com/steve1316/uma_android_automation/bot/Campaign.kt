@@ -2128,7 +2128,7 @@ abstract class Campaign(game: Game) : Task(game) {
      */
     private fun checkAutoAbandon() {
         if (!autoAbandonConfig.enabled) return
-        val decision = RunAbandonPolicy.evaluate(RankProjection.project(RankProjection.DEFAULT_FINALE_TURN), date.day, autoAbandonConfig)
+        val decision = RunAbandonPolicy.evaluate(RankProjection.project(RankProjection.DEFAULT_FINALE_TURN), date.day, RankProjection.observationCount(), autoAbandonConfig)
         if (decision.shouldAbandon) {
             MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} Stopping the run.")
             throw CampaignBreakpointException("Auto-abandon: ${decision.reason}")
