@@ -56,6 +56,12 @@ const MILE_SPRINT_TRAINING: Partial<Settings["training"]> = {
     ...statPriorityProfile(["Speed", "Power", "Stamina", "Wit", "Guts"]),
 }
 
+/** Pure-sprint bootstrap: Speed/Power first, Stamina last, so the finished uma carries Speed blue + Sprint pink sparks. */
+const SPRINT_SPEED_TRAINING: Partial<Settings["training"]> = {
+    preferredDistanceOverride: "Sprint",
+    ...statPriorityProfile(["Speed", "Power", "Wit", "Guts", "Stamina"]),
+}
+
 const MILE_QUEEN_TRAINING: Partial<Settings["training"]> = {
     preferredDistanceOverride: "Mile",
     ...statPriorityProfile(["Speed", "Stamina", "Power", "Wit", "Guts"]),
@@ -142,6 +148,24 @@ export const PARENT_FARMING_GOAL_PRESETS: ParentFarmingGoalPreset[] = [
             minWinRateGuard: 0.7,
         },
         trainingOverrides: MILE_SPRINT_TRAINING,
+    },
+    {
+        key: "sprint-speed-parent",
+        label: "Sprint Speed Parent (bootstrap)",
+        description:
+            "Builds your first sprint inheritance parents from scratch: pure-sprint schedule and Speed/Power training so the finished uma carries Speed blue sparks plus Sprint/Turf pink sparks. Ideal when you have no parents yet and want a Leo Cup-ready line.",
+        targetEpithets: ["Sprint Speedster", "Sprint Go-Getter", "Super Sprinter", "Speed Star", "Speed Queen"],
+        weightOverrides: {
+            ...TARGET_PRIORITY_WEIGHTS,
+            // Sprint-pure: drop mile+ optional races so stat gains and race history stay in the sprint lane (sprints <= 1400m, miles >= 1600m).
+            maxRaceDistance: 1400,
+            fanWeight: 1.0e-3,
+            minWinRateGuard: 0.7,
+        },
+        trainingOverrides: SPRINT_SPEED_TRAINING,
+        // StatAndAptitude spark picker maximizes Speed blue + Sprint/Turf pink sparks on the produced parent.
+        sparkSelectionStrategy: "StatAndAptitude",
+        qualityTargetScore: 80,
     },
     {
         key: "dirt",
