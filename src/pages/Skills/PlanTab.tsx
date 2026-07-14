@@ -21,6 +21,7 @@ import icons from "./icons"
 import { mergeSkillPlanConfig, parseSkillIdCsv } from "../../lib/skillPlanSettings"
 import { suggestSkillPlan, type SkillDbEntry } from "../../lib/skillCandidates"
 import type { Distance, RunningStyle } from "../../lib/skillPurchaseOptimizer"
+import { resolvePlanActivation } from "../../lib/skillPlanActivation"
 
 /** Represents a skill entry from the `skills.json` data file. */
 interface Skill {
@@ -88,6 +89,13 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
     const [spBudget, setSpBudget] = useState("1200")
 
     const planIds: number[] = useMemo(() => parseSkillIdCsv(plan), [plan])
+
+    // Predict which planned skills can actually fire under the plan's Style settings (concrete running style + distance only).
+    const mergedSkills = { ...defaultSettings.skills, ...skills }
+    const activation = useMemo(
+        () => resolvePlanActivation(planIds, mergedSkills.preferredRunningStyle, mergedSkills.preferredTrackDistance),
+        [planIds, mergedSkills.preferredRunningStyle, mergedSkills.preferredTrackDistance]
+    )
 
     const blacklistIds: number[] = useMemo(() => parseSkillIdCsv(blacklist), [blacklist])
 
@@ -492,6 +500,42 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                     </View>
                 </View>
             </View>
+
+            {activation && (
+                <View style={styles.summaryHost}>
+                    <SectionLabel label={`Skill Activation — ${activation.runningStyle} / ${activation.distanceType}`} />
+                    <View style={styles.specCard}>
+                        <View style={styles.specRow}>
+                            <Text style={styles.specLabel}>Can fire</Text>
+                            <Text style={styles.specValue}>
+                                {activation.counts.Likely + activation.counts.PositionDependent} of {activation.activations.length}
+                            </Text>
+                        </View>
+                        <View style={[styles.specRow, styles.specRowDivider]}>
+                            <Text style={styles.specLabel}>Won&apos;t fire</Text>
+                            {activation.counts.StyleMismatch + activation.counts.Dead === 0 ? (
+                                <Text style={styles.specValueMuted}>(none)</Text>
+                            ) : (
+                                <View style={styles.chipList}>
+                                    {activation.activations
+                                        .filter((a) => a.verdict === "StyleMismatch" || a.verdict === "Dead")
+                                        .map((a) => (
+                                            <View key={a.id} style={styles.chipPill}>
+                                                <Text style={styles.chipPillText}>
+                                                    {a.name} ({a.verdict === "Dead" ? "dead" : "wrong style"})
+                                                </Text>
+                                            </View>
+                                        ))}
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                    <Text style={styles.listHelperText}>
+                        Predicted from this plan&apos;s Style (running style + distance). &quot;Wrong style&quot; skills need a race position this style rarely holds; &quot;dead&quot; skills can&apos;t
+                        fire at this distance. Set a concrete Running Style and Track Distance above to see this.
+                    </Text>
+                </View>
+            )}
         </View>
     )
 }
