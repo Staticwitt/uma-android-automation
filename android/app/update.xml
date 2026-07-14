@@ -1,17 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.25</latestVersion>
-    <latestVersionCode>197</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.25</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.25/v5.10.25-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.25/v5.10.25-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.26</latestVersion>
+    <latestVersionCode>198</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.26</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.26/v5.10.26-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.26/v5.10.26-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.25 - Smarter rank projection + Unity Cup rest fix
+v5.10.26 - Auto-Abandon mid-run start fix
 
 Fixed
 -----
-- The bot no longer rests through an Extreme Spirit Burst on a Smart Race Solver rest turn. The solver pre-plans the whole career and can't see spirit gauges, so on a scheduled Rest it would rest straight through a ready Extreme Burst (even at full energy). It now peeks the training board before a planned rest, the same as it already did before a planned optional race, and trains a ready Extreme Burst or strong rainbow instead.
-- The final-rank projection is now recency-weighted, so it tracks a run's accelerating trajectory (slow early, steep in Senior as bonds max and rainbows/spirit bursts land) instead of being dragged down by slow early turns. This fixes the projected grade reading far too low mid-run, and makes projection-driven Auto-Abandon much more reliable (it no longer risks abandoning a healthy run on an overly pessimistic early estimate).
+- Auto-Abandon no longer instantly stops a run when the bot is started mid-career. On start the rank projection resets, so a mid-run launch had a single data point, making the projection flat at the current (still sub-target) score and triggering an immediate false abandon. Auto-Abandon now waits until it has enough per-turn history to judge a real trajectory before it can stop a run; full runs started from the beginning are unaffected.
     </releaseNotes>
   </update>
 </AppUpdater>
