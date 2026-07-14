@@ -138,6 +138,22 @@ describe("parentFarmingGoalPresets", () => {
         expect(result.racing.parentFarmingBundleKey).toBe("")
     })
 
+    it("bootstraps a pure-sprint Speed parent line", () => {
+        const preset = PARENT_FARMING_GOAL_PRESETS.find((p) => p.key === "sprint-speed-parent")!
+        expect(preset).toBeDefined()
+
+        const training = applyParentFarmingGoalPresetToTraining(createTrainingSettings(), preset)
+        expect(training.preferredDistanceOverride).toBe("Sprint")
+        expect(training.statPrioritization).toEqual(["Speed", "Power", "Wit", "Guts", "Stamina"])
+
+        const racing = applyParentFarmingGoalPresetToRacing(createRacingSettings(), preset)
+        const weights = JSON.parse(racing.smartRaceSolverWeights!)
+        // Sprint-pure: miles (>= 1600m) are dropped from optional racing so gains stay in the sprint lane.
+        expect(weights.maxRaceDistance).toBe(1400)
+        // StatAndAptitude spark picker maximizes Speed blue + Sprint/Turf pink sparks on the produced parent.
+        expect(racing.sparkSelectionStrategy).toBe("StatAndAptitude")
+    })
+
     it("defines only epithets that exist in bundled epithets data", () => {
         const epithets = require("../../data/epithets.json") as Record<string, { name: string }>
         const knownNames = new Set(Object.values(epithets).map((entry) => entry.name))
