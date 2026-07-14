@@ -91,7 +91,7 @@ import java.util.concurrent.TimeUnit
  *
  * @param message A helpful message describing what breakpoint we hit.
  */
-class CampaignBreakpointException(message: String) : Exception(message)
+class CampaignBreakpointException(message: String, val abandonedRun: Boolean = false) : Exception(message)
 
 /** Defines an enum representing the various actions the bot can take when at the Main screen.
  */
@@ -2164,7 +2164,7 @@ abstract class Campaign(game: Game) : Task(game) {
         val decision = RunAbandonPolicy.evaluate(RankProjection.project(RankProjection.DEFAULT_FINALE_TURN), date.day, RankProjection.observationCount(), autoAbandonConfig)
         if (decision.shouldAbandon) {
             MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} Stopping the run.")
-            throw CampaignBreakpointException("Auto-abandon: ${decision.reason}")
+            throw CampaignBreakpointException("Auto-abandon: ${decision.reason}", abandonedRun = true)
         }
     }
 
@@ -3248,6 +3248,14 @@ abstract class Campaign(game: Game) : Task(game) {
                 game.tap(350.0, 450.0, taps = 1)
             }
         } catch (e: CampaignBreakpointException) {
+            // In a parent-farming multi-run session, an auto-abandoned run should give up the current
+            // career in-game and roll straight into the next run instead of ending the whole session.
+            // tryAbandonAndContinue is a no-op (returns false) unless multi-run is enabled and the
+            // give-up + navigation actually completes, so every other breakpoint (skill-point check,
+            // mandatory-race, notification stops) and single-run sessions fall through to the stop below.
+            if (e.abandonedRun && ParentFarmingRunLoop.tryAbandonAndContinue(this, game)) {
+                return null
+            }
             return TaskResult.Success(
                 TaskResultCode.TASK_RESULT_BREAKPOINT_REACHED,
                 e.message ?: "Campaign breakpoint reached. Stopping bot...",

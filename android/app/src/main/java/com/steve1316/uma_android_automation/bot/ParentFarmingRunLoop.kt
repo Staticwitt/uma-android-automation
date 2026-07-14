@@ -6,8 +6,10 @@ import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.uma_android_automation.bot.solver.SmartRaceSolverIntegration
 import com.steve1316.uma_android_automation.components.ButtonBack
+import com.steve1316.uma_android_automation.components.ButtonBurger
 import com.steve1316.uma_android_automation.components.ButtonClose
 import com.steve1316.uma_android_automation.components.ButtonCompleteCareer
+import com.steve1316.uma_android_automation.components.ButtonGiveUp
 import com.steve1316.uma_android_automation.components.ButtonToHome
 import com.steve1316.uma_android_automation.types.GameDate
 import com.steve1316.uma_android_automation.utils.LogStreamServer
@@ -199,6 +201,57 @@ object ParentFarmingRunLoop {
         if (DiscordUtils.enableDiscordNotifications && ParentDiscordNotifier.isParentFarmingRun()) {
             ParentDiscordNotifier.maybeSendParentRunStart(game.scenario)
         }
+        return true
+    }
+
+    /**
+     * Recovery entry point for the auto-abandon breakpoint. When a parent-farming multi-run session
+     * decides to give up on a doomed run mid-career, this gives the career up in-game and then rolls
+     * straight into the next run via [tryContinueAfterCareerEnd]. Returns false — so the caller stops
+     * the bot exactly as before — when multi-run is off or the give-up/navigation can't be completed,
+     * leaving the single-run and non-abandon stop paths byte-for-byte unchanged.
+     */
+    fun tryAbandonAndContinue(campaign: Campaign, game: Game): Boolean {
+        if (!isEnabled()) return false
+        MessageLog.i(TAG, "Auto-abandon in multi-run session: giving up run ${sessionRunsCompleted + 1} to start a fresh one.")
+        if (!giveUpCareer(campaign, game)) {
+            MessageLog.w(TAG, "Auto-abandon: could not give up the career in-game; stopping the multi-run session instead.")
+            return false
+        }
+        // An abandoned run has no meaningful quality, so pass a null summary: it advances the run
+        // counter and navigates to the next career without touching keep-best/quality tracking.
+        return tryContinueAfterCareerEnd(campaign, game, summaryInput = null)
+    }
+
+    /**
+     * Gives up the current career from the in-career Main screen: opens the hamburger menu, taps
+     * Give Up, then confirms. Mirrors the proven menu-open flow used by [RaceHistory]. Returns true
+     * only once the confirmation has been tapped; on any missing button it closes the menu (best
+     * effort) and returns false so the caller can fall back to stopping the bot.
+     */
+    private fun giveUpCareer(campaign: Campaign, game: Game): Boolean {
+        if (!ButtonBurger.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Give up: hamburger menu button not found.")
+            return false
+        }
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
+
+        // "Give Up" in the menu opens the confirmation dialog (whose OK button reuses the same graphic).
+        if (!ButtonGiveUp.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Give up: Give Up option not found in the menu; closing it.")
+            ButtonClose.click(game.imageUtils)
+            game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
+            return false
+        }
+        game.wait(game.dialogWaitDelay, skipWaitingForLoading = true)
+
+        // Confirm on the Give Up dialog.
+        if (!ButtonGiveUp.click(game.imageUtils)) {
+            MessageLog.w(TAG, "Give up: confirmation button not found.")
+            return false
+        }
+        game.wait(1.0)
+        campaign.tryHandleAllDialogs(timeoutMs = 5_000)
         return true
     }
 
