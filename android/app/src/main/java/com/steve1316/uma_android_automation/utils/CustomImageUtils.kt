@@ -2628,7 +2628,11 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                         referencePoint = extraRaceLocation,
                         offsetX = -455,
                         offsetY = -105,
-                        width = relWidth(585),
+                        // Width caps the box at the screen's right edge: from finalX (refX - 455) a width
+                        // of 516 lands the right edge on x = 1080, capturing the full on-screen race name.
+                        // The previous 585 overran the edge by ~69px, so performOCROnRegion clamped it to
+                        // 516 on every call and logged a spurious "Crop region ... clamped" warning.
+                        width = relWidth(516),
                         height = relHeight(45),
                         useThreshold = true,
                         useGrayscale = true,
