@@ -450,6 +450,7 @@ abstract class Campaign(game: Game) : Task(game) {
             momentumLossStreak++
             momentumWinStreak = 0
         }
+        MomentumRaceSelection.onRaceResult(won)
 
         if (!enableRaceMomentumNotifications || !DiscordUtils.enableDiscordNotifications) return
 
