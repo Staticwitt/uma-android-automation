@@ -140,6 +140,9 @@ export function buildSettingsBanner(settings: Settings): string {
             : `${settings.training.summerTrainingStatPriority.join(", ")}`
     }
 🔍 Maximum Failure Chance Allowed: ${settings.training.maximumFailureChance}%
+🧠 Wit Maximum Failure Chance: ${settings.training.witMaximumFailureChance > 0 ? `${settings.training.witMaximumFailureChance}%` : "follows global"}
+🔋 Minimum Energy to Train: ${settings.training.minimumEnergyToTrain > 0 ? `${settings.training.minimumEnergyToTrain}%` : "❌"}
+🧘 Wit Over Rest: ${settings.training.minimumEnergyToTrain > 0 && settings.training.enableWitOverRest ? "✅" : "❌"}
 ⚠️ Enable Riskier Training: ${settings.training.enableRiskyTraining ? "✅" : "❌"}${
         settings.training.enableRiskyTraining
             ? `\n   📊 Minimum Main Stat Gain Threshold: ${settings.training.riskyTrainingMinStatGain}\n   🎯 Risky Training Maximum Failure Chance: ${settings.training.riskyTrainingMaxFailureChance}%`

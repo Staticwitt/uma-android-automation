@@ -247,6 +247,12 @@ export interface Settings {
         eventChoiceStatPriority: string[]
         summerTrainingStatPriority: string[]
         maximumFailureChance: number
+        /** Wit-specific failure-chance ceiling. 0 = follow maximumFailureChance. */
+        witMaximumFailureChance: number
+        /** Minimum energy % required to train: below this a training turn becomes a rest turn. 0 = disabled. */
+        minimumEnergyToTrain: number
+        /** When the energy floor triggers, try Wit training (consumes no energy) before falling back to resting. */
+        enableWitOverRest: boolean
         disableTrainingOnMaxedStat: boolean
         enableRainbowTrainingBonus: boolean
         enablePrioritizeNearMaxFriendship: boolean
@@ -645,6 +651,9 @@ export const defaultSettings: Settings = {
         eventChoiceStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
         summerTrainingStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
         maximumFailureChance: 20,
+        witMaximumFailureChance: 0,
+        minimumEnergyToTrain: 0,
+        enableWitOverRest: false,
         disableTrainingOnMaxedStat: true,
         enableRainbowTrainingBonus: false,
         enablePrioritizeNearMaxFriendship: true,
