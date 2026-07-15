@@ -77,6 +77,7 @@ const TrainingEventSettings = () => {
     // Merge current training event settings with defaults to handle missing properties.
     const {
         enablePrioritizeEnergyOptions,
+        enableContextAwareEventScoring,
         enableAutomaticOCRRetry,
         ocrConfidence,
         enableHideOCRComparisonResults,
@@ -611,6 +612,12 @@ const TrainingEventSettings = () => {
                                 title="Prioritize Energy Options"
                                 description="When enabled, the bot will prioritize training event choices that provide energy recovery or avoid energy consumption, helping to maintain optimal energy levels for training sessions."
                                 right={<Switch checked={enablePrioritizeEnergyOptions} onCheckedChange={(checked) => updateTrainingEventSetting("enablePrioritizeEnergyOptions", checked)} />}
+                            />
+                            <SettingRow
+                                id="context-aware-event-scoring"
+                                title="Context-Aware Event Scoring"
+                                description="Score event choices against your live run state instead of a fixed stat priority. Stat gains are devalued as a stat nears its cap (so the bot stops dumping into already-maxed stats), energy is worth more when you're low, and mood, bond, and statuses are weighed in. Leave off to keep the classic fixed-priority scoring."
+                                right={<Switch checked={enableContextAwareEventScoring} onCheckedChange={(checked) => updateTrainingEventSetting("enableContextAwareEventScoring", checked)} />}
                             />
                         </Section>
                         )}

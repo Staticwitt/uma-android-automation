@@ -218,6 +218,7 @@ export interface Settings {
     // Training Event settings
     trainingEvent: {
         enablePrioritizeEnergyOptions: boolean
+        enableContextAwareEventScoring: boolean
         enableAutomaticOCRRetry: boolean
         ocrConfidence: number
         enableHideOCRComparisonResults: boolean
@@ -569,6 +570,7 @@ export const defaultSettings: Settings = {
     },
     trainingEvent: {
         enablePrioritizeEnergyOptions: false,
+        enableContextAwareEventScoring: false,
         enableAutomaticOCRRetry: true,
         ocrConfidence: 90,
         enableHideOCRComparisonResults: true,

@@ -10,10 +10,14 @@ import com.steve1316.uma_android_automation.components.IconTrainingEventHorsesho
 import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.NegativeStatus
 import com.steve1316.uma_android_automation.types.PositiveStatus
+import com.steve1316.uma_scoring.EventChoiceContext
+import com.steve1316.uma_scoring.StatName
+import com.steve1316.uma_scoring.chooseBestEventOption
 import net.ricecode.similarity.JaroWinklerStrategy
 import net.ricecode.similarity.StringSimilarityServiceImpl
 import org.json.JSONObject
 import org.opencv.core.Point
+import kotlin.math.roundToInt
 
 /**
  * This class is responsible for detecting, analyzing, and responding to Training Events.
@@ -27,6 +31,9 @@ class TrainingEvent(private val game: Game, private val campaign: Campaign) {
 
     /** Whether to prioritize options that provide energy gains. */
     private val enablePrioritizeEnergyOptions: Boolean = SettingsHelper.getBooleanSetting("trainingEvent", "enablePrioritizeEnergyOptions")
+
+    /** Opt-in: use the shared soft-cap-aware [chooseBestEventOption] scorer instead of the legacy fixed-priority weighting for normal (non-override) events. */
+    private val enableContextAwareEventScoring: Boolean = SettingsHelper.getBooleanSetting("trainingEvent", "enableContextAwareEventScoring", false)
 
     /** Special event overrides loaded from SQLite settings. */
     private val specialEventOverrides: Map<String, EventOverride> =
@@ -516,6 +523,22 @@ class TrainingEvent(private val game: Game, private val campaign: Campaign) {
 
                     MessageLog.v(TAG, "[TRAINING_EVENT] Scenario event override applied.")
                     printEventSummary(eventTitle, characterOrSupportName, eventRewards, null, optionSelected, confidence)
+                } else if (enableContextAwareEventScoring) {
+                    // Context-aware scorer (shared scoring module): parse each option's rewards into structured effects and score them against live run state -- stat gains are
+                    // devalued past the soft cap so the bot stops dumping into already-capped stats, energy is worth more when depleted, and mood/bond/statuses are weighed too.
+                    // Opt-in; the legacy fixed-priority scorer in the branch below stays the default.
+                    val context =
+                        EventChoiceContext(
+                            currentStats = StatName.entries.associateWith { campaign.trainee.getStat(it) },
+                            statPriority = campaign.training.eventChoiceStatPriority,
+                            currentEnergy = campaign.trainee.energy,
+                            maxEnergy = 100,
+                            scenario = game.scenario,
+                        )
+                    val result = chooseBestEventOption(eventRewards.toList(), context)
+                    optionSelected = result.bestIndex
+                    val displayWeights = result.scores.sortedBy { it.index }.map { it.score.roundToInt() }
+                    printEventSummary(eventTitle, characterOrSupportName, eventRewards, displayWeights, optionSelected, confidence)
                 } else {
                     // Initialize the List for normal event processing.
                     val selectionWeight = List(eventRewards.size) { 0 }.toMutableList()

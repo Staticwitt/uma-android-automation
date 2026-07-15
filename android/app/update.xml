@@ -6,7 +6,11 @@
     <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
     <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.28 - Multi-run continues after an auto-abandoned run
+v5.10.28 - Auto-abandon continues the farm + context-aware event choices
+
+Added
+-----
+- Context-Aware Event Scoring (Training Event Settings, off by default). Scores training-event choices against your live run state instead of a fixed stat priority: a stat gain is devalued as that stat nears its cap (so the bot stops dumping into already-maxed stats), energy is worth more when you're low, and mood, bond, and good/bad statuses are weighed in. Leave it off to keep the classic fixed-priority scoring.
 
 Fixed
 -----
