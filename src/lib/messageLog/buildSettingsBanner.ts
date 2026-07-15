@@ -119,6 +119,7 @@ export function buildSettingsBanner(settings: Settings): string {
             : `${Object.keys(settings.trainingEvent.scenarioEventOverrides).length} Scenario Event Override(s) applied`
     }
 🔋 Prioritize Energy Options: ${settings.trainingEvent.enablePrioritizeEnergyOptions ? "✅" : "❌"}
+🧠 Context-Aware Event Scoring: ${settings.trainingEvent.enableContextAwareEventScoring ? "✅" : "❌"}
 🔍 Enable Automatic OCR retry: ${settings.trainingEvent.enableAutomaticOCRRetry ? "✅" : "❌"}
 🔍 Minimum OCR Confidence: ${settings.trainingEvent.ocrConfidence}
 🔍 Hide OCR String Comparison Results: ${settings.trainingEvent.enableHideOCRComparisonResults ? "✅" : "❌"}

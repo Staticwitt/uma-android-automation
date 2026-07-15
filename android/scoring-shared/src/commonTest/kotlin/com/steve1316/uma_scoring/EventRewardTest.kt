@@ -138,4 +138,20 @@ class EventRewardTest {
         assertEquals(0, result.bestIndex)
         assertTrue(result.scores.isEmpty())
     }
+
+    @Test
+    fun prefersANeedyStatOverANearCappedHigherPriorityOne() {
+        // Speed is top priority but already near the URA cap (1400), so a gain into it is mostly wasted; Wit is
+        // bottom priority but far below cap, so an equal gain there is fully effective. The scorer should pick Wit.
+        val context =
+            EventChoiceContext(
+                currentStats = mapOf(StatName.SPEED to 1350, StatName.WIT to 500),
+                statPriority = allPriority,
+                currentEnergy = 60,
+                maxEnergy = 100,
+                scenario = "URA Finale",
+            )
+        val result = chooseBestEventOption(listOf("Speed +40", "Wit +40"), context)
+        assertEquals(1, result.bestIndex, "A gain into a needy stat should beat an equal gain into a near-capped higher-priority stat")
+    }
 }
