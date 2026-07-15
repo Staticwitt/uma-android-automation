@@ -1,27 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.27</latestVersion>
-    <latestVersionCode>199</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.27</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.27/v5.10.27-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.27/v5.10.27-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.28</latestVersion>
+    <latestVersionCode>200</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.28</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.27 - Assistant analytics suite + race-name OCR fix
-
-Added
------
-- Skill activation predictor: estimates which owned skills are likely to fire, now surfaced directly on the Skills page.
-- Skill ROI shopping-list planner: builds a skill purchase list that maximizes value within an SP budget.
-- Support deck synergy scorer: rates how well a support-card deck works together.
-- Post-run point-leak analyzer: pinpoints where rating was lost across a completed run.
-- Champions Meeting win-probability preview and post-run result correlator.
-- Adaptive race win-rate learning: race picks improve over time from observed results.
-- Sprint Speed Parent bootstrap goal preset.
-- Grand Live scenario scaffolding (early support), with the Speed stat cap raised to 1600.
+v5.10.28 - Multi-run continues after an auto-abandoned run
 
 Fixed
 -----
-- The race-name OCR crop no longer overruns the screen's right edge. On the race selection screen the crop ran ~69px past the 1080px edge on every read and was clamped each time, spamming a "Crop region ... clamped" warning. The declared width now lands exactly on the edge, capturing the same on-screen pixels with no change to detected names and no more warning noise.
+- In a parent-farming multi-run session, an auto-abandoned run no longer stops the whole session. Auto-Abandon previously stopped the bot outright, so the first doomed run that got abandoned ended an overnight farm instead of starting a fresh one. When multi-run is enabled, the bot now gives up the current career in-game (menu -&gt; Give Up -&gt; confirm) and rolls straight into the next run. Single-run sessions and every other stop condition (skill-point check, mandatory-race, etc.) are unchanged, and if the give-up navigation can't complete it falls back to the previous stop behavior.
     </releaseNotes>
   </update>
 </AppUpdater>
