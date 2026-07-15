@@ -196,6 +196,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🚫 Ignore Consecutive Race Warning: ${settings.racing.ignoreConsecutiveRaceWarning ? "✅" : "❌"}
 ⚡ Ignore Low Energy Racing Block: ${settings.racing.ignoreLowEnergyRacingBlock ? "✅" : "❌"}
 🔄 Disable Race Retries: ${settings.racing.disableRaceRetries ? "✅" : "❌"}
+🔁 Retry Unity Cup Races: ${settings.racing.enableRetryUnityCupRaces ? "✅" : "❌"}
 \t🔄 Allow Daily Free Race Retry: ${settings.racing.enableFreeRaceRetry ? "✅" : "❌"}
 \t💎 Spend Carats for Race Retry: ${settings.racing.enableCaratRaceRetry ? "✅" : "❌"}
 \t💎 Max Carat Race Retries: ${settings.racing.maxCaratRaceRetriesPerRun ?? 5}${settings.racing.enableCaratRaceRetry ? "" : " (off)"}

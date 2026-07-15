@@ -57,6 +57,7 @@ const RacingSettings = () => {
         enableParentFarmingMode,
         enableFarmingFans,
         enableMomentumRaceSelection,
+        enableRetryUnityCupRaces,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
         minimumEnergyForOptionalRacing,
@@ -273,6 +274,12 @@ const RacingSettings = () => {
                                 condition={disableRaceRetries}
                                 parentId="disable-race-retries"
                                 right={<Switch checked={enableFreeRaceRetry} onCheckedChange={(checked) => updateRacingSetting("enableFreeRaceRetry", checked)} />}
+                            />
+                            <SettingRow
+                                id="enable-retry-unity-cup-races"
+                                title="Retry Unity Cup Races"
+                                description="When enabled, the bot taps Try Again on a lost Unity Cup race instead of accepting the loss. Off keeps the classic behavior of taking the loss and moving on."
+                                right={<Switch checked={enableRetryUnityCupRaces} onCheckedChange={(checked) => updateRacingSetting("enableRetryUnityCupRaces", checked)} />}
                             />
                             <SettingRow
                                 id="enable-carat-race-retry"
