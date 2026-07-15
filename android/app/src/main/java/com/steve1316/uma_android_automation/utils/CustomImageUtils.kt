@@ -575,6 +575,13 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                 break
             }
             MessageLog.w(TAG, "[WARN] findTrainingFailureChance:: Failed to detect a valid training failure chance (attempt $i of $tries, read=$attempt)")
+            // A failed read usually means the failure bubble is mid-render right after a loading/"Connecting"
+            // round-trip: waitForLoading() has already returned but the panel hasn't redrawn yet, so immediate
+            // retries all see the same blank region and burn the whole budget in ~250ms. Give the render a beat
+            // (this wait also blocks through any renewed loading) before consuming the next attempt.
+            if (i < tries) {
+                game.wait(0.5)
+            }
         }
 
         if (debugMode) {

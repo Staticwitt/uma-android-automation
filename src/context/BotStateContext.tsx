@@ -60,6 +60,8 @@ export interface Settings {
         enableFarmingFans: boolean
         /** Momentum-aware optional racing: tighten the win-rate guard on losing streaks; relax it on win streaks only while a fan target is unmet. */
         enableMomentumRaceSelection: boolean
+        /** Tap Try Again on a lost Unity Cup race instead of accepting the loss. */
+        enableRetryUnityCupRaces: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
         /** Minimum energy % required to start optional (extra) races. 0 = disabled; hard requirements always bypass. */
@@ -437,6 +439,7 @@ export const defaultSettings: Settings = {
         enableParentRunArchive: true,
         enableFarmingFans: false,
         enableMomentumRaceSelection: false,
+        enableRetryUnityCupRaces: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,
         minimumEnergyForOptionalRacing: 0,

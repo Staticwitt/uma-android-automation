@@ -57,6 +57,9 @@ class UnityCup(game: Game) : Campaign(game) {
     /** Whether to deliberately seek out and challenge the pink-highlighted "Elite Team" opponent when one is offered, instead of the default race-prediction-favorability logic. */
     private val preferEliteTeamOpponent: Boolean = SettingsHelper.getBooleanSetting("training", "preferEliteTeamOpponent", false)
 
+    /** Whether to tap Try Again on a lost Unity Cup race instead of accepting the loss. */
+    private val enableRetryUnityCupRaces: Boolean = SettingsHelper.getBooleanSetting("racing", "enableRetryUnityCupRaces", false)
+
     /** Index of the opponent detected as the Elite Team on the current "Select Opponent" screen, or null if not found/not yet checked/disabled. Reset each time this screen is (re-)entered. */
     private var eliteTeamOpponentIndex: Int? = null
 
@@ -138,6 +141,21 @@ class UnityCup(game: Game) : Campaign(game) {
         when (result.dialog.name) {
             "auto_fill" -> {
                 result.dialog.close(game.imageUtils)
+            }
+
+            // A lost Unity Cup race pops the Try Again dialog. Previously no handler claimed it, so the race
+            // loop tapped around it until the 30s "Race event took too long" timeout aborted the whole event.
+            // Retry when the user opted in; otherwise Cancel (dialog.close falls back to the Cancel button)
+            // to accept the loss and let the race flow finish normally.
+            "try_again" -> {
+                if (enableRetryUnityCupRaces) {
+                    MessageLog.i(TAG, "[UNITY_CUP] Race was lost. Retrying it since Retry Unity Cup Races is enabled.")
+                    result.dialog.ok(game.imageUtils)
+                    game.waitForLoading()
+                } else {
+                    MessageLog.i(TAG, "[UNITY_CUP] Race was lost. Accepting the result and moving on.")
+                    result.dialog.close(game.imageUtils)
+                }
             }
 
             "unity_cup_confirmation" -> {
