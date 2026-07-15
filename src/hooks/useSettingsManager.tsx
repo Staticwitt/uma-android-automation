@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext, useMemo, useRef, useCallback } from "react"
 import { File, Paths } from "expo-file-system"
+import * as Application from "expo-application"
 import * as Sharing from "expo-sharing"
 import { startActivityAsync } from "expo-intent-launcher"
 import { defaultSettings, Settings, BotMetaContext, useSettingsSnapshot } from "../context/BotStateContext"
@@ -443,8 +444,8 @@ export const useSettingsManager = () => {
      */
     const openDataDirectory = useCallback(async () => {
         const endTiming = startTiming("settings_manager_open_data_dir", "settings")
-        // Get the app's package name from the document directory path.
-        const packageName = "com.steve1316.uma_android_automation"
+        // The installed application ID (differs from upstream's now that the fork installs side-by-side).
+        const packageName = Application.applicationId ?? "com.staticwitt.uma_android_automation"
 
         try {
             // Try Storage Access Framework first (recommended for Android 11+).
