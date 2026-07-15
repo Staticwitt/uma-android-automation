@@ -423,6 +423,8 @@ export interface Settings {
         unityCupExtremeBurstMinStatGain: number
         /** After Junior year, only prioritize bursts (normal and extreme) on facilities whose stat is in the top 3 prioritized stats. */
         unityCupBurstOnlyTopStatsAfterJunior: boolean
+        /** Steer training toward a duel-badged facility so the bot enters Happy Meek's duel: "Off", "Moderate", or "Aggressive". */
+        uraFinaleHappyMeekDuelBias: string
     }
 }
 
@@ -795,6 +797,7 @@ export const defaultSettings: Settings = {
         unityCupBurstMaxFailureChance: 0,
         unityCupExtremeBurstMinStatGain: 0,
         unityCupBurstOnlyTopStatsAfterJunior: false,
+        uraFinaleHappyMeekDuelBias: "Off",
     },
 }
 

@@ -296,6 +296,7 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 💥 Unity Cup Burst Failure-Chance Exemption: ${settings.scenarioOverrides?.unityCupBurstMaxFailureChance && settings.scenarioOverrides.unityCupBurstMaxFailureChance > 0 ? `${settings.scenarioOverrides.unityCupBurstMaxFailureChance}%` : "❌"}
 💥 Unity Cup Extreme Burst Minimum Stat Gain: ${settings.scenarioOverrides?.unityCupExtremeBurstMinStatGain && settings.scenarioOverrides.unityCupExtremeBurstMinStatGain > 0 ? `${settings.scenarioOverrides.unityCupExtremeBurstMinStatGain}` : "❌"}
 💥 Unity Cup Burst Only Top 3 Stats After Junior: ${settings.scenarioOverrides?.unityCupBurstOnlyTopStatsAfterJunior ? "✅" : "❌"}
+🥊 URA Finale Happy Meek Duel Bias: ${settings.scenarioOverrides?.uraFinaleHappyMeekDuelBias && settings.scenarioOverrides.uraFinaleHappyMeekDuelBias !== "Off" ? settings.scenarioOverrides.uraFinaleHappyMeekDuelBias : "❌"}
 
 ---------- Misc Options ----------
 🔍 Enable Crane Game Attempt: ${settings.general.enableCraneGameAttempt ? "✅" : "❌"}

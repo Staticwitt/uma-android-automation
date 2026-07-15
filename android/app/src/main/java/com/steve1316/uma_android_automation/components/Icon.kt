@@ -194,6 +194,11 @@ object IconTrainingEventHorseshoe : ComponentInterface {
     override val template = Template("components/icon/training_event_horseshoe", region = Region.leftHalf)
 }
 
+/** The orange "Duel" starburst badge shown on a training facility (URA Finale) when Happy Meek's duel is available there. */
+object IconDuel : ComponentInterface {
+    override val template = Template("components/icon/duel", region = Region.bottomHalf)
+}
+
 object IconEventTitleSpacer : ComponentInterface {
     override val template = Template("components/icon/event_title_spacer")
 }

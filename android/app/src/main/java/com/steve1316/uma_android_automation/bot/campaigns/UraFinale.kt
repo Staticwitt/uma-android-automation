@@ -17,6 +17,8 @@ import com.steve1316.uma_android_automation.types.StatName
  * @property game The [Game] instance for interacting with the game state.
  */
 class UraFinale(game: Game) : Campaign(game) {
+    override val training = UraFinaleTraining(game, this)
+
     override fun openFansDialog() {
         ButtonHomeFansInfo.click(game.imageUtils, region = game.imageUtils.regionTopHalf, tries = 10)
         bHasTriedCheckingFansToday = true

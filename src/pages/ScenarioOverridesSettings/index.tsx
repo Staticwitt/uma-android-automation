@@ -27,7 +27,7 @@ import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 
 /** Scenarios that currently have a dedicated set of overrides on this page. Only these appear in the campaign picker, since picking any other scenario would render nothing. */
-const SCENARIOS_WITH_OVERRIDES = ["Trackblazer", "Unity Cup"] as const
+const SCENARIOS_WITH_OVERRIDES = ["Trackblazer", "Unity Cup", "URA Finale"] as const
 
 /** Props for `ChipMultiSelect`. */
 interface ChipMultiSelectProps {
@@ -205,10 +205,17 @@ const ScenarioOverridesSettings = () => {
         updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", defaultSettings.scenarioOverrides.unityCupBurstOnlyTopStatsAfterJunior)
     }, [updateOverrideSetting, defaultSettings])
 
+    /** Reset the URA Finale Training section to defaults. */
+    const resetUraFinaleDefaults = useCallback(() => {
+        updateOverrideSetting("uraFinaleHappyMeekDuelBias", defaultSettings.scenarioOverrides.uraFinaleHappyMeekDuelBias)
+    }, [updateOverrideSetting, defaultSettings])
+
     /** Reset the currently-edited scenario's overrides to defaults. */
     const resetAllDefaults = useCallback(() => {
         if (activeCampaign === "Unity Cup") {
             resetUnityCupDefaults()
+        } else if (activeCampaign === "URA Finale") {
+            resetUraFinaleDefaults()
         } else {
             resetRacingDefaults()
             resetEnergyDefaults()
@@ -217,7 +224,7 @@ const ScenarioOverridesSettings = () => {
             resetConservationDefaults()
         }
         setShowResetAll(false)
-    }, [activeCampaign, resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults, resetUnityCupDefaults])
+    }, [activeCampaign, resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults, resetUnityCupDefaults, resetUraFinaleDefaults])
 
     const styles = useMemo(
         () =>
@@ -964,6 +971,21 @@ const ScenarioOverridesSettings = () => {
                                                 onCheckedChange={(checked) => updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", checked)}
                                             />
                                         }
+                                    />
+                                </Section>
+                                )}
+
+                                {activeCampaign === "URA Finale" && (
+                                <Section label="Training" labelRight={makeResetLink(resetUraFinaleDefaults)}>
+                                    <ChipMultiSelect
+                                        title="Happy Meek Duel Bias"
+                                        description="Steer training toward a facility with a duel badge so the bot enters and wins the duel. Moderate prefers the duel when it is close to the best pick; Aggressive strongly prefers the duel facility even over better plain trainings."
+                                        options={["Off", "Moderate", "Aggressive"]}
+                                        selected={[scenarioOverrides.uraFinaleHappyMeekDuelBias]}
+                                        onToggle={(next) => {
+                                            const pick = next.find((o) => o !== scenarioOverrides.uraFinaleHappyMeekDuelBias)
+                                            if (pick) updateOverrideSetting("uraFinaleHappyMeekDuelBias", pick)
+                                        }}
                                     />
                                 </Section>
                                 )}
