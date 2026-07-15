@@ -58,6 +58,8 @@ export interface Settings {
         /** Persist completed parent runs locally for history and comparison. */
         enableParentRunArchive: boolean
         enableFarmingFans: boolean
+        /** Momentum-aware optional racing: tighten the win-rate guard on losing streaks; relax it on win streaks only while a fan target is unmet. */
+        enableMomentumRaceSelection: boolean
         ignoreConsecutiveRaceWarning: boolean
         ignoreLowEnergyRacingBlock: boolean
         /** Minimum energy % required to start optional (extra) races. 0 = disabled; hard requirements always bypass. */
@@ -434,6 +436,7 @@ export const defaultSettings: Settings = {
         enableParentRunSummary: true,
         enableParentRunArchive: true,
         enableFarmingFans: false,
+        enableMomentumRaceSelection: false,
         ignoreConsecutiveRaceWarning: false,
         ignoreLowEnergyRacingBlock: false,
         minimumEnergyForOptionalRacing: 0,

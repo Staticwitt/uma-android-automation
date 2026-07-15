@@ -5,6 +5,7 @@ import com.steve1316.automation_library.utils.SettingsHelper
 import com.steve1316.automation_library.utils.TextUtils
 import com.steve1316.uma_android_automation.bot.DiscordSolverNotifier
 import com.steve1316.uma_android_automation.bot.Game
+import com.steve1316.uma_android_automation.bot.MomentumRaceSelection
 import com.steve1316.uma_android_automation.bot.ParentFarmingAdaptiveMultiRun
 import com.steve1316.uma_android_automation.bot.ParentFarmingForcedEpithetGuard
 import com.steve1316.uma_android_automation.bot.ParentFarmingGoalQueue
@@ -266,6 +267,7 @@ object SmartRaceSolverIntegration {
         currentRunMood = Mood.NORMAL
         ocrDetectedCharacterPreset = null
         SparkPickHistory.reset()
+        MomentumRaceSelection.reset()
     }
 
     /** Dead epithets accumulated during the active run (for recovery coach / live status). */
@@ -1400,7 +1402,10 @@ object SmartRaceSolverIntegration {
             }
         val (guard, fanFloor) =
             ParentFarmingAdaptiveMultiRun.applyWeightAdjustments(base.minWinRateGuard, base.minimumFanTarget)
-        return base.copy(minWinRateGuard = guard, minimumFanTarget = fanFloor)
+        // Momentum adjustment last, on top of any adaptive multi-run relaxation, so a losing streak
+        // always wins the argument and tightens the effective floor.
+        val momentumGuard = MomentumRaceSelection.applyGuardAdjustment(guard, currentRunFans, fanFloor)
+        return base.copy(minWinRateGuard = momentumGuard, minimumFanTarget = fanFloor)
     }
 
     private fun readEpithetTierMultipliers(): Map<String, Double> {

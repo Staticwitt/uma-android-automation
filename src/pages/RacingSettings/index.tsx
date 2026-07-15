@@ -56,6 +56,7 @@ const RacingSettings = () => {
     const {
         enableParentFarmingMode,
         enableFarmingFans,
+        enableMomentumRaceSelection,
         ignoreConsecutiveRaceWarning,
         ignoreLowEnergyRacingBlock,
         minimumEnergyForOptionalRacing,
@@ -209,6 +210,12 @@ const RacingSettings = () => {
                                 title="Enable Farming Fans"
                                 description="When enabled, the bot will start running extra races to gain fans."
                                 right={<Switch checked={enableFarmingFans} onCheckedChange={(checked) => updateRacingSetting("enableFarmingFans", checked)} />}
+                            />
+                            <SettingRow
+                                id="enable-momentum-race-selection"
+                                title="Momentum Race Selection"
+                                description="Adapts optional-race pickiness to how the run is going, automatically. On a losing streak the bot raises its win-chance bar and spends turns training or recovering instead of taking marginal races. On a winning streak it takes slightly riskier races, but only while a fan goal is still unmet — once fans are covered it always protects training turns. Uses the Smart Race Solver's win-rate guard."
+                                right={<Switch checked={enableMomentumRaceSelection} onCheckedChange={(checked) => updateRacingSetting("enableMomentumRaceSelection", checked)} />}
                             />
                             <View style={{ padding: SPACING.md }}>
                                 <CustomSlider
