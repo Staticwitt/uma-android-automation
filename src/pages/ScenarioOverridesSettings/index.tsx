@@ -27,7 +27,7 @@ import { SPACING } from "../../lib/spacing"
 import { RADII } from "../../lib/radii"
 
 /** Scenarios that currently have a dedicated set of overrides on this page. Only these appear in the campaign picker, since picking any other scenario would render nothing. */
-const SCENARIOS_WITH_OVERRIDES = ["Trackblazer", "Unity Cup"] as const
+const SCENARIOS_WITH_OVERRIDES = ["Trackblazer", "Unity Cup", "URA Finale"] as const
 
 /** Props for `ChipMultiSelect`. */
 interface ChipMultiSelectProps {
@@ -201,12 +201,21 @@ const ScenarioOverridesSettings = () => {
     /** Reset the Unity Cup Training section to defaults. */
     const resetUnityCupDefaults = useCallback(() => {
         updateOverrideSetting("unityCupBurstMaxFailureChance", defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance)
+        updateOverrideSetting("unityCupExtremeBurstMinStatGain", defaultSettings.scenarioOverrides.unityCupExtremeBurstMinStatGain)
+        updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", defaultSettings.scenarioOverrides.unityCupBurstOnlyTopStatsAfterJunior)
+    }, [updateOverrideSetting, defaultSettings])
+
+    /** Reset the URA Finale Training section to defaults. */
+    const resetUraFinaleDefaults = useCallback(() => {
+        updateOverrideSetting("uraFinaleHappyMeekDuelBias", defaultSettings.scenarioOverrides.uraFinaleHappyMeekDuelBias)
     }, [updateOverrideSetting, defaultSettings])
 
     /** Reset the currently-edited scenario's overrides to defaults. */
     const resetAllDefaults = useCallback(() => {
         if (activeCampaign === "Unity Cup") {
             resetUnityCupDefaults()
+        } else if (activeCampaign === "URA Finale") {
+            resetUraFinaleDefaults()
         } else {
             resetRacingDefaults()
             resetEnergyDefaults()
@@ -215,7 +224,7 @@ const ScenarioOverridesSettings = () => {
             resetConservationDefaults()
         }
         setShowResetAll(false)
-    }, [activeCampaign, resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults, resetUnityCupDefaults])
+    }, [activeCampaign, resetRacingDefaults, resetEnergyDefaults, resetTrainingDefaults, resetShopDefaults, resetConservationDefaults, resetUnityCupDefaults, resetUraFinaleDefaults])
 
     const styles = useMemo(
         () =>
@@ -271,6 +280,8 @@ const ScenarioOverridesSettings = () => {
 
                         {showBody && (
                             <>
+                                {activeCampaign === "Trackblazer" && (
+                                <>
                                 {/* Racing */}
                                 <Section label="Racing" labelRight={makeResetLink(resetRacingDefaults)}>
                                     <View style={{ padding: SPACING.md }}>
@@ -530,14 +541,18 @@ const ScenarioOverridesSettings = () => {
                                     {scenarioOverrides.trackblazerEnableIrregularTraining && (
                                         <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
-                                                searchId="unity-cup-burst-max-failure-chance"
-                                                value={scenarioOverrides.unityCupBurstMaxFailureChance}
-                                                placeholder={defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance}
-                                                onValueChange={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                                searchId="trackblazer-irregular-training-min-stat-gain"
+                                                searchCondition={scenarioOverrides.trackblazerEnableIrregularTraining}
+                                                parentId="trackblazer-enable-irregular-training"
+                                                value={scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
+                                                placeholder={defaultSettings.scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
+                                                onValueChange={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
+                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
                                                 min={0}
                                                 max={100}
                                                 step={5}
-                                                label="Burst Failure-Chance Exemption"
+                                                label="Irregular Training Minimum Stat Gain"
+                                                labelUnit=""
                                                 showValue={true}
                                                 showLabels={true}
                                                 description="Sets the minimum main stat gain required to skip racing and perform Irregular Training instead."
@@ -905,6 +920,75 @@ const ScenarioOverridesSettings = () => {
                                         />
                                     </View>
                                 </Section>
+                                </>
+                                )}
+
+                                {activeCampaign === "Unity Cup" && (
+                                <Section label="Training" labelRight={makeResetLink(resetUnityCupDefaults)}>
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            searchId="unity-cup-burst-max-failure-chance"
+                                            value={scenarioOverrides.unityCupBurstMaxFailureChance}
+                                            placeholder={defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance}
+                                            onValueChange={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                            onSlidingComplete={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            label="Burst Failure-Chance Exemption"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Allow a training with a Spirit Explosion gauge ready to burst up to this failure chance before it is skipped. 0 disables the exemption and uses the normal failure limit."
+                                        />
+                                    </View>
+
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            searchId="unity-cup-extreme-burst-min-stat-gain"
+                                            value={scenarioOverrides.unityCupExtremeBurstMinStatGain}
+                                            placeholder={defaultSettings.scenarioOverrides.unityCupExtremeBurstMinStatGain}
+                                            onValueChange={(value) => updateOverrideSetting("unityCupExtremeBurstMinStatGain", value)}
+                                            onSlidingComplete={(value) => updateOverrideSetting("unityCupExtremeBurstMinStatGain", value)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            label="Extreme Burst Minimum Stat Gain"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Only prioritize an Extreme Spirit Burst when the facility's projected main-stat gain is at least this value. 0 always executes available extreme bursts."
+                                        />
+                                    </View>
+
+                                    <SettingRow
+                                        id="unity-cup-burst-only-top-stats-after-junior"
+                                        title="Burst Only Top 3 Stats After Junior"
+                                        description="After Junior Year, only prioritize Spirit Explosion bursts (normal and extreme) on facilities whose stat is in your top 3 prioritized stats. Junior Year is unrestricted."
+                                        right={
+                                            <Switch
+                                                checked={scenarioOverrides.unityCupBurstOnlyTopStatsAfterJunior}
+                                                onCheckedChange={(checked) => updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", checked)}
+                                            />
+                                        }
+                                    />
+                                </Section>
+                                )}
+
+                                {activeCampaign === "URA Finale" && (
+                                <Section label="Training" labelRight={makeResetLink(resetUraFinaleDefaults)}>
+                                    <ChipMultiSelect
+                                        title="Happy Meek Duel Bias"
+                                        description="Steer training toward a facility with a duel badge so the bot enters and wins the duel. Moderate prefers the duel when it is close to the best pick; Aggressive strongly prefers the duel facility even over better plain trainings."
+                                        options={["Off", "Moderate", "Aggressive"]}
+                                        selected={[scenarioOverrides.uraFinaleHappyMeekDuelBias]}
+                                        onToggle={(next) => {
+                                            const pick = next.find((o) => o !== scenarioOverrides.uraFinaleHappyMeekDuelBias)
+                                            if (pick) updateOverrideSetting("uraFinaleHappyMeekDuelBias", pick)
+                                        }}
+                                    />
+                                </Section>
+                                )}
 
                                 {/* Reset All footer */}
                                 <Pressable

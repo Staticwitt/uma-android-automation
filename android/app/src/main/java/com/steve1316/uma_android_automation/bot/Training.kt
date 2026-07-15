@@ -95,6 +95,12 @@ enum class TrainingScoringMode(val label: String) {
     TRACKBLAZER_IRREGULAR("Trackblazer (Irregular Training)"),
 }
 
+/**
+ * The failure-chance ceiling for [stat]: [witThreshold] when the stat is Wit and the override is configured
+ * (> 0), otherwise [globalThreshold]. Pure so it is unit-testable without a live Training.
+ */
+fun statFailureThresholdFor(stat: StatName, witThreshold: Int, globalThreshold: Int): Int = if (stat == StatName.WIT && witThreshold > 0) witThreshold else globalThreshold
+
 open class Training(protected val game: Game, protected val campaign: Campaign) {
     /** Map to store detected training options. */
     internal var trainingMap: MutableMap<StatName, TrainingOption> = mutableMapOf()
@@ -140,6 +146,21 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
 
     /** The maximum allowed failure chance for training. */
     private val maximumFailureChance: Int = SettingsHelper.getIntSetting("training", "maximumFailureChance")
+
+    /** Wit-specific failure-chance ceiling. 0 disables the override so Wit follows [maximumFailureChance]. */
+    private val witMaximumFailureChance: Int = SettingsHelper.getIntSetting("training", "witMaximumFailureChance", 0)
+
+    /** Unity Cup: minimum projected main-stat gain for an Extreme Spirit Burst to receive its priority bonus. 0 always prioritizes available extreme bursts. */
+    protected val unityCupExtremeBurstMinStatGain: Int = SettingsHelper.getIntSetting("scenarioOverrides", "unityCupExtremeBurstMinStatGain", 0)
+
+    /** Unity Cup: after Junior year, only give burst priority (normal and extreme) to facilities whose stat is in the top 3 prioritized stats. */
+    protected val unityCupBurstOnlyTopStatsAfterJunior: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "unityCupBurstOnlyTopStatsAfterJunior", false)
+
+    /** The top-3 prioritized stats for the Unity Cup burst restriction, or null when the restriction is disabled. */
+    protected fun unityCupBurstTopStats(): Set<StatName>? = if (unityCupBurstOnlyTopStatsAfterJunior) statPrioritization.take(3).toSet() else null
+
+    /** The failure-chance ceiling for [stat]: the Wit override when configured, otherwise the global threshold. */
+    private fun statFailureThreshold(stat: StatName): Int = statFailureThresholdFor(stat, witMaximumFailureChance, maximumFailureChance)
 
     /** Unity Cup only: the failure-chance ceiling a training with a Spirit Explosion gauge ready to burst may reach before being skipped. 0 (default) disables the exemption. */
     private val unityCupBurstMaxFailureChance: Int = SettingsHelper.getIntSetting("scenarioOverrides", "unityCupBurstMaxFailureChance", 0)
@@ -657,14 +678,19 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
          *
          * @param config The [TrainingConfig] containing global scoring inputs.
          * @param training The [TrainingOption] to score.
+         * @param extremeBurstMinStatGain Minimum projected main-stat gain for an Extreme burst to receive its bonus. 0 always grants it.
+         * @param burstTopStats When non-null, burst bonuses (normal and extreme) after Junior year are only granted to facilities whose stat is in this set. Null = unrestricted.
          * @return A score representing the Unity Cup training value.
          */
-        fun scoreUnityCupTraining(config: TrainingConfig, training: TrainingOption): Double {
+        fun scoreUnityCupTraining(config: TrainingConfig, training: TrainingOption, extremeBurstMinStatGain: Int = 0, burstTopStats: Set<StatName>? = null): Double {
             MessageLog.v(TAG, "\n[TRAINING] Starting process to score ${training.name} Training for Unity Cup with redirected priority: Stats > Extreme Burst > Burst > Filling.")
 
             val numSpiritGaugesCanFill = training.extras["spiritGaugesCanFill"] as? Int ?: 0
             val numSpiritGaugesReadyToBurst = training.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
             val numExtremeGaugesReady = training.extras["spiritGaugesExtremeReady"] as? Int ?: 0
+
+            // "Burst Only Top 3 Stats After Junior": Junior year stays unrestricted so gauges get built everywhere early.
+            val burstRestricted = burstTopStats != null && config.currentDate.year != DateYear.JUNIOR && training.name !in burstTopStats
 
             // 1. Primary Priority: Stat Efficiency.
             var score = calculateStatEfficiencyScore(config, training)
@@ -673,13 +699,24 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             // 2. Second Priority: Extreme Spirit Bursts. Guaranteed 0% failure chance regardless of facility, so no per-facility
             // preference logic is needed here the way regular bursts have below.
             if (numExtremeGaugesReady > 0) {
-                val extremeBurstBonus = 1400.0 + (numExtremeGaugesReady * 500.0)
-                score += extremeBurstBonus
-                MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding Extreme Spirit Burst bonus for $numExtremeGaugesReady facility(ies): $extremeBurstBonus")
+                val mainStatGain = training.statGains[training.name] ?: 0
+                when {
+                    burstRestricted ->
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping Extreme Spirit Burst bonus: stat is not in the top 3 prioritized stats (After-Junior burst restriction).")
+                    extremeBurstMinStatGain > 0 && mainStatGain < extremeBurstMinStatGain ->
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping Extreme Spirit Burst bonus: projected main-stat gain $mainStatGain is below the $extremeBurstMinStatGain minimum.")
+                    else -> {
+                        val extremeBurstBonus = 1400.0 + (numExtremeGaugesReady * 500.0)
+                        score += extremeBurstBonus
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding Extreme Spirit Burst bonus for $numExtremeGaugesReady facility(ies): $extremeBurstBonus")
+                    }
+                }
             }
 
             // 3. Third Priority: Trainings with Spirit Explosion Gauges ready to burst.
-            if (numSpiritGaugesReadyToBurst > 0) {
+            if (numSpiritGaugesReadyToBurst > 0 && burstRestricted) {
+                MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping burst bonus for $numSpiritGaugesReadyToBurst gauge(s): stat is not in the top 3 prioritized stats (After-Junior burst restriction).")
+            } else if (numSpiritGaugesReadyToBurst > 0) {
                 // We give a significant bonus for bursting, but not so much that it always overrides huge stat gains elsewhere. The optional energy penalty reflects the extra energy a
                 // Special Training burst costs, scaled by the number of gauges involved (default 0, so behavior is unchanged unless the user tunes it).
                 val burstBonus = config.scoring.unityBurstBaseBonus + (numSpiritGaugesReadyToBurst * (config.scoring.unityBurstPerGaugeBonus - config.scoring.unityBurstEnergyPenaltyPerGauge))
@@ -1340,7 +1377,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 } else {
                     // Read the hinted training's failure chance before committing to it.
                     val hintFailureChance: Int = game.imageUtils.findTrainingFailureChance(tries = 3)
-                    val effectiveFailureChance = if (enableRiskyTraining) riskyTrainingMaxFailureChance else maximumFailureChance
+                    val effectiveFailureChance = if (enableRiskyTraining) riskyTrainingMaxFailureChance else statFailureThreshold(hintStat)
                     val bypassThreshold = isFinals || ignoreFailureChance
                     if (hintFailureChance == -1) {
                         MessageLog.w(
@@ -1562,7 +1599,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                     if (enableRiskyTraining) {
                         riskyTrainingMaxFailureChance
                     } else {
-                        maximumFailureChance
+                        statFailureThreshold(result.name)
                     }
 
                 // If we failed to detect a failure chance, fallback to the initial failure chance that was read as we first entered the training screen.
@@ -1712,7 +1749,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 if (enableRiskyTraining && mainStatGain >= riskyTrainingMinStatGain) {
                     riskyTrainingMaxFailureChance
                 } else {
-                    maximumFailureChance
+                    statFailureThreshold(result.name)
                 }
             // Unity Cup burst exemption: a gauge ready to burst may be worth a higher failure chance than usual, and an Extreme Spirit Burst (guaranteed 0% failure, separate icon not
             // counted in readyToBurst) is fully exempt. No-op unless a gauge is ready to burst or extreme-ready.
@@ -1730,7 +1767,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                         )
                         "high failure chance (risky)"
                     } else {
-                        MessageLog.i(TAG, "[TRAINING] Skipping ${result.name} training due to failure chance (${result.failureChance}%) exceeding threshold ($maximumFailureChance%).")
+                        MessageLog.i(TAG, "[TRAINING] Skipping ${result.name} training due to failure chance (${result.failureChance}%) exceeding threshold (${statFailureThreshold(result.name)}%).")
                         "high failure chance"
                     }
 
@@ -2314,7 +2351,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 keyFactors.add("Multiple relationship bars present (${selected.relationshipBars.size}).")
             }
 
-            if (selected.failureChance > maximumFailureChance) {
+            if (selected.failureChance > statFailureThreshold(selected.name)) {
                 keyFactors.add("Selected despite ${selected.failureChance}% failure chance (Risky Training enabled or Finals).")
             }
 
@@ -2530,7 +2567,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
      * @param forceStat Optional stat name to force the bot to perform regardless of analysis.
      * @return The name of the training that was executed, or null if none.
      */
-    fun handleTraining(forceStat: StatName? = null): StatName? {
+    fun handleTraining(forceStat: StatName? = null, requireViable: Boolean = false): StatName? {
         MessageLog.v(TAG, "\n********************")
         MessageLog.v(TAG, "[TRAINING] Starting Training process on ${campaign.date}.")
         val startTime = System.currentTimeMillis()
@@ -2544,6 +2581,33 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             game.wait(0.5)
             // Acquire the percentages and stat gains for each training.
             analyzeTrainings()
+            // A viability-gated force (e.g. Wit-over-rest) only takes the forced training when it survived the
+            // analyzer's filters (failure chance, blacklist); otherwise it backs out and rests. A plain force keeps
+            // the classic behavior of executing regardless (pre-summer/finale Wit forcing relies on that).
+            if (forceStat != null && requireViable && trainingMap.isNotEmpty() && !trainingMap.containsKey(forceStat)) {
+                MessageLog.i(TAG, "[TRAINING] $forceStat training is not viable (filtered by failure chance or blacklist). Backing out to recover energy instead.")
+                ButtonBack.click(game.imageUtils)
+                game.wait(1.0)
+                if (campaign.checkMainScreen()) {
+                    campaign.decisionTracer.recordTrainingSelection(
+                        selected = null,
+                        source = SelectionSource.FORCED_DEFAULT,
+                        reason = "Viability-gated force: $forceStat did not pass the training filters; recovering energy instead",
+                        runnerUps = buildRunnerUps(null),
+                    )
+                    campaign.decisionTracer.recordRecoveryExecuted(
+                        action = "RECOVER_ENERGY",
+                        reason = "Viability-gated force fallback: $forceStat not viable",
+                    )
+                    campaign.recoverEnergy()
+                } else {
+                    MessageLog.w(TAG, "[WARN] handleTraining:: Could not head back to the Main screen in order to recover energy.")
+                }
+                MessageLog.v(TAG, "[TRAINING] Training process completed. Total time: ${System.currentTimeMillis() - startTime}ms")
+                MessageLog.v(TAG, "********************")
+                return null
+            }
+
             trainingSelected =
                 if (forceStat != null) {
                     MessageLog.i(TAG, "[TRAINING] forceStat override active — selecting $forceStat without running recommendTraining.")

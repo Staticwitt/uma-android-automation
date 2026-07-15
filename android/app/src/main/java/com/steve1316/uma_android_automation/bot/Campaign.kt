@@ -93,6 +93,12 @@ import java.util.concurrent.TimeUnit
  */
 class CampaignBreakpointException(message: String, val abandonedRun: Boolean = false) : Exception(message)
 
+/**
+ * Whether a would-be training turn should become a rest turn because energy is under the configured floor.
+ * A floor of 0 disables the check so it never blocks. Pure so it is unit-testable without a live Campaign.
+ */
+fun shouldRestForEnergyFloor(energy: Int, minimumEnergyToTrain: Int): Boolean = minimumEnergyToTrain > 0 && energy < minimumEnergyToTrain
+
 /** Defines an enum representing the various actions the bot can take when at the Main screen.
  */
 enum class MainScreenAction {
@@ -239,6 +245,15 @@ abstract class Campaign(game: Game) : Task(game) {
 
     /** Whether the bot should rest to bank energy ahead of an upcoming mandatory race, generalizing [mustRestBeforeSummer] beyond the Summer-prep window. */
     protected val enableEnergyBanking: Boolean = SettingsHelper.getBooleanSetting("training", "enableEnergyBanking", false)
+
+    /** Minimum energy floor for training: on a would-be training turn below this, the bot rests instead. 0 disables the floor. */
+    protected val minimumEnergyToTrain: Int = SettingsHelper.getIntSetting("training", "minimumEnergyToTrain", 0)
+
+    /** When the energy floor triggers, try Wit training (which consumes no energy) before falling back to resting. */
+    protected val enableWitOverRest: Boolean = SettingsHelper.getBooleanSetting("training", "enableWitOverRest", false)
+
+    /** Set when the energy floor chose Wit-over-rest, so executeAction runs a viability-gated Wit training instead of the normal analyzer flow. */
+    private var bWitOverRestTraining: Boolean = false
 
     /** Energy percentage below which [enableEnergyBanking] forces rest instead of training ahead of an upcoming mandatory race. */
     protected val energyBankingThreshold: Int = SettingsHelper.getIntSetting("training", "energyBankingThreshold", 50)
@@ -2885,6 +2900,22 @@ abstract class Campaign(game: Game) : Task(game) {
             }
         }
 
+        // Hard energy floor for training, mirroring the optional-racing floor: below it a training turn becomes a
+        // rest turn. Skipped during Finals where the career ends before banked energy could pay off. With Wit-over-rest
+        // enabled, the floor first tries a viability-gated Wit training (Wit consumes no energy) and only rests when
+        // Wit doesn't pass the failure-chance filters.
+        if (!isFinals && shouldRestForEnergyFloor(trainee.energy, minimumEnergyToTrain)) {
+            if (enableWitOverRest) {
+                MessageLog.i(TAG, "[INFO] Energy (${trainee.energy}%) is below the minimum floor to train ($minimumEnergyToTrain%). Trying Wit training before resting (Wit Over Rest).")
+                decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Energy ${trainee.energy}% < minimum training floor $minimumEnergyToTrain%; Wit-over-rest attempting Wit training")
+                bWitOverRestTraining = true
+                return MainScreenAction.TRAIN
+            }
+            MessageLog.i(TAG, "[INFO] Energy (${trainee.energy}%) is below the minimum floor to train ($minimumEnergyToTrain%). Resting instead.")
+            decisionTracer.recordActionChoice(MainScreenAction.REST, "Energy ${trainee.energy}% < minimum training floor $minimumEnergyToTrain%")
+            return MainScreenAction.REST
+        }
+
         decisionTracer.recordActionChoice(MainScreenAction.TRAIN, "Default fallback after racing/mood/injury checks did not trigger")
         return MainScreenAction.TRAIN
     }
@@ -2969,6 +3000,17 @@ abstract class Campaign(game: Game) : Task(game) {
             MessageLog.i(TAG, "[INFO] Executing forced Wit training as requested by pre-summer logic.")
             training.handleTraining(StatName.WIT)
             bForcedWitTraining = false
+            bHasCheckedDateThisTurn = false
+            decisionTracer.emit()
+            return true
+        }
+
+        // Wit-over-rest: the energy floor chose to try Wit training in place of a rest. Viability-gated, so
+        // handleTraining backs out and recovers energy itself when Wit doesn't pass the failure-chance filters.
+        if (action == MainScreenAction.TRAIN && bWitOverRestTraining) {
+            MessageLog.i(TAG, "[INFO] Executing Wit training in place of a low-energy rest (Wit Over Rest).")
+            training.handleTraining(StatName.WIT, requireViable = true)
+            bWitOverRestTraining = false
             bHasCheckedDateThisTurn = false
             decisionTracer.emit()
             return true

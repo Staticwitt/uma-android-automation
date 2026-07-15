@@ -247,6 +247,12 @@ export interface Settings {
         eventChoiceStatPriority: string[]
         summerTrainingStatPriority: string[]
         maximumFailureChance: number
+        /** Wit-specific failure-chance ceiling. 0 = follow maximumFailureChance. */
+        witMaximumFailureChance: number
+        /** Minimum energy % required to train: below this a training turn becomes a rest turn. 0 = disabled. */
+        minimumEnergyToTrain: number
+        /** When the energy floor triggers, try Wit training (consumes no energy) before falling back to resting. */
+        enableWitOverRest: boolean
         disableTrainingOnMaxedStat: boolean
         enableRainbowTrainingBonus: boolean
         enablePrioritizeNearMaxFriendship: boolean
@@ -413,6 +419,12 @@ export interface Settings {
         trackblazerGlowStickMinFans: number
         trackblazerValueAwareShopping: boolean
         unityCupBurstMaxFailureChance: number
+        /** Minimum projected main-stat gain for an Extreme Spirit Burst to be prioritized. 0 always executes available extreme bursts. */
+        unityCupExtremeBurstMinStatGain: number
+        /** After Junior year, only prioritize bursts (normal and extreme) on facilities whose stat is in the top 3 prioritized stats. */
+        unityCupBurstOnlyTopStatsAfterJunior: boolean
+        /** Steer training toward a duel-badged facility so the bot enters Happy Meek's duel: "Off", "Moderate", or "Aggressive". */
+        uraFinaleHappyMeekDuelBias: string
     }
 }
 
@@ -645,6 +657,9 @@ export const defaultSettings: Settings = {
         eventChoiceStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
         summerTrainingStatPriority: ["Speed", "Stamina", "Power", "Wit", "Guts"],
         maximumFailureChance: 20,
+        witMaximumFailureChance: 0,
+        minimumEnergyToTrain: 0,
+        enableWitOverRest: false,
         disableTrainingOnMaxedStat: true,
         enableRainbowTrainingBonus: false,
         enablePrioritizeNearMaxFriendship: true,
@@ -780,6 +795,9 @@ export const defaultSettings: Settings = {
         trackblazerGlowStickMinFans: 20000,
         trackblazerValueAwareShopping: false,
         unityCupBurstMaxFailureChance: 0,
+        unityCupExtremeBurstMinStatGain: 0,
+        unityCupBurstOnlyTopStatsAfterJunior: false,
+        uraFinaleHappyMeekDuelBias: "Off",
     },
 }
 

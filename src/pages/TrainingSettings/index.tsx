@@ -155,6 +155,9 @@ const TrainingSettings = () => {
 
     const {
         maximumFailureChance,
+        witMaximumFailureChance,
+        minimumEnergyToTrain,
+        enableWitOverRest,
         disableTrainingOnMaxedStat,
         enableRainbowTrainingBonus,
         enablePrioritizeNearMaxFriendship,
@@ -666,6 +669,49 @@ const TrainingSettings = () => {
                                             searchId="maximum-failure-chance"
                                         />
                                     </View>
+
+                                    <View style={styles.sliderShell}>
+                                        <CustomSlider
+                                            value={witMaximumFailureChance}
+                                            placeholder={defaultSettings.training.witMaximumFailureChance}
+                                            onValueChange={(value) => updateTrainingSetting("witMaximumFailureChance", value)}
+                                            min={0}
+                                            max={95}
+                                            step={5}
+                                            label="Wit Maximum Failure Chance"
+                                            labelUnit="%"
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Give Wit training its own failure-chance ceiling, separate from the global one above. Wit training consumes no energy, so a failed attempt costs less and a higher ceiling can be worthwhile. 0 = Wit follows the global threshold."
+                                            searchId="wit-maximum-failure-chance"
+                                        />
+                                    </View>
+
+                                    <View style={styles.sliderShell}>
+                                        <CustomSlider
+                                            value={minimumEnergyToTrain}
+                                            placeholder={defaultSettings.training.minimumEnergyToTrain}
+                                            onValueChange={(value) => updateTrainingSetting("minimumEnergyToTrain", value)}
+                                            min={0}
+                                            max={70}
+                                            step={5}
+                                            label="Minimum Energy to Train"
+                                            labelUnit="%"
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Below this energy, a training turn becomes a rest turn instead. Applies after Smart Race Solver plans and energy banking, and is skipped during Finals. 0 = disabled."
+                                            searchId="minimum-energy-to-train"
+                                        />
+                                    </View>
+
+                                    <SettingRow
+                                        id="enable-wit-over-rest"
+                                        title="Wit Over Rest"
+                                        description="When the minimum-energy floor above triggers, try Wit training before resting. Wit training consumes no energy, so it beats a plain rest when its failure chance is acceptable — the bot checks Wit against your failure thresholds first and still rests if Wit is too risky. Requires the floor above to be set."
+                                        condition={minimumEnergyToTrain > 0}
+                                        parentId="minimum-energy-to-train"
+                                        right={<Switch checked={enableWitOverRest} onCheckedChange={(checked) => updateTrainingSetting("enableWitOverRest", checked)} />}
+                                    />
 
                                     <SettingRow
                                         id="disable-training-on-maxed-stats"

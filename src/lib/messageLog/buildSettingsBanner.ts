@@ -140,6 +140,9 @@ export function buildSettingsBanner(settings: Settings): string {
             : `${settings.training.summerTrainingStatPriority.join(", ")}`
     }
 🔍 Maximum Failure Chance Allowed: ${settings.training.maximumFailureChance}%
+🧠 Wit Maximum Failure Chance: ${settings.training.witMaximumFailureChance > 0 ? `${settings.training.witMaximumFailureChance}%` : "follows global"}
+🔋 Minimum Energy to Train: ${settings.training.minimumEnergyToTrain > 0 ? `${settings.training.minimumEnergyToTrain}%` : "❌"}
+🧘 Wit Over Rest: ${settings.training.minimumEnergyToTrain > 0 && settings.training.enableWitOverRest ? "✅" : "❌"}
 ⚠️ Enable Riskier Training: ${settings.training.enableRiskyTraining ? "✅" : "❌"}${
         settings.training.enableRiskyTraining
             ? `\n   📊 Minimum Main Stat Gain Threshold: ${settings.training.riskyTrainingMinStatGain}\n   🎯 Risky Training Maximum Failure Chance: ${settings.training.riskyTrainingMaxFailureChance}%`
@@ -291,6 +294,9 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 📣 Trackblazer Megaphone Surplus-Burn Reserve: ${settings.scenarioOverrides?.trackblazerMegaphoneSurplusBurnReserve}
 😐 Trackblazer Mood Recovery Floor: ${settings.scenarioOverrides?.trackblazerMoodRecoveryFloor ?? "NORMAL"}
 💥 Unity Cup Burst Failure-Chance Exemption: ${settings.scenarioOverrides?.unityCupBurstMaxFailureChance && settings.scenarioOverrides.unityCupBurstMaxFailureChance > 0 ? `${settings.scenarioOverrides.unityCupBurstMaxFailureChance}%` : "❌"}
+💥 Unity Cup Extreme Burst Minimum Stat Gain: ${settings.scenarioOverrides?.unityCupExtremeBurstMinStatGain && settings.scenarioOverrides.unityCupExtremeBurstMinStatGain > 0 ? `${settings.scenarioOverrides.unityCupExtremeBurstMinStatGain}` : "❌"}
+💥 Unity Cup Burst Only Top 3 Stats After Junior: ${settings.scenarioOverrides?.unityCupBurstOnlyTopStatsAfterJunior ? "✅" : "❌"}
+🥊 URA Finale Happy Meek Duel Bias: ${settings.scenarioOverrides?.uraFinaleHappyMeekDuelBias && settings.scenarioOverrides.uraFinaleHappyMeekDuelBias !== "Off" ? settings.scenarioOverrides.uraFinaleHappyMeekDuelBias : "❌"}
 
 ---------- Misc Options ----------
 🔍 Enable Crane Game Attempt: ${settings.general.enableCraneGameAttempt ? "✅" : "❌"}
