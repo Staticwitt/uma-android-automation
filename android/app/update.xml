@@ -1,20 +1,27 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.28</latestVersion>
-    <latestVersionCode>200</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.28</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.28/v5.10.28-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.29</latestVersion>
+    <latestVersionCode>201</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.29</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.29/v5.10.29-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.29/v5.10.29-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.28 - Auto-abandon continues the farm + context-aware event choices
+v5.10.29 - Momentum racing, training gates, and the full scenario-overrides port
 
 Added
 -----
-- Context-Aware Event Scoring (Training Event Settings, off by default). Scores training-event choices against your live run state instead of a fixed stat priority: a stat gain is devalued as that stat nears its cap (so the bot stops dumping into already-maxed stats), energy is worth more when you're low, and mood, bond, and good/bad statuses are weighed in. Leave it off to keep the classic fixed-priority scoring.
+- Momentum Race Selection (Racing Settings, off by default): adapts optional-race pickiness to how the run is going. On a losing streak the bot raises its win-chance bar and trains/recovers instead of taking marginal races (this works even with the win-rate guard otherwise off); on a winning streak it takes slightly riskier races, but only while a fan goal is still unmet - once fans are covered it always protects training turns.
+- Retry Unity Cup Races (Racing Settings, off by default): tap Try Again on a lost Unity Cup race instead of accepting the loss. Independently of the toggle, a lost race's Try Again dialog is now always handled - previously it stalled the race loop until a 30-second "Race event took too long" abort.
+- Minimum Energy to Train (Training Settings, 0 = off): below this energy a training turn becomes a rest turn. Applies after Smart Race Solver plans and energy banking; skipped during Finals.
+- Wit Maximum Failure Chance (Training Settings, 0 = follow global): give Wit training its own failure-chance ceiling, since a failed Wit attempt costs no energy.
+- Wit Over Rest (Training Settings, shown when the energy floor is set): when the floor triggers, try Wit training before resting - only if Wit passes the failure-chance filters, otherwise the bot still rests.
+- Unity Cup scenario overrides: Extreme Burst Minimum Stat Gain (only prioritize an Extreme Spirit Burst when the facility's projected main-stat gain is high enough) and Burst Only Top 3 Stats After Junior (post-Junior, burst priority only for your top 3 prioritized stats).
+- URA Finale scenario override: Happy Meek Duel Bias (Off/Moderate/Aggressive) - detects the Duel badge on a training facility and steers training toward it so the bot enters and wins the duel.
 
 Fixed
 -----
-- In a parent-farming multi-run session, an auto-abandoned run no longer stops the whole session. Auto-Abandon previously stopped the bot outright, so the first doomed run that got abandoned ended an overnight farm instead of starting a fresh one. When multi-run is enabled, the bot now gives up the current career in-game (menu -&gt; Give Up -&gt; confirm) and rolls straight into the next run. Single-run sessions and every other stop condition (skill-point check, mandatory-race, etc.) are unchanged, and if the give-up navigation can't complete it falls back to the previous stop behavior.
+- Training failure-chance reads no longer burn all their retries in a quarter second while the game is still re-rendering after a server "Connecting" round-trip, which could skip a whole turn's training analysis.
+- The Scenario Overrides page now shows each campaign its own sections. Previously it rendered the full Trackblazer section set for every campaign, and the Unity Cup Burst Failure-Chance Exemption slider had displaced the Trackblazer "Irregular Training Minimum Stat Gain" slider (with the wrong description).
     </releaseNotes>
   </update>
 </AppUpdater>
