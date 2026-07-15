@@ -66,7 +66,7 @@ class UnityCupTraining(game: Game, campaign: Campaign) : Training(game, campaign
 
     override fun scoreTraining(config: TrainingConfig, option: TrainingOption): Double {
         return if (campaign.date.year < DateYear.SENIOR) {
-            scoreUnityCupTraining(config, option)
+            scoreUnityCupTraining(config, option, unityCupExtremeBurstMinStatGain, unityCupBurstTopStats())
         } else {
             super.scoreTraining(config, option)
         }

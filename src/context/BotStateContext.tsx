@@ -419,6 +419,10 @@ export interface Settings {
         trackblazerGlowStickMinFans: number
         trackblazerValueAwareShopping: boolean
         unityCupBurstMaxFailureChance: number
+        /** Minimum projected main-stat gain for an Extreme Spirit Burst to be prioritized. 0 always executes available extreme bursts. */
+        unityCupExtremeBurstMinStatGain: number
+        /** After Junior year, only prioritize bursts (normal and extreme) on facilities whose stat is in the top 3 prioritized stats. */
+        unityCupBurstOnlyTopStatsAfterJunior: boolean
     }
 }
 
@@ -789,6 +793,8 @@ export const defaultSettings: Settings = {
         trackblazerGlowStickMinFans: 20000,
         trackblazerValueAwareShopping: false,
         unityCupBurstMaxFailureChance: 0,
+        unityCupExtremeBurstMinStatGain: 0,
+        unityCupBurstOnlyTopStatsAfterJunior: false,
     },
 }
 

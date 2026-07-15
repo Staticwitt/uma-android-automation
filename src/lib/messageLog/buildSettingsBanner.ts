@@ -294,6 +294,8 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 📣 Trackblazer Megaphone Surplus-Burn Reserve: ${settings.scenarioOverrides?.trackblazerMegaphoneSurplusBurnReserve}
 😐 Trackblazer Mood Recovery Floor: ${settings.scenarioOverrides?.trackblazerMoodRecoveryFloor ?? "NORMAL"}
 💥 Unity Cup Burst Failure-Chance Exemption: ${settings.scenarioOverrides?.unityCupBurstMaxFailureChance && settings.scenarioOverrides.unityCupBurstMaxFailureChance > 0 ? `${settings.scenarioOverrides.unityCupBurstMaxFailureChance}%` : "❌"}
+💥 Unity Cup Extreme Burst Minimum Stat Gain: ${settings.scenarioOverrides?.unityCupExtremeBurstMinStatGain && settings.scenarioOverrides.unityCupExtremeBurstMinStatGain > 0 ? `${settings.scenarioOverrides.unityCupExtremeBurstMinStatGain}` : "❌"}
+💥 Unity Cup Burst Only Top 3 Stats After Junior: ${settings.scenarioOverrides?.unityCupBurstOnlyTopStatsAfterJunior ? "✅" : "❌"}
 
 ---------- Misc Options ----------
 🔍 Enable Crane Game Attempt: ${settings.general.enableCraneGameAttempt ? "✅" : "❌"}

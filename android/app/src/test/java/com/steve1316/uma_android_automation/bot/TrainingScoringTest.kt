@@ -709,6 +709,44 @@ class TrainingScoringTest {
     }
 
     @Test
+    @DisplayName("Extreme burst minimum stat gain gates the extreme bonus")
+    fun testExtremeBurstMinStatGainGate() {
+        // Default SPEED gain in the helper is 15, below a 40 minimum.
+        val training = createDefaultTrainingOption(name = StatName.SPEED, extras = mapOf("spiritGaugesExtremeReady" to 1))
+        val config = createDefaultConfig(trainingOptions = listOf(training), scenario = "Unity Cup")
+
+        val ungated = scoreUnityCupTraining(config, training)
+        val gated = scoreUnityCupTraining(config, training, extremeBurstMinStatGain = 40)
+        val gatePassed = scoreUnityCupTraining(config, training, extremeBurstMinStatGain = 10)
+
+        assertTrue(gated < ungated, "An extreme burst below the minimum main-stat gain must not receive the extreme bonus")
+        assertEquals(ungated, gatePassed, 0.001, "An extreme burst at or above the minimum keeps the full bonus")
+    }
+
+    @Test
+    @DisplayName("Burst-only-top-3 restriction applies after Junior year and never during it")
+    fun testBurstOnlyTopStatsAfterJunior() {
+        // Default prioritization is SPEED, STAMINA, POWER, WIT, GUTS -> top 3 excludes GUTS.
+        val topStats = setOf(StatName.SPEED, StatName.STAMINA, StatName.POWER)
+        val gutsBurst = createDefaultTrainingOption(name = StatName.GUTS, extras = mapOf("spiritGaugesReadyToBurst" to 1, "spiritGaugesCanFill" to 0))
+        val juniorConfig = createDefaultConfig(trainingOptions = listOf(gutsBurst), scenario = "Unity Cup")
+        val classicConfig =
+            createDefaultConfig(
+                trainingOptions = listOf(gutsBurst),
+                scenario = "Unity Cup",
+                currentDate = GameDate(year = DateYear.CLASSIC, month = DateMonth.JANUARY, phase = DatePhase.EARLY),
+            )
+
+        val classicUnrestricted = scoreUnityCupTraining(classicConfig, gutsBurst)
+        val classicRestricted = scoreUnityCupTraining(classicConfig, gutsBurst, burstTopStats = topStats)
+        val juniorRestricted = scoreUnityCupTraining(juniorConfig, gutsBurst, burstTopStats = topStats)
+        val juniorUnrestricted = scoreUnityCupTraining(juniorConfig, gutsBurst)
+
+        assertTrue(classicRestricted < classicUnrestricted, "After Junior, a burst on a non-top-3 stat must lose its burst bonus")
+        assertEquals(juniorUnrestricted, juniorRestricted, 0.001, "During Junior year the restriction must not apply")
+    }
+
+    @Test
     @DisplayName("Extreme Spirit Burst outranks a regular burst, which outranks filling, which outranks no gauges")
     fun testExtremeSpiritBurstHighestPriority() {
         val trainingWithExtremeBurst =

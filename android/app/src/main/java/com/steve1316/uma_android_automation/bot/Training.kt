@@ -150,6 +150,15 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     /** Wit-specific failure-chance ceiling. 0 disables the override so Wit follows [maximumFailureChance]. */
     private val witMaximumFailureChance: Int = SettingsHelper.getIntSetting("training", "witMaximumFailureChance", 0)
 
+    /** Unity Cup: minimum projected main-stat gain for an Extreme Spirit Burst to receive its priority bonus. 0 always prioritizes available extreme bursts. */
+    protected val unityCupExtremeBurstMinStatGain: Int = SettingsHelper.getIntSetting("scenarioOverrides", "unityCupExtremeBurstMinStatGain", 0)
+
+    /** Unity Cup: after Junior year, only give burst priority (normal and extreme) to facilities whose stat is in the top 3 prioritized stats. */
+    protected val unityCupBurstOnlyTopStatsAfterJunior: Boolean = SettingsHelper.getBooleanSetting("scenarioOverrides", "unityCupBurstOnlyTopStatsAfterJunior", false)
+
+    /** The top-3 prioritized stats for the Unity Cup burst restriction, or null when the restriction is disabled. */
+    protected fun unityCupBurstTopStats(): Set<StatName>? = if (unityCupBurstOnlyTopStatsAfterJunior) statPrioritization.take(3).toSet() else null
+
     /** The failure-chance ceiling for [stat]: the Wit override when configured, otherwise the global threshold. */
     private fun statFailureThreshold(stat: StatName): Int = statFailureThresholdFor(stat, witMaximumFailureChance, maximumFailureChance)
 
@@ -669,14 +678,19 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
          *
          * @param config The [TrainingConfig] containing global scoring inputs.
          * @param training The [TrainingOption] to score.
+         * @param extremeBurstMinStatGain Minimum projected main-stat gain for an Extreme burst to receive its bonus. 0 always grants it.
+         * @param burstTopStats When non-null, burst bonuses (normal and extreme) after Junior year are only granted to facilities whose stat is in this set. Null = unrestricted.
          * @return A score representing the Unity Cup training value.
          */
-        fun scoreUnityCupTraining(config: TrainingConfig, training: TrainingOption): Double {
+        fun scoreUnityCupTraining(config: TrainingConfig, training: TrainingOption, extremeBurstMinStatGain: Int = 0, burstTopStats: Set<StatName>? = null): Double {
             MessageLog.v(TAG, "\n[TRAINING] Starting process to score ${training.name} Training for Unity Cup with redirected priority: Stats > Extreme Burst > Burst > Filling.")
 
             val numSpiritGaugesCanFill = training.extras["spiritGaugesCanFill"] as? Int ?: 0
             val numSpiritGaugesReadyToBurst = training.extras["spiritGaugesReadyToBurst"] as? Int ?: 0
             val numExtremeGaugesReady = training.extras["spiritGaugesExtremeReady"] as? Int ?: 0
+
+            // "Burst Only Top 3 Stats After Junior": Junior year stays unrestricted so gauges get built everywhere early.
+            val burstRestricted = burstTopStats != null && config.currentDate.year != DateYear.JUNIOR && training.name !in burstTopStats
 
             // 1. Primary Priority: Stat Efficiency.
             var score = calculateStatEfficiencyScore(config, training)
@@ -685,13 +699,24 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
             // 2. Second Priority: Extreme Spirit Bursts. Guaranteed 0% failure chance regardless of facility, so no per-facility
             // preference logic is needed here the way regular bursts have below.
             if (numExtremeGaugesReady > 0) {
-                val extremeBurstBonus = 1400.0 + (numExtremeGaugesReady * 500.0)
-                score += extremeBurstBonus
-                MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding Extreme Spirit Burst bonus for $numExtremeGaugesReady facility(ies): $extremeBurstBonus")
+                val mainStatGain = training.statGains[training.name] ?: 0
+                when {
+                    burstRestricted ->
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping Extreme Spirit Burst bonus: stat is not in the top 3 prioritized stats (After-Junior burst restriction).")
+                    extremeBurstMinStatGain > 0 && mainStatGain < extremeBurstMinStatGain ->
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping Extreme Spirit Burst bonus: projected main-stat gain $mainStatGain is below the $extremeBurstMinStatGain minimum.")
+                    else -> {
+                        val extremeBurstBonus = 1400.0 + (numExtremeGaugesReady * 500.0)
+                        score += extremeBurstBonus
+                        MessageLog.i(TAG, "[TRAINING] [${training.name}] Adding Extreme Spirit Burst bonus for $numExtremeGaugesReady facility(ies): $extremeBurstBonus")
+                    }
+                }
             }
 
             // 3. Third Priority: Trainings with Spirit Explosion Gauges ready to burst.
-            if (numSpiritGaugesReadyToBurst > 0) {
+            if (numSpiritGaugesReadyToBurst > 0 && burstRestricted) {
+                MessageLog.i(TAG, "[TRAINING] [${training.name}] Skipping burst bonus for $numSpiritGaugesReadyToBurst gauge(s): stat is not in the top 3 prioritized stats (After-Junior burst restriction).")
+            } else if (numSpiritGaugesReadyToBurst > 0) {
                 // We give a significant bonus for bursting, but not so much that it always overrides huge stat gains elsewhere. The optional energy penalty reflects the extra energy a
                 // Special Training burst costs, scaled by the number of gauges involved (default 0, so behavior is unchanged unless the user tunes it).
                 val burstBonus = config.scoring.unityBurstBaseBonus + (numSpiritGaugesReadyToBurst * (config.scoring.unityBurstPerGaugeBonus - config.scoring.unityBurstEnergyPenaltyPerGauge))

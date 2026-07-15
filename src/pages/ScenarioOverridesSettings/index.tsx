@@ -201,6 +201,8 @@ const ScenarioOverridesSettings = () => {
     /** Reset the Unity Cup Training section to defaults. */
     const resetUnityCupDefaults = useCallback(() => {
         updateOverrideSetting("unityCupBurstMaxFailureChance", defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance)
+        updateOverrideSetting("unityCupExtremeBurstMinStatGain", defaultSettings.scenarioOverrides.unityCupExtremeBurstMinStatGain)
+        updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", defaultSettings.scenarioOverrides.unityCupBurstOnlyTopStatsAfterJunior)
     }, [updateOverrideSetting, defaultSettings])
 
     /** Reset the currently-edited scenario's overrides to defaults. */
@@ -271,6 +273,8 @@ const ScenarioOverridesSettings = () => {
 
                         {showBody && (
                             <>
+                                {activeCampaign === "Trackblazer" && (
+                                <>
                                 {/* Racing */}
                                 <Section label="Racing" labelRight={makeResetLink(resetRacingDefaults)}>
                                     <View style={{ padding: SPACING.md }}>
@@ -530,14 +534,18 @@ const ScenarioOverridesSettings = () => {
                                     {scenarioOverrides.trackblazerEnableIrregularTraining && (
                                         <View style={{ padding: SPACING.md }}>
                                             <CustomSlider
-                                                searchId="unity-cup-burst-max-failure-chance"
-                                                value={scenarioOverrides.unityCupBurstMaxFailureChance}
-                                                placeholder={defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance}
-                                                onValueChange={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                                searchId="trackblazer-irregular-training-min-stat-gain"
+                                                searchCondition={scenarioOverrides.trackblazerEnableIrregularTraining}
+                                                parentId="trackblazer-enable-irregular-training"
+                                                value={scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
+                                                placeholder={defaultSettings.scenarioOverrides.trackblazerIrregularTrainingMinStatGain}
+                                                onValueChange={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
+                                                onSlidingComplete={(value) => updateOverrideSetting("trackblazerIrregularTrainingMinStatGain", value)}
                                                 min={0}
                                                 max={100}
                                                 step={5}
-                                                label="Burst Failure-Chance Exemption"
+                                                label="Irregular Training Minimum Stat Gain"
+                                                labelUnit=""
                                                 showValue={true}
                                                 showLabels={true}
                                                 description="Sets the minimum main stat gain required to skip racing and perform Irregular Training instead."
@@ -905,6 +913,60 @@ const ScenarioOverridesSettings = () => {
                                         />
                                     </View>
                                 </Section>
+                                </>
+                                )}
+
+                                {activeCampaign === "Unity Cup" && (
+                                <Section label="Training" labelRight={makeResetLink(resetUnityCupDefaults)}>
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            searchId="unity-cup-burst-max-failure-chance"
+                                            value={scenarioOverrides.unityCupBurstMaxFailureChance}
+                                            placeholder={defaultSettings.scenarioOverrides.unityCupBurstMaxFailureChance}
+                                            onValueChange={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                            onSlidingComplete={(value) => updateOverrideSetting("unityCupBurstMaxFailureChance", value)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            label="Burst Failure-Chance Exemption"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Allow a training with a Spirit Explosion gauge ready to burst up to this failure chance before it is skipped. 0 disables the exemption and uses the normal failure limit."
+                                        />
+                                    </View>
+
+                                    <View style={{ padding: SPACING.md }}>
+                                        <CustomSlider
+                                            searchId="unity-cup-extreme-burst-min-stat-gain"
+                                            value={scenarioOverrides.unityCupExtremeBurstMinStatGain}
+                                            placeholder={defaultSettings.scenarioOverrides.unityCupExtremeBurstMinStatGain}
+                                            onValueChange={(value) => updateOverrideSetting("unityCupExtremeBurstMinStatGain", value)}
+                                            onSlidingComplete={(value) => updateOverrideSetting("unityCupExtremeBurstMinStatGain", value)}
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            label="Extreme Burst Minimum Stat Gain"
+                                            labelUnit=""
+                                            showValue={true}
+                                            showLabels={true}
+                                            description="Only prioritize an Extreme Spirit Burst when the facility's projected main-stat gain is at least this value. 0 always executes available extreme bursts."
+                                        />
+                                    </View>
+
+                                    <SettingRow
+                                        id="unity-cup-burst-only-top-stats-after-junior"
+                                        title="Burst Only Top 3 Stats After Junior"
+                                        description="After Junior Year, only prioritize Spirit Explosion bursts (normal and extreme) on facilities whose stat is in your top 3 prioritized stats. Junior Year is unrestricted."
+                                        right={
+                                            <Switch
+                                                checked={scenarioOverrides.unityCupBurstOnlyTopStatsAfterJunior}
+                                                onCheckedChange={(checked) => updateOverrideSetting("unityCupBurstOnlyTopStatsAfterJunior", checked)}
+                                            />
+                                        }
+                                    />
+                                </Section>
+                                )}
 
                                 {/* Reset All footer */}
                                 <Pressable
