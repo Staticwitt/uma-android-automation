@@ -2145,16 +2145,13 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
             val result = numericPart.toInt()
 
-            // Correct stat gains that exceed +100 by dropping the third digit.
-            // The max stat gain per training is +100, so higher values indicate a false 3rd digit detection.
-            val correctedResult =
-                if (result > 100) {
-                    val corrected = result / 10
-                    Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Corrected stat gain$logSuffix from $result to $corrected (dropped false 3rd digit).")
-                    corrected
-                } else {
-                    result
-                }
+            // Correct a stat gain that is implausibly large for the scenario by dropping a false extra (third) digit. The ceiling is scenario-aware: modern rainbow stacking exceeds the
+            // old flat +100 (which clipped legitimate large gains down by 10x), and Unity Cup spirit bursts go higher still. See StatGainCorrection.
+            val maxPlausible = StatGainCorrection.maxPlausibleSingleFacilityGain(game.scenario)
+            val correctedResult = StatGainCorrection.correctStatGainMisread(result, maxPlausible)
+            if (correctedResult != result) {
+                Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Corrected stat gain$logSuffix from $result to $correctedResult (exceeded scenario ceiling $maxPlausible; dropped false 3rd digit).")
+            }
 
             Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Successfully constructed integer value: $correctedResult from \"$constructedString\"$logSuffix.")
             correctedResult
