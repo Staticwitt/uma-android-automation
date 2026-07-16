@@ -1,17 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.34</latestVersion>
-    <latestVersionCode>206</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.34</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.34/v5.10.34-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.34/v5.10.34-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.35</latestVersion>
+    <latestVersionCode>207</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.35</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.35/v5.10.35-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.35/v5.10.35-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.34 - Energy bar and stat-gain OCR robustness
+v5.10.35 - Train through low mood at high energy
 
-Fixed
+Added
 -----
-- Energy bar reads no longer fail when maximum energy has been increased. The bar's right end has two visual variants, but the reader only ever tried one of them (it fell back to the second only if the first template file failed to load, which never happens). It now tries both and uses whichever is on screen, so an increased-max-energy bar is read correctly instead of failing the whole energy check that turn.
-- Stat-gain reads over +100 are no longer blindly divided by 10. The old code assumed a single facility never gives more than +100, but modern rainbow stacking (and Unity Cup spirit bursts especially) exceed that, so a real +120 gain was being corrupted to +12. The "false extra digit" ceiling is now scenario-aware (200 by default, 300 for Unity Cup), so genuine large gains are kept while gross misreads are still corrected.
+- Train Through Low Mood at High Energy (Training Settings, off by default): when energy is at or above a threshold (default 80%), the mood-recovery threshold is relaxed by one level, so the bot trains through a small mood dip (e.g. Normal mood) instead of spending the turn on a recreation outing. A run with energy to spare can afford to train through a slightly lower mood, since mood is a training-gain multiplier rather than a hard gate. At low energy, mood recovery works exactly as before.
     </releaseNotes>
   </update>
 </AppUpdater>
