@@ -15,6 +15,7 @@ import { SettingRow } from "../../components/ui/setting-row"
 import CustomSelect from "../../components/CustomSelect"
 import CustomButton from "../../components/CustomButton"
 import CustomScrollView from "../../components/CustomScrollView"
+import CustomSlider from "../../components/CustomSlider"
 import { Callout } from "../../components/ui/callout"
 import skillsData from "../../data/skills.json"
 import icons from "./icons"
@@ -81,7 +82,10 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
 
     const combinedConfig = { ...defaultSettings.skills.plans, ...skills.plans }
     const planData = combinedConfig[planKey] ?? defaultSettings.skills.plans[planKey]
-    const { enabled, strategy, enableBuyNegativeSkills, plan, blacklist, excludeGreenSkills, excludeRedSkills, excludeUniqueSkills } = planData
+    const { enabled, strategy, enableBuyNegativeSkills, plan, blacklist, excludeGreenSkills, excludeRedSkills, excludeUniqueSkills, pointReserve } = planData
+
+    // The point reserve only makes sense on the pre-finals purchase: at career-complete leftover points are lost, so nothing is held back.
+    const supportsPointReserve = planKey === "preFinals"
 
     const [searchQuery, setSearchQuery] = useState("")
     const [showSelected, setShowSelected] = useState(false)
@@ -326,6 +330,33 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
 
     return (
         <View>
+            {supportsPointReserve && (
+                <Section label="Point Reserve" firstDivider={false}>
+                    <View style={{ padding: SPACING.md }}>
+                        <Text style={styles.sectionDescription}>
+                            Hold back skill points on the pre-finals purchase so they carry to the career-complete purchase, where the full skill list is known. Useful for banking toward a strong
+                            gold skill instead of spending on filler now. The reserve caps every pre-finals purchase, including planned and negative skills. Set to 0 to disable.
+                        </Text>
+                    </View>
+                    <View style={styles.hostPad}>
+                        <CustomSlider
+                            searchId="prefinals-point-reserve"
+                            value={pointReserve}
+                            placeholder={defaultSettings.skills.plans.preFinals.pointReserve}
+                            onValueChange={(value) => updatePlanSetting("pointReserve", value)}
+                            onSlidingComplete={(value) => updatePlanSetting("pointReserve", value)}
+                            min={0}
+                            max={1500}
+                            step={50}
+                            label="Reserve Skill Points"
+                            description="Points held back pre-finals for the career-complete purchase (0 = off)."
+                            labelUnit=" pts"
+                            showValue={true}
+                            showLabels={true}
+                        />
+                    </View>
+                </Section>
+            )}
             <Section label="Skill Type Filters">
                 <View style={{ padding: SPACING.md }}>
                     <Text style={styles.sectionDescription}>
@@ -472,6 +503,12 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
                         <Text style={styles.specLabel}>Strategy</Text>
                         <Text style={styles.specValue}>{strategyLabel}</Text>
                     </View>
+                    {supportsPointReserve && (
+                        <View style={[styles.specRow, styles.specRowDivider]}>
+                            <Text style={styles.specLabel}>Reserve</Text>
+                            <Text style={pointReserve > 0 ? styles.specValue : styles.specValueMuted}>{pointReserve > 0 ? `${pointReserve} pts` : "Off"}</Text>
+                        </View>
+                    )}
                     <View style={[styles.specRow, styles.specRowDivider]}>
                         <Text style={styles.specLabel}>Negative</Text>
                         <Text style={styles.specValue}>{enableBuyNegativeSkills ? "Yes" : "No"}</Text>

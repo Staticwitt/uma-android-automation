@@ -10,6 +10,8 @@ export interface SkillPlanConfig {
     excludeGreenSkills: boolean
     excludeRedSkills: boolean
     excludeUniqueSkills: boolean
+    /** Skill points to hold back on the pre-finals purchase so they carry to the career-complete purchase. 0 disables the reserve. */
+    pointReserve: number
 }
 
 /** All registered skill plan keys from the settings page config. */
@@ -24,6 +26,7 @@ const EMPTY_SKILL_PLAN: SkillPlanConfig = {
     excludeGreenSkills: false,
     excludeRedSkills: false,
     excludeUniqueSkills: false,
+    pointReserve: 0,
 }
 
 /** Default skill plan map keyed by registered plan identifiers. */

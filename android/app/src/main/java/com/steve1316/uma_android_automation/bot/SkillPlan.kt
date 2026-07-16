@@ -82,6 +82,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                                 skillBlacklist = skillBlacklist,
                                 excludedTypes = excludedTypes,
                                 bExcludeUniqueSkills = planData.optBoolean("excludeUniqueSkills", false),
+                                pointReserve = planData.optInt("pointReserve", 0).coerceAtLeast(0),
                             )
                     } catch (e: Exception) {
                         MessageLog.w(TAG, "[WARN] skillPlans:: Could not parse skill plan \"$planName\": ${e.message}")
@@ -131,6 +132,9 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
      * @property skillBlacklist Names of skills to exclude from purchase regardless of strategy.
      * @property excludedTypes Skill type categories (GREEN / YELLOW / BLUE / RED) to exclude wholesale.
      * @property bExcludeUniqueSkills Whether to exclude all inherited unique skills from purchase, even if listed in the plan.
+     * @property pointReserve Skill points to hold back on a non-final (pre-finals) purchase so they carry to the career-complete
+     *   purchase, where the full skill list is known. 0 disables the reserve. Ignored on the career-complete purchase, since leftover
+     *   points are lost once the run is scored.
      */
     data class SkillPlanSettings(
         val bIsEnabled: Boolean,
@@ -140,6 +144,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
         val skillBlacklist: List<String> = emptyList(),
         val excludedTypes: Set<SkillType> = emptySet(),
         val bExcludeUniqueSkills: Boolean = false,
+        val pointReserve: Int = 0,
     )
 
     companion object {
@@ -254,6 +259,26 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
             val evaluationPointRatio: Double
                 get() = if (price > 0) evaluationPoints.toDouble() / price.toDouble() else 0.0
         }
+
+        /**
+         * The budget to plan a purchase against after honoring the pre-finals point reserve.
+         *
+         * The reserve only applies to non-career-complete (pre-finals) purchases: below its threshold the strategy passes stop
+         * buying so the held-back points survive to the career-complete purchase, where the full skill list is known. At career end
+         * leftover points are lost, so the reserve is ignored there and the full total is spent. Never returns negative. Pure and
+         * testable.
+         *
+         * @param availableSkillPoints The trainee's current skill points.
+         * @param reserve The number of points to hold back (0 disables the reserve).
+         * @param bSpendLeftoverPoints True on the career-complete purchase, where the reserve does not apply.
+         * @return The effective budget to plan purchases against.
+         */
+        fun effectiveSkillBudget(availableSkillPoints: Int, reserve: Int, bSpendLeftoverPoints: Boolean): Int =
+            if (bSpendLeftoverPoints || reserve <= 0) {
+                availableSkillPoints
+            } else {
+                (availableSkillPoints - reserve).coerceAtLeast(0)
+            }
 
         /**
          * Pure calculation function that determines which skills to buy using the Optimize Rank strategy.
@@ -986,6 +1011,16 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
             return emptyMap()
         }
 
+        // Honor the pre-finals point reserve: the planning passes see a reduced budget so the held-back points carry to the
+        // career-complete purchase. The reserve is ignored at career end (bSpendLeftoverPoints), where leftover points are lost.
+        val budget: Int = effectiveSkillBudget(availableSkillPoints, skillPlanSettings.pointReserve, bSpendLeftoverPoints)
+        if (budget < availableSkillPoints) {
+            MessageLog.i(
+                TAG,
+                "[SKILLS] Reserving ${availableSkillPoints - budget} of $availableSkillPoints skill points for the career-complete purchase. Planning against a budget of $budget.",
+            )
+        }
+
         val result: MutableMap<String, Int> = mutableMapOf()
 
         // Execute common skill checks first.
@@ -994,7 +1029,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                 skillPlanSettings = skillPlanSettings,
                 skillList = skillList,
                 skillsToBuy = result.keys.toList(),
-                availableSkillPoints = availableSkillPoints - result.values.sum(),
+                availableSkillPoints = budget - result.values.sum(),
             )
 
         // Execute strategy-specific checks.
@@ -1005,7 +1040,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                         skillPlanSettings = skillPlanSettings,
                         skillList = skillList,
                         skillsToBuy = result.keys.toList(),
-                        availableSkillPoints = availableSkillPoints - result.values.sum(),
+                        availableSkillPoints = budget - result.values.sum(),
                     )
                 }
 
@@ -1014,7 +1049,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                         skillPlanSettings = skillPlanSettings,
                         skillList = skillList,
                         skillsToBuy = result.keys.toList(),
-                        availableSkillPoints = availableSkillPoints - result.values.sum(),
+                        availableSkillPoints = budget - result.values.sum(),
                     )
                 }
 
@@ -1023,12 +1058,13 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                         skillPlanSettings = skillPlanSettings,
                         skillList = skillList,
                         skillsToBuy = result.keys.toList(),
-                        availableSkillPoints = availableSkillPoints - result.values.sum(),
+                        availableSkillPoints = budget - result.values.sum(),
                     )
                 }
             }
 
-        // Drain whatever is left so the career does not end with unspent points.
+        // Drain whatever is left so the career does not end with unspent points. The reserve never reaches here (it only applies
+        // pre-finals), so this always sees the full remaining total.
         if (bSpendLeftoverPoints) {
             result +=
                 getLeftoverDrainSkills(

@@ -249,7 +249,9 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
                   settings.skills.plans.preFinals.enableBuyNegativeSkills ? "✅" : "❌"
               }\n\t💸 Spending Strategy: ${settings.skills.plans.preFinals.strategy ? "✅" : "❌"}\n\t🚫 Blacklisted Skills: ${csvCount(
                   settings.skills.plans.preFinals.blacklist
-              )}\n\t🎨 Excluded Categories: ${formatExcludedCategories(settings.skills.plans.preFinals)}`
+              )}\n\t🎨 Excluded Categories: ${formatExcludedCategories(settings.skills.plans.preFinals)}\n\t🏦 Point Reserve: ${
+                  settings.skills.plans.preFinals.pointReserve > 0 ? `${settings.skills.plans.preFinals.pointReserve} pts held for Career Complete` : "❌"
+              }`
             : ""
     }
 📅 CareerComplete Skill Plan: ${settings.skills.plans.careerComplete.enabled ? "✅" : "❌"}${
