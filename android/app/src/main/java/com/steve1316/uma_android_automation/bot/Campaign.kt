@@ -264,6 +264,12 @@ abstract class Campaign(game: Game) : Task(game) {
     /** Minimum mood at or above which the bot will train through without forcing a mood-recovery outing. Below this threshold, mood recovery is forced. Defaults to [Mood.GOOD] to preserve prior hardcoded behavior. */
     protected val minimumMoodForTraining: Mood = Mood.fromName(SettingsHelper.getStringSetting("training", "minimumMoodForTraining", "GOOD")) ?: Mood.GOOD
 
+    /** When enabled, at high energy the mood-recovery floor is relaxed one level so the bot trains through a one-step mood dip instead of spending the turn on recovery. Off by default. */
+    protected val enableHighEnergyMoodTolerance: Boolean = SettingsHelper.getBooleanSetting("training", "enableHighEnergyMoodTolerance", false)
+
+    /** The energy percentage at or above which [enableHighEnergyMoodTolerance] relaxes the mood-recovery floor. */
+    protected val highEnergyMoodToleranceThreshold: Int = SettingsHelper.getIntSetting("training", "highEnergyMoodToleranceThreshold", 80)
+
     /** Projection-driven auto-abandon config: when enabled, a run whose projected final grade is below [autoAbandonTargetGrade] after turn [autoAbandonMinTurn] is stopped so an unattended farm can restart on a fresher run. Disabled by default. */
     private val autoAbandonConfig: AbandonConfig =
         AbandonConfig(
@@ -1272,7 +1278,8 @@ abstract class Campaign(game: Game) : Task(game) {
      *
      * @return The recovery floor, defaulting to the Minimum Mood For Training setting.
      */
-    open fun moodRecoveryFloor(): Mood = minimumMoodForTraining
+    open fun moodRecoveryFloor(): Mood =
+        MoodRecoveryPolicy.relaxedMoodFloor(minimumMoodForTraining, trainee.energy, enableHighEnergyMoodTolerance, highEnergyMoodToleranceThreshold)
 
     /**
      * Determines if mood recovery should be attempted.
