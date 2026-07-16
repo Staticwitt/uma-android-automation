@@ -1409,18 +1409,13 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                 if (manualStatCap > 0) manualStatCap else 1950
             }
         } else {
-            try {
-                Log.d(TAG, "[DEBUG] determineSingleStatValue:: Converting $text to integer for $statName stat value")
-                val cleanedText = text.replace(Regex("[^0-9]"), "")
-                val parsed = cleanedText.toInt()
-                if (manualStatCap > 0 && parsed > manualStatCap) {
-                    Log.d(TAG, "[DEBUG] determineSingleStatValue:: Parsed value $parsed for $statName exceeds stat cap $manualStatCap, likely an OCR misread. Rejecting.")
-                    return -1
-                }
-                return parsed.coerceAtLeast(0)
-            } catch (_: NumberFormatException) {
-                return -1
+            Log.d(TAG, "[DEBUG] determineSingleStatValue:: Converting $text to integer for $statName stat value")
+            // Concatenate the digits (handles OCR splitting the value), rejecting a read that overflows or exceeds the cap. No manual cap means no upper bound, matching the prior behavior.
+            val value = StatValueParsing.parseStatValue(text, if (manualStatCap > 0) manualStatCap else Int.MAX_VALUE)
+            if (value < 0) {
+                Log.d(TAG, "[DEBUG] determineSingleStatValue:: Could not parse a valid in-cap value from '$text' for $statName. Rejecting.")
             }
+            return value
         }
     }
 
@@ -1513,15 +1508,15 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
                             val value = text.replace(Regex("[^0-9]"), "").toIntOrNull() ?: -1
                             result[statName] = if (value in 1..2500) value else -1
                         } else {
-                            // The Main screen shows only the value, so anything over the cap is an OCR misread. The auto cap stays at the fork's post-July-2026 extended value.
+                            // The Main screen shows only the value. OCR can split its digits (e.g. "1279" -> "1 279"), so rebuild the value by concatenating every digit rather than
+                            // taking the largest fragment (which would misread "1 279" as 279 - the same handling the aptitude-dialog branch above already uses). Anything over the cap
+                            // is treated as an OCR misread. The auto cap stays at the fork's post-July-2026 extended value.
                             val cap = if (manualStatCap > 0) manualStatCap else 1950
-                            val validNumbers = numbers.filter { it in 0..cap }
-                            if (validNumbers.isNotEmpty()) {
-                                result[statName] = validNumbers.max()
-                            } else {
-                                Log.d(TAG, "[DEBUG] determineStatValues:: All parsed numbers $numbers for $statName exceed stat cap $cap, likely an OCR misread. Rejecting.")
-                                result[statName] = -1
+                            val value = StatValueParsing.parseStatValue(text, cap)
+                            if (value < 0) {
+                                Log.d(TAG, "[DEBUG] determineStatValues:: Could not parse a valid in-cap value from '$text' (numbers $numbers) for $statName (cap $cap). Rejecting.")
                             }
+                            result[statName] = value
                         }
                     } catch (e: Exception) {
                         MessageLog.e(TAG, "[ERROR] determineStatValues:: Failed to parse '$text' for $statName: ${e.message}")
