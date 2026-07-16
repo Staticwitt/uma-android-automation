@@ -271,6 +271,8 @@ export interface Settings {
         autoAbandonTargetGrade: string
         /** Earliest turn the projection is trusted enough to abandon on. */
         autoAbandonMinTurn: number
+        /** What to do when the run is projected below target: "stop" the run (default) or "notify" once and keep running (a heads-up for an attended run). */
+        autoAbandonAction: string
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
@@ -676,6 +678,7 @@ export const defaultSettings: Settings = {
         enableAutoAbandon: false,
         autoAbandonTargetGrade: "A",
         autoAbandonMinTurn: 36,
+        autoAbandonAction: "stop",
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,

@@ -171,6 +171,7 @@ const TrainingSettings = () => {
         enableAutoAbandon,
         autoAbandonTargetGrade,
         autoAbandonMinTurn,
+        autoAbandonAction,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
@@ -853,10 +854,34 @@ const TrainingSettings = () => {
                                     </SearchableItem>
                                     <SettingRow
                                         id="enable-auto-abandon"
-                                        title="Auto-Abandon Doomed Runs"
-                                        description="For unattended farming: once the live rank projection says the run will finish below the target grade (after the minimum turn), stop the run so you can restart on a fresher one. Off by default."
+                                        title="Doomed-Run Guard"
+                                        description="Once the live rank projection says the run will finish below the target grade (after the minimum turn), either stop the run (great for unattended farming — restart on a fresher one) or just send a one-time heads-up and keep running (see the action below). Off by default."
                                         right={<Switch checked={enableAutoAbandon} onCheckedChange={(checked) => updateTrainingSetting("enableAutoAbandon", checked)} />}
                                     />
+                                    {enableAutoAbandon && (
+                                        <SearchableItem
+                                            id="auto-abandon-action"
+                                            title="Doomed-Run Action"
+                                            description="What to do when the run is projected below target: stop the run, or just send a one-time heads-up (log + Discord) and keep running."
+                                        >
+                                            <Row
+                                                title="Doomed-Run Action"
+                                                description="Stop the run, or send a one-time heads-up (log + Discord) and keep running."
+                                                right={
+                                                    <CustomSelect
+                                                        value={autoAbandonAction}
+                                                        onValueChange={(value) => updateTrainingSetting("autoAbandonAction", value)}
+                                                        options={[
+                                                            { label: "Stop the run", value: "stop" },
+                                                            { label: "Notify only", value: "notify" },
+                                                        ]}
+                                                        placeholder="Select action"
+                                                        width={160}
+                                                    />
+                                                }
+                                            />
+                                        </SearchableItem>
+                                    )}
                                     {enableAutoAbandon && (
                                         <SearchableItem
                                             id="auto-abandon-target-grade"

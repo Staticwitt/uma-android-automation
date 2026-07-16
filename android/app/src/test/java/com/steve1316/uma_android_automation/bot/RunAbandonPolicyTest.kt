@@ -87,4 +87,35 @@ class RunAbandonPolicyTest {
         assertEquals(false, AbandonConfig().enabled)
         assertFalse(RunAbandonPolicy.evaluate(projection("G"), currentTurn = 70, observationCount = ampleObservations, config = AbandonConfig()).shouldAbandon)
     }
+
+    @Test
+    @DisplayName("AbandonAction.fromName maps 'notify' (any case) to NOTIFY, everything else to STOP")
+    fun testActionFromName() {
+        assertEquals(AbandonAction.NOTIFY, AbandonAction.fromName("notify"))
+        assertEquals(AbandonAction.NOTIFY, AbandonAction.fromName("  NoTiFy  "))
+        assertEquals(AbandonAction.STOP, AbandonAction.fromName("stop"))
+        assertEquals(AbandonAction.STOP, AbandonAction.fromName(""))
+        assertEquals(AbandonAction.STOP, AbandonAction.fromName("garbage"))
+    }
+
+    @Test
+    @DisplayName("resolveOutcome: on-target run always continues, regardless of action")
+    fun testOutcomeOnTargetContinues() {
+        assertEquals(AbandonOutcome.CONTINUE, RunAbandonPolicy.resolveOutcome(shouldAbandon = false, action = AbandonAction.STOP, alreadyNotified = false))
+        assertEquals(AbandonOutcome.CONTINUE, RunAbandonPolicy.resolveOutcome(shouldAbandon = false, action = AbandonAction.NOTIFY, alreadyNotified = false))
+    }
+
+    @Test
+    @DisplayName("resolveOutcome: below-target run stops in STOP mode")
+    fun testOutcomeStopMode() {
+        assertEquals(AbandonOutcome.STOP, RunAbandonPolicy.resolveOutcome(shouldAbandon = true, action = AbandonAction.STOP, alreadyNotified = false))
+        assertEquals(AbandonOutcome.STOP, RunAbandonPolicy.resolveOutcome(shouldAbandon = true, action = AbandonAction.STOP, alreadyNotified = true))
+    }
+
+    @Test
+    @DisplayName("resolveOutcome: notify mode sends once, then continues silently")
+    fun testOutcomeNotifyOnce() {
+        assertEquals(AbandonOutcome.NOTIFY_ONCE, RunAbandonPolicy.resolveOutcome(shouldAbandon = true, action = AbandonAction.NOTIFY, alreadyNotified = false))
+        assertEquals(AbandonOutcome.CONTINUE, RunAbandonPolicy.resolveOutcome(shouldAbandon = true, action = AbandonAction.NOTIFY, alreadyNotified = true))
+    }
 }

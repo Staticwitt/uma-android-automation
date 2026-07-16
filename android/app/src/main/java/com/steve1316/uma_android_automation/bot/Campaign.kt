@@ -272,6 +272,12 @@ abstract class Campaign(game: Game) : Task(game) {
             targetGrade = SettingsHelper.getStringSetting("training", "autoAbandonTargetGrade", "A").ifBlank { "A" },
         )
 
+    /** What to do when the run is projected below target: STOP the run (default) or NOTIFY once and keep running (a heads-up for an attended run instead of losing it). */
+    private val autoAbandonAction: AbandonAction = AbandonAction.fromName(SettingsHelper.getStringSetting("training", "autoAbandonAction", "stop"))
+
+    /** Latch so notify-mode sends the below-target heads-up only once per run instead of every turn after the trust turn. */
+    private var bAutoAbandonNotified: Boolean = false
+
     /**
      * Resolves the [TrackDistance] of the upcoming mandatory/scheduled race for [GoalRaceStatBias],
      * or null when the feature is disabled, the race is outside its configured lookahead window, the
@@ -2178,9 +2184,19 @@ abstract class Campaign(game: Game) : Task(game) {
     private fun checkAutoAbandon() {
         if (!autoAbandonConfig.enabled) return
         val decision = RunAbandonPolicy.evaluate(RankProjection.project(RankProjection.DEFAULT_FINALE_TURN), date.day, RankProjection.observationCount(), autoAbandonConfig)
-        if (decision.shouldAbandon) {
-            MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} Stopping the run.")
-            throw CampaignBreakpointException("Auto-abandon: ${decision.reason}", abandonedRun = true)
+        when (RunAbandonPolicy.resolveOutcome(decision.shouldAbandon, autoAbandonAction, bAutoAbandonNotified)) {
+            AbandonOutcome.CONTINUE -> return
+            AbandonOutcome.NOTIFY_ONCE -> {
+                bAutoAbandonNotified = true
+                MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} (Notify-only mode: leaving the run running.)")
+                if (DiscordUtils.enableDiscordNotifications) {
+                    AppDiscordNotifications.sendInfo("Run projected below target", decision.reason)
+                }
+            }
+            AbandonOutcome.STOP -> {
+                MessageLog.w(TAG, "[AUTO-ABANDON] ${decision.reason} Stopping the run.")
+                throw CampaignBreakpointException("Auto-abandon: ${decision.reason}", abandonedRun = true)
+            }
         }
     }
 
