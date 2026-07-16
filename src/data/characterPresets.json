@@ -103,6 +103,58 @@
             "Wit": 0
         }
     },
+    "Air Shakur": {
+        "name": "Air Shakur",
+        "distanceAptitudes": {
+            "Sprint": "G",
+            "Mile": "E",
+            "Medium": "A",
+            "Long": "A"
+        },
+        "surfaceAptitudes": {
+            "Turf": "A",
+            "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "C",
+            "Late Surger": "A",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 30
+        }
+    },
+    "Bamboo Memory": {
+        "name": "Bamboo Memory",
+        "distanceAptitudes": {
+            "Sprint": "A",
+            "Mile": "A",
+            "Medium": "C",
+            "Long": "G"
+        },
+        "surfaceAptitudes": {
+            "Turf": "A",
+            "Dirt": "D"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "E",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 10,
+            "Wit": 0
+        }
+    },
     "Biwa Hayahide": {
         "name": "Biwa Hayahide",
         "distanceAptitudes": {
@@ -126,6 +178,32 @@
             "Stamina": 0,
             "Power": 0,
             "Guts": 10,
+            "Wit": 20
+        }
+    },
+    "Copano Rickey": {
+        "name": "Copano Rickey",
+        "distanceAptitudes": {
+            "Sprint": "C",
+            "Mile": "A",
+            "Medium": "A",
+            "Long": "G"
+        },
+        "surfaceAptitudes": {
+            "Turf": "F",
+            "Dirt": "A"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "A",
+            "Late Surger": "C",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 0,
             "Wit": 20
         }
     },
