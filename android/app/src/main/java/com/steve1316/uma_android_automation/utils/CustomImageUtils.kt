@@ -2145,16 +2145,13 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
 
             val result = numericPart.toInt()
 
-            // Correct stat gains that exceed +100 by dropping the third digit.
-            // The max stat gain per training is +100, so higher values indicate a false 3rd digit detection.
-            val correctedResult =
-                if (result > 100) {
-                    val corrected = result / 10
-                    Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Corrected stat gain$logSuffix from $result to $corrected (dropped false 3rd digit).")
-                    corrected
-                } else {
-                    result
-                }
+            // Correct a stat gain that is implausibly large for the scenario by dropping a false extra (third) digit. The ceiling is scenario-aware: modern rainbow stacking exceeds the
+            // old flat +100 (which clipped legitimate large gains down by 10x), and Unity Cup spirit bursts go higher still. See StatGainCorrection.
+            val maxPlausible = StatGainCorrection.maxPlausibleSingleFacilityGain(game.scenario)
+            val correctedResult = StatGainCorrection.correctStatGainMisread(result, maxPlausible)
+            if (correctedResult != result) {
+                Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Corrected stat gain$logSuffix from $result to $correctedResult (exceeded scenario ceiling $maxPlausible; dropped false 3rd digit).")
+            }
 
             Log.d(TAG, "[DEBUG] constructIntegerFromMatches:: Successfully constructed integer value: $correctedResult from \"$constructedString\"$logSuffix.")
             correctedResult
@@ -2501,21 +2498,34 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             return null
         }
 
-        // The right side of the energy bar looks very different depending on whether the max energy has been increased. Thus, we need to look for one of two bitmaps.
-        var energyBarRightPartTemplateBitmap: Bitmap? = IconEnergyBarRightPart0.template.getBitmap(this)
-        var rightPartLocation: Point?
-        if (energyBarRightPartTemplateBitmap == null) {
-            energyBarRightPartTemplateBitmap = IconEnergyBarRightPart1.template.getBitmap(this)
-            if (energyBarRightPartTemplateBitmap == null) {
-                MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the template bitmap for the right part of the energy bar.")
-                return null
-            }
-            rightPartLocation = IconEnergyBarRightPart1.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
-        } else {
-            rightPartLocation = IconEnergyBarRightPart0.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+        // The right side of the energy bar looks very different depending on whether the max energy has been increased, so try both templates and use whichever one is actually found on
+        // screen. (Previously this only fell back to the second template when the first template asset failed to load - which never happens for a bundled asset - so an increased-max-energy
+        // bar whose right end matched the second template could never be located and the whole energy read failed.)
+        val rightPart0Template: Bitmap? = IconEnergyBarRightPart0.template.getBitmap(this)
+        val rightPart1Template: Bitmap? = IconEnergyBarRightPart1.template.getBitmap(this)
+        if (rightPart0Template == null && rightPart1Template == null) {
+            MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the template bitmap for the right part of the energy bar.")
+            return null
         }
 
-        if (rightPartLocation == null) {
+        var energyBarRightPartTemplateBitmap: Bitmap? = null
+        var rightPartLocation: Point? = null
+        if (rightPart0Template != null) {
+            val location = IconEnergyBarRightPart0.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+            if (location != null) {
+                energyBarRightPartTemplateBitmap = rightPart0Template
+                rightPartLocation = location
+            }
+        }
+        if (rightPartLocation == null && rightPart1Template != null) {
+            val location = IconEnergyBarRightPart1.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+            if (location != null) {
+                energyBarRightPartTemplateBitmap = rightPart1Template
+                rightPartLocation = location
+            }
+        }
+
+        if (rightPartLocation == null || energyBarRightPartTemplateBitmap == null) {
             MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the location of the right part of the energy bar.")
             return null
         }
