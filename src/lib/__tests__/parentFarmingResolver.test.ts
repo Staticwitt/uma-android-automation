@@ -97,6 +97,7 @@ describe("parentFarmingResolver", () => {
                 excludeGreenSkills: false,
                 excludeRedSkills: false,
                 excludeUniqueSkills: false,
+                pointReserve: 0,
             },
         }
 

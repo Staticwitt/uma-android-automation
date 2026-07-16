@@ -23,6 +23,8 @@ interface SkillPlanSettingsConfig {
     excludeRedSkills: boolean
     /** When true, all inherited unique (legacy) skills are excluded from this plan's purchases, even if listed in the plan. */
     excludeUniqueSkills: boolean
+    /** Skill points to hold back on the pre-finals purchase so they carry to the career-complete purchase. 0 disables the reserve. */
+    pointReserve: number
 }
 
 /**
@@ -580,6 +582,7 @@ export const defaultSettings: Settings = {
                     excludeGreenSkills: false,
                     excludeRedSkills: false,
                     excludeUniqueSkills: false,
+                    pointReserve: 0,
                 }
                 return acc
             },

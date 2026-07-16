@@ -5,6 +5,7 @@ import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateCom
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateLeftoverDrainPurchases
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateOptimizeRankPurchases
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.calculateSkillPurchases
+import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.effectiveSkillBudget
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.isRecoverySkill
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.isStaminaHeavyDistance
 import com.steve1316.uma_android_automation.bot.SkillPlan.Companion.matchesPreference
@@ -57,6 +58,39 @@ class SkillPlanPurchasingTest {
         fun `high eval points with low price gives high ratio`() {
             val skill = SkillCandidate(name = "Bargain", price = 50, evaluationPoints = 200)
             assertEquals(4.0, skill.evaluationPointRatio, 0.001)
+        }
+    }
+
+    // =========================================================================
+    // effectiveSkillBudget()
+    // =========================================================================
+
+    @Nested
+    @DisplayName("effectiveSkillBudget()")
+    inner class EffectiveSkillBudgetTests {
+        @Test
+        fun `reserve of zero leaves the full budget`() {
+            assertEquals(1200, effectiveSkillBudget(availableSkillPoints = 1200, reserve = 0, bSpendLeftoverPoints = false))
+        }
+
+        @Test
+        fun `pre-finals reserve is subtracted from the budget`() {
+            assertEquals(900, effectiveSkillBudget(availableSkillPoints = 1200, reserve = 300, bSpendLeftoverPoints = false))
+        }
+
+        @Test
+        fun `career-complete purchase ignores the reserve`() {
+            assertEquals(1200, effectiveSkillBudget(availableSkillPoints = 1200, reserve = 300, bSpendLeftoverPoints = true))
+        }
+
+        @Test
+        fun `reserve larger than the total clamps the budget to zero, never negative`() {
+            assertEquals(0, effectiveSkillBudget(availableSkillPoints = 200, reserve = 500, bSpendLeftoverPoints = false))
+        }
+
+        @Test
+        fun `negative reserve is treated as no reserve`() {
+            assertEquals(1200, effectiveSkillBudget(availableSkillPoints = 1200, reserve = -50, bSpendLeftoverPoints = false))
         }
     }
 
