@@ -30,6 +30,39 @@ data class AbandonDecision(
 )
 
 /**
+ * What to do when a run is projected below its target grade. Lets an attended run get a heads-up instead of being stopped.
+ */
+enum class AbandonAction {
+    /** Stop the run (an unattended farm restarts on a fresher one; a normal run just stops). The original, default behavior. */
+    STOP,
+
+    /** Leave the run running and send a one-time heads-up (log + Discord) so the user can decide whether to intervene. */
+    NOTIFY,
+
+    ;
+
+    companion object {
+        /** Resolve an [AbandonAction] from its persisted name (case-insensitive). Anything other than "notify" maps to [STOP], preserving the original behavior. */
+        fun fromName(name: String): AbandonAction = if (name.trim().equals("notify", ignoreCase = true)) NOTIFY else STOP
+    }
+}
+
+/**
+ * The concrete step the caller should take this turn, once the below-target [AbandonDecision] and the configured [AbandonAction] are combined with whether a notify-mode heads-up
+ * has already been sent this run. Keeps the notify-once latching out of the side-effecting call site so it can be unit-tested.
+ */
+enum class AbandonOutcome {
+    /** Do nothing: the run is on target, or it is in notify mode and the one-time heads-up was already sent. */
+    CONTINUE,
+
+    /** Send the one-time below-target heads-up and keep running (notify mode, not yet notified). */
+    NOTIFY_ONCE,
+
+    /** Stop the run (stop mode). */
+    STOP,
+}
+
+/**
  * Decides whether an unattended run is worth continuing, using the live final-rank projection. The idea: a farm's time is better spent restarting a run that is already
  * projected below target than grinding it to a mediocre finish. The check is deliberately conservative - it only fires after [AbandonConfig.minTurn] (so early noise cannot
  * abandon a run that would have recovered) and only when the projected grade is *strictly* below the target. Grade comparison is done in the shared rank-label index space, where
@@ -72,4 +105,21 @@ object RunAbandonPolicy {
             AbandonDecision(false, "Projected final grade ${projection.projectedGrade} meets target ${config.targetGrade}.")
         }
     }
+
+    /**
+     * Combine a below-target [shouldAbandon] result, the configured [action], and whether a notify-mode heads-up was already sent this run into the concrete step to take. Pure and
+     * side-effect-free so the notify-once latching is testable without a live run.
+     *
+     * @param shouldAbandon Whether [evaluate] flagged the run as below target this turn.
+     * @param action The configured action for a below-target run.
+     * @param alreadyNotified Whether a notify-mode heads-up has already been sent this run.
+     * @return The step the caller should take.
+     */
+    fun resolveOutcome(shouldAbandon: Boolean, action: AbandonAction, alreadyNotified: Boolean): AbandonOutcome =
+        when {
+            !shouldAbandon -> AbandonOutcome.CONTINUE
+            action == AbandonAction.STOP -> AbandonOutcome.STOP
+            alreadyNotified -> AbandonOutcome.CONTINUE
+            else -> AbandonOutcome.NOTIFY_ONCE
+        }
 }

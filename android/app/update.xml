@@ -1,15 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.31</latestVersion>
-    <latestVersionCode>203</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.31</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.31/v5.10.31-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.31/v5.10.31-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.32</latestVersion>
+    <latestVersionCode>204</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.32</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.32/v5.10.32-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.32/v5.10.32-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.31 - Pre-finals skill-point reserve
+v5.10.32 - Doomed-run notify mode + pre-finals skill-point reserve
 
 Added
 -----
+- Doomed-Run Action (Training Settings): the projected-rank guard can now either stop the run (the original behavior, best for unattended farming) or "Notify only" - send a one-time heads-up (log + Discord) when the run is projected below your target grade, and keep the run running. Lets an attended run warn you instead of being cut short.
 - Reserve Skill Points (Skills - Pre-Finals plan, 0 = off): hold back a set number of skill points on the pre-finals purchase so they carry to the career-complete purchase, where the full skill list is known. Useful for banking toward a strong gold skill instead of letting the optimizer spend everything on filler pre-finals. The reserve caps the whole pre-finals purchase; it never applies at career-complete, where leftover points are lost anyway.
     </releaseNotes>
   </update>
