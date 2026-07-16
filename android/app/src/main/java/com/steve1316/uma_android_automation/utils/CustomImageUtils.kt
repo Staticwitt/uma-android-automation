@@ -2501,21 +2501,34 @@ class CustomImageUtils(context: Context, private val game: Game) : ImageUtils(co
             return null
         }
 
-        // The right side of the energy bar looks very different depending on whether the max energy has been increased. Thus, we need to look for one of two bitmaps.
-        var energyBarRightPartTemplateBitmap: Bitmap? = IconEnergyBarRightPart0.template.getBitmap(this)
-        var rightPartLocation: Point?
-        if (energyBarRightPartTemplateBitmap == null) {
-            energyBarRightPartTemplateBitmap = IconEnergyBarRightPart1.template.getBitmap(this)
-            if (energyBarRightPartTemplateBitmap == null) {
-                MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the template bitmap for the right part of the energy bar.")
-                return null
-            }
-            rightPartLocation = IconEnergyBarRightPart1.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
-        } else {
-            rightPartLocation = IconEnergyBarRightPart0.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+        // The right side of the energy bar looks very different depending on whether the max energy has been increased, so try both templates and use whichever one is actually found on
+        // screen. (Previously this only fell back to the second template when the first template asset failed to load - which never happens for a bundled asset - so an increased-max-energy
+        // bar whose right end matched the second template could never be located and the whole energy read failed.)
+        val rightPart0Template: Bitmap? = IconEnergyBarRightPart0.template.getBitmap(this)
+        val rightPart1Template: Bitmap? = IconEnergyBarRightPart1.template.getBitmap(this)
+        if (rightPart0Template == null && rightPart1Template == null) {
+            MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the template bitmap for the right part of the energy bar.")
+            return null
         }
 
-        if (rightPartLocation == null) {
+        var energyBarRightPartTemplateBitmap: Bitmap? = null
+        var rightPartLocation: Point? = null
+        if (rightPart0Template != null) {
+            val location = IconEnergyBarRightPart0.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+            if (location != null) {
+                energyBarRightPartTemplateBitmap = rightPart0Template
+                rightPartLocation = location
+            }
+        }
+        if (rightPartLocation == null && rightPart1Template != null) {
+            val location = IconEnergyBarRightPart1.findImageWithBitmap(this, sourceBitmap = croppedBitmap, region = intArrayOf(0, 0, 0, 0))
+            if (location != null) {
+                energyBarRightPartTemplateBitmap = rightPart1Template
+                rightPartLocation = location
+            }
+        }
+
+        if (rightPartLocation == null || energyBarRightPartTemplateBitmap == null) {
             MessageLog.e(TAG, "[ERROR] analyzeEnergyBar:: Failed to find the location of the right part of the energy bar.")
             return null
         }
