@@ -168,6 +168,8 @@ const TrainingSettings = () => {
         energyBankingThreshold,
         energyBankingLookaheadTurns,
         minimumMoodForTraining,
+        enableHighEnergyMoodTolerance,
+        highEnergyMoodToleranceThreshold,
         enableAutoAbandon,
         autoAbandonTargetGrade,
         autoAbandonMinTurn,
@@ -852,6 +854,36 @@ const TrainingSettings = () => {
                                             }
                                         />
                                     </SearchableItem>
+                                    <SettingRow
+                                        id="enable-high-energy-mood-tolerance"
+                                        title="Train Through Low Mood at High Energy"
+                                        description="When energy is high, relax the mood-recovery threshold by one level so the bot trains through a small mood dip instead of spending the turn on a recreation outing. A run with energy to spare can afford to train through Normal mood. Off by default."
+                                        right={
+                                            <Switch
+                                                checked={enableHighEnergyMoodTolerance}
+                                                onCheckedChange={(checked) => updateTrainingSetting("enableHighEnergyMoodTolerance", checked)}
+                                            />
+                                        }
+                                    />
+                                    {enableHighEnergyMoodTolerance && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={highEnergyMoodToleranceThreshold || defaultSettings.training.highEnergyMoodToleranceThreshold}
+                                                placeholder={defaultSettings.training.highEnergyMoodToleranceThreshold}
+                                                onValueChange={(value) => updateTrainingSetting("highEnergyMoodToleranceThreshold", value)}
+                                                min={50}
+                                                max={100}
+                                                step={5}
+                                                label="High-Energy Mood Tolerance Threshold"
+                                                labelUnit="%"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="At or above this energy level, the mood-recovery threshold is relaxed one level so the bot trains through a small mood dip."
+                                                searchId="high-energy-mood-tolerance-threshold"
+                                                parentId="enable-high-energy-mood-tolerance"
+                                            />
+                                        </View>
+                                    )}
                                     <SettingRow
                                         id="enable-auto-abandon"
                                         title="Doomed-Run Guard"

@@ -265,6 +265,10 @@ export interface Settings {
         energyBankingThreshold: number
         energyBankingLookaheadTurns: number
         minimumMoodForTraining: string
+        /** When on, at high energy the mood-recovery floor relaxes one level so the bot trains through a one-step mood dip instead of recovering. */
+        enableHighEnergyMoodTolerance: boolean
+        /** Energy percentage at or above which the high-energy mood tolerance applies. */
+        highEnergyMoodToleranceThreshold: number
         /** Stop an unattended run early once its projected final grade is below the target grade, so a farm restarts on a fresher run. Off by default. */
         enableAutoAbandon: boolean
         /** The grade the run aims for; a projection below it (after the min turn) abandons the run. */
@@ -675,6 +679,8 @@ export const defaultSettings: Settings = {
         energyBankingThreshold: 50,
         energyBankingLookaheadTurns: 2,
         minimumMoodForTraining: "GOOD",
+        enableHighEnergyMoodTolerance: false,
+        highEnergyMoodToleranceThreshold: 80,
         enableAutoAbandon: false,
         autoAbandonTargetGrade: "A",
         autoAbandonMinTurn: 36,
