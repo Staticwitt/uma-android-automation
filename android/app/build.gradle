@@ -100,7 +100,10 @@ android {
 
     namespace 'com.steve1316.uma_android_automation'
     defaultConfig {
-        applicationId 'com.steve1316.uma_android_automation'
+        // Distinct from upstream's com.steve1316.uma_android_automation so this fork installs side-by-side
+        // with the original app instead of overwriting it. The namespace above intentionally keeps the
+        // original value so Kotlin packages and resources are untouched.
+        applicationId 'com.staticwitt.uma_android_automation'
         minSdkVersion libs.versions.app.minSdk.get() as Integer
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion libs.versions.app.targetSdk.get() as Integer
