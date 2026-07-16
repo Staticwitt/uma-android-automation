@@ -1,24 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.30</latestVersion>
-    <latestVersionCode>202</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.30</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.30/v5.10.30-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.30/v5.10.30-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.31</latestVersion>
+    <latestVersionCode>203</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.31</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.31/v5.10.31-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.31/v5.10.31-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.30 - Installs alongside the original app
+v5.10.31 - Pre-finals skill-point reserve
 
-Changed
--------
-- The fork now uses its own application id (com.staticwitt.uma_android_automation), so Android treats it as a separate app from steve1316's original. Installing this no longer replaces (or conflicts with) the upstream app - the two live side by side. The app label gains a "Fork" suffix so you can tell them apart in the launcher.
-
-One-time migration (first install of this version)
---------------------------------------------------
-A new application id means Android sees a brand-new app with empty data, so this version will NOT upgrade your current install in place - it appears as a separate app.
-1. Export your settings from your existing install BEFORE updating.
-2. Install this APK - it appears as a second app; the old one stays.
-3. Import your settings in the new app and re-grant permissions (Accessibility, Display over other apps, battery exemption).
-4. Uninstall the old app whenever you are done with it.
+Added
+-----
+- Reserve Skill Points (Skills - Pre-Finals plan, 0 = off): hold back a set number of skill points on the pre-finals purchase so they carry to the career-complete purchase, where the full skill list is known. Useful for banking toward a strong gold skill instead of letting the optimizer spend everything on filler pre-finals. The reserve caps the whole pre-finals purchase; it never applies at career-complete, where leftover points are lost anyway.
     </releaseNotes>
   </update>
 </AppUpdater>
