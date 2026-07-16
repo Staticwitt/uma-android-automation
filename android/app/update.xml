@@ -1,27 +1,24 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.29</latestVersion>
-    <latestVersionCode>201</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.29</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.29/v5.10.29-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.29/v5.10.29-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.30</latestVersion>
+    <latestVersionCode>202</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.30</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.30/v5.10.30-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.30/v5.10.30-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.29 - Momentum racing, training gates, and the full scenario-overrides port
+v5.10.30 - Installs alongside the original app
 
-Added
------
-- Momentum Race Selection (Racing Settings, off by default): adapts optional-race pickiness to how the run is going. On a losing streak the bot raises its win-chance bar and trains/recovers instead of taking marginal races (this works even with the win-rate guard otherwise off); on a winning streak it takes slightly riskier races, but only while a fan goal is still unmet - once fans are covered it always protects training turns.
-- Retry Unity Cup Races (Racing Settings, off by default): tap Try Again on a lost Unity Cup race instead of accepting the loss. Independently of the toggle, a lost race's Try Again dialog is now always handled - previously it stalled the race loop until a 30-second "Race event took too long" abort.
-- Minimum Energy to Train (Training Settings, 0 = off): below this energy a training turn becomes a rest turn. Applies after Smart Race Solver plans and energy banking; skipped during Finals.
-- Wit Maximum Failure Chance (Training Settings, 0 = follow global): give Wit training its own failure-chance ceiling, since a failed Wit attempt costs no energy.
-- Wit Over Rest (Training Settings, shown when the energy floor is set): when the floor triggers, try Wit training before resting - only if Wit passes the failure-chance filters, otherwise the bot still rests.
-- Unity Cup scenario overrides: Extreme Burst Minimum Stat Gain (only prioritize an Extreme Spirit Burst when the facility's projected main-stat gain is high enough) and Burst Only Top 3 Stats After Junior (post-Junior, burst priority only for your top 3 prioritized stats).
-- URA Finale scenario override: Happy Meek Duel Bias (Off/Moderate/Aggressive) - detects the Duel badge on a training facility and steers training toward it so the bot enters and wins the duel.
+Changed
+-------
+- The fork now uses its own application id (com.staticwitt.uma_android_automation), so Android treats it as a separate app from steve1316's original. Installing this no longer replaces (or conflicts with) the upstream app - the two live side by side. The app label gains a "Fork" suffix so you can tell them apart in the launcher.
 
-Fixed
------
-- Training failure-chance reads no longer burn all their retries in a quarter second while the game is still re-rendering after a server "Connecting" round-trip, which could skip a whole turn's training analysis.
-- The Scenario Overrides page now shows each campaign its own sections. Previously it rendered the full Trackblazer section set for every campaign, and the Unity Cup Burst Failure-Chance Exemption slider had displaced the Trackblazer "Irregular Training Minimum Stat Gain" slider (with the wrong description).
+One-time migration (first install of this version)
+--------------------------------------------------
+A new application id means Android sees a brand-new app with empty data, so this version will NOT upgrade your current install in place - it appears as a separate app.
+1. Export your settings from your existing install BEFORE updating.
+2. Install this APK - it appears as a second app; the old one stays.
+3. Import your settings in the new app and re-grant permissions (Accessibility, Display over other apps, battery exemption).
+4. Uninstall the old app whenever you are done with it.
     </releaseNotes>
   </update>
 </AppUpdater>
