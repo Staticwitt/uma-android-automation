@@ -10,6 +10,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "G",
+            "Late Surger": "B",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Agnes Digital": {
@@ -23,6 +36,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "A"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "B"
+        },
+        "growthBonus": {
+            "Speed": 8,
+            "Stamina": 8,
+            "Power": 7,
+            "Guts": 0,
+            "Wit": 7
         }
     },
     "Agnes Tachyon": {
@@ -36,6 +62,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "E",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Air Groove": {
@@ -49,6 +88,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "D",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Biwa Hayahide": {
@@ -62,6 +114,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "E",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "E"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 20
         }
     },
     "Curren Chan": {
@@ -75,6 +140,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "E",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Daiwa Scarlet": {
@@ -88,6 +166,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "A",
+            "Late Surger": "E",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "Eishin Flash": {
@@ -101,6 +192,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "El Condor Pasa": {
@@ -114,6 +218,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "B"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "E",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Fine Motion": {
@@ -127,6 +244,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "D",
+            "Pace Chaser": "A",
+            "Late Surger": "E",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 15,
+            "Guts": 0,
+            "Wit": 15
         }
     },
     "Fuji Kiseki": {
@@ -140,6 +270,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "A",
+            "Late Surger": "C",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Gold City": {
@@ -153,6 +296,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "D"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "Gold Ship": {
@@ -166,6 +322,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "B",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Grass Wonder": {
@@ -179,6 +348,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Haru Urara": {
@@ -192,6 +374,19 @@
         "surfaceAptitudes": {
             "Turf": "G",
             "Dirt": "A"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "G",
+            "Late Surger": "A",
+            "End Closer": "B"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "Hishi Akebono": {
@@ -205,6 +400,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "C",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Hishi Amazon": {
@@ -218,6 +426,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "C",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Inari One": {
@@ -231,6 +452,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "A"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "B",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 10,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Ines Fujin": {
@@ -244,6 +478,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "C",
+            "Late Surger": "G",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 15,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 15,
+            "Wit": 0
         }
     },
     "Kawakami Princess": {
@@ -257,6 +504,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "C",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "King Halo": {
@@ -270,6 +530,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Kitasan Black": {
@@ -283,6 +556,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "B",
+            "Late Surger": "C",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Manhattan Cafe": {
@@ -296,6 +582,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "C",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 30,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Maruzensky": {
@@ -309,6 +608,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "D"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "E",
+            "Late Surger": "G",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "Matikanefukukitaru": {
@@ -322,6 +634,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Matikanetannhauser": {
@@ -335,6 +660,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "E"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Mayano Top Gun": {
@@ -348,6 +686,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "B"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Meisho Doto": {
@@ -361,6 +712,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "E"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Mejiro Ardan": {
@@ -374,6 +738,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "A",
+            "Late Surger": "D",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "Mejiro Bright": {
@@ -387,6 +764,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "D",
+            "Late Surger": "A",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 14,
+            "Power": 0,
+            "Guts": 8,
+            "Wit": 8
         }
     },
     "Mejiro Dober": {
@@ -400,6 +790,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "Mejiro McQueen": {
@@ -413,6 +816,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "D",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Mejiro Palmer": {
@@ -426,6 +842,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "E",
+            "Late Surger": "F",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Mejiro Ryan": {
@@ -439,6 +868,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Mihono Bourbon": {
@@ -452,6 +894,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "E",
+            "Late Surger": "G",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Narita Brian": {
@@ -465,6 +920,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Narita Taishin": {
@@ -478,6 +946,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "F",
+            "Late Surger": "B",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "Nice Nature": {
@@ -491,6 +972,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Nishino Flower": {
@@ -504,6 +998,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 15,
+            "Stamina": 0,
+            "Power": 15,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Oguri Cap": {
@@ -517,6 +1024,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "B"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Oguri Cap (Christmas)": {
@@ -530,6 +1050,12 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "B"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "D"
         },
         "growthBonus": {
             "Speed": 15,
@@ -550,6 +1076,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "C",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 20,
+            "Wit": 0
         }
     },
     "Sakura Bakushin O": {
@@ -563,6 +1102,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "A",
+            "Late Surger": "F",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Sakura Chiyono O": {
@@ -576,6 +1128,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "F",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 10
         }
     },
     "Satono Diamond": {
@@ -589,6 +1154,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "D"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 15,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 15
         }
     },
     "Seiun Sky": {
@@ -602,6 +1180,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "B",
+            "Late Surger": "D",
+            "End Closer": "E"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "Silence Suzuka": {
@@ -615,6 +1206,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "C",
+            "Late Surger": "E",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Smart Falcon": {
@@ -628,6 +1232,19 @@
         "surfaceAptitudes": {
             "Turf": "E",
             "Dirt": "A"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "A",
+            "Pace Chaser": "D",
+            "Late Surger": "G",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Special Week": {
@@ -641,6 +1258,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Super Creek": {
@@ -654,6 +1284,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "D",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 20
         }
     },
     "Sweep Tosho": {
@@ -667,6 +1310,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "G",
+            "Late Surger": "A",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Symboli Rudolf": {
@@ -680,6 +1336,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "B",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "C"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "TM Opera O": {
@@ -693,6 +1362,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Taiki Shuttle": {
@@ -706,6 +1388,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "B"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "A",
+            "Late Surger": "E",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 0,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 10
         }
     },
     "Tamamo Cross": {
@@ -719,6 +1414,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "F"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "A"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 20,
+            "Power": 10,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Tokai Teio": {
@@ -732,6 +1440,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "D",
+            "Pace Chaser": "A",
+            "Late Surger": "C",
+            "End Closer": "E"
+        },
+        "growthBonus": {
+            "Speed": 20,
+            "Stamina": 10,
+            "Power": 0,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Tosen Jordan": {
@@ -745,6 +1466,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "A",
+            "Late Surger": "B",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 10,
+            "Guts": 10,
+            "Wit": 0
         }
     },
     "Vodka": {
@@ -758,6 +1492,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "C",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "F"
+        },
+        "growthBonus": {
+            "Speed": 10,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Winning Ticket": {
@@ -771,6 +1518,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "G"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "G",
+            "Pace Chaser": "B",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 10,
+            "Power": 20,
+            "Guts": 0,
+            "Wit": 0
         }
     },
     "Yaeno Muteki": {
@@ -784,6 +1544,19 @@
         "surfaceAptitudes": {
             "Turf": "A",
             "Dirt": "E"
+        },
+        "runningStyleAptitudes": {
+            "Front Runner": "F",
+            "Pace Chaser": "A",
+            "Late Surger": "A",
+            "End Closer": "G"
+        },
+        "growthBonus": {
+            "Speed": 0,
+            "Stamina": 0,
+            "Power": 20,
+            "Guts": 10,
+            "Wit": 0
         }
     }
 }
