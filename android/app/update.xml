@@ -1,16 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.35</latestVersion>
-    <latestVersionCode>207</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.35</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.35/v5.10.35-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.35/v5.10.35-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.36</latestVersion>
+    <latestVersionCode>208</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.36</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.36/v5.10.36-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.36/v5.10.36-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.35 - Train through low mood at high energy
+v5.10.36 - Character preset data: running-style aptitudes and growth bonuses
 
-Added
------
-- Train Through Low Mood at High Energy (Training Settings, off by default): when energy is at or above a threshold (default 80%), the mood-recovery threshold is relaxed by one level, so the bot trains through a small mood dip (e.g. Normal mood) instead of spending the turn on a recreation outing. A run with energy to spare can afford to train through a slightly lower mood, since mood is a training-gain multiplier rather than a hard gate. At low energy, mood recovery works exactly as before.
+Added / Fixed
+-------------
+- Character presets now include per-character running-style aptitudes (Front/Pace/Late/End) and growth-rate bonuses for every character. These were part of the data schema but were missing from the shipped data (running-style on 0 of 60 presets, growth on 1), so the Smart Race Solver's running-style seeding and per-character growth weighting had nothing to work with. Both are now populated, giving more accurate early-run running-style bias and stat weighting.
+- Added three newly-released characters that were missing from the preset data: Air Shakur, Bamboo Memory, and Copano Rickey (a strong Dirt runner).
+
+Changed
+-------
+- The character-preset data updater now sources aptitudes over HTTP instead of a browser scrape, so it is faster and far less fragile. This is a developer/data-tooling change with no in-app effect beyond the refreshed data above.
     </releaseNotes>
   </update>
 </AppUpdater>

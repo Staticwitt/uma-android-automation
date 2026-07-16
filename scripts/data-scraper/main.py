@@ -1963,20 +1963,19 @@ class EpithetScraper(BaseScraper):
 
 
 class CharacterPresetScraper(BaseScraper):
-    """Scrapes per-character distance, surface, and running-style aptitudes for the Smart Race Solver.
+    """Builds per-character distance, surface, and running-style aptitudes (plus growth bonuses) for the Smart Race Solver.
 
-    Each character page on GameTora has a "Track aptitude" panel with ten grade letters
-    (Sprint, Mile, Medium, Long, Turf, Dirt, Front Runner, Pace Chaser, Late Surger, End Closer).
-    The Smart Race Solver feeds the distance/surface grades into its aptitude eligibility filter; the
-    running-style grades seed the bot's running-style aptitude guess before it can OCR the real values
-    off the race-prep screen.
+    Sourced entirely over HTTP from GameTora's ``character-cards`` manifest dataset - the same data the
+    site renders its aptitude panels from - so no browser/Selenium is required. Each card carries a
+    ten-element ``aptitude`` array and a five-element ``stat_bonus`` (growth-rate) array, decoded here
+    into the app's named keys. EN availability comes from each card's ``release_en`` field.
 
-    Outfit/costume variants (e.g. "Special Week (Wedding)") get their own entry keyed by the
-    outfit-qualified display name, distinct from the base character's entry, since each outfit can
-    carry its own per-stat growth-rate bonus (`growthBonus`) - a fixed percentage that boosts all
-    gains for that stat throughout a career run. Stats with no bonus default to 0.0.
+    Base characters are keyed by ``name_en`` using the base card (lowest EN ``card_id``). Hand-named
+    outfit / alternate-unit entries already in the file (keys like ``"Oguri Cap (Christmas)"``) are
+    preserved - their display names are curated and not derivable from the manifest - and refreshed
+    from their matching card only when that match is unambiguous.
 
-    Output schema (one entry per character/outfit) matches `src/data/characterPresets.json`:
+    Output schema (one entry per character/outfit) matches ``src/data/characterPresets.json``:
 
         {
             "<character name>": {
@@ -1984,7 +1983,7 @@ class CharacterPresetScraper(BaseScraper):
                 "distanceAptitudes": { "Sprint": "F", "Mile": "C", "Medium": "A", "Long": "C" },
                 "surfaceAptitudes": { "Turf": "A", "Dirt": "G" },
                 "runningStyleAptitudes": { "Front Runner": "B", "Pace Chaser": "A", "Late Surger": "B", "End Closer": "C" },
-                "growthBonus": { "Speed": 10.0, "Stamina": 0.0, "Power": 10.0, "Guts": 0.0, "Wit": 0.0 }
+                "growthBonus": { "Speed": 10, "Stamina": 0, "Power": 10, "Guts": 0, "Wit": 0 }
             }
         }
     """
@@ -1994,190 +1993,113 @@ class CharacterPresetScraper(BaseScraper):
     RUNNING_STYLE_KEYS = ("Front Runner", "Pace Chaser", "Late Surger", "End Closer")
     STAT_KEYS = ("Speed", "Stamina", "Power", "Guts", "Wit")
     VALID_GRADES = ("S", "A", "B", "C", "D", "E", "F", "G")
-    # GameTora labels the sprint distance "Short" and the running styles "Front"/"Pace"/"Late"/"End".
-    # The rest of the labels match our output keys directly.
-    PAGE_LABEL_TO_KEY = {
-        "Short": "Sprint",
-        "Mile": "Mile",
-        "Medium": "Medium",
-        "Long": "Long",
-        "Turf": "Turf",
-        "Dirt": "Dirt",
-        "Front": "Front Runner",
-        "Pace": "Pace Chaser",
-        "Late": "Late Surger",
-        "End": "End Closer",
-    }
+    # Fixed order of the ten grades within a character-cards `aptitude` array. Verified against the
+    # committed presets: all base characters' surface+distance grades decode from this order exactly.
+    APTITUDE_ORDER = (
+        "Turf",
+        "Dirt",
+        "Sprint",
+        "Mile",
+        "Medium",
+        "Long",
+        "Front Runner",
+        "Pace Chaser",
+        "Late Surger",
+        "End Closer",
+    )
 
     def __init__(self):
-        super().__init__("https://gametora.com/umamusume/characters", "characterPresets.json")
+        # No browser URL: this scraper is HTTP-only.
+        super().__init__("", "characterPresets.json")
 
-    def _load_released_en_names(self) -> Optional[set]:
-        """Fetches the GameTora characters manifest and returns the set of EN-playable names.
-
-        GameTora ships a static JSON dataset at `data/umamusume/characters.<hash>.json`. Each entry has a `playable_en` flag
-        indicating whether the character is on the EN/global server. Returns None on any failure so the caller can fall back
-        to scraping every character page (the legacy behaviour) without crashing.
-
-        Returns:
-            The set of EN-playable character names, or None when the manifest fetch or parse fails.
-        """
-        try:
-            manifest = requests.get(GAMETORA_MANIFESTS_URL, timeout=15).json()
-            char_hash = manifest.get("characters")
-            if not char_hash:
-                return None
-            url = f"{GAMETORA_MANIFEST_DATA_BASE_URL}/characters.{char_hash}.json"
-            chars = requests.get(url, timeout=20).json()
-            return set(c["en_name"] for c in chars if c.get("playable_en") and c.get("en_name"))
-        except Exception as e:
-            logging.warning(f"Failed to fetch released-EN character list from manifest: {e}")
+    def _decode(self, card: Dict[str, Any]) -> Optional[Dict[str, str]]:
+        """Decodes one card's `aptitude` array into a {key: grade} dict, or None when malformed."""
+        apt = card.get("aptitude")
+        if not isinstance(apt, list) or len(apt) != len(self.APTITUDE_ORDER):
             return None
+        grades: Dict[str, str] = {}
+        for key, grade in zip(self.APTITUDE_ORDER, apt):
+            g = str(grade).strip().upper()
+            if g not in self.VALID_GRADES:
+                return None
+            grades[key] = g
+        return grades
+
+    def _growth(self, card: Dict[str, Any]) -> Dict[str, int]:
+        """Decodes a card's five-element `stat_bonus` into a growthBonus dict (ints; 0 when absent)."""
+        sb = card.get("stat_bonus") or []
+        out: Dict[str, int] = {}
+        for i, key in enumerate(self.STAT_KEYS):
+            try:
+                out[key] = int(sb[i])
+            except (IndexError, TypeError, ValueError):
+                out[key] = 0
+        return out
+
+    def _entry(self, name: str, card: Dict[str, Any]) -> Dict[str, Any]:
+        """Assembles a single preset entry for a display name from its card."""
+        grades = self._decode(card)
+        return {
+            "name": name,
+            "distanceAptitudes": {k: grades[k] for k in self.DISTANCE_KEYS},
+            "surfaceAptitudes": {k: grades[k] for k in self.SURFACE_KEYS},
+            "runningStyleAptitudes": {k: grades[k] for k in self.RUNNING_STYLE_KEYS},
+            "growthBonus": self._growth(card),
+        }
 
     def start(self):
-        """Walks every released-EN character page and extracts the aptitude grades."""
-        driver = create_chromedriver()
-        driver.get(self.url)
-        time.sleep(5)
+        """Rebuilds base-character presets over HTTP from the character-cards manifest."""
+        cards = fetch_gametora_manifest_data("character-cards")
 
-        self.handle_cookie_consent(driver)
-        self._sort_by_value(driver, "implemented")
+        # EN-available, decode-able cards only. A card is on the EN/global server iff it has a release_en date.
+        en_cards = [c for c in cards if c.get("release_en") and c.get("name_en") and self._decode(c) is not None]
+        logging.info(f"Loaded {len(en_cards)} EN-available character cards from manifest.")
 
-        try:
-            character_grid = driver.find_element(By.XPATH, "//div[contains(@class, 'characters_page_character_list')]")
-        except NoSuchElementException:
-            character_grid = driver.find_element(By.XPATH, "//div[contains(@class, 'sc-dc9ce0a6-0')]")
+        # Group by character; the base card is the lowest EN card_id for that character.
+        by_char: Dict[Any, List[Dict[str, Any]]] = {}
+        for c in en_cards:
+            by_char.setdefault(c.get("char_id"), []).append(c)
 
-        all_links = character_grid.find_elements(By.CSS_SELECTOR, "a[href^='/umamusume/characters/']")
-        character_links = [item.get_attribute("href") for item in all_links if item.is_displayed()]
-
-        # Filter to only characters that are playable on the EN/global server. Without this,
-        # the scraper produces presets for ~150 characters including JP-only / unreleased ones
-        # that the user can never actually pick in their game.
-        released_en = self._load_released_en_names()
-        if released_en is not None:
-            logging.info(f"Loaded {len(released_en)} EN-playable character names from manifest.")
-
-        if IS_DELTA:
-            character_links = character_links[:DELTA_BACKLOG_COUNT]
-            logging.info(f"Delta scrape: limiting to first {DELTA_BACKLOG_COUNT} characters.")
-
-        logging.info(f"Found {len(character_links)} character pages to scan for aptitudes.")
-
-        for i, link in enumerate(character_links):
-            logging.info(f"[{i + 1}/{len(character_links)}] Scraping aptitudes from {link}")
-            try:
-                driver.get(link)
-                time.sleep(2)
-
-                raw_name = driver.find_element(By.XPATH, "//main//h1").text
-                # display_name keeps any outfit qualifier (e.g. "Special Week (Wedding)") so alternate
-                # costumes get their own characterPresets.json entry instead of collapsing into the base
-                # character's. "(Original)" is GameTora's label for the base costume, not a real outfit name.
-                display_name = raw_name.replace("(Original)", "").strip()
-                # base_name additionally strips any remaining parenthetical, used only to check EN
-                # availability against the manifest (which lists base character names, not outfit variants).
-                base_name = re.sub(r"\s*\(.*?\)", "", display_name).strip()
-                if not display_name:
-                    continue
-
-                if released_en is not None and base_name not in released_en:
-                    logging.info(f"Skipping {display_name}: not playable on EN server.")
-                    continue
-
-                aptitudes = self._extract_aptitudes(driver)
-                if aptitudes is None:
-                    logging.warning(f"Skipping {display_name}: aptitude panel not found.")
-                    continue
-
-                growth_bonus = self._extract_growth_bonus(driver)
-
-                self.data[display_name] = {
-                    "name": display_name,
-                    "distanceAptitudes": {k: aptitudes.get(k, "G") for k in self.DISTANCE_KEYS},
-                    "surfaceAptitudes": {k: aptitudes.get(k, "G") for k in self.SURFACE_KEYS},
-                    "runningStyleAptitudes": {k: aptitudes.get(k, "G") for k in self.RUNNING_STYLE_KEYS},
-                    "growthBonus": {k: growth_bonus.get(k, 0.0) for k in self.STAT_KEYS},
-                }
-            except NoSuchElementException as e:
-                logging.warning(f"Skipping character at {link}: {e}")
+        base_count = 0
+        for group in by_char.values():
+            base = min(group, key=lambda c: c["card_id"])
+            name = base.get("name_en")
+            if not name:
                 continue
+            self.data[name] = self._entry(name, base)
+            base_count += 1
 
+        # Refresh hand-named outfit / alternate-unit entries (keys like "Oguri Cap (Christmas)") in place:
+        # keep the curated display name, but re-derive aptitudes/growth from the one card matching the base
+        # character name plus the entry's existing surface+distance grades (narrowed by growth when recorded).
+        # Leave the entry untouched when there is no single unambiguous match, so curated data is never corrupted.
+        refreshed = 0
+        for key in list(self.data.keys()):
+            if "(" not in key:
+                continue
+            existing = self.data[key]
+            base_name = re.sub(r"\s*\(.*?\)", "", key).strip()
+            da = existing.get("distanceAptitudes", {})
+            sa = existing.get("surfaceAptitudes", {})
+            cands = []
+            for c in en_cards:
+                if c.get("name_en") != base_name:
+                    continue
+                g = self._decode(c)
+                if all(g.get(k) == da.get(k) for k in self.DISTANCE_KEYS) and all(g.get(k) == sa.get(k) for k in self.SURFACE_KEYS):
+                    cands.append(c)
+            gb = existing.get("growthBonus")
+            if gb is not None and len(cands) > 1:
+                want = [gb.get(s, 0) for s in self.STAT_KEYS]
+                narrowed = [c for c in cands if [int(x) for x in (list(c.get("stat_bonus") or []) + [0, 0, 0, 0, 0])[:5]] == want]
+                if narrowed:
+                    cands = narrowed
+            if len(cands) == 1:
+                self.data[key] = self._entry(key, cands[0])
+                refreshed += 1
+
+        logging.info(f"Built {base_count} base-character presets; refreshed {refreshed} curated outfit entries.")
         self.save_data()
-        driver.quit()
-
-    def _extract_aptitudes(self, driver: webdriver.Chrome) -> Optional[Dict[str, str]]:
-        """Pulls the distance, surface, and running-style grade letters from the character's aptitude infobox.
-
-        GameTora renders each aptitude as an infobox row whose first child is the label and whose grade is an `<img>`
-        alt letter (e.g. "A", "G") inside a "characters_aptitude_rank_icon" element. Running-style rows (Front, Pace,
-        Late, End) share the same markup as the distance/surface rows and are mapped to their output keys by
-        `PAGE_LABEL_TO_KEY` just like the rest. Class fragments are matched by prefix to tolerate the hashed suffixes
-        GameTora appends to its CSS-module class names.
-
-        Args:
-            driver: An active Selenium webdriver positioned on a character page.
-
-        Returns:
-            Dict mapping each output key to a one-letter grade. Returns `None` when no aptitude rows are found so the
-            caller can skip cleanly.
-        """
-        rows = driver.find_elements(
-            By.XPATH,
-            "//div[contains(@class, 'characters_infobox_row_split')][.//*[contains(@class, 'characters_aptitude_rank_icon')]]",
-        )
-        if not rows:
-            return None
-
-        out: Dict[str, str] = {}
-        for row in rows:
-            try:
-                label = row.find_element(By.XPATH, "./*[1]").text.strip()
-            except NoSuchElementException:
-                continue
-            key = self.PAGE_LABEL_TO_KEY.get(label)
-            if key is None:
-                continue
-            try:
-                icon_img = row.find_element(By.XPATH, ".//*[contains(@class, 'characters_aptitude_rank_icon')]//img")
-                grade = (icon_img.get_attribute("alt") or "").strip().upper()
-            except NoSuchElementException:
-                continue
-            if grade in self.VALID_GRADES:
-                out[key] = grade
-        return out if out else None
-
-    def _extract_growth_bonus(self, driver: webdriver.Chrome) -> Dict[str, float]:
-        """Best-effort extraction of the character's per-stat growth-rate bonus (e.g. "+10% Speed").
-
-        GameTora surfaces this as a short text blurb near the top of the character page (its exact
-        markup couldn't be verified against a live page in this environment), so rather than depend
-        on a specific element structure, this scans all text within the main content area for
-        "<stat name> ... N%" / "N% ... <stat name>" patterns and pairs each stat with the percentage
-        found in the same line. Any stat not matched defaults to 0.0 via the caller.
-
-        Args:
-            driver: An active Selenium webdriver positioned on a character page.
-
-        Returns:
-            Dict mapping stat name to bonus percentage. Empty when no growth-bonus text is found.
-        """
-        out: Dict[str, float] = {}
-        try:
-            main_text = driver.find_element(By.XPATH, "//main").text
-        except NoSuchElementException:
-            return out
-
-        stat_pattern = "|".join(self.STAT_KEYS)
-        for line in main_text.splitlines():
-            if "%" not in line:
-                continue
-            for stat_match in re.finditer(stat_pattern, line):
-                stat = stat_match.group(0)
-                pct_match = re.search(r"(\d+(?:\.\d+)?)\s*%", line)
-                if pct_match:
-                    out[stat] = float(pct_match.group(1))
-        return out
 
 
 class CharacterObjectivesScraper(BaseScraper):
@@ -2324,6 +2246,8 @@ if __name__ == "__main__":
     should_run_selenium = (manifest_result["manifestChanged"] or args.full) and not args.manifest_only
 
     if args.manifest_only:
+        # Character presets are now sourced over HTTP (no Selenium), so refresh them even in manifest-only mode.
+        CharacterPresetScraper().start()
         logging.info("Manifest-only mode complete.")
     elif should_run_selenium:
         logging.info("Running Selenium scrapers (manifest changed=%s, full=%s).", manifest_result["manifestChanged"], args.full)
