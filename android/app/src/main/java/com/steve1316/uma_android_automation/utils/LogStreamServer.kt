@@ -111,9 +111,11 @@ object LogStreamServer {
      *  via the Live View Frame Rate setting, since the safe headroom depends on the device and network. */
     private const val VIDEO_FEED_DEFAULT_FPS = 3
 
-    /** Hard bounds for the user-configurable frame rate, applied defensively regardless of what the frontend already clamps to. */
+    /** Hard bounds for the user-configurable frame rate, applied defensively regardless of what the frontend already clamps to. The upper bound is a rate cap, not a guarantee - actual
+     *  throughput is limited by how fast the underlying screenshot capture, JPEG encode, and network write can run on the device, which is well above phone-class headroom on a
+     *  desktop-hosted emulator (e.g. MuMu Player) but may not be reachable on a real phone. */
     private const val VIDEO_FEED_MIN_FPS = 1
-    private const val VIDEO_FEED_MAX_FPS = 10
+    private const val VIDEO_FEED_MAX_FPS = 60
 
     /** JPEG compression quality (0-100) for "/video-feed" frames. Favors bandwidth/CPU over fidelity. */
     private const val VIDEO_FEED_JPEG_QUALITY = 70

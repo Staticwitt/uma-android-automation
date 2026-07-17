@@ -586,13 +586,13 @@ const DebugSettings = () => {
                                         onValueChange={(value) => updateDebug({ liveViewFrameRateFps: value })}
                                         onSlidingComplete={(value) => updateDebug({ liveViewFrameRateFps: value })}
                                         min={1}
-                                        max={10}
+                                        max={60}
                                         step={1}
                                         showValue
                                         showLabels
                                         label="Live View Frame Rate"
                                         labelUnit=" fps"
-                                        description="Frame rate of the live screen view. Higher is smoother but uses more CPU/bandwidth alongside the bot's own automation - lower this if you notice the bot itself slowing down. Takes effect on the next live view connection."
+                                        description="Frame rate of the live screen view. Higher is smoother but uses more CPU/bandwidth alongside the bot's own automation - lower this if you notice the bot itself slowing down. Values above ~10 fps are realistic mainly on a desktop-hosted emulator (e.g. MuMu Player); a real phone may not sustain the higher end of this range. Takes effect immediately, no reconnect needed."
                                     />
                                     {deviceIp === "10.0.2.15" && (
                                         <Text style={{ ...TYPE.caption, color: colors.warningText }}>
