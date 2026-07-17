@@ -123,7 +123,7 @@ object CareerSelectionAutomation {
      * The 6th grid position (bottom-right) is the pink-bordered "Friends" borrow slot - it is intentionally
      * excluded here since [tryTriggerAutoBorrow] already owns that slot via [ButtonBorrowSupportCard].
      */
-    internal val OWNED_DECK_SLOT_POSITIONS =
+    private val OWNED_DECK_SLOT_POSITIONS =
         listOf(
             SlotPosition(0.200, 0.348), // top-left
             SlotPosition(0.499, 0.348), // top-middle
