@@ -1,16 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.38</latestVersion>
-    <latestVersionCode>210</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.38</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.38/v5.10.38-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.38/v5.10.38-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.39</latestVersion>
+    <latestVersionCode>211</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.39</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.39/v5.10.39-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.39/v5.10.39-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.38 - Configurable live view frame rate
+v5.10.39 - Auto-equip owned deck, data cross-checks, and notification gaps closed
 
 Added
 -----
-- Live View Frame Rate (Debug Settings, under Remote Log Viewer): the live screen feed's frame rate is now a slider (1-60 fps, default 3) instead of a fixed ~2.5 fps. Higher is smoother but uses more CPU/bandwidth alongside the bot's own automation, so it's worth tuning down if the bot itself slows down. Values above ~10 fps are realistic mainly on a desktop-hosted emulator (e.g. MuMu Player) rather than a phone. Takes effect immediately on an already-open live view, no reconnect needed.
+- Auto-equip planned owned deck (Parent Farming Settings, under Career selection): taps each empty Support Formation slot and equips your saved owned-deck order directly, instead of relying only on the game's own Auto-Select. Falls back to Auto-Select for any slot it can't fill (short list, no match, or disabled).
+- Discord Live Status now works on any run, not just Parent Farming Mode - standard careers get the same periodic stat/mood/energy/race-record updates. Parent-farming-only details (projected quality, multi-run session) stay limited to parent farming runs.
+- Trackblazer scenario-progress Discord ping on the item shop unlocking (Junior Year Late June), closing the gap with URA Finale and Unity Cup, which already had progress pings.
+- Auto-Abandon Minimum Observations (Training Settings): the "doomed-run guard"'s confidence threshold - how many turns of projection history must build up before it can fire - is now a slider instead of a fixed value, alongside its existing minimum-turn and target-grade settings.
+
+Data accuracy
+-------------
+- characterPresets.json's growth-rate bonuses are now cross-checked against umapyoi.net (an independent database) after every scrape, the same way support-card type/rarity already was. Mismatches are logged for review rather than silently trusted from one source.
     </releaseNotes>
   </update>
 </AppUpdater>
