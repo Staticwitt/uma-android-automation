@@ -276,6 +276,7 @@ abstract class Campaign(game: Game) : Task(game) {
             enabled = SettingsHelper.getBooleanSetting("training", "enableAutoAbandon", false),
             minTurn = SettingsHelper.getIntSetting("training", "autoAbandonMinTurn", 36),
             targetGrade = SettingsHelper.getStringSetting("training", "autoAbandonTargetGrade", "A").ifBlank { "A" },
+            minObservations = SettingsHelper.getIntSetting("training", "autoAbandonMinObservations", 8),
         )
 
     /** What to do when the run is projected below target: STOP the run (default) or NOTIFY once and keep running (a heads-up for an attended run instead of losing it). */

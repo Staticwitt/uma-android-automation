@@ -173,6 +173,7 @@ const TrainingSettings = () => {
         enableAutoAbandon,
         autoAbandonTargetGrade,
         autoAbandonMinTurn,
+        autoAbandonMinObservations,
         autoAbandonAction,
         enableRiskyTraining,
         riskyTrainingMinStatGain,
@@ -957,6 +958,25 @@ const TrainingSettings = () => {
                                                 showLabels={true}
                                                 description="The projection is only trusted enough to abandon on from this turn onward, so early noise never abandons a recoverable run."
                                                 searchId="auto-abandon-min-turn"
+                                                parentId="enable-auto-abandon"
+                                            />
+                                        </View>
+                                    )}
+                                    {enableAutoAbandon && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={autoAbandonMinObservations || defaultSettings.training.autoAbandonMinObservations}
+                                                placeholder={defaultSettings.training.autoAbandonMinObservations}
+                                                onValueChange={(value) => updateTrainingSetting("autoAbandonMinObservations", value)}
+                                                min={2}
+                                                max={20}
+                                                step={1}
+                                                label="Auto-Abandon Minimum Observations"
+                                                labelUnit=" turns"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="How many turns of projection history must build up before the check may fire. Guards against a false abandon when the bot is started mid-career, where a single observation would otherwise look like a flat, doomed trajectory."
+                                                searchId="auto-abandon-min-observations"
                                                 parentId="enable-auto-abandon"
                                             />
                                         </View>

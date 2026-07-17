@@ -275,6 +275,8 @@ export interface Settings {
         autoAbandonTargetGrade: string
         /** Earliest turn the projection is trusted enough to abandon on. */
         autoAbandonMinTurn: number
+        /** Fewest per-turn projection observations required before the check may fire; guards against a too-short trajectory (e.g. a bot started mid-career). */
+        autoAbandonMinObservations: number
         /** What to do when the run is projected below target: "stop" the run (default) or "notify" once and keep running (a heads-up for an attended run). */
         autoAbandonAction: string
         enableRiskyTraining: boolean
@@ -686,6 +688,7 @@ export const defaultSettings: Settings = {
         enableAutoAbandon: false,
         autoAbandonTargetGrade: "A",
         autoAbandonMinTurn: 36,
+        autoAbandonMinObservations: 8,
         autoAbandonAction: "stop",
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
