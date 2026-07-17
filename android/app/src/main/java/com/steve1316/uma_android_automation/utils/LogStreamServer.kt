@@ -106,9 +106,14 @@ object LogStreamServer {
     /** Maximum number of messages to retain in the history buffer. */
     private const val MAX_BUFFER_SIZE = 15000
 
-    /** Delay between frames pushed to "/video-feed", in milliseconds. Kept low (~2.5 fps) since this
-     *  runs on a phone alongside the bot's own automation and streams over local WiFi. */
-    private const val VIDEO_FEED_FRAME_INTERVAL_MS = 400L
+    /** Default frame rate for "/video-feed" when the user hasn't overridden it. Kept low (~2.5 fps) since
+     *  this runs on a phone alongside the bot's own automation and streams over local WiFi. User-adjustable
+     *  via the Live View Frame Rate setting, since the safe headroom depends on the device and network. */
+    private const val VIDEO_FEED_DEFAULT_FPS = 3
+
+    /** Hard bounds for the user-configurable frame rate, applied defensively regardless of what the frontend already clamps to. */
+    private const val VIDEO_FEED_MIN_FPS = 1
+    private const val VIDEO_FEED_MAX_FPS = 10
 
     /** JPEG compression quality (0-100) for "/video-feed" frames. Favors bandwidth/CPU over fidelity. */
     private const val VIDEO_FEED_JPEG_QUALITY = 70
@@ -1791,12 +1796,17 @@ object LogStreamServer {
                         // and network write overhead — no extra screen-capture pipeline.
                         get("/video-feed") {
                             call.response.header(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                            // Read fresh every iteration (not once at connect time) so a mid-stream setting change takes effect immediately.
+                            fun currentFrameIntervalMs(): Long {
+                                val fps = SettingsHelper.getIntSetting("debug", "liveViewFrameRateFps", VIDEO_FEED_DEFAULT_FPS).coerceIn(VIDEO_FEED_MIN_FPS, VIDEO_FEED_MAX_FPS)
+                                return 1000L / fps
+                            }
                             try {
                                 call.respondOutputStream(ContentType.parse("multipart/x-mixed-replace; boundary=frame")) {
                                     while (MediaProjectionService.isRunning) {
                                         val bitmap = MediaProjectionService.takeScreenshotNow()
                                         if (bitmap == null) {
-                                            delay(VIDEO_FEED_FRAME_INTERVAL_MS)
+                                            delay(currentFrameIntervalMs())
                                             continue
                                         }
                                         val jpegBytes =
@@ -1810,7 +1820,7 @@ object LogStreamServer {
                                         write(jpegBytes)
                                         write("\r\n".toByteArray())
                                         flush()
-                                        delay(VIDEO_FEED_FRAME_INTERVAL_MS)
+                                        delay(currentFrameIntervalMs())
                                     }
                                 }
                             } catch (e: Exception) {

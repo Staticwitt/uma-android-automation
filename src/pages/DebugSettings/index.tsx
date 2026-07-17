@@ -577,6 +577,23 @@ const DebugSettings = () => {
                                         label="Server Port"
                                         description="Port number for the log stream server. Change only if the default conflicts with another service."
                                     />
+                                    <CustomSlider
+                                        searchId="settings-live-view-frame-rate"
+                                        searchCondition={debug.enableRemoteLogViewer}
+                                        parentId="settings-enable-remote-log-viewer"
+                                        value={debug.liveViewFrameRateFps}
+                                        placeholder={defaultSettings.debug.liveViewFrameRateFps}
+                                        onValueChange={(value) => updateDebug({ liveViewFrameRateFps: value })}
+                                        onSlidingComplete={(value) => updateDebug({ liveViewFrameRateFps: value })}
+                                        min={1}
+                                        max={10}
+                                        step={1}
+                                        showValue
+                                        showLabels
+                                        label="Live View Frame Rate"
+                                        labelUnit=" fps"
+                                        description="Frame rate of the live screen view. Higher is smoother but uses more CPU/bandwidth alongside the bot's own automation - lower this if you notice the bot itself slowing down. Takes effect on the next live view connection."
+                                    />
                                     {deviceIp === "10.0.2.15" && (
                                         <Text style={{ ...TYPE.caption, color: colors.warningText }}>
                                             Emulator detected - direct connection to {deviceIp} will fail. Use ADB port forwarding instead.

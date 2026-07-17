@@ -317,7 +317,9 @@ ${longTargetsString}${formatAdvancedScoringSection(settings.training)}
 🔍 Minimum Template Match Confidence: ${settings.debug.templateMatchConfidence}
 🔍 Custom Scale: ${settings.debug.templateMatchCustomScale}
 🔍 Auto Display Profile Tuning: ${settings.debug.enableAutoDisplayProfileTuning !== false ? "✅" : "❌"}
-💻 Remote Log Viewer: ${settings.debug.enableRemoteLogViewer ? "✅" : "❌"}
+💻 Remote Log Viewer: ${settings.debug.enableRemoteLogViewer ? "✅" : "❌"}${
+        settings.debug.enableRemoteLogViewer ? `\n\t🎥 Live View Frame Rate: ${settings.debug.liveViewFrameRateFps} fps` : ""
+    }
 📹 Enable Screen Recording: ${
         settings.debug.enableScreenRecording ? `✅ (${settings.debug.recordingBitRate} Mbps, ${settings.debug.recordingFrameRate} FPS, ${settings.debug.recordingResolutionScale}x scale)` : "❌"
     }
