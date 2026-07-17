@@ -181,6 +181,8 @@ export interface Settings {
         enableAutoBorrowSupportCard: boolean
         /** Tap the Support Formation screen's own Auto-Select to fill owned support deck slots at career selection. */
         enableAutoEquipSupportCards: boolean
+        /** Equip the planned owned deck (supportDeckOwnedCards) slot-by-slot instead of relying on the game's own Auto-Select. Falls back to enableAutoEquipSupportCards for any slot left unfilled. */
+        enableAutoEquipOwnedDeck: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
         legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
@@ -275,6 +277,8 @@ export interface Settings {
         autoAbandonTargetGrade: string
         /** Earliest turn the projection is trusted enough to abandon on. */
         autoAbandonMinTurn: number
+        /** Fewest per-turn projection observations required before the check may fire; guards against a too-short trajectory (e.g. a bot started mid-career). */
+        autoAbandonMinObservations: number
         /** What to do when the run is projected below target: "stop" the run (default) or "notify" once and keep running (a heads-up for an attended run). */
         autoAbandonAction: string
         enableRiskyTraining: boolean
@@ -538,6 +542,7 @@ export const defaultSettings: Settings = {
         enableAutoSelectLegacyParents: false,
         enableAutoBorrowSupportCard: false,
         enableAutoEquipSupportCards: false,
+        enableAutoEquipOwnedDeck: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",
@@ -686,6 +691,7 @@ export const defaultSettings: Settings = {
         enableAutoAbandon: false,
         autoAbandonTargetGrade: "A",
         autoAbandonMinTurn: 36,
+        autoAbandonMinObservations: 8,
         autoAbandonAction: "stop",
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,

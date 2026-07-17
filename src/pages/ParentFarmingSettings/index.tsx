@@ -180,6 +180,7 @@ const ParentFarmingSettings = () => {
         enableAutoSelectLegacyParents,
         enableAutoBorrowSupportCard,
         enableAutoEquipSupportCards,
+        enableAutoEquipOwnedDeck,
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
@@ -1082,10 +1083,26 @@ const ParentFarmingSettings = () => {
                                     }
                                 />
                                 <SettingRow
+                                    id="enable-auto-equip-owned-deck"
+                                    title="Auto-equip planned deck"
+                                    searchTitle="Auto-equip owned deck order"
+                                    description={
+                                        parseOwnedSupportCards(supportDeckOwnedCards).length > 0
+                                            ? `Taps each empty deck slot and picks your planned order: ${parseOwnedSupportCards(supportDeckOwnedCards).join(" · ")}`
+                                            : "Taps each empty deck slot and picks from your planned owned-deck order (set below). Falls back to Auto-Select for any slot it can't fill."
+                                    }
+                                    right={
+                                        <Switch
+                                            checked={enableAutoEquipOwnedDeck}
+                                            onCheckedChange={(checked) => updateRacingSetting("enableAutoEquipOwnedDeck", checked)}
+                                        />
+                                    }
+                                />
+                                <SettingRow
                                     id="enable-auto-equip-support-cards"
-                                    title="Auto-equip support deck"
+                                    title="Auto-equip support deck (Auto-Select)"
                                     searchTitle="Auto-equip owned support cards"
-                                    description="Tap the deck's own Auto-Select to fill your owned support card slots at career selection."
+                                    description="Tap the deck's own Auto-Select to fill your owned support card slots at career selection. Use alongside Auto-equip planned deck to top off any slots it leaves empty."
                                     right={
                                         <Switch
                                             checked={enableAutoEquipSupportCards}

@@ -17,6 +17,9 @@ DATA_DIR = Path(__file__).resolve().parents[2] / "src" / "data"
 GAMETORA_MANIFESTS_URL = "https://gametora.com/data/manifests/umamusume.json"
 GAMETORA_MANIFEST_DATA_BASE_URL = "https://gametora.com/data/umamusume"
 UMAPYOI_SUPPORT_URL = "https://umapyoi.net/api/v1/support/{support_id}"
+UMAPYOI_CHARACTER_IDS_URL = "https://umapyoi.net/api/v1/character"
+UMAPYOI_CHARACTER_LIST_URL = "https://umapyoi.net/api/v1/character/list"
+UMAPYOI_OUTFIT_CHARACTER_URL = "https://umapyoi.net/api/v1/outfit/character/{game_id}"
 
 MANIFEST_TRACK_KEYS = (
     "characters",
@@ -73,6 +76,17 @@ UMAPYOI_TYPE_LABEL = {
     "wisdom": "Wit",
     "friend": "Groupe",
 }
+
+# umapyoi.net's per-outfit growth-rate fields, in the order characterPresets.json's
+# growthBonus keys are output (confirmed via a live sample: character 1001's base outfit
+# returns talent_speed=10, matching Special Week's committed Speed growth bonus of 10).
+UMAPYOI_GROWTH_FIELDS = (
+    ("talent_speed", "Speed"),
+    ("talent_stamina", "Stamina"),
+    ("talent_pow", "Power"),
+    ("talent_guts", "Guts"),
+    ("talent_wiz", "Wit"),
+)
 
 
 def fetch_manifest_index() -> Dict[str, str]:
@@ -240,6 +254,122 @@ def cross_validate_with_umapyoi(stats: Dict[str, Dict[str, Any]]) -> List[str]:
         if mismatch:
             mismatches.append(mismatch)
             logging.warning("umapyoi cross-validation mismatch: %s", mismatch)
+    return mismatches
+
+
+def _normalize_umapyoi_character_name(name: str) -> str:
+    """Normalizes a character name for cross-referencing against umapyoi.net's roster.
+
+    umapyoi.net's `name_en` values carry some cosmetic differences from GameTora's - e.g. zero-width
+    spaces and non-breaking spaces in a couple of names, and periods in "T.M. Opera O" vs GameTora's
+    "TM Opera O" - so names are compared with those stripped rather than verbatim.
+    """
+    return name.replace("​", "").replace("\xa0", " ").replace(".", "").strip().lower()
+
+
+def fetch_umapyoi_character_name_to_game_id() -> Dict[str, int]:
+    """Fetches umapyoi.net's full character roster and returns a {name_en: game_id} map."""
+    ids_response = requests.get(UMAPYOI_CHARACTER_IDS_URL, timeout=30)
+    ids_response.raise_for_status()
+    game_ids = ids_response.json()  # [{"game_id": int, "web_id": int}, ...]; some entries lack game_id.
+
+    list_response = requests.get(UMAPYOI_CHARACTER_LIST_URL, timeout=30)
+    list_response.raise_for_status()
+    roster = list_response.json()  # [{"id": int, "name_en": str, ...}, ...]
+
+    web_id_to_name = {c["id"]: c["name_en"] for c in roster if c.get("name_en")}
+    name_to_game_id: Dict[str, int] = {}
+    for pair in game_ids:
+        game_id = pair.get("game_id")
+        name = web_id_to_name.get(pair.get("web_id"))
+        if game_id is not None and name:
+            name_to_game_id[name] = game_id
+    return name_to_game_id
+
+
+def fetch_umapyoi_character_outfits(game_id: int) -> Optional[List[Dict[str, Any]]]:
+    """Fetches all outfit entries for a character from umapyoi.net by its in-game character id."""
+    url = UMAPYOI_OUTFIT_CHARACTER_URL.format(game_id=game_id)
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as exc:
+        logging.warning("Failed to fetch umapyoi outfits for character %s: %s", game_id, exc)
+        return None
+
+
+def find_umapyoi_growth_mismatch(
+    character_name: str,
+    gametora_growth: Dict[str, int],
+    umapyoi_growth: Dict[str, int],
+) -> Optional[str]:
+    """Compares a GameTora-derived growthBonus against umapyoi.net's counterpart for the base outfit.
+
+    Returns a human-readable mismatch description, or None when every stat agrees.
+    """
+    if umapyoi_growth == gametora_growth:
+        return None
+    return f"{character_name}: growthBonus GameTora={gametora_growth!r} vs umapyoi={umapyoi_growth!r}"
+
+
+def cross_validate_growth_with_umapyoi(presets: Dict[str, Dict[str, Any]]) -> List[str]:
+    """Fetches each base character's umapyoi.net entry and logs a warning for any growthBonus disagreement.
+
+    umapyoi.net doesn't expose aptitude grades (distance/surface/running-style), so it can't be used to
+    add or grade new presets - only to independently corroborate the growth-rate bonuses GameTora's
+    character-cards manifest provides. Curated outfit/alternate-unit entries (keys like "Oguri Cap
+    (Christmas)") are skipped: without aptitude data to narrow by, they can't be unambiguously matched
+    to one of umapyoi's outfits for a character. Mismatches are logged for human review, not
+    auto-corrected, since either source could be the stale one.
+
+    Returns the list of mismatch descriptions (also logged as warnings) for callers that want to
+    surface them (e.g. failing CI).
+    """
+    try:
+        name_to_game_id = fetch_umapyoi_character_name_to_game_id()
+    except requests.exceptions.RequestException as exc:
+        logging.warning("Skipping umapyoi.net growth-bonus cross-check: could not reach umapyoi.net (%s).", exc)
+        return []
+
+    normalized_to_name = {_normalize_umapyoi_character_name(name): name for name in name_to_game_id}
+
+    mismatches: List[str] = []
+    checked = 0
+    unresolved: List[str] = []
+    for name, entry in presets.items():
+        if "(" in name:
+            continue
+        game_id = name_to_game_id.get(name)
+        if game_id is None:
+            resolved = normalized_to_name.get(_normalize_umapyoi_character_name(name))
+            game_id = name_to_game_id.get(resolved) if resolved else None
+        if game_id is None:
+            unresolved.append(name)
+            continue
+
+        outfits = fetch_umapyoi_character_outfits(game_id)
+        time.sleep(0.1)
+        if not outfits:
+            unresolved.append(name)
+            continue
+
+        base_outfit = min(outfits, key=lambda o: o["id"])
+        umapyoi_growth = {label: int(base_outfit.get(field, 0) or 0) for field, label in UMAPYOI_GROWTH_FIELDS}
+        checked += 1
+
+        mismatch = find_umapyoi_growth_mismatch(name, entry.get("growthBonus", {}), umapyoi_growth)
+        if mismatch:
+            mismatches.append(mismatch)
+            logging.warning("umapyoi growth-bonus cross-validation mismatch: %s", mismatch)
+
+    logging.info(
+        "umapyoi.net growth-bonus cross-check: %s checked, %s mismatch(es), %s unresolved (%s).",
+        checked,
+        len(mismatches),
+        len(unresolved),
+        unresolved,
+    )
     return mismatches
 
 

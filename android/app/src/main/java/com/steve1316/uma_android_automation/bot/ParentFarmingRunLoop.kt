@@ -380,6 +380,9 @@ object ParentFarmingRunLoop {
             if (CareerSelectionAutomation.tryAdvancePastLegacyPicker(game)) {
                 continue
             }
+            if (CareerSelectionAutomation.tryTriggerAutoEquipOwnedDeck(game)) {
+                continue
+            }
             if (CareerSelectionAutomation.tryTriggerAutoEquipSupportCards(game)) {
                 continue
             }

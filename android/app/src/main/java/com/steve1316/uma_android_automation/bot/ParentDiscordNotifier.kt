@@ -9,7 +9,8 @@ import com.steve1316.uma_android_automation.types.Mood
 import com.steve1316.uma_android_automation.types.Trainee
 
 /**
- * Discord notifications for parent farming runs: start message, periodic live status, and career-end summary.
+ * Discord notifications for career runs: a richer start message and periodic live status for parent farming
+ * runs, a career-end summary, and periodic live status for any run (parent farming or a standard career).
  */
 object ParentDiscordNotifier {
     private var lastLiveStatusTurn: Int = -1
@@ -21,9 +22,9 @@ object ParentDiscordNotifier {
     fun isParentFarmingRun(): Boolean =
         SettingsHelper.getBooleanSetting("racing", "enableParentFarmingMode", false)
 
+    /** Live status is available for any run (parent farming or a standard career), not just parent farming. */
     fun isLiveStatusEnabled(): Boolean =
         DiscordUtils.enableDiscordNotifications &&
-            isParentFarmingRun() &&
             SettingsHelper.getBooleanSetting("discord", "enableDiscordLiveStatus", true)
 
     fun liveStatusTurnInterval(): Int =
@@ -136,15 +137,19 @@ object ParentDiscordNotifier {
             fields.add(DiscordEmbedField("Projected rank", "${p.projectedGrade} (${p.projectedScore}) · now ${p.currentGrade}", inline = true))
         }
 
-        val qualityInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs = null, epithetTurn = date.day)
-        val projectedQuality = ParentRunQuality.estimateLive(qualityInput)
-        fields.add(
-            DiscordEmbedField(
-                "Projected quality",
-                ParentRunQuality.formatLabel(projectedQuality),
-                inline = true,
-            ),
-        )
+        // Projected quality is a parent-farming concept (how good a legacy parent this run's inheritance would
+        // make) - it doesn't mean anything for a standard career run, so it's left out of that embed.
+        if (isParentFarmingRun()) {
+            val qualityInput = ParentRunSummary.inputFromSettings(trainee, game.scenario, elapsedMs = null, epithetTurn = date.day)
+            val projectedQuality = ParentRunQuality.estimateLive(qualityInput)
+            fields.add(
+                DiscordEmbedField(
+                    "Projected quality",
+                    ParentRunQuality.formatLabel(projectedQuality),
+                    inline = true,
+                ),
+            )
+        }
 
         if (ParentFarmingRunLoop.isEnabled()) {
             val completed = ParentFarmingRunLoop.sessionRunsCompleted()
@@ -187,7 +192,7 @@ object ParentDiscordNotifier {
         }
 
         return DiscordEmbedSpec(
-            title = "Parent farming · live update",
+            title = if (isParentFarmingRun()) "Parent farming · live update" else "${game.scenario} · live update",
             description = trainee.name.ifEmpty { null },
             colorRgb = DiscordEmbedColors.BLURPLE,
             fields = fields,

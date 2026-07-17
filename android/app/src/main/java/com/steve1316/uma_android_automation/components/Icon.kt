@@ -6,6 +6,17 @@
 
 package com.steve1316.uma_android_automation.components
 
+/**
+ * The green "+" glyph shown on an empty support-card slot in the Support Formation (career deck) screen.
+ *
+ * Checked within a small region centered on each of the five owned-card slot positions tracked internally by
+ * [CareerSelectionAutomation] to tell an empty slot apart from an already-equipped one, rather than relying
+ * on the default (broad) region here.
+ */
+object IconEmptySupportSlot : ComponentInterface {
+    override val template = Template("components/icon/empty_support_slot", region = Region.middle)
+}
+
 object IconMoodGreat : ComponentInterface {
     override val template = Template("components/icon/mood_great", region = Region.topHalf)
 }

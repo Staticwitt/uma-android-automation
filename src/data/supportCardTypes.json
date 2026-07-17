@@ -1,7 +1,7 @@
 {
     "Special Week": {
         "name": "Special Week",
-        "type": "Speed"
+        "type": "Guts"
     },
     "Silence Suzuka": {
         "name": "Silence Suzuka",
@@ -97,7 +97,7 @@
     },
     "Air Groove": {
         "name": "Air Groove",
-        "type": "Guts"
+        "type": "Power"
     },
     "Agnes Digital": {
         "name": "Agnes Digital",
@@ -245,7 +245,7 @@
     },
     "Sakura Chiyono O": {
         "name": "Sakura Chiyono O",
-        "type": "Stamina"
+        "type": "Guts"
     },
     "Kawakami Princess": {
         "name": "Kawakami Princess",
@@ -265,7 +265,7 @@
     },
     "Nakayama Festa": {
         "name": "Nakayama Festa",
-        "type": "Stamina"
+        "type": "Wit"
     },
     "Inari One": {
         "name": "Inari One",

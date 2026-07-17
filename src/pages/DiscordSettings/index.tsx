@@ -229,8 +229,8 @@ const DiscordSettings = () => {
                             />
                             <SettingRow
                                 id="enableDiscordLiveStatus"
-                                title="Parent Farming Live Status"
-                                description="Periodic updates while a parent farming run is in progress"
+                                title="Live Status"
+                                description="Periodic updates (stats, mood, energy, race record) while any run is in progress — parent farming runs also get preset, multi-run, and quality details"
                                 right={
                                     <Switch
                                         checked={enableDiscordLiveStatus}
@@ -317,7 +317,7 @@ const DiscordSettings = () => {
                             <SettingRow
                                 id="enableScenarioProgressPings"
                                 title="Scenario Progress Pings"
-                                description="Send a DM at key milestones: Unity Cup round completions and URA Finale duel results"
+                                description="Send a DM at key milestones: Unity Cup round completions, URA Finale duel results, and Trackblazer's shop unlock"
                                 right={
                                     <Switch
                                         checked={enableScenarioProgressPings}

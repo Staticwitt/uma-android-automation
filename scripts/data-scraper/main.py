@@ -2099,6 +2099,10 @@ class CharacterPresetScraper(BaseScraper):
                 refreshed += 1
 
         logging.info(f"Built {base_count} base-character presets; refreshed {refreshed} curated outfit entries.")
+
+        from manifest_scraper import cross_validate_growth_with_umapyoi
+        cross_validate_growth_with_umapyoi(self.data)
+
         self.save_data()
 
 

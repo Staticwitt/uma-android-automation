@@ -2,8 +2,10 @@ package com.steve1316.uma_android_automation.bot.campaigns
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.steve1316.automation_library.utils.DiscordUtils
 import com.steve1316.automation_library.utils.MessageLog
 import com.steve1316.automation_library.utils.SettingsHelper
+import com.steve1316.uma_android_automation.bot.AppDiscordNotifications
 import com.steve1316.uma_android_automation.bot.Campaign
 import com.steve1316.uma_android_automation.bot.DecisionTracer
 import com.steve1316.uma_android_automation.bot.DialogHandlerResult
@@ -542,6 +544,12 @@ class Trackblazer(game: Game) : Campaign(game) {
                 // But the date update has not happened yet, so we need to check for the previous date instead.
                 if (date.year == DateYear.JUNIOR && date.month == DateMonth.JUNE && date.phase == DatePhase.LATE) {
                     MessageLog.i(TAG, "[TRACKBLAZER] Shop unlocked! Initiating the first time buying process.")
+                    if (SettingsHelper.getBooleanSetting("discord", "enableScenarioProgressPings", false) && DiscordUtils.enableDiscordNotifications) {
+                        AppDiscordNotifications.sendInfo(
+                            title = "Trackblazer Shop Unlocked",
+                            description = "The item shop is now available (Junior Year Late June). Starting the first-time buying process.",
+                        )
+                    }
                 } else {
                     MessageLog.i(TAG, "[TRACKBLAZER] Shop discount detected! Initiating buying process.")
                 }

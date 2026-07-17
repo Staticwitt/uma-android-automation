@@ -1,16 +1,22 @@
 {
     "Special Week": {
-        "supportId": 30025,
-        "variant": "[The Setting Sun and Rising Stars]",
+        "supportId": 30105,
+        "variant": "[Take Hold of Our Dreams!]",
         "rarity": "SSR",
-        "type": "Speed",
-        "releaseEn": "2025-06-26",
-        "friendshipBonus": 35,
+        "type": "Guts",
+        "releaseEn": "2026-06-25",
+        "friendshipBonus": 25,
         "moodEffect": 30,
-        "initialFriendship": 10,
+        "trainingEffectiveness": 5,
+        "initialFriendship": 30,
         "raceBonus": 5,
         "fanBonus": 10,
-        "specialtyPriority": 30
+        "hintLevel": 2,
+        "hintFrequency": 30,
+        "specialtyPriority": 35,
+        "initStats": {
+            "power": 35
+        }
     },
     "Silence Suzuka": {
         "supportId": 30076,
@@ -41,19 +47,19 @@
         "specialtyPriority": 35
     },
     "Maruzensky": {
-        "supportId": 10004,
-        "variant": "[Tracen Academy]",
-        "rarity": "R",
+        "supportId": 30107,
+        "variant": "[Sentimental Flare ♪]",
+        "rarity": "SSR",
         "type": "Speed",
-        "releaseEn": "2025-06-26",
-        "friendshipBonus": 15,
-        "trainingEffectiveness": 10,
+        "releaseEn": "2026-07-02",
+        "friendshipBonus": 25,
+        "moodEffect": 30,
+        "initialFriendship": 30,
         "raceBonus": 5,
-        "fanBonus": 15,
-        "specialtyPriority": 35,
-        "initStats": {
-            "speed": 25
-        }
+        "fanBonus": 10,
+        "hintLevel": 2,
+        "hintFrequency": 30,
+        "specialtyPriority": 35
     },
     "Oguri Cap": {
         "supportId": 30024,
@@ -359,20 +365,21 @@
         }
     },
     "Air Groove": {
-        "supportId": 20004,
-        "variant": "[Nothing Escapes the Vice Prez]",
-        "rarity": "SR",
-        "type": "Guts",
-        "releaseEn": "2025-06-26",
-        "friendshipBonus": 20,
-        "moodEffect": 30,
-        "trainingEffectiveness": 10,
-        "initialFriendship": 30,
-        "raceBonus": 5,
+        "supportId": 30106,
+        "variant": "[Tailwind to My Goals]",
+        "rarity": "SSR",
+        "type": "Power",
+        "releaseEn": "2026-06-18",
+        "friendshipBonus": 25,
+        "moodEffect": 60,
+        "initialFriendship": 15,
+        "raceBonus": 10,
         "fanBonus": 15,
-        "hintLevel": 2,
-        "hintFrequency": 40,
-        "specialtyPriority": 60
+        "specialtyPriority": 65,
+        "initStats": {
+            "stamina": 20,
+            "power": 20
+        }
     },
     "Agnes Digital": {
         "supportId": 30085,
@@ -453,20 +460,21 @@
         "specialtyPriority": 80
     },
     "Manhattan Cafe": {
-        "supportId": 30075,
-        "variant": "[My Solo Spun in Spiraling Runs]",
+        "supportId": 30110,
+        "variant": "[It's on the House]",
         "rarity": "SSR",
         "type": "Stamina",
-        "releaseEn": "2026-01-15",
-        "friendshipBonus": 35,
-        "initialFriendship": 25,
-        "raceBonus": 10,
-        "fanBonus": 15,
-        "hintLevel": 2,
-        "hintFrequency": 30,
-        "specialtyPriority": 50,
+        "releaseEn": "2026-07-16",
+        "friendshipBonus": 25,
+        "trainingEffectiveness": 10,
+        "initialFriendship": 20,
+        "raceBonus": 5,
+        "fanBonus": 10,
+        "hintLevel": 1,
+        "hintFrequency": 20,
+        "specialtyPriority": 35,
         "initStats": {
-            "stamina": 20
+            "skillPoints": 1
         }
     },
     "Mihono Bourbon": {
@@ -949,19 +957,19 @@
         }
     },
     "Sakura Chiyono O": {
-        "supportId": 30038,
-        "variant": "[Peak Sakura Season]",
+        "supportId": 30109,
+        "variant": "[A Good Heart Blossoms to Its Fullest]",
         "rarity": "SSR",
-        "type": "Stamina",
-        "releaseEn": "2025-08-20",
-        "friendshipBonus": 20,
-        "moodEffect": 60,
-        "initialFriendship": 25,
-        "raceBonus": 10,
-        "fanBonus": 15,
-        "hintLevel": 2,
-        "hintFrequency": 40,
-        "specialtyPriority": 35
+        "type": "Guts",
+        "releaseEn": "2026-07-02",
+        "friendshipBonus": 25,
+        "initialFriendship": 30,
+        "specialtyPriority": 65,
+        "initStats": {
+            "speed": 20,
+            "power": 20,
+            "guts": 20
+        }
     },
     "Kawakami Princess": {
         "supportId": 30096,
@@ -1022,20 +1030,21 @@
         }
     },
     "Nakayama Festa": {
-        "supportId": 30043,
-        "variant": "[43, 8, 1]",
+        "supportId": 30108,
+        "variant": "[Trusting the Dice]",
         "rarity": "SSR",
-        "type": "Stamina",
-        "releaseEn": "2025-12-08",
+        "type": "Wit",
+        "releaseEn": "2026-07-02",
         "friendshipBonus": 20,
-        "moodEffect": 30,
-        "trainingEffectiveness": 10,
-        "initialFriendship": 25,
+        "moodEffect": 60,
+        "trainingEffectiveness": 15,
+        "initialFriendship": 20,
+        "raceBonus": 10,
+        "fanBonus": 15,
         "hintLevel": 3,
         "hintFrequency": 50,
-        "specialtyPriority": 50,
         "initStats": {
-            "stamina": 30
+            "skillPoints": 1
         }
     },
     "Inari One": {
