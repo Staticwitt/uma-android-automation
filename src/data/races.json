@@ -2533,6 +2533,34 @@
         "turnNumber": 52,
         "nameFormatted": "Kyoto Turf 1400m (Sprint) Right / Outer"
     },
+    "Ladies' Prelude (Classic Class October, First Half)": {
+        "name": "Ladies' Prelude",
+        "date": "Classic Class October, First Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G2",
+        "terrain": "Dirt",
+        "distanceType": "Mile",
+        "distanceMeters": 1800,
+        "fans": 0,
+        "turnNumber": 43,
+        "nameFormatted": "Ooi Dirt 1800m (Mile) Right"
+    },
+    "Ladies' Prelude (Senior Class October, First Half)": {
+        "name": "Ladies' Prelude",
+        "date": "Senior Class October, First Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G2",
+        "terrain": "Dirt",
+        "distanceType": "Mile",
+        "distanceMeters": 1800,
+        "fans": 0,
+        "turnNumber": 67,
+        "nameFormatted": "Ooi Dirt 1800m (Mile) Right"
+    },
     "Lapis Lazuli Stakes (Classic Class December, First Half)": {
         "name": "Lapis Lazuli Stakes",
         "date": "Classic Class December, First Half",
@@ -4563,6 +4591,20 @@
         "turnNumber": 32,
         "nameFormatted": "Tokyo Turf 1800m (Mile) Left"
     },
+    "TCK Jo-o Hai (Senior Class January, Second Half)": {
+        "name": "TCK Jo-o Hai",
+        "date": "Senior Class January, Second Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G3",
+        "terrain": "Dirt",
+        "distanceType": "Mile",
+        "distanceMeters": 1800,
+        "fans": 0,
+        "turnNumber": 50,
+        "nameFormatted": "Ooi Dirt 1800m (Mile) Right"
+    },
     "Tachibana Stakes (Classic Class April, Second Half)": {
         "name": "Tachibana Stakes",
         "date": "Classic Class April, Second Half",
@@ -4899,6 +4941,34 @@
         "turnNumber": 72,
         "nameFormatted": "Ooi Dirt 2000m (Med) Right"
     },
+    "Tokyo Hai (Classic Class October, First Half)": {
+        "name": "Tokyo Hai",
+        "date": "Classic Class October, First Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G2",
+        "terrain": "Dirt",
+        "distanceType": "Sprint",
+        "distanceMeters": 1200,
+        "fans": 0,
+        "turnNumber": 43,
+        "nameFormatted": "Ooi Dirt 1200m (Sprint) Right"
+    },
+    "Tokyo Hai (Senior Class October, First Half)": {
+        "name": "Tokyo Hai",
+        "date": "Senior Class October, First Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G2",
+        "terrain": "Dirt",
+        "distanceType": "Sprint",
+        "distanceMeters": 1200,
+        "fans": 0,
+        "turnNumber": 67,
+        "nameFormatted": "Ooi Dirt 1200m (Sprint) Right"
+    },
     "Tokyo Shimbun Hai (Senior Class February, First Half)": {
         "name": "Tokyo Shimbun Hai",
         "date": "Senior Class February, First Half",
@@ -4926,6 +4996,20 @@
         "fans": 3300,
         "turnNumber": 22,
         "nameFormatted": "Tokyo Turf 1800m (Mile) Left"
+    },
+    "Tokyo Sprint (Senior Class April, Second Half)": {
+        "name": "Tokyo Sprint",
+        "date": "Senior Class April, Second Half",
+        "raceTrack": "Ooi",
+        "course": null,
+        "direction": "Right",
+        "grade": "G3",
+        "terrain": "Dirt",
+        "distanceType": "Sprint",
+        "distanceMeters": 1200,
+        "fans": 0,
+        "turnNumber": 56,
+        "nameFormatted": "Ooi Dirt 1200m (Sprint) Right"
     },
     "Tokyo Yushun (Japanese Derby) (Classic Class May, Second Half)": {
         "name": "Tokyo Yushun (Japanese Derby)",
