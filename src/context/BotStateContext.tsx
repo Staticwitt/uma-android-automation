@@ -181,6 +181,8 @@ export interface Settings {
         enableAutoBorrowSupportCard: boolean
         /** Tap the Support Formation screen's own Auto-Select to fill owned support deck slots at career selection. */
         enableAutoEquipSupportCards: boolean
+        /** Equip the planned owned deck (supportDeckOwnedCards) slot-by-slot instead of relying on the game's own Auto-Select. Falls back to enableAutoEquipSupportCards for any slot left unfilled. */
+        enableAutoEquipOwnedDeck: boolean
         /** OCR scoring strategy when no preferred parent names are configured. */
         legacyParentSelectionStrategy: string
         /** JSON array of up to two preferred legacy parent names for OCR pair selection. */
@@ -540,6 +542,7 @@ export const defaultSettings: Settings = {
         enableAutoSelectLegacyParents: false,
         enableAutoBorrowSupportCard: false,
         enableAutoEquipSupportCards: false,
+        enableAutoEquipOwnedDeck: false,
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",

@@ -54,12 +54,16 @@ export const getCareerAutomationSteps = (settings: Settings): CareerAutomationSt
         {
             id: "owned-deck",
             label: "Owned support slots",
-            status: ownedDeck.length >= 4 ? "ready" : ownedDeck.length > 0 ? "warning" : "warning",
+            status: ownedDeck.length >= 4 ? "ready" : "warning",
             detail:
                 ownedDeck.length >= 4
-                    ? ownedDeck.slice(0, 4).join(" · ")
+                    ? racing.enableAutoEquipOwnedDeck
+                        ? `Auto-equipping: ${ownedDeck.slice(0, 4).join(" · ")}`
+                        : ownedDeck.slice(0, 4).join(" · ")
                     : ownedDeck.length > 0
-                      ? `${ownedDeck.length}/4 slots saved — equip manually at career selection`
+                      ? racing.enableAutoEquipOwnedDeck
+                          ? `${ownedDeck.length}/4 slots saved — auto-equipping what's saved, Auto-Select fills the rest`
+                          : `${ownedDeck.length}/4 slots saved — equip manually at career selection`
                       : "Apply full deck or add owned inventory for manual equip reference",
         },
         {

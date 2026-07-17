@@ -343,6 +343,10 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.enableAutoEquipSupportCards = false
             anyMigrated = true
         }
+        if (typeof racing.enableAutoEquipOwnedDeck !== "boolean") {
+            racing.enableAutoEquipOwnedDeck = false
+            anyMigrated = true
+        }
         if (typeof racing.legacyParentPreferredPair !== "string") {
             racing.legacyParentPreferredPair = "[]"
             anyMigrated = true

@@ -87,6 +87,19 @@ describe("parentFarmingCareerAutomation", () => {
         expect(ownedDeckStep?.status).toBe("warning")
     })
 
+    it("getCareerAutomationSteps mentions auto-equipping when enableAutoEquipOwnedDeck is on", () => {
+        const settings: Settings = {
+            racing: {
+                ...baseRacing(),
+                supportDeckOwnedCards: JSON.stringify(["A", "B", "C", "D"]),
+                enableAutoEquipOwnedDeck: true,
+            },
+        } as Settings
+        const ownedDeckStep = getCareerAutomationSteps(settings).find((step) => step.id === "owned-deck")
+        expect(ownedDeckStep?.status).toBe("ready")
+        expect(ownedDeckStep?.detail).toContain("Auto-equipping")
+    })
+
     it("isFullCareerAutomationEnabled checks both toggles", () => {
         expect(isFullCareerAutomationEnabled({ racing: { ...baseRacing(), ...PARENT_FARMING_CAREER_AUTOMATION_FLAGS } } as Settings)).toBe(true)
         expect(isFullCareerAutomationEnabled({ racing: baseRacing() } as Settings)).toBe(false)

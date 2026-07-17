@@ -9,6 +9,7 @@ export const PARENT_FARMING_USER_PREFERENCE_RACING_KEYS: ReadonlyArray<keyof Set
     "enableAutoSelectLegacyParents",
     "enableAutoBorrowSupportCard",
     "enableAutoEquipSupportCards",
+    "enableAutoEquipOwnedDeck",
     "legacyParentSelectionStrategy",
     "legacyParentPreferredPair",
     "supportBorrowPreferredCards",

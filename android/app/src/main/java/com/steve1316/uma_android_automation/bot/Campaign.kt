@@ -3171,6 +3171,10 @@ abstract class Campaign(game: Game) : Task(game) {
                 return null
             }
 
+            if (CareerSelectionAutomation.tryTriggerAutoEquipOwnedDeck(game)) {
+                return null
+            }
+
             if (CareerSelectionAutomation.tryTriggerAutoEquipSupportCards(game)) {
                 return null
             }
