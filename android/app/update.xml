@@ -1,20 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.37</latestVersion>
-    <latestVersionCode>209</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.37</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.37/v5.10.37-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.37/v5.10.37-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.38</latestVersion>
+    <latestVersionCode>210</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.38</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.38/v5.10.38-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.38/v5.10.38-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.37 - Race data: 4 missing dirt races added
+v5.10.38 - Configurable live view frame rate
 
 Added
 -----
-- Added 4 dirt races that were missing from the race data: Ladies' Prelude, TCK Jo-o Hai, Tokyo Hai, and Tokyo Sprint (all run at Ooi). These were part of a batch of NAR (regional dirt racing) content that the race data had never been refreshed to include, so the Smart Race Solver had no knowledge of them.
-
-Known limitation
-----------------
-- These 4 races have a placeholder fan-reward value (0) until a future data refresh fills in the real number. This only affects race scoring when fan-weighted optimization is enabled (off by default). A further batch of newly-added races could not be included yet because they run at brand-new regional tracks not yet named in the data source.
+- Live View Frame Rate (Debug Settings, under Remote Log Viewer): the live screen feed's frame rate is now a slider (1-60 fps, default 3) instead of a fixed ~2.5 fps. Higher is smoother but uses more CPU/bandwidth alongside the bot's own automation, so it's worth tuning down if the bot itself slows down. Values above ~10 fps are realistic mainly on a desktop-hosted emulator (e.g. MuMu Player) rather than a phone. Takes effect immediately on an already-open live view, no reconnect needed.
     </releaseNotes>
   </update>
 </AppUpdater>

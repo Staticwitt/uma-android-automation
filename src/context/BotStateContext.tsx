@@ -366,6 +366,8 @@ export interface Settings {
         recordingResolutionScale: number
         enableRemoteLogViewer: boolean
         remoteLogViewerPort: number
+        /** Frames per second for the Remote Log Viewer's live MJPEG feed. Higher is smoother but costs more CPU/bandwidth alongside the bot's own automation. */
+        liveViewFrameRateFps: number
         enableMessageIdDisplay: boolean
         overlayButtonSizeDP: number
     }
@@ -756,6 +758,7 @@ export const defaultSettings: Settings = {
         recordingResolutionScale: 1.0,
         enableRemoteLogViewer: false,
         remoteLogViewerPort: 9000,
+        liveViewFrameRateFps: 3,
         enableMessageIdDisplay: false,
         overlayButtonSizeDP: 40,
     },
