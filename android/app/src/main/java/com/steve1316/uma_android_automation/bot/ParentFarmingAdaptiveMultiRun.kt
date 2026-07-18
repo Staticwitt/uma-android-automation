@@ -51,12 +51,25 @@ object ParentFarmingAdaptiveMultiRun {
         noteForcedFailures(missed)
     }
 
+    private fun poorRunQualityThreshold(): Int = SettingsHelper.getIntSetting("racing", "parentFarmingAdaptivePoorRunThreshold", 70)
+
+    private fun winRateGuardRelaxationSetting(): Double =
+        SettingsHelper.getDoubleSetting("racing", "parentFarmingAdaptiveWinRateGuardRelaxation", 0.05)
+
+    private fun fanTargetRelaxationSetting(): Int =
+        SettingsHelper.getIntSetting("racing", "parentFarmingAdaptiveFanFloorRelaxation", 10_000)
+
     /** After a poor run, relax win-rate guard and fan floor for the next career. */
     fun notePoorRunQuality(score: Int) {
-        if (!isEnabled() || score >= 70) return
-        minWinRateGuardRelaxation = 0.05
-        minimumFanTargetRelaxation = 10_000
-        MessageLog.i(TAG, "Adaptive multi-run: relaxing min win-rate guard by 0.05 and fan floor by 10k after score $score.")
+        val threshold = poorRunQualityThreshold()
+        if (!isEnabled() || score >= threshold) return
+        minWinRateGuardRelaxation = winRateGuardRelaxationSetting()
+        minimumFanTargetRelaxation = fanTargetRelaxationSetting()
+        MessageLog.i(
+            TAG,
+            "Adaptive multi-run: relaxing min win-rate guard by $minWinRateGuardRelaxation and fan floor by " +
+                "$minimumFanTargetRelaxation after score $score (below threshold $threshold).",
+        )
     }
 
     fun applyWeightAdjustments(minWinRateGuard: Double, minimumFanTarget: Int): Pair<Double, Int> {
