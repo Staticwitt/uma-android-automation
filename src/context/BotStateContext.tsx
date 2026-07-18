@@ -286,6 +286,10 @@ export interface Settings {
         enableRiskyTraining: boolean
         riskyTrainingMinStatGain: number
         riskyTrainingMaxFailureChance: number
+        /** When on, the risky-training failure ceiling tapers from riskyTrainingMaxFailureChanceEarly at turn 1 down to riskyTrainingMaxFailureChance by turn 72, instead of staying flat. */
+        enableTurnAdaptiveRiskyTraining: boolean
+        /** The risky-training failure ceiling at turn 1 when enableTurnAdaptiveRiskyTraining is on. */
+        riskyTrainingMaxFailureChanceEarly: number
         trainWitDuringFinale: boolean
         enablePrioritizeSkillHints: boolean
         enableTrainingLevelWeighting: boolean
@@ -699,6 +703,8 @@ export const defaultSettings: Settings = {
         enableRiskyTraining: false,
         riskyTrainingMinStatGain: 20,
         riskyTrainingMaxFailureChance: 30,
+        enableTurnAdaptiveRiskyTraining: false,
+        riskyTrainingMaxFailureChanceEarly: 45,
         trainWitDuringFinale: false,
         enablePrioritizeSkillHints: false,
         enableTrainingLevelWeighting: true,
