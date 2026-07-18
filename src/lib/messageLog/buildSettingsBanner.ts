@@ -145,7 +145,11 @@ export function buildSettingsBanner(settings: Settings): string {
 🧘 Wit Over Rest: ${settings.training.minimumEnergyToTrain > 0 && settings.training.enableWitOverRest ? "✅" : "❌"}
 ⚠️ Enable Riskier Training: ${settings.training.enableRiskyTraining ? "✅" : "❌"}${
         settings.training.enableRiskyTraining
-            ? `\n   📊 Minimum Main Stat Gain Threshold: ${settings.training.riskyTrainingMinStatGain}\n   🎯 Risky Training Maximum Failure Chance: ${settings.training.riskyTrainingMaxFailureChance}%`
+            ? `\n   📊 Minimum Main Stat Gain Threshold: ${settings.training.riskyTrainingMinStatGain}\n   🎯 Risky Training Maximum Failure Chance: ${
+                  settings.training.enableTurnAdaptiveRiskyTraining
+                      ? `${settings.training.riskyTrainingMaxFailureChanceEarly}% (turn 1) → ${settings.training.riskyTrainingMaxFailureChance}% (turn 72+)`
+                      : `${settings.training.riskyTrainingMaxFailureChance}%`
+              }`
             : ""
     }
 🔄 Disable Training on Maxed Stat: ${settings.training.disableTrainingOnMaxedStat ? "✅" : "❌"}

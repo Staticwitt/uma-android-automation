@@ -18,6 +18,9 @@ object CareerSelectionAutomation {
     @Volatile private var autoEquipAttemptedThisRun = false
     @Volatile private var ownedDeckEquippedNames: MutableSet<String> = mutableSetOf()
 
+    /** Whether the one-time Discord heads-up for a stuck Start Career loop has already been sent this run. Unlike the owned-deck-slot guard, which falls back to Auto-Select once exhausted, this guard just resets and keeps retrying the same tap indefinitely - worth a single heads-up so an attended user notices, without spamming on every retry cycle. */
+    @Volatile private var startCareerGuardWarningSent = false
+
     private const val MAX_START_CAREER_ATTEMPTS = 5
     private const val MAX_LEGACY_SELECT_NEXT_ATTEMPTS = 5
     private const val MAX_OWNED_DECK_SLOT_ATTEMPTS = 3
@@ -30,6 +33,7 @@ object CareerSelectionAutomation {
         autoBorrowAttemptedThisRun = false
         autoEquipAttemptedThisRun = false
         ownedDeckEquippedNames = mutableSetOf()
+        startCareerGuardWarningSent = false
         startCareerGuard.reset()
         legacySelectNextGuard.reset()
         ownedDeckSlotGuard.reset()
@@ -217,6 +221,13 @@ object CareerSelectionAutomation {
         }
         if (startCareerGuard.attempt()) {
             MessageLog.w(TAG, "Giving up on auto-starting career after $MAX_START_CAREER_ATTEMPTS failed attempts.")
+            if (!startCareerGuardWarningSent) {
+                startCareerGuardWarningSent = true
+                AppDiscordNotifications.sendWarning(
+                    "Bot may be stuck on career start",
+                    "Failed to tap Start Career $MAX_START_CAREER_ATTEMPTS times in a row on the final confirmation screen. The bot will keep retrying, but this may be worth checking on.",
+                )
+            }
         }
         return false
     }

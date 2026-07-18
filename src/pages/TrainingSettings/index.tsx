@@ -178,6 +178,8 @@ const TrainingSettings = () => {
         enableRiskyTraining,
         riskyTrainingMinStatGain,
         riskyTrainingMaxFailureChance,
+        enableTurnAdaptiveRiskyTraining,
+        riskyTrainingMaxFailureChanceEarly,
         trainWitDuringFinale,
         enablePrioritizeSkillHints,
         enableTrainingLevelWeighting,
@@ -762,9 +764,42 @@ const TrainingSettings = () => {
                                                 labelUnit="%"
                                                 showValue={true}
                                                 showLabels={true}
-                                                description="Set the maximum acceptable failure chance for risky training sessions with high main stat gains."
+                                                description="Set the maximum acceptable failure chance for risky training sessions with high main stat gains. Also acts as the late-game floor when Turn-Adaptive Risk Tolerance is on, below."
                                                 searchId="risky-training-max-failure-chance"
                                                 parentId="enable-riskier-training"
+                                            />
+                                        </View>
+                                    )}
+                                    {enableRiskyTraining && (
+                                        <SettingRow
+                                            id="enable-turn-adaptive-risky-training"
+                                            title="Turn-Adaptive Risk Tolerance"
+                                            description="Loosen the risky-training failure ceiling early in the run (more turns left to recover from a bad result) and taper it down to the flat ceiling above by turn 72, instead of using the same ceiling all run."
+                                            parentId="enable-riskier-training"
+                                            right={
+                                                <Switch
+                                                    checked={enableTurnAdaptiveRiskyTraining}
+                                                    onCheckedChange={(checked) => updateTrainingSetting("enableTurnAdaptiveRiskyTraining", checked)}
+                                                />
+                                            }
+                                        />
+                                    )}
+                                    {enableRiskyTraining && enableTurnAdaptiveRiskyTraining && (
+                                        <View style={styles.sliderShell}>
+                                            <CustomSlider
+                                                value={riskyTrainingMaxFailureChanceEarly || defaultSettings.training.riskyTrainingMaxFailureChanceEarly}
+                                                placeholder={defaultSettings.training.riskyTrainingMaxFailureChanceEarly}
+                                                onValueChange={(value) => updateTrainingSetting("riskyTrainingMaxFailureChanceEarly", value)}
+                                                min={5}
+                                                max={95}
+                                                step={5}
+                                                label="Risky Training Maximum Failure Chance (Turn 1)"
+                                                labelUnit="%"
+                                                showValue={true}
+                                                showLabels={true}
+                                                description="The failure-chance ceiling used at turn 1, tapering linearly down to the flat ceiling above by turn 72."
+                                                searchId="risky-training-max-failure-chance-early"
+                                                parentId="enable-turn-adaptive-risky-training"
                                             />
                                         </View>
                                     )}

@@ -10,6 +10,7 @@ import com.steve1316.uma_android_automation.bot.Training.Companion.levelBoostMul
 import com.steve1316.uma_android_automation.bot.Training.Companion.scoreFriendshipTraining
 import com.steve1316.uma_android_automation.bot.Training.Companion.scoreUnityCupTraining
 import com.steve1316.uma_android_automation.bot.Training.Companion.scoringConstantsFromMap
+import com.steve1316.uma_android_automation.bot.Training.Companion.taperedRiskyFailureCeiling
 import com.steve1316.uma_android_automation.bot.Training.TrainingConfig
 import com.steve1316.uma_android_automation.bot.Training.TrainingOption
 import com.steve1316.uma_android_automation.types.DateMonth
@@ -1788,5 +1789,28 @@ class TrainingScoringTest {
             training,
         )
         assertEquals(10.0, scoreEarlyGame / scoreNearComplete, 1e-9, "With above-1200 target, effective completionPercent should bucket stat=390 at 3.0× and stat=1170 at 0.3×")
+    }
+
+    @Test
+    @DisplayName("taperedRiskyFailureCeiling: endpoints and midpoint of the linear taper")
+    fun taperedRiskyFailureCeilingEndpointsAndMidpoint() {
+        assertEquals(45, taperedRiskyFailureCeiling(turn = 1, early = 45, late = 30, taperEndTurn = 72), "Turn 1 is exactly the early ceiling")
+        assertEquals(30, taperedRiskyFailureCeiling(turn = 72, early = 45, late = 30, taperEndTurn = 72), "The taper-end turn is exactly the late ceiling")
+        // Turn 36.5 would be the exact midpoint of [1, 72]; turn 37 (closest integer turn) should land very close to the midpoint value (37.5).
+        assertEquals(37, taperedRiskyFailureCeiling(turn = 37, early = 45, late = 30, taperEndTurn = 72), "A turn near the midpoint lands near the midpoint ceiling")
+    }
+
+    @Test
+    @DisplayName("taperedRiskyFailureCeiling: turns past the taper window clamp to the late ceiling")
+    fun taperedRiskyFailureCeilingClampsPastTaperWindow() {
+        assertEquals(30, taperedRiskyFailureCeiling(turn = 73, early = 45, late = 30, taperEndTurn = 72), "Finale turns use the late ceiling unchanged")
+        assertEquals(30, taperedRiskyFailureCeiling(turn = 75, early = 45, late = 30, taperEndTurn = 72), "The last finale turn still uses the late ceiling")
+    }
+
+    @Test
+    @DisplayName("taperedRiskyFailureCeiling: an early ceiling below the late ceiling still tapers linearly (loosens over time)")
+    fun taperedRiskyFailureCeilingHandlesInvertedEndpoints() {
+        assertEquals(20, taperedRiskyFailureCeiling(turn = 1, early = 20, late = 40, taperEndTurn = 72), "Turn 1 uses the (lower) early ceiling")
+        assertEquals(40, taperedRiskyFailureCeiling(turn = 72, early = 20, late = 40, taperEndTurn = 72), "The taper-end turn uses the (higher) late ceiling")
     }
 }

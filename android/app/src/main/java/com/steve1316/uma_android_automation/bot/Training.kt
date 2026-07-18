@@ -186,6 +186,26 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     /** The maximum failure chance allowed for risky training. */
     private val riskyTrainingMaxFailureChance: Int = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChance")
 
+    /** Whether the risky-training failure ceiling loosens early in the run and tightens toward the finale, instead of staying flat across all 75 turns. */
+    private val enableTurnAdaptiveRiskyTraining: Boolean = SettingsHelper.getBooleanSetting("training", "enableTurnAdaptiveRiskyTraining", false)
+
+    /** The risky-training failure ceiling used at turn 1 when [enableTurnAdaptiveRiskyTraining] is on. Tapers linearly down to [riskyTrainingMaxFailureChance] by [turnAdaptiveRiskyTrainingTaperEndTurn]. */
+    private val riskyTrainingMaxFailureChanceEarly: Int = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChanceEarly", 45)
+
+    /** The last turn the early-game/late-game taper applies through; turns past this (including the URA Finale window) always use the flat [riskyTrainingMaxFailureChance]. */
+    private val turnAdaptiveRiskyTrainingTaperEndTurn: Int = 72
+
+    /**
+     * The failure-chance ceiling risky training is judged against, for the current turn. Flat at [riskyTrainingMaxFailureChance] unless [enableTurnAdaptiveRiskyTraining] is on, in
+     * which case it tapers per [taperedRiskyFailureCeiling]. Turns past the taper window (including the URA Finale turns) always use the flat [riskyTrainingMaxFailureChance].
+     */
+    private fun effectiveRiskyTrainingMaxFailureChance(): Int =
+        if (!enableTurnAdaptiveRiskyTraining) {
+            riskyTrainingMaxFailureChance
+        } else {
+            taperedRiskyFailureCeiling(campaign.date.day, riskyTrainingMaxFailureChanceEarly, riskyTrainingMaxFailureChance, turnAdaptiveRiskyTrainingTaperEndTurn)
+        }
+
     /** Whether the expected-value failure gate is active. When on, trainings whose total stat gain is poor value for their failure chance are skipped. */
     private val enableExpectedValueGate: Boolean = SettingsHelper.getBooleanSetting("training", "enableExpectedValueGate", true)
 
@@ -478,6 +498,23 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
     companion object {
         /** The logging tag for this class. */
         internal val TAG: String = "[${MainActivity.loggerTag}]Training"
+
+        /**
+         * The risky-training failure ceiling for [turn], linearly tapered from [early] at turn 1 down to [late] by [taperEndTurn]. Turns at or past [taperEndTurn] use [late]
+         * unchanged; a bad training result early in the run has many turns left to recover from, while the same result late in the run doesn't, so risk tolerance should shrink as
+         * the run progresses instead of staying constant. Pure function so unit tests can exercise the taper math without a live [Campaign].
+         *
+         * @param turn The current career turn (1-75).
+         * @param early The failure-chance ceiling at turn 1.
+         * @param late The failure-chance ceiling from [taperEndTurn] onward (including the URA Finale turns).
+         * @param taperEndTurn The turn the taper reaches [late] by. Must be > 1.
+         * @return The effective failure-chance ceiling for [turn].
+         */
+        fun taperedRiskyFailureCeiling(turn: Int, early: Int, late: Int, taperEndTurn: Int): Int {
+            val clampedTurn = turn.coerceIn(1, taperEndTurn)
+            val progress = (clampedTurn - 1).toDouble() / (taperEndTurn - 1)
+            return (early + (late - early) * progress).toInt()
+        }
 
         /**
          * Build a [TrainingScoringConstants] from an arbitrary settings map keyed by the same strings used by the TypeScript counterpart
@@ -1377,7 +1414,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 } else {
                     // Read the hinted training's failure chance before committing to it.
                     val hintFailureChance: Int = game.imageUtils.findTrainingFailureChance(tries = 3)
-                    val effectiveFailureChance = if (enableRiskyTraining) riskyTrainingMaxFailureChance else statFailureThreshold(hintStat)
+                    val effectiveFailureChance = if (enableRiskyTraining) effectiveRiskyTrainingMaxFailureChance() else statFailureThreshold(hintStat)
                     val bypassThreshold = isFinals || ignoreFailureChance
                     if (hintFailureChance == -1) {
                         MessageLog.w(
@@ -1597,7 +1634,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                 // Determine which failure chance threshold to use.
                 val effectiveFailureChance =
                     if (enableRiskyTraining) {
-                        riskyTrainingMaxFailureChance
+                        effectiveRiskyTrainingMaxFailureChance()
                     } else {
                         statFailureThreshold(result.name)
                     }
@@ -1745,9 +1782,10 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
         for (result in results) {
             // Check if risky training logic should apply based on main stat gain.
             val mainStatGain: Int = result.statGains[result.name] ?: 0
+            val riskyCeiling = effectiveRiskyTrainingMaxFailureChance()
             val baseFailureChance =
                 if (enableRiskyTraining && mainStatGain >= riskyTrainingMinStatGain) {
-                    riskyTrainingMaxFailureChance
+                    riskyCeiling
                 } else {
                     statFailureThreshold(result.name)
                 }
@@ -1763,7 +1801,7 @@ open class Training(protected val game: Game, protected val campaign: Campaign) 
                     if (enableRiskyTraining && mainStatGain >= riskyTrainingMinStatGain) {
                         MessageLog.i(
                             TAG,
-                            "[TRAINING] Skipping ${result.name} training due to failure chance (${result.failureChance}%) exceeding risky threshold ($riskyTrainingMaxFailureChance%) despite high main stat gain of $mainStatGain.",
+                            "[TRAINING] Skipping ${result.name} training due to failure chance (${result.failureChance}%) exceeding risky threshold ($riskyCeiling%) despite high main stat gain of $mainStatGain.",
                         )
                         "high failure chance (risky)"
                     } else {

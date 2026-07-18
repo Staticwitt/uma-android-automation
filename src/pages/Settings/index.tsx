@@ -785,6 +785,42 @@ const Settings = () => {
                     </SearchableItem>
                 </Section>
 
+                <Section label="CONNECTION ERROR RETRY">
+                    <View style={{ padding: SPACING.md }}>
+                        <CustomSlider
+                            searchId="settings-connection-error-max-retry-attempts"
+                            value={general.connectionErrorMaxRetryAttempts}
+                            placeholder={defaultSettings.general.connectionErrorMaxRetryAttempts}
+                            onValueChange={(value) => updateGeneral({ connectionErrorMaxRetryAttempts: value })}
+                            onSlidingComplete={(value) => updateGeneral({ connectionErrorMaxRetryAttempts: value })}
+                            min={1}
+                            max={10}
+                            step={1}
+                            label="Max Retry Attempts"
+                            showValue={true}
+                            showLabels={true}
+                            description="How many times the bot retries a connection error dialog within the cooldown window below before giving up and stopping the run."
+                        />
+                    </View>
+                    <View style={{ padding: SPACING.md }}>
+                        <CustomSlider
+                            searchId="settings-connection-error-retry-cooldown"
+                            value={general.connectionErrorRetryCooldownSeconds}
+                            placeholder={defaultSettings.general.connectionErrorRetryCooldownSeconds}
+                            onValueChange={(value) => updateGeneral({ connectionErrorRetryCooldownSeconds: value })}
+                            onSlidingComplete={(value) => updateGeneral({ connectionErrorRetryCooldownSeconds: value })}
+                            min={5}
+                            max={60}
+                            step={5}
+                            label="Retry Cooldown"
+                            labelUnit="s"
+                            showValue={true}
+                            showLabels={true}
+                            description="The retry counter resets once this many seconds pass without another connection error, so occasional flaky connections don't add up toward the max attempts above."
+                        />
+                    </View>
+                </Section>
+
                 <Section label="DATA MANAGEMENT">
                     <SearchableItem id="settings-management-title" title="Settings Management" description="Import and export settings from JSON file or access the app's data directory.">
                         <View style={{ padding: SPACING.md }}>

@@ -1248,10 +1248,46 @@ abstract class Campaign(game: Game) : Task(game) {
     open fun gatherDecisionInventory(): Map<String, Map<String, Int>> = emptyMap()
 
     /**
-     * Decision-relevant settings snapshot for the current turn. Subclasses should populate the snapshot with the user-configurable knobs
-     * that most often drive "why" questions (failure-chance limits, energy thresholds, charm minimums, agenda gating, etc.).
+     * Decision-relevant settings snapshot for the current turn. Covers the knobs generic to every scenario (mood/energy thresholds,
+     * failure-chance limits, auto-abandon, race agenda). Subclasses with scenario-specific mechanics (e.g. Trackblazer's megaphones and
+     * charms) should call `super.gatherDecisionSettings()` and chain further `.add(...)` calls onto the returned snapshot.
      */
-    open fun gatherDecisionSettings(): DecisionTracer.SettingsSnapshot = DecisionTracer.SettingsSnapshot()
+    open fun gatherDecisionSettings(): DecisionTracer.SettingsSnapshot {
+        val snapshot =
+            DecisionTracer
+                .SettingsSnapshot()
+                .add("Minimum Mood for Training", minimumMoodForTraining)
+                .add("Must Rest Before Summer", mustRestBeforeSummer)
+                .add("Stop Before Finals", enableStopBeforeFinals)
+                .add(
+                    "Energy Banking",
+                    if (enableEnergyBanking) "on (below $energyBankingThreshold% within $energyBankingLookaheadTurns turn(s) of a mandatory race)" else "off",
+                )
+                .add(
+                    "Minimum Energy to Train",
+                    if (minimumEnergyToTrain > 0) "$minimumEnergyToTrain%${if (enableWitOverRest) " (Wit-over-rest)" else ""}" else "off",
+                )
+                .add("High-Energy Mood Tolerance", if (enableHighEnergyMoodTolerance) "on (at or above $highEnergyMoodToleranceThreshold% energy)" else "off")
+                .add("Enable In-Game Race Agenda", racing.enableUserInGameRaceAgenda)
+                .add("Max Failure Chance", "${SettingsHelper.getIntSetting("training", "maximumFailureChance")}%")
+
+        val riskyTrainingEnabled = SettingsHelper.getBooleanSetting("training", "enableRiskyTraining")
+        val riskyMaxFail = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChance")
+        val riskyMinGain = SettingsHelper.getIntSetting("training", "riskyTrainingMinStatGain")
+        val riskySummary =
+            if (SettingsHelper.getBooleanSetting("training", "enableTurnAdaptiveRiskyTraining", false)) {
+                val riskyEarly = SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChanceEarly", 45)
+                "on (max fail $riskyEarly% at turn 1 tapering to $riskyMaxFail% by turn 72, min main $riskyMinGain)"
+            } else {
+                "on (max fail $riskyMaxFail%, min main $riskyMinGain)"
+            }
+        snapshot.add("Riskier Training", if (riskyTrainingEnabled) riskySummary else "off")
+
+        val autoAbandonSummary = "on (action=${autoAbandonAction.name.lowercase()}, target=${autoAbandonConfig.targetGrade}, from turn ${autoAbandonConfig.minTurn})"
+        snapshot.add("Auto-Abandon", if (autoAbandonConfig.enabled) autoAbandonSummary else "off")
+
+        return snapshot
+    }
 
     /**
      * Campaign-specific extra state that does not live on `Trainee` itself (for example Trackblazer's `consecutiveRaceCount`). Returned as
