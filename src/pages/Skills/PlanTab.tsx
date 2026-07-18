@@ -162,8 +162,8 @@ const PlanTab: React.FC<PlanTabProps> = ({ planKey }) => {
 
     /**
      * Fills the plan with the highest-value skills affordable within the entered SP budget, using the optimizer (respects
-     * gold-skill prerequisites and this plan's negative-skill policy). The distance/style are read from the skill overrides for
-     * forward compatibility, though the bundled skill data currently carries no distance/style relevance tags.
+     * gold-skill prerequisites and this plan's negative-skill policy, and deprioritizes skills whose game-data activation
+     * condition restricts them to a different distance/running style than the one selected here).
      */
     const handleSuggestPlan = useCallback(() => {
         const sp = parseInt(spBudget, 10)

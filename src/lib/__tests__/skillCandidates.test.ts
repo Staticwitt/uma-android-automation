@@ -36,6 +36,39 @@ describe("mapSkillsToCandidates", () => {
         const cands = mapSkillsToCandidates(db)
         expect(cands.find((c) => c.id === "999999")!.kind).toBe("negative")
     })
+
+    test("parses distance_type and running_style out of the activation condition", () => {
+        const tagged: SkillDbEntry[] = [
+            {
+                id: 1,
+                name_en: "Mile Only",
+                cost: 100,
+                eval_pt: 200,
+                rarity: 1,
+                upgrade: null,
+                downgrade: null,
+                condition: "distance_type==2&phase==1&change_order_onetime<0",
+            },
+            {
+                id: 2,
+                name_en: "Late Surger Only",
+                cost: 100,
+                eval_pt: 200,
+                rarity: 1,
+                upgrade: null,
+                downgrade: null,
+                condition: "running_style==3&up_slope_random==1",
+            },
+            { id: 3, name_en: "No condition", cost: 100, eval_pt: 200, rarity: 1, upgrade: null, downgrade: null, condition: "always" },
+        ]
+        const cands = mapSkillsToCandidates(tagged)
+        expect(cands.find((c) => c.id === "1")!.distanceTags).toEqual(["Mile"])
+        expect(cands.find((c) => c.id === "1")!.styleTags).toBeUndefined()
+        expect(cands.find((c) => c.id === "2")!.styleTags).toEqual(["Late"])
+        expect(cands.find((c) => c.id === "2")!.distanceTags).toBeUndefined()
+        expect(cands.find((c) => c.id === "3")!.distanceTags).toBeUndefined()
+        expect(cands.find((c) => c.id === "3")!.styleTags).toBeUndefined()
+    })
 })
 
 describe("suggestSkillPlan", () => {
@@ -50,5 +83,25 @@ describe("suggestSkillPlan", () => {
     test("with only enough SP for the standalone, picks the single best affordable skill", () => {
         const { skillIds } = suggestSkillPlan(db, 200, ctx)
         expect(skillIds).toEqual(["100381"])
+    })
+
+    test("deprioritizes a skill restricted to an off-distance/off-style condition in favor of a universal skill", () => {
+        // ctx is { distance: "Sprint", style: "Pace" }. The Mile-only skill has a higher raw eval_pt than the universal one,
+        // but its game condition restricts it to Mile races, so the relevance-weighted value should make it lose out.
+        const restricted: SkillDbEntry[] = [
+            {
+                id: 10,
+                name_en: "Mile Specialist",
+                cost: 150,
+                eval_pt: 300,
+                rarity: 1,
+                upgrade: null,
+                downgrade: null,
+                condition: "distance_type==2&phase==1",
+            },
+            { id: 20, name_en: "Universal", cost: 150, eval_pt: 200, rarity: 1, upgrade: null, downgrade: null, condition: "always" },
+        ]
+        const { skillIds } = suggestSkillPlan(restricted, 150, ctx)
+        expect(skillIds).toEqual(["20"])
     })
 })
