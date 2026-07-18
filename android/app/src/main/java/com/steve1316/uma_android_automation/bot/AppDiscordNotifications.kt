@@ -54,4 +54,16 @@ object AppDiscordNotifications {
             ),
         )
     }
+
+    /** A heads-up for a condition worth the user's attention (e.g. a screen the bot is repeatedly retrying) that doesn't stop the run, unlike [sendError]. */
+    fun sendWarning(title: String, description: String? = null) {
+        sendEmbed(
+            DiscordEmbedSpec(
+                title = title,
+                description = description,
+                colorRgb = DiscordEmbedColors.YELLOW,
+                footer = MessageLog.getSystemTimeString(),
+            ),
+        )
+    }
 }
