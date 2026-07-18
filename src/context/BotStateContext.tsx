@@ -51,6 +51,10 @@ export interface Settings {
         enableDelayCalibrationTelemetry: boolean
         /** JSON map of action key -> override delay in seconds, applied in place of the relevant hardcoded default (e.g. `"tapFollowUpDelay"`). */
         delayOverrides: string
+        /** How many times the bot retries a connection error dialog within connectionErrorRetryCooldownSeconds before giving up and stopping the run. */
+        connectionErrorMaxRetryAttempts: number
+        /** Seconds without another connection error before the retry counter resets. */
+        connectionErrorRetryCooldownSeconds: number
     }
 
     // Racing settings
@@ -464,6 +468,8 @@ export const defaultSettings: Settings = {
         dialogWaitDelay: 0.5,
         enableDelayCalibrationTelemetry: false,
         delayOverrides: "{}",
+        connectionErrorMaxRetryAttempts: 3,
+        connectionErrorRetryCooldownSeconds: 10,
     },
     racing: {
         enableParentFarmingMode: false,

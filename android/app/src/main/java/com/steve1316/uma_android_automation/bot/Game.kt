@@ -85,7 +85,7 @@ class Game(val myContext: Context) {
         }
 
     /** The maximum number of connection error retry attempts allowed. */
-    internal val maxConnectionErrorRetryAttempts: Int = 3
+    internal val maxConnectionErrorRetryAttempts: Int = SettingsHelper.getIntSetting("general", "connectionErrorMaxRetryAttempts", 3)
 
     /** The current number of connection error retry attempts. */
     internal var connectionErrorRetryAttempts: Int = 0
@@ -94,7 +94,7 @@ class Game(val myContext: Context) {
     internal var lastConnectionErrorRetryTimeMs: Long = 0
 
     /** The cooldown time between connection error retries. */
-    internal val connectionErrorRetryCooldownTimeMs: Long = 10000 // 10 seconds
+    internal val connectionErrorRetryCooldownTimeMs: Long = SettingsHelper.getIntSetting("general", "connectionErrorRetryCooldownSeconds", 10).toLong() * 1000
 
     companion object {
         private val TAG: String = "[${MainActivity.loggerTag}]Game"
