@@ -1,21 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.42</latestVersion>
-    <latestVersionCode>214</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.42</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.42/v5.10.42-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.42/v5.10.42-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.43</latestVersion>
+    <latestVersionCode>215</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.43</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.43/v5.10.43-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.43/v5.10.43-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.42 - Legacy-parent weight tuning, adaptive multi-run disclosure, and a skill-plan fix
+v5.10.43 - Smart Race Solver: 3 previously-hidden scoring weights are now tunable
 
 Added
 -----
-- Legacy Parent strategy weight tuning (Parent Farming Settings): "WhiteFactor", "SkillHints", and "Balanced" legacy-parent OCR scoring strategies now have their own tunable weight sliders, matching the "StatAndAptitude" strategy which already had them. Defaults match each strategy's previous fixed behavior.
-- Adaptive Multi-Run now discloses and exposes its win-rate guard/fan floor relaxation: after a poor-quality run, the next career's win-rate guard and fan target floor were being silently relaxed to help the solver recover. The poor-run quality threshold and both relaxation amounts are now sliders, and the setting's description explains this behavior.
-
-Fixed
------
-- Skill Plan's "Suggest Plan" tool now actually weighs distance/running-style relevance. It always intended to deprioritize skills that don't help at the selected distance or style, but the skill data feeding it never carried those tags, so every skill was scored as universally useful. Now parsed directly from the game's own skill activation conditions.
+- Smart Race Solver Settings now exposes Stat Weight, SP Weight, and Low Energy Race Penalty. These were already active in the scoring logic with fixed defaults, but unlike every other solver weight, there was no way to tune them from Settings.
     </releaseNotes>
   </update>
 </AppUpdater>
