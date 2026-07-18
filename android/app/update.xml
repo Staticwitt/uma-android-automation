@@ -1,16 +1,23 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.40</latestVersion>
-    <latestVersionCode>212</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.40</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.40/v5.10.40-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.40/v5.10.40-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.41</latestVersion>
+    <latestVersionCode>213</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.41</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.41/v5.10.41-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.41/v5.10.41-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.40 - Tunable skill recovery-boost strength
+v5.10.41 - Turn-adaptive risk tolerance, a real bug fix, and 3 more gaps closed
+
+Fixed
+-----
+- Genuine failures were being reported as a successful "manually stopped" run: a session error, running out of alarm clocks, an invalid scenario, and hitting a dialog flagged dangerous because it risks a real-world purchase all threw the same exception type as a normal user-initiated stop, so the bot's main loop rebranded every one of them as a green success notification instead of an error. Now correctly distinguished and reported.
 
 Added
 -----
-- Recovery Boost Strength (Skills settings, under Prioritize Recovery Skills for Stamina): the multiplier that nudges recovery skills up the auto-purchase ranking on Medium/Long builds is now a slider (1.0x-3.0x, default 1.5x) instead of a fixed value. 1.0x disables the boost entirely; higher values push recovery skills further up the list ahead of pure stat skills.
+- Turn-Adaptive Risk Tolerance (Training Settings, under Risky Training): the risky-training failure-chance ceiling can now taper from a looser value at turn 1 down to the existing ceiling by turn 72, instead of using the same threshold for the whole 75-turn run. A bad training result early has many turns left to recover from; the same result late in the run doesn't.
+- Decision Reports now include a real settings snapshot for every scenario. Previously only Trackblazer's reports showed the mood/energy/failure-chance/risky-training/auto-abandon settings that were active - URA Finale, Unity Cup, and Grand Live reports had an empty settings section.
+- Connection Error Retry (Settings, under Wait Delay): the max retry attempts and cooldown for the in-game connection-error dialog are now sliders instead of fixed values, for users on flaky Wi-Fi/emulators.
+- A one-time Discord warning now fires if the bot can't tap Start Career after repeated attempts, instead of silently retrying forever with no visibility.
     </releaseNotes>
   </update>
 </AppUpdater>
