@@ -1296,8 +1296,8 @@ class Trackblazer(game: Game) : Campaign(game) {
     }
 
     override fun gatherDecisionSettings(): DecisionTracer.SettingsSnapshot =
-        DecisionTracer
-            .SettingsSnapshot()
+        super
+            .gatherDecisionSettings()
             .add("Trackblazer Energy Threshold", energyThresholdToUseEnergyItems)
             .add("Force-Train Energy Floor", forceTrainEnergyFloor)
             .add("Skip Risky Charm Training Below Gain", minCharmGain)
@@ -1315,16 +1315,6 @@ class Trackblazer(game: Game) : Campaign(game) {
             .add("Megaphone Race-Forecast Force", if (enableMegaphoneForceRaceForecast) "<= $megaphoneForceRaceForecastThreshold races" else "off")
             .add("Megaphone Tier Overwrite", if (enableMegaphoneTierOverwrite) "on (min main $megaphoneTierOverwriteMinGain)" else "off")
             .add("Megaphone Surplus-Burn Reserve", if (megaphoneSurplusBurnReserve > 0) megaphoneSurplusBurnReserve else "off")
-            .add("Enable In-Game Race Agenda", racing.enableUserInGameRaceAgenda)
-            .add("Max Failure Chance", "${SettingsHelper.getIntSetting("training", "maximumFailureChance")}%")
-            .add(
-                "Riskier Training",
-                if (SettingsHelper.getBooleanSetting("training", "enableRiskyTraining")) {
-                    "on (max fail ${SettingsHelper.getIntSetting("training", "riskyTrainingMaxFailureChance")}%, min main ${SettingsHelper.getIntSetting("training", "riskyTrainingMinStatGain")})"
-                } else {
-                    "off"
-                },
-            )
             .add("Energy Item Reserve", energyItemReserveCount)
             .add("Cupcake Reserve", cupcakeReserveCount)
             .add("Race Item Conservation Start Turn", raceItemConservationStartDay)
