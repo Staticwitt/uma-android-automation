@@ -58,7 +58,16 @@ import {
     hasParentFarmingQualityTargetDrift,
 } from "../../lib/parentFarmingDrift"
 import { recommendLegacyParents, formatLegacyParentRecommendation } from "../../lib/legacyParentRecommendations"
-import { DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS, type LegacyParentStatAptitudeWeights } from "../../lib/legacyParentWeights"
+import {
+    DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS,
+    type LegacyParentStatAptitudeWeights,
+    DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS,
+    type LegacyParentWhiteFactorWeights,
+    DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS,
+    type LegacyParentSkillHintsWeights,
+    DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS,
+    type LegacyParentBalancedWeights,
+} from "../../lib/legacyParentWeights"
 import { SearchPageProvider } from "../../context/SearchPageContext"
 import CustomSelect from "../../components/CustomSelect"
 import CustomSlider from "../../components/CustomSlider"
@@ -162,6 +171,9 @@ const ParentFarmingSettings = () => {
         enableParentFarmingLockPreset,
         enableParentFarmingAutoDowngradeForcedEpithets,
         enableParentFarmingAdaptiveMultiRun,
+        parentFarmingAdaptivePoorRunThreshold,
+        parentFarmingAdaptiveWinRateGuardRelaxation,
+        parentFarmingAdaptiveFanFloorRelaxation,
         enableParentFarmingGoalQueue,
         parentFarmingGoalQueue,
         enableParentFarmingAutoApplyOwnedDeck,
@@ -184,6 +196,9 @@ const ParentFarmingSettings = () => {
         legacyParentPreferredPair,
         legacyParentSelectionStrategy,
         legacyParentStatAptitudeWeights,
+        legacyParentWhiteFactorWeights,
+        legacyParentSkillHintsWeights,
+        legacyParentBalancedWeights,
         supportBorrowSortMode,
         supportCardLimitBreakDefault,
         supportCardLimitBreaks,
@@ -245,6 +260,30 @@ const ParentFarmingSettings = () => {
             return DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS
         }
     }, [legacyParentStatAptitudeWeights])
+
+    const whiteFactorWeights = useMemo(() => {
+        try {
+            return { ...DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS, ...JSON.parse(legacyParentWhiteFactorWeights || "{}") }
+        } catch {
+            return DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS
+        }
+    }, [legacyParentWhiteFactorWeights])
+
+    const skillHintsWeights = useMemo(() => {
+        try {
+            return { ...DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS, ...JSON.parse(legacyParentSkillHintsWeights || "{}") }
+        } catch {
+            return DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS
+        }
+    }, [legacyParentSkillHintsWeights])
+
+    const balancedWeights = useMemo(() => {
+        try {
+            return { ...DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS, ...JSON.parse(legacyParentBalancedWeights || "{}") }
+        } catch {
+            return DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS
+        }
+    }, [legacyParentBalancedWeights])
 
     const parentFarmingDriftWarnings = useMemo(() => detectParentFarmingDrift(settings), [settings])
     const parentFarmingFeasibilityWarnings = useMemo(
@@ -470,6 +509,27 @@ const ParentFarmingSettings = () => {
         [statAptitudeWeights, updateRacingSetting],
     )
 
+    const updateWhiteFactorWeight = useCallback(
+        (key: keyof LegacyParentWhiteFactorWeights, value: number) => {
+            updateRacingSetting("legacyParentWhiteFactorWeights", JSON.stringify({ ...whiteFactorWeights, [key]: value }))
+        },
+        [whiteFactorWeights, updateRacingSetting],
+    )
+
+    const updateSkillHintsWeight = useCallback(
+        (key: keyof LegacyParentSkillHintsWeights, value: number) => {
+            updateRacingSetting("legacyParentSkillHintsWeights", JSON.stringify({ ...skillHintsWeights, [key]: value }))
+        },
+        [skillHintsWeights, updateRacingSetting],
+    )
+
+    const updateBalancedWeight = useCallback(
+        (key: keyof LegacyParentBalancedWeights, value: number) => {
+            updateRacingSetting("legacyParentBalancedWeights", JSON.stringify({ ...balancedWeights, [key]: value }))
+        },
+        [balancedWeights, updateRacingSetting],
+    )
+
     const saveOwnedInventory = useCallback(
         (cards: string[], limitBreaks: Record<string, number>) => {
             updateRacing({ ownedSupportCards: JSON.stringify(cards), supportCardLimitBreaks: JSON.stringify(limitBreaks) })
@@ -630,7 +690,7 @@ const ParentFarmingSettings = () => {
                                 <SettingRow
                                     id="enable-parent-farming-adaptive-multi-run"
                                     title="Adaptive multi-run"
-                                    description="After a forced epithet miss, downgrades that epithet to target-only on the next career."
+                                    description="After a forced epithet miss, downgrades that epithet to target-only on the next career. Also relaxes the win-rate guard and fan target floor for the next career after a poor-quality run, so the solver races more freely to recover."
                                     right={
                                         <Switch
                                             checked={enableParentFarmingAdaptiveMultiRun}
@@ -638,6 +698,55 @@ const ParentFarmingSettings = () => {
                                         />
                                     }
                                 />
+                                {enableParentFarmingAdaptiveMultiRun && (
+                                    <View style={{ gap: SPACING.sm }}>
+                                        <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                            Tune the poor-run detection threshold and how much the guard/fan floor relax after one:
+                                        </Text>
+                                        <CustomSlider
+                                            searchId="parent-farming-adaptive-poor-run-threshold"
+                                            searchTitle="Poor run quality threshold"
+                                            searchDescription="Quality score below which a run is considered poor and triggers guard/fan floor relaxation for the next career."
+                                            label="Poor run threshold"
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            value={parentFarmingAdaptivePoorRunThreshold}
+                                            placeholder={70}
+                                            onValueChange={(value) => updateRacingSetting("parentFarmingAdaptivePoorRunThreshold", value)}
+                                            showValue
+                                            showLabels
+                                        />
+                                        <CustomSlider
+                                            searchId="parent-farming-adaptive-win-rate-guard-relaxation"
+                                            searchTitle="Win-rate guard relaxation"
+                                            searchDescription="Amount subtracted from the min win-rate guard for the next career after a poor-quality run."
+                                            label="Win-rate guard relaxation"
+                                            min={0}
+                                            max={0.3}
+                                            step={0.01}
+                                            value={parentFarmingAdaptiveWinRateGuardRelaxation}
+                                            placeholder={0.05}
+                                            onValueChange={(value) => updateRacingSetting("parentFarmingAdaptiveWinRateGuardRelaxation", value)}
+                                            showValue
+                                            showLabels
+                                        />
+                                        <CustomSlider
+                                            searchId="parent-farming-adaptive-fan-floor-relaxation"
+                                            searchTitle="Fan floor relaxation"
+                                            searchDescription="Amount subtracted from the minimum fan target floor for the next career after a poor-quality run."
+                                            label="Fan floor relaxation"
+                                            min={0}
+                                            max={50000}
+                                            step={1000}
+                                            value={parentFarmingAdaptiveFanFloorRelaxation}
+                                            placeholder={10000}
+                                            onValueChange={(value) => updateRacingSetting("parentFarmingAdaptiveFanFloorRelaxation", value)}
+                                            showValue
+                                            showLabels
+                                        />
+                                    </View>
+                                )}
                                 <SettingRow
                                     id="enable-parent-farming-auto-apply-owned-deck"
                                     title="Auto-apply owned deck on bundle"
@@ -1255,6 +1364,308 @@ const ParentFarmingSettings = () => {
                                                     value={statAptitudeWeights.aptitudeGradeWeight}
                                                     placeholder={DEFAULT_LEGACY_PARENT_STAT_APTITUDE_WEIGHTS.aptitudeGradeWeight}
                                                     onValueChange={(value) => updateStatAptitudeWeight("aptitudeGradeWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                            </View>
+                                        )}
+                                        {legacyParentSelectionStrategy === "WhiteFactor" && (
+                                            <View style={{ gap: SPACING.sm }}>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Tune how OCR signals are weighted when scoring parent cards for "WhiteFactor":
+                                                </Text>
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-white-bonus"
+                                                    searchTitle="White factor bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a white factor signal."
+                                                    label="White factor bonus"
+                                                    min={0}
+                                                    max={400}
+                                                    step={10}
+                                                    value={whiteFactorWeights.whiteFactorBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.whiteFactorBonus}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("whiteFactorBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-blue-bonus"
+                                                    searchTitle="Blue factor bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a blue (stat) factor signal."
+                                                    label="Blue factor bonus"
+                                                    min={0}
+                                                    max={400}
+                                                    step={10}
+                                                    value={whiteFactorWeights.blueFactorBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.blueFactorBonus}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("blueFactorBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-skill-hint-bonus"
+                                                    searchTitle="Skill hint bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a skill-hint signal."
+                                                    label="Skill hint bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={whiteFactorWeights.skillHintBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.skillHintBonus}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("skillHintBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-star-bonus"
+                                                    searchTitle="Star bonus weight"
+                                                    searchDescription="Bonus per star (★/*) glyph detected in OCR text."
+                                                    label="Star bonus"
+                                                    min={0}
+                                                    max={100}
+                                                    step={5}
+                                                    value={whiteFactorWeights.starBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.starBonus}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("starBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-aptitude-keyword-bonus"
+                                                    searchTitle="Aptitude keyword bonus weight"
+                                                    searchDescription="Bonus per distance/surface aptitude keyword found in OCR text."
+                                                    label="Aptitude keyword bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={whiteFactorWeights.aptitudeKeywordBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.aptitudeKeywordBonus}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("aptitudeKeywordBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-stat-value-weight"
+                                                    searchTitle="Stat value multiplier weight"
+                                                    searchDescription="Multiplier applied to parsed numeric stat values, weighted by priority."
+                                                    label="Stat value multiplier"
+                                                    min={0}
+                                                    max={2}
+                                                    step={0.05}
+                                                    value={whiteFactorWeights.statValueWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.statValueWeight}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("statValueWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-white-factor-aptitude-grade-weight"
+                                                    searchTitle="Aptitude grade multiplier weight"
+                                                    searchDescription="Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text."
+                                                    label="Aptitude grade multiplier"
+                                                    min={0}
+                                                    max={30}
+                                                    step={1}
+                                                    value={whiteFactorWeights.aptitudeGradeWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_WHITE_FACTOR_WEIGHTS.aptitudeGradeWeight}
+                                                    onValueChange={(value) => updateWhiteFactorWeight("aptitudeGradeWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                            </View>
+                                        )}
+                                        {legacyParentSelectionStrategy === "SkillHints" && (
+                                            <View style={{ gap: SPACING.sm }}>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Tune how OCR signals are weighted when scoring parent cards for "SkillHints":
+                                                </Text>
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-skill-hint-bonus"
+                                                    searchTitle="Skill hint bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a skill-hint signal."
+                                                    label="Skill hint bonus"
+                                                    min={0}
+                                                    max={400}
+                                                    step={10}
+                                                    value={skillHintsWeights.skillHintBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.skillHintBonus}
+                                                    onValueChange={(value) => updateSkillHintsWeight("skillHintBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-blue-factor-bonus"
+                                                    searchTitle="Blue factor bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a blue (stat) factor signal."
+                                                    label="Blue factor bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={skillHintsWeights.blueFactorBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.blueFactorBonus}
+                                                    onValueChange={(value) => updateSkillHintsWeight("blueFactorBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-stat-priority-bonus"
+                                                    searchTitle="Stat priority bonus weight"
+                                                    searchDescription="Flat bonus for a stat-priority keyword match, regardless of priority index."
+                                                    label="Stat priority bonus"
+                                                    min={0}
+                                                    max={150}
+                                                    step={5}
+                                                    value={skillHintsWeights.statPriorityBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.statPriorityBonus}
+                                                    onValueChange={(value) => updateSkillHintsWeight("statPriorityBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-aptitude-keyword-bonus"
+                                                    searchTitle="Aptitude keyword bonus weight"
+                                                    searchDescription="Bonus per distance/surface aptitude keyword found in OCR text."
+                                                    label="Aptitude keyword bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={skillHintsWeights.aptitudeKeywordBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.aptitudeKeywordBonus}
+                                                    onValueChange={(value) => updateSkillHintsWeight("aptitudeKeywordBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-stat-value-weight"
+                                                    searchTitle="Stat value multiplier weight"
+                                                    searchDescription="Multiplier applied to parsed numeric stat values, weighted by priority."
+                                                    label="Stat value multiplier"
+                                                    min={0}
+                                                    max={2}
+                                                    step={0.05}
+                                                    value={skillHintsWeights.statValueWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.statValueWeight}
+                                                    onValueChange={(value) => updateSkillHintsWeight("statValueWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-skill-hints-aptitude-grade-weight"
+                                                    searchTitle="Aptitude grade multiplier weight"
+                                                    searchDescription="Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text."
+                                                    label="Aptitude grade multiplier"
+                                                    min={0}
+                                                    max={30}
+                                                    step={1}
+                                                    value={skillHintsWeights.aptitudeGradeWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_SKILL_HINTS_WEIGHTS.aptitudeGradeWeight}
+                                                    onValueChange={(value) => updateSkillHintsWeight("aptitudeGradeWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                            </View>
+                                        )}
+                                        {legacyParentSelectionStrategy === "Balanced" && (
+                                            <View style={{ gap: SPACING.sm }}>
+                                                <Text style={{ ...TYPE.caption, color: colors.textMuted }}>
+                                                    Tune how OCR signals are weighted when scoring parent cards for "Balanced":
+                                                </Text>
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-skill-hint-bonus"
+                                                    searchTitle="Skill hint bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a skill-hint signal."
+                                                    label="Skill hint bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={balancedWeights.skillHintBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.skillHintBonus}
+                                                    onValueChange={(value) => updateBalancedWeight("skillHintBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-blue-factor-bonus"
+                                                    searchTitle="Blue factor bonus weight"
+                                                    searchDescription="Bonus added when OCR detects a blue (stat) factor signal."
+                                                    label="Blue factor bonus"
+                                                    min={0}
+                                                    max={150}
+                                                    step={5}
+                                                    value={balancedWeights.blueFactorBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.blueFactorBonus}
+                                                    onValueChange={(value) => updateBalancedWeight("blueFactorBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-stat-priority-base"
+                                                    searchTitle="Stat priority base weight"
+                                                    searchDescription="Bonus for a stat-priority keyword match at priority index 0."
+                                                    label="Stat priority base"
+                                                    min={0}
+                                                    max={300}
+                                                    step={10}
+                                                    value={balancedWeights.statPriorityBase}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.statPriorityBase}
+                                                    onValueChange={(value) => updateBalancedWeight("statPriorityBase", value)}
+                                                    showValue
+                                                    showLabels
+                                                    description="Lower-priority stat matches score less, decaying by the next setting per priority step."
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-stat-priority-decay"
+                                                    searchTitle="Stat priority decay weight"
+                                                    searchDescription="Subtracted from the stat priority base weight per priority index step."
+                                                    label="Stat priority decay"
+                                                    min={0}
+                                                    max={50}
+                                                    step={1}
+                                                    value={balancedWeights.statPriorityDecay}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.statPriorityDecay}
+                                                    onValueChange={(value) => updateBalancedWeight("statPriorityDecay", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-aptitude-keyword-bonus"
+                                                    searchTitle="Aptitude keyword bonus weight"
+                                                    searchDescription="Bonus per distance/surface aptitude keyword found in OCR text."
+                                                    label="Aptitude keyword bonus"
+                                                    min={0}
+                                                    max={200}
+                                                    step={5}
+                                                    value={balancedWeights.aptitudeKeywordBonus}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.aptitudeKeywordBonus}
+                                                    onValueChange={(value) => updateBalancedWeight("aptitudeKeywordBonus", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-stat-value-weight"
+                                                    searchTitle="Stat value multiplier weight"
+                                                    searchDescription="Multiplier applied to parsed numeric stat values, weighted by priority."
+                                                    label="Stat value multiplier"
+                                                    min={0}
+                                                    max={2}
+                                                    step={0.05}
+                                                    value={balancedWeights.statValueWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.statValueWeight}
+                                                    onValueChange={(value) => updateBalancedWeight("statValueWeight", value)}
+                                                    showValue
+                                                    showLabels
+                                                />
+                                                <CustomSlider
+                                                    searchId="legacy-parent-balanced-aptitude-grade-weight"
+                                                    searchTitle="Aptitude grade multiplier weight"
+                                                    searchDescription="Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text."
+                                                    label="Aptitude grade multiplier"
+                                                    min={0}
+                                                    max={30}
+                                                    step={1}
+                                                    value={balancedWeights.aptitudeGradeWeight}
+                                                    placeholder={DEFAULT_LEGACY_PARENT_BALANCED_WEIGHTS.aptitudeGradeWeight}
+                                                    onValueChange={(value) => updateBalancedWeight("aptitudeGradeWeight", value)}
                                                     showValue
                                                     showLabels
                                                 />

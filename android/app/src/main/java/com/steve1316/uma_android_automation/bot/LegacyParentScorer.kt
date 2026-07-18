@@ -65,19 +65,91 @@ object LegacyParentScorer {
         val aptitudeGradeWeight: Double = 8.0,
     )
 
+    /**
+     * Tunable weights for the "WhiteFactor" strategy, user-editable in Parent Farming settings. Defaults match the values this strategy used before it became tunable.
+     * WhiteFactor doesn't score stat-priority keyword matches at all (that's [SkillHintsWeights]/[BalancedWeights]/[StatAptitudeWeights] territory) - it's deliberately only about factor/skill signal quality.
+     *
+     * @property whiteFactorBonus Bonus when OCR text signals a white factor.
+     * @property blueFactorBonus Bonus when OCR text signals a blue (stat) factor.
+     * @property skillHintBonus Bonus when OCR text has a skill-hint signal.
+     * @property starBonus Bonus per star (★/*) glyph detected in OCR text.
+     * @property aptitudeKeywordBonus Bonus per distance/surface aptitude keyword found in OCR text.
+     * @property statValueWeight Multiplier applied to parsed numeric stat values, weighted by priority.
+     * @property aptitudeGradeWeight Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text.
+     */
+    data class WhiteFactorWeights(
+        val whiteFactorBonus: Double = 240.0,
+        val blueFactorBonus: Double = 200.0,
+        val skillHintBonus: Double = 100.0,
+        val starBonus: Double = 40.0,
+        val aptitudeKeywordBonus: Double = 20.0,
+        val statValueWeight: Double = 0.08,
+        val aptitudeGradeWeight: Double = 2.0,
+    )
+
+    /**
+     * Tunable weights for the "SkillHints" strategy, user-editable in Parent Farming settings. Defaults match the values this strategy used before it became tunable.
+     *
+     * @property skillHintBonus Bonus when OCR text has a skill-hint signal.
+     * @property blueFactorBonus Bonus when OCR text signals a blue (stat) factor.
+     * @property statPriorityBonus Flat bonus for a stat-priority keyword match, regardless of priority index.
+     * @property aptitudeKeywordBonus Bonus per distance/surface aptitude keyword found in OCR text.
+     * @property statValueWeight Multiplier applied to parsed numeric stat values, weighted by priority.
+     * @property aptitudeGradeWeight Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text.
+     */
+    data class SkillHintsWeights(
+        val skillHintBonus: Double = 200.0,
+        val blueFactorBonus: Double = 40.0,
+        val statPriorityBonus: Double = 30.0,
+        val aptitudeKeywordBonus: Double = 20.0,
+        val statValueWeight: Double = 0.08,
+        val aptitudeGradeWeight: Double = 2.0,
+    )
+
+    /**
+     * Tunable weights for the "Balanced" strategy, user-editable in Parent Farming settings. Defaults match the values this strategy used before it became tunable.
+     *
+     * @property skillHintBonus Bonus when OCR text has a skill-hint signal.
+     * @property blueFactorBonus Bonus when OCR text signals a blue (stat) factor.
+     * @property statPriorityBase Bonus for a stat-priority keyword match at priority index 0.
+     * @property statPriorityDecay Subtracted from [statPriorityBase] per priority index step.
+     * @property aptitudeKeywordBonus Bonus per distance/surface aptitude keyword found in OCR text.
+     * @property statValueWeight Multiplier applied to parsed numeric stat values, weighted by priority.
+     * @property aptitudeGradeWeight Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text.
+     */
+    data class BalancedWeights(
+        val skillHintBonus: Double = 80.0,
+        val blueFactorBonus: Double = 25.0,
+        val statPriorityBase: Double = 70.0,
+        val statPriorityDecay: Double = 8.0,
+        val aptitudeKeywordBonus: Double = 50.0,
+        val statValueWeight: Double = 0.2,
+        val aptitudeGradeWeight: Double = 5.0,
+    )
+
     data class Context(
         val strategy: String,
         val statPriorities: List<String>,
         val preferSkillHints: Boolean,
         val statAptitudeWeights: StatAptitudeWeights = StatAptitudeWeights(),
+        val whiteFactorWeights: WhiteFactorWeights = WhiteFactorWeights(),
+        val skillHintsWeights: SkillHintsWeights = SkillHintsWeights(),
+        val balancedWeights: BalancedWeights = BalancedWeights(),
     )
 
     fun contextFromSettings(): Context {
         val strategy = SettingsHelper.getStringSetting("racing", "legacyParentSelectionStrategy").ifEmpty { "Default" }
         val statPriorities = SettingsHelper.getStringArraySetting("training", "statPrioritization").filter { it.isNotBlank() }
         val preferSkillHints = SettingsHelper.getBooleanSetting("training", "enablePrioritizeSkillHints", false)
-        val statAptitudeWeights = readStatAptitudeWeights()
-        return Context(strategy = strategy, statPriorities = statPriorities, preferSkillHints = preferSkillHints, statAptitudeWeights = statAptitudeWeights)
+        return Context(
+            strategy = strategy,
+            statPriorities = statPriorities,
+            preferSkillHints = preferSkillHints,
+            statAptitudeWeights = readStatAptitudeWeights(),
+            whiteFactorWeights = readWhiteFactorWeights(),
+            skillHintsWeights = readSkillHintsWeights(),
+            balancedWeights = readBalancedWeights(),
+        )
     }
 
     /** Parses the user's saved "StatAndAptitude" weight overrides. Falls back to [StatAptitudeWeights] defaults when empty or unparseable. */
@@ -99,6 +171,62 @@ object LegacyParentScorer {
         }.getOrElse { StatAptitudeWeights() }
     }
 
+    /** Parses the user's saved "WhiteFactor" weight overrides. Falls back to [WhiteFactorWeights] defaults when empty or unparseable. */
+    private fun readWhiteFactorWeights(): WhiteFactorWeights {
+        val json = SettingsHelper.getStringSetting("racing", "legacyParentWhiteFactorWeights")
+        if (json.isEmpty()) return WhiteFactorWeights()
+        return runCatching {
+            val obj = JSONObject(json)
+            val defaults = WhiteFactorWeights()
+            WhiteFactorWeights(
+                whiteFactorBonus = obj.optDouble("whiteFactorBonus", defaults.whiteFactorBonus),
+                blueFactorBonus = obj.optDouble("blueFactorBonus", defaults.blueFactorBonus),
+                skillHintBonus = obj.optDouble("skillHintBonus", defaults.skillHintBonus),
+                starBonus = obj.optDouble("starBonus", defaults.starBonus),
+                aptitudeKeywordBonus = obj.optDouble("aptitudeKeywordBonus", defaults.aptitudeKeywordBonus),
+                statValueWeight = obj.optDouble("statValueWeight", defaults.statValueWeight),
+                aptitudeGradeWeight = obj.optDouble("aptitudeGradeWeight", defaults.aptitudeGradeWeight),
+            )
+        }.getOrElse { WhiteFactorWeights() }
+    }
+
+    /** Parses the user's saved "SkillHints" weight overrides. Falls back to [SkillHintsWeights] defaults when empty or unparseable. */
+    private fun readSkillHintsWeights(): SkillHintsWeights {
+        val json = SettingsHelper.getStringSetting("racing", "legacyParentSkillHintsWeights")
+        if (json.isEmpty()) return SkillHintsWeights()
+        return runCatching {
+            val obj = JSONObject(json)
+            val defaults = SkillHintsWeights()
+            SkillHintsWeights(
+                skillHintBonus = obj.optDouble("skillHintBonus", defaults.skillHintBonus),
+                blueFactorBonus = obj.optDouble("blueFactorBonus", defaults.blueFactorBonus),
+                statPriorityBonus = obj.optDouble("statPriorityBonus", defaults.statPriorityBonus),
+                aptitudeKeywordBonus = obj.optDouble("aptitudeKeywordBonus", defaults.aptitudeKeywordBonus),
+                statValueWeight = obj.optDouble("statValueWeight", defaults.statValueWeight),
+                aptitudeGradeWeight = obj.optDouble("aptitudeGradeWeight", defaults.aptitudeGradeWeight),
+            )
+        }.getOrElse { SkillHintsWeights() }
+    }
+
+    /** Parses the user's saved "Balanced" weight overrides. Falls back to [BalancedWeights] defaults when empty or unparseable. */
+    private fun readBalancedWeights(): BalancedWeights {
+        val json = SettingsHelper.getStringSetting("racing", "legacyParentBalancedWeights")
+        if (json.isEmpty()) return BalancedWeights()
+        return runCatching {
+            val obj = JSONObject(json)
+            val defaults = BalancedWeights()
+            BalancedWeights(
+                skillHintBonus = obj.optDouble("skillHintBonus", defaults.skillHintBonus),
+                blueFactorBonus = obj.optDouble("blueFactorBonus", defaults.blueFactorBonus),
+                statPriorityBase = obj.optDouble("statPriorityBase", defaults.statPriorityBase),
+                statPriorityDecay = obj.optDouble("statPriorityDecay", defaults.statPriorityDecay),
+                aptitudeKeywordBonus = obj.optDouble("aptitudeKeywordBonus", defaults.aptitudeKeywordBonus),
+                statValueWeight = obj.optDouble("statValueWeight", defaults.statValueWeight),
+                aptitudeGradeWeight = obj.optDouble("aptitudeGradeWeight", defaults.aptitudeGradeWeight),
+            )
+        }.getOrElse { BalancedWeights() }
+    }
+
     fun isFactorSelectionEnabled(): Boolean = contextFromSettings().strategy != "Default"
 
     /** Higher is better. Returns 0 when strategy is Default. */
@@ -114,18 +242,18 @@ object LegacyParentScorer {
         val starCount = ocrText.count { it == '★' || it == '*' }
         when (context.strategy) {
             "WhiteFactor" -> {
-                if (whiteFactorSignal) total += 240.0
-                if (blueFactorSignal) total += 200.0
-                if (skillSignal) total += 100.0
-                total += starCount * 40.0
+                if (whiteFactorSignal) total += context.whiteFactorWeights.whiteFactorBonus
+                if (blueFactorSignal) total += context.whiteFactorWeights.blueFactorBonus
+                if (skillSignal) total += context.whiteFactorWeights.skillHintBonus
+                total += starCount * context.whiteFactorWeights.starBonus
             }
             "SkillHints" -> {
-                if (skillSignal) total += 200.0
-                if (blueFactorSignal) total += 40.0
+                if (skillSignal) total += context.skillHintsWeights.skillHintBonus
+                if (blueFactorSignal) total += context.skillHintsWeights.blueFactorBonus
             }
             "Balanced" -> {
-                if (skillSignal) total += 80.0
-                if (blueFactorSignal) total += 25.0
+                if (skillSignal) total += context.balancedWeights.skillHintBonus
+                if (blueFactorSignal) total += context.balancedWeights.blueFactorBonus
             }
             "StatAndAptitude" -> {
                 if (skillSignal && context.preferSkillHints) total += context.statAptitudeWeights.skillHintBonus
@@ -138,8 +266,9 @@ object LegacyParentScorer {
                 total +=
                     when (context.strategy) {
                         "StatAndAptitude" -> context.statAptitudeWeights.statPriorityBase - index * context.statAptitudeWeights.statPriorityDecay
-                        "Balanced" -> 70.0 - index * 8.0
-                        "SkillHints" -> 30.0
+                        "Balanced" -> context.balancedWeights.statPriorityBase - index * context.balancedWeights.statPriorityDecay
+                        "SkillHints" -> context.skillHintsWeights.statPriorityBonus
+                        // WhiteFactor deliberately doesn't score stat-priority keywords - see WhiteFactorWeights KDoc.
                         else -> 0.0
                     }
             }
@@ -150,7 +279,9 @@ object LegacyParentScorer {
                 total +=
                     when (context.strategy) {
                         "StatAndAptitude" -> context.statAptitudeWeights.aptitudeKeywordBonus
-                        "Balanced" -> 50.0
+                        "Balanced" -> context.balancedWeights.aptitudeKeywordBonus
+                        "WhiteFactor" -> context.whiteFactorWeights.aptitudeKeywordBonus
+                        "SkillHints" -> context.skillHintsWeights.aptitudeKeywordBonus
                         else -> 20.0
                     }
             }
@@ -185,7 +316,9 @@ object LegacyParentScorer {
             val weight =
                 when (context.strategy) {
                     "StatAndAptitude" -> context.statAptitudeWeights.statValueWeight
-                    "Balanced" -> 0.2
+                    "Balanced" -> context.balancedWeights.statValueWeight
+                    "WhiteFactor" -> context.whiteFactorWeights.statValueWeight
+                    "SkillHints" -> context.skillHintsWeights.statValueWeight
                     else -> 0.08
                 }
             bonus += value * weight * (1.0 - priorityIndex * 0.12)
@@ -202,7 +335,9 @@ object LegacyParentScorer {
             bonus +=
                 when (context.strategy) {
                     "StatAndAptitude" -> value * context.statAptitudeWeights.aptitudeGradeWeight
-                    "Balanced" -> value * 5.0
+                    "Balanced" -> value * context.balancedWeights.aptitudeGradeWeight
+                    "WhiteFactor" -> value * context.whiteFactorWeights.aptitudeGradeWeight
+                    "SkillHints" -> value * context.skillHintsWeights.aptitudeGradeWeight
                     else -> value * 2.0
                 }
         }

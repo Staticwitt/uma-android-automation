@@ -383,6 +383,18 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
             racing.legacyParentStatAptitudeWeights = "{}"
             anyMigrated = true
         }
+        if (typeof racing.legacyParentWhiteFactorWeights !== "string") {
+            racing.legacyParentWhiteFactorWeights = "{}"
+            anyMigrated = true
+        }
+        if (typeof racing.legacyParentSkillHintsWeights !== "string") {
+            racing.legacyParentSkillHintsWeights = "{}"
+            anyMigrated = true
+        }
+        if (typeof racing.legacyParentBalancedWeights !== "string") {
+            racing.legacyParentBalancedWeights = "{}"
+            anyMigrated = true
+        }
         if (typeof racing.smartRaceSolverEpithetTiers !== "string") {
             racing.smartRaceSolverEpithetTiers = ""
             anyMigrated = true
@@ -417,6 +429,18 @@ export const applyMigrations = (settings: any, rawSettings?: any): { settings: a
         }
         if (typeof racing.enableParentFarmingAdaptiveMultiRun !== "boolean") {
             racing.enableParentFarmingAdaptiveMultiRun = true
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingAdaptivePoorRunThreshold !== "number") {
+            racing.parentFarmingAdaptivePoorRunThreshold = 70
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingAdaptiveWinRateGuardRelaxation !== "number") {
+            racing.parentFarmingAdaptiveWinRateGuardRelaxation = 0.05
+            anyMigrated = true
+        }
+        if (typeof racing.parentFarmingAdaptiveFanFloorRelaxation !== "number") {
+            racing.parentFarmingAdaptiveFanFloorRelaxation = 10000
             anyMigrated = true
         }
         if (typeof racing.parentFarmingSettingsSnapshot !== "string") {
