@@ -243,6 +243,8 @@ const SmartRaceSolverSettings = () => {
     // Local input state for decimals
 
     const [raceValueInput, setRaceValueInput] = useState(weights.raceValue.toString())
+    const [statWeightInput, setStatWeightInput] = useState((weights.statWeight ?? 1).toString())
+    const [spWeightInput, setSpWeightInput] = useState((weights.spWeight ?? 1).toString())
     const [epithetValueInput, setEpithetValueInput] = useState(weights.epithetValue.toString())
     const [targetEpithetMultiplierInput, setTargetEpithetMultiplierInput] = useState(weights.targetEpithetMultiplier.toString())
     const [hintWeightInput, setHintWeightInput] = useState(weights.hintWeight.toString())
@@ -256,11 +258,14 @@ const SmartRaceSolverSettings = () => {
     const [assumedRaceWinRateInput, setAssumedRaceWinRateInput] = useState((weights.assumedRaceWinRate ?? 1).toString())
     const [minWinRateGuardInput, setMinWinRateGuardInput] = useState((weights.minWinRateGuard ?? 0).toString())
     const [energyRestValueInput, setEnergyRestValueInput] = useState((weights.energyRestValue ?? 2).toString())
+    const [lowEnergyRacePenaltyInput, setLowEnergyRacePenaltyInput] = useState((weights.lowEnergyRacePenalty ?? 4).toString())
     const [maxRaceDistanceInput, setMaxRaceDistanceInput] = useState((weights.maxRaceDistance ?? 0).toString())
     const [fourConsecPenaltyInput, setFourConsecPenaltyInput] = useState((weights.fourConsecutiveRacePenalty ?? 0).toString())
     const [hintMatchWeightInput, setHintMatchWeightInput] = useState((weights.hintMatchWeight ?? 10).toString())
 
     useEffect(() => setRaceValueInput(weights.raceValue.toString()), [weights.raceValue])
+    useEffect(() => setStatWeightInput(String(weights.statWeight ?? 1)), [weights.statWeight])
+    useEffect(() => setSpWeightInput(String(weights.spWeight ?? 1)), [weights.spWeight])
     useEffect(() => setEpithetValueInput(weights.epithetValue.toString()), [weights.epithetValue])
     useEffect(() => setTargetEpithetMultiplierInput(weights.targetEpithetMultiplier.toString()), [weights.targetEpithetMultiplier])
     useEffect(() => setHintWeightInput(weights.hintWeight.toString()), [weights.hintWeight])
@@ -274,6 +279,7 @@ const SmartRaceSolverSettings = () => {
     useEffect(() => setAssumedRaceWinRateInput(String(weights.assumedRaceWinRate ?? 1)), [weights.assumedRaceWinRate])
     useEffect(() => setMinWinRateGuardInput(String(weights.minWinRateGuard ?? 0)), [weights.minWinRateGuard])
     useEffect(() => setEnergyRestValueInput(String(weights.energyRestValue ?? 2)), [weights.energyRestValue])
+    useEffect(() => setLowEnergyRacePenaltyInput(String(weights.lowEnergyRacePenalty ?? 4)), [weights.lowEnergyRacePenalty])
     useEffect(() => setMaxRaceDistanceInput(String(weights.maxRaceDistance ?? 0)), [weights.maxRaceDistance])
     useEffect(() => setFourConsecPenaltyInput(String(weights.fourConsecutiveRacePenalty ?? 0)), [weights.fourConsecutiveRacePenalty])
     useEffect(() => setHintMatchWeightInput(String(weights.hintMatchWeight ?? 10)), [weights.hintMatchWeight])
@@ -1997,6 +2003,38 @@ const SmartRaceSolverSettings = () => {
                                                     </Pressable>
 
                                                     <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Stat Weight</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={statWeightInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setStatWeightInput(t)}
+                                                            onBlur={() => updateWeight("statWeight", parseFloat(statWeightInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="1.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Per-stat-point weight in the scoring function, applied on top of Race Value Weight. Default 1.0 weights stats and SP equally. Raise to
+                                                            favor stat gains over skill points when the solver compares races.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>SP Weight</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={spWeightInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setSpWeightInput(t)}
+                                                            onBlur={() => updateWeight("spWeight", parseFloat(spWeightInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="1.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Per-skill-point weight in the scoring function, applied on top of Race Value Weight. Default 1.0 weights stats and SP equally. Raise to
+                                                            favor skill points over stat gains when the solver compares races.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
                                                         <Text style={styles.inputLabel}>Epithet Value Weight</Text>
                                                         <Input
                                                             style={styles.input}
@@ -2101,6 +2139,22 @@ const SmartRaceSolverSettings = () => {
                                                         />
                                                         <Text style={styles.inputDescription}>
                                                             Score bonus for planning Rest when energy is low. Higher values produce more recovery turns in the schedule.
+                                                        </Text>
+                                                    </Pressable>
+
+                                                    <Pressable android_ripple={{ color: colors.ripple, foreground: true }}>
+                                                        <Text style={styles.inputLabel}>Low Energy Race Penalty</Text>
+                                                        <Input
+                                                            style={styles.input}
+                                                            value={lowEnergyRacePenaltyInput}
+                                                            onChangeText={(t) => /^-?\d*\.?\d*$/.test(t) && setLowEnergyRacePenaltyInput(t)}
+                                                            onBlur={() => updateWeight("lowEnergyRacePenalty", parseFloat(lowEnergyRacePenaltyInput) || 0)}
+                                                            keyboardType="decimal-pad"
+                                                            placeholder="4.0"
+                                                        />
+                                                        <Text style={styles.inputDescription}>
+                                                            Extra objective penalty for scheduling a race while energy is below the low-energy threshold. Default 4.0. Raise to more strongly discourage
+                                                            racing on low energy; lower (or 0) to let the solver race through it more freely.
                                                         </Text>
                                                     </Pressable>
 
