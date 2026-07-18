@@ -143,8 +143,14 @@ export interface Settings {
         enableParentFarmingLockPreset: boolean
         /** Downgrade infeasible forced epithets to targets at resolve time. */
         enableParentFarmingAutoDowngradeForcedEpithets: boolean
-        /** Relax forced epithets between multi-run attempts after a forced-route failure. */
+        /** Relax forced epithets between multi-run attempts after a forced-route failure, and relax the win-rate guard/fan floor for the next career after a poor-quality run. */
         enableParentFarmingAdaptiveMultiRun: boolean
+        /** Quality score (0-100) below which a run is considered "poor" and triggers win-rate guard/fan floor relaxation for the next career. */
+        parentFarmingAdaptivePoorRunThreshold: number
+        /** Amount subtracted from the min win-rate guard for the next career after a poor-quality run. */
+        parentFarmingAdaptiveWinRateGuardRelaxation: number
+        /** Amount subtracted from the minimum fan target floor for the next career after a poor-quality run. */
+        parentFarmingAdaptiveFanFloorRelaxation: number
         /** Cycle through different goal presets/bundles each multi-run career. */
         enableParentFarmingGoalQueue: boolean
         /** JSON array of `{ type: "bundle"|"preset", key: string }` queue items. */
@@ -193,6 +199,12 @@ export interface Settings {
         legacyParentPreferredPair: string
         /** JSON object of tunable weight overrides for the "StatAndAptitude" legacy parent strategy. Empty/missing falls back to defaults. */
         legacyParentStatAptitudeWeights: string
+        /** JSON object of tunable weight overrides for the "WhiteFactor" legacy parent strategy. Empty/missing falls back to defaults. */
+        legacyParentWhiteFactorWeights: string
+        /** JSON object of tunable weight overrides for the "SkillHints" legacy parent strategy. Empty/missing falls back to defaults. */
+        legacyParentSkillHintsWeights: string
+        /** JSON object of tunable weight overrides for the "Balanced" legacy parent strategy. Empty/missing falls back to defaults. */
+        legacyParentBalancedWeights: string
         /** JSON array of preferred support card names (first OCR match wins). */
         supportBorrowPreferredCards: string
         /** Friend borrow priority sort: "goal" (goal-fit scoring, default) or "raceBonus" (pure in-kit race bonus). */
@@ -534,6 +546,9 @@ export const defaultSettings: Settings = {
         enableParentFarmingLockPreset: false,
         enableParentFarmingAutoDowngradeForcedEpithets: true,
         enableParentFarmingAdaptiveMultiRun: true,
+        parentFarmingAdaptivePoorRunThreshold: 70,
+        parentFarmingAdaptiveWinRateGuardRelaxation: 0.05,
+        parentFarmingAdaptiveFanFloorRelaxation: 10000,
         enableParentFarmingGoalQueue: false,
         parentFarmingGoalQueue: "[]",
         parentFarmingGoalQueueResolved: "[]",
@@ -558,6 +573,9 @@ export const defaultSettings: Settings = {
         legacyParentSelectionStrategy: "Default",
         legacyParentPreferredPair: "[]",
         legacyParentStatAptitudeWeights: "{}",
+        legacyParentWhiteFactorWeights: "{}",
+        legacyParentSkillHintsWeights: "{}",
+        legacyParentBalancedWeights: "{}",
         supportBorrowPreferredCards: "[]",
         supportBorrowSortMode: "goal",
         ownedSupportCards: "[]",

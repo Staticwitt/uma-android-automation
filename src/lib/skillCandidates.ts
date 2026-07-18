@@ -9,7 +9,7 @@
  * Pure and dependency-free (the skills.json import is data, not a runtime dep), so it is fully unit-testable.
  */
 
-import type { SkillCandidate, SkillContext, SkillPurchaseResult } from "./skillPurchaseOptimizer"
+import type { Distance, RunningStyle, SkillCandidate, SkillContext, SkillPurchaseResult } from "./skillPurchaseOptimizer"
 import { optimizeSkillPurchases } from "./skillPurchaseOptimizer"
 
 /** The subset of a `skills.json` entry this mapper reads. */
@@ -23,6 +23,32 @@ export interface SkillDbEntry {
     upgrade: number | null
     /** Id of the base skill this one upgrades from (its prerequisite), or null. */
     downgrade: number | null
+    /** Activation trigger expression, e.g. "distance_type==2&phase==1&change_order_onetime<0". Empty if unconditional. */
+    condition?: string
+}
+
+/** distance_type condition values, in the game's own encoding. */
+const DISTANCE_TYPE_TAGS: Record<string, Distance> = { "1": "Sprint", "2": "Mile", "3": "Medium", "4": "Long" }
+
+/** running_style condition values, in the game's own encoding (Nige/Senko/Sashi/Oikomi). */
+const RUNNING_STYLE_TAGS: Record<string, RunningStyle> = { "1": "Front", "2": "Pace", "3": "Late", "4": "End" }
+
+/**
+ * Extracts the distance this skill's effect is restricted to from its activation condition, e.g. "distance_type==2..." -> Mile.
+ * No skill in the game DB combines a distance_type/running_style requirement with an alternative "|" trigger branch, so a plain
+ * regex match is safe - the requirement always applies to the whole condition, not just one OR-branch.
+ */
+function distanceTagsFromCondition(condition: string | undefined): Distance[] | undefined {
+    const match = condition?.match(/distance_type==(\d)/)
+    const tag = match ? DISTANCE_TYPE_TAGS[match[1]] : undefined
+    return tag ? [tag] : undefined
+}
+
+/** Extracts the running style this skill's effect is restricted to from its activation condition, e.g. "running_style==3..." -> Late. */
+function styleTagsFromCondition(condition: string | undefined): RunningStyle[] | undefined {
+    const match = condition?.match(/running_style==(\d)/)
+    const tag = match ? RUNNING_STYLE_TAGS[match[1]] : undefined
+    return tag ? [tag] : undefined
 }
 
 /**
@@ -43,6 +69,8 @@ export function mapSkillsToCandidates(entries: SkillDbEntry[]): SkillCandidate[]
             name: e.name_en,
             spCost: e.cost,
             baseValue,
+            distanceTags: distanceTagsFromCondition(e.condition),
+            styleTags: styleTagsFromCondition(e.condition),
             requiresId: isUpgrade ? String(e.downgrade) : undefined,
             kind,
         }
