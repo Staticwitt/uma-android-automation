@@ -1,23 +1,16 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.39</latestVersion>
-    <latestVersionCode>211</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.39</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.39/v5.10.39-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.39/v5.10.39-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.40</latestVersion>
+    <latestVersionCode>212</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.40</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.40/v5.10.40-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.40/v5.10.40-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.39 - Auto-equip owned deck, data cross-checks, and notification gaps closed
+v5.10.40 - Tunable skill recovery-boost strength
 
 Added
 -----
-- Auto-equip planned owned deck (Parent Farming Settings, under Career selection): taps each empty Support Formation slot and equips your saved owned-deck order directly, instead of relying only on the game's own Auto-Select. Falls back to Auto-Select for any slot it can't fill (short list, no match, or disabled).
-- Discord Live Status now works on any run, not just Parent Farming Mode - standard careers get the same periodic stat/mood/energy/race-record updates. Parent-farming-only details (projected quality, multi-run session) stay limited to parent farming runs.
-- Trackblazer scenario-progress Discord ping on the item shop unlocking (Junior Year Late June), closing the gap with URA Finale and Unity Cup, which already had progress pings.
-- Auto-Abandon Minimum Observations (Training Settings): the "doomed-run guard"'s confidence threshold - how many turns of projection history must build up before it can fire - is now a slider instead of a fixed value, alongside its existing minimum-turn and target-grade settings.
-
-Data accuracy
--------------
-- characterPresets.json's growth-rate bonuses are now cross-checked against umapyoi.net (an independent database) after every scrape, the same way support-card type/rarity already was. Mismatches are logged for review rather than silently trusted from one source.
+- Recovery Boost Strength (Skills settings, under Prioritize Recovery Skills for Stamina): the multiplier that nudges recovery skills up the auto-purchase ranking on Medium/Long builds is now a slider (1.0x-3.0x, default 1.5x) instead of a fixed value. 1.0x disables the boost entirely; higher values push recovery skills further up the list ahead of pure stat skills.
     </releaseNotes>
   </update>
 </AppUpdater>
