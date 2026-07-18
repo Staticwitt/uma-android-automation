@@ -220,6 +220,8 @@ export interface Settings {
         preferredTrackDistance: string
         preferredTrackSurface: string
         prioritizeRecoveryForStamina: boolean
+        /** Multiplier applied to a recovery skill's evaluation-point ratio when prioritizeRecoveryForStamina is active. 1.0 = no boost. */
+        recoveryBoostMultiplier: number
         plans: Record<string, SkillPlanSettingsConfig>
     }
 
@@ -584,6 +586,7 @@ export const defaultSettings: Settings = {
         preferredTrackDistance: "inherit",
         preferredTrackSurface: "no_preference",
         prioritizeRecoveryForStamina: true,
+        recoveryBoostMultiplier: 1.5,
         plans: Object.keys(skillPlanSettingsPages).reduce(
             (acc, curr) => {
                 acc[curr] = {

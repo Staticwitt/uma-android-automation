@@ -8,6 +8,7 @@ import { ModalRadioRow } from "../../components/ui/modal-list"
 import { useModalShellStyles } from "../../components/ui/modal-shell-styles"
 import InfoCallout from "../../components/ui/info-callout"
 import { Switch } from "../../components/ui/switch"
+import CustomSlider from "../../components/CustomSlider"
 import { SkillsContext, defaultSettings } from "../../context/BotStateContext"
 import { useTheme } from "../../context/ThemeContext"
 import { TYPE } from "../../lib/type"
@@ -63,7 +64,7 @@ const StyleSection: React.FC = () => {
     const { colors } = useTheme()
     const { skills, updateSkills } = useContext(SkillsContext)
     const merged = { ...defaultSettings.skills, ...skills }
-    const { preferredRunningStyle, preferredTrackDistance, preferredTrackSurface, prioritizeRecoveryForStamina } = merged
+    const { preferredRunningStyle, preferredTrackDistance, preferredTrackSurface, prioritizeRecoveryForStamina, recoveryBoostMultiplier } = merged
     const modalShellStyles = useModalShellStyles()
     const [openPicker, setOpenPicker] = useState<OpenPicker>(null)
 
@@ -160,6 +161,23 @@ const StyleSection: React.FC = () => {
                     description="On Medium/Long builds, nudge recovery skills up the auto-purchase ranking so the trainee holds pace longer. Has no effect on Sprint/Mile builds."
                     right={<Switch checked={prioritizeRecoveryForStamina} onCheckedChange={(checked) => updateSkills({ prioritizeRecoveryForStamina: checked })} />}
                 />
+                {prioritizeRecoveryForStamina && (
+                    <View style={{ paddingHorizontal: SPACING.md }}>
+                        <CustomSlider
+                            searchId="recovery-boost-multiplier"
+                            value={recoveryBoostMultiplier}
+                            placeholder={defaultSettings.skills.recoveryBoostMultiplier}
+                            onValueChange={(value) => updateSkills({ recoveryBoostMultiplier: value } as any)}
+                            min={1.0}
+                            max={3.0}
+                            step={0.1}
+                            label="Recovery Boost Strength"
+                            showValue={true}
+                            showLabels={true}
+                            description="How much a recovery skill's ranking is multiplied by on Medium/Long builds. 1.0x disables the boost; higher values push recovery skills further up the list."
+                        />
+                    </View>
+                )}
             </Section>
 
             <InfoCallout title="How Running Style affects skill picks">
