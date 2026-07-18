@@ -72,7 +72,7 @@ object LegacyParentScorer {
      * @property whiteFactorBonus Bonus when OCR text signals a white factor.
      * @property blueFactorBonus Bonus when OCR text signals a blue (stat) factor.
      * @property skillHintBonus Bonus when OCR text has a skill-hint signal.
-     * @property starBonus Bonus per star (★/*) glyph detected in OCR text.
+     * @property starBonus Bonus per star (★ or *) glyph detected in OCR text.
      * @property aptitudeKeywordBonus Bonus per distance/surface aptitude keyword found in OCR text.
      * @property statValueWeight Multiplier applied to parsed numeric stat values, weighted by priority.
      * @property aptitudeGradeWeight Multiplier applied per aptitude-grade point (S=7..G=0) parsed from OCR text.
