@@ -1,23 +1,21 @@
 <AppUpdater>
   <update>
-    <latestVersion>5.10.41</latestVersion>
-    <latestVersionCode>213</latestVersionCode>
-    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.41</url>
-    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.41/v5.10.41-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
-    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.41/v5.10.41-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
+    <latestVersion>5.10.42</latestVersion>
+    <latestVersionCode>214</latestVersionCode>
+    <url>https://github.com/Staticwitt/uma-android-automation/releases/tag/v5.10.42</url>
+    <apkUrl>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.42/v5.10.42-UmaAndroidAutomation-arm64-v8a-release.apk</apkUrl>
+    <apkUrlX8664>https://github.com/Staticwitt/uma-android-automation/releases/download/v5.10.42/v5.10.42-UmaAndroidAutomation-x86_64-release.apk</apkUrlX8664>
     <releaseNotes>
-v5.10.41 - Turn-adaptive risk tolerance, a real bug fix, and 3 more gaps closed
-
-Fixed
------
-- Genuine failures were being reported as a successful "manually stopped" run: a session error, running out of alarm clocks, an invalid scenario, and hitting a dialog flagged dangerous because it risks a real-world purchase all threw the same exception type as a normal user-initiated stop, so the bot's main loop rebranded every one of them as a green success notification instead of an error. Now correctly distinguished and reported.
+v5.10.42 - Legacy-parent weight tuning, adaptive multi-run disclosure, and a skill-plan fix
 
 Added
 -----
-- Turn-Adaptive Risk Tolerance (Training Settings, under Risky Training): the risky-training failure-chance ceiling can now taper from a looser value at turn 1 down to the existing ceiling by turn 72, instead of using the same threshold for the whole 75-turn run. A bad training result early has many turns left to recover from; the same result late in the run doesn't.
-- Decision Reports now include a real settings snapshot for every scenario. Previously only Trackblazer's reports showed the mood/energy/failure-chance/risky-training/auto-abandon settings that were active - URA Finale, Unity Cup, and Grand Live reports had an empty settings section.
-- Connection Error Retry (Settings, under Wait Delay): the max retry attempts and cooldown for the in-game connection-error dialog are now sliders instead of fixed values, for users on flaky Wi-Fi/emulators.
-- A one-time Discord warning now fires if the bot can't tap Start Career after repeated attempts, instead of silently retrying forever with no visibility.
+- Legacy Parent strategy weight tuning (Parent Farming Settings): "WhiteFactor", "SkillHints", and "Balanced" legacy-parent OCR scoring strategies now have their own tunable weight sliders, matching the "StatAndAptitude" strategy which already had them. Defaults match each strategy's previous fixed behavior.
+- Adaptive Multi-Run now discloses and exposes its win-rate guard/fan floor relaxation: after a poor-quality run, the next career's win-rate guard and fan target floor were being silently relaxed to help the solver recover. The poor-run quality threshold and both relaxation amounts are now sliders, and the setting's description explains this behavior.
+
+Fixed
+-----
+- Skill Plan's "Suggest Plan" tool now actually weighs distance/running-style relevance. It always intended to deprioritize skills that don't help at the selected distance or style, but the skill data feeding it never carried those tags, so every skill was scored as universally useful. Now parsed directly from the game's own skill activation conditions.
     </releaseNotes>
   </update>
 </AppUpdater>
