@@ -177,11 +177,24 @@ abstract class Task(game: Game) : DialogHandler(game) {
                     break
                 }
             } catch (e: InterruptedException) {
+                // A genuine user-initiated stop (Game.wait() noticing BotService.isRunning went false, or the
+                // bot thread being interrupted as part of that same stop path) always throws a message-less
+                // InterruptedException(). Every other throw site in this codebase (session errors, running out
+                // of alarm clocks, an invalid scenario, a dangerous real-money-purchase dialog, exhausted
+                // connection-error retries) carries a descriptive message - those are real failures and must
+                // not be reported as a successful manual stop.
                 result =
-                    TaskResult.Success(
-                        TaskResultCode.TASK_RESULT_MANUALLY_STOPPED,
-                        "Bot was manually stopped by the user.",
-                    )
+                    if (e.message == null) {
+                        TaskResult.Success(
+                            TaskResultCode.TASK_RESULT_MANUALLY_STOPPED,
+                            "Bot was manually stopped by the user.",
+                        )
+                    } else {
+                        TaskResult.Error(
+                            TaskResultCode.TASK_RESULT_UNHANDLED_EXCEPTION,
+                            e.message!!,
+                        )
+                    }
                 break
             }
         }
