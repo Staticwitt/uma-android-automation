@@ -37,6 +37,9 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
     /** Whether to nudge recovery skills up the ranking on stamina-heavy (Medium/Long) builds. Default on. */
     private val prioritizeRecoveryForStamina: Boolean = SettingsHelper.getBooleanSetting("skills", "prioritizeRecoveryForStamina", true)
 
+    /** The multiplier applied to a recovery skill's ranking ratio when [prioritizeRecoveryForStamina] is active. Default 1.5. */
+    private val recoveryBoostMultiplier: Double = SettingsHelper.getDoubleSetting("skills", "recoveryBoostMultiplier", 1.5)
+
     /** The preferred track distance override for training. */
     private val trainingSettingTrackDistanceString = SettingsHelper.getStringSetting("training", "preferredDistanceOverride")
 
@@ -195,10 +198,11 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
          *
          * @param entry The skill being ranked.
          * @param staminaHeavy Whether the recovery boost is active this run (setting on and a Medium/Long build).
+         * @param boost The multiplier to apply when the boost is active. Defaults to 1.5, matching [recoveryBoostedRatio]'s default.
          * @return The effective ratio to sort by, highest first.
          */
-        fun rankingRatio(entry: SkillListEntry, staminaHeavy: Boolean): Double =
-            recoveryBoostedRatio(entry.evaluationPointRatio, staminaHeavy && isRecoverySkill(entry.skillData.description), staminaHeavy)
+        fun rankingRatio(entry: SkillListEntry, staminaHeavy: Boolean, boost: Double = 1.5): Double =
+            recoveryBoostedRatio(entry.evaluationPointRatio, staminaHeavy && isRecoverySkill(entry.skillData.description), staminaHeavy, boost)
 
         /**
          * Whether a skill is compatible with the resolved Style preference on every axis. A skill passes when, for each axis with a
@@ -824,7 +828,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
                 }
 
                 // Sort within the tier by evaluation point ratio, nudging recovery skills up on stamina-heavy builds.
-                val sortedByPointRatio: List<SkillListEntry> = group.sortedByDescending { rankingRatio(it, staminaHeavy) }
+                val sortedByPointRatio: List<SkillListEntry> = group.sortedByDescending { rankingRatio(it, staminaHeavy, recoveryBoostMultiplier) }
                 for (entry in sortedByPointRatio) {
                     // Don't add duplicate entries.
                     if (entry.name in result || entry.name in skillsToBuy) {
@@ -893,7 +897,7 @@ class SkillPlan(private val game: Game, private val campaign: Campaign) {
         while (remainingSkills.any { it.value.screenPrice <= remainingSkillPoints }) {
             val sortedByPointRatio: List<SkillListEntry> =
                 remainingSkills.values
-                    .sortedByDescending { rankingRatio(it, staminaHeavy) }
+                    .sortedByDescending { rankingRatio(it, staminaHeavy, recoveryBoostMultiplier) }
 
             for (entry in sortedByPointRatio) {
                 // Don't add duplicate entries.
